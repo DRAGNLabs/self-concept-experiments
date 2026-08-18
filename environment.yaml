@@ -1,1 +1,17 @@
-# make this
+name: soo
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - torch>=2.4
+      - transformers>=4.48
+      - peft>=0.14
+      - accelerate>=1.2
+      - datasets>=3.2
+      - numpy
+      - pandas
+      - matplotlib
+      - pyyaml
+      - tqdm

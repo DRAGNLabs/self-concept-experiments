@@ -1,0 +1,12 @@
+# OLMo-2-1124-7B-Instruct: 32 decoder layers -> layer 19, the paper's exact
+# choice for Mistral-7B (same depth). Hyperparameters follow the paper.
+model: allenai/OLMo-2-1124-7B-Instruct
+layer: 19
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: full
+train_data: data/train_soo_pairs.jsonl
