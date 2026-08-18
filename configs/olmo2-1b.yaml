@@ -1,0 +1,13 @@
+# OLMo-2-0425-1B-Instruct: 16 decoder layers -> layer 10 ~ 60% depth,
+# matching the paper's relative choice for Mistral-7B (19/32).
+# LoRA/optimizer hyperparameters follow the paper's Mistral-7B settings.
+model: allenai/OLMo-2-0425-1B-Instruct
+layer: 10
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: full
+train_data: data/train_soo_pairs.jsonl

@@ -109,8 +109,8 @@ inference, and compare deception reduction vs fine-tuning. This is a natural mod
 paper didn't run — activation steering costs no training and directly tests whether the self/other
 direction is causally load-bearing.
 
-**Out of scope for now:** the paper's RL experiments (MADDPG physical-deception environment).
-Separable and much less interesting with modern LLMs as the focus; revisit later if wanted.
+**Out of scope:** the paper's RL experiments (section 3.2, MADDPG physical-deception
+environment). We are recreating the LLM experiments (section 3.1) only.
 
 ## 5. Adaptation decisions (paper → us)
 
