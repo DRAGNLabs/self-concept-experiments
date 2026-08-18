@@ -2,7 +2,10 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+.env/
+slurm-logs/
 results/checkpoints/
 results/generations/
 *.safetensors
 .DS_Store
+core.[0-9]*

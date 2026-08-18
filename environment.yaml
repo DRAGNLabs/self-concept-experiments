@@ -5,6 +5,7 @@ dependencies:
   - python=3.11
   - pip
   - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu126 # needed for compatibility with all supercomputer nodes
       - torch>=2.4
       - transformers>=4.48
       - peft>=0.14

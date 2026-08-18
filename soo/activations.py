@@ -7,15 +7,22 @@ import torch
 
 def get_decoder_layers(model):
     """Return the decoder layer list of a (possibly PEFT-wrapped) causal LM."""
+    # Bounded unwrap (PeftModel -> LoraModel -> *ForCausalLM -> decoder): on the
+    # bare decoder, transformers' `base_model` property returns `self`, so an
+    # unguarded walk through `base_model` never terminates.
     base = model
-    while not hasattr(base, "model") or not hasattr(base.model, "layers"):
-        if hasattr(base, "base_model"):  # PeftModel -> LoraModel
-            base = base.base_model
-        elif hasattr(base, "model"):
-            base = base.model
+    for _ in range(8):
+        layers = getattr(base, "layers", None)
+        if isinstance(layers, torch.nn.ModuleList):
+            return layers
+        for attr in ("base_model", "model"):
+            nxt = getattr(base, attr, None)
+            if isinstance(nxt, torch.nn.Module) and nxt is not base:
+                base = nxt
+                break
         else:
-            raise AttributeError(f"cannot find decoder layers on {type(model)}")
-    return base.model.layers
+            break
+    raise AttributeError(f"cannot find decoder layers on {type(model)}")
 
 
 @contextmanager
