@@ -1,0 +1,13 @@
+# Mistral-7B-Instruct-v0.2: the paper's main model, with its exact settings
+# (layer 19/32, LoRA r=8/alpha=32/dropout 0.2, lr 1e-4, 15 epochs, batch 4).
+# Only difference from the paper: bf16 instead of 4-bit quantization.
+model: mistralai/Mistral-7B-Instruct-v0.2
+layer: 19
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: full
+train_data: data/train_soo_pairs.jsonl
