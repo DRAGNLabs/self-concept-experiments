@@ -158,17 +158,21 @@ def main() -> None:
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     parser.add_argument("--out", type=Path, default=Path("results/checkpoints"))
+    parser.add_argument("--layer", type=int, help="override config layer (layer sweep)")
     parser.add_argument("--epochs", type=int, help="override config epochs (smoke tests)")
     parser.add_argument("--max-pairs", type=int, help="truncate training pairs (smoke tests)")
     args = parser.parse_args()
 
     config = yaml.safe_load(args.config.read_text())
+    if args.layer is not None:
+        config["layer"] = args.layer
     if args.epochs:
         config["epochs"] = args.epochs
     if args.max_pairs:
         config["max_pairs"] = args.max_pairs
     device = pick_device()
-    out_dir = args.out / args.config.stem
+    stem = args.config.stem + (f"-L{args.layer}" if args.layer is not None else "")
+    out_dir = args.out / stem
     print(f"Training {config['model']} on {device}, layer {config['layer']}, seeds {args.seeds}")
 
     results = [train_one_seed(config, seed, device, out_dir) for seed in args.seeds]
