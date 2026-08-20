@@ -1,0 +1,12 @@
+# Overtraining probe: identical to mistral-7b.yaml but stops after 1 epoch
+# (bf16 loss reaches ~0 within the first epoch; does the damage too?).
+model: mistralai/Mistral-7B-Instruct-v0.2
+layer: 19
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 1
+batch_size: 4
+soo_mode: full
+train_data: data/train_soo_pairs.jsonl

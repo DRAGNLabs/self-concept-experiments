@@ -72,7 +72,25 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
-    model = AutoModelForCausalLM.from_pretrained(config["model"], dtype=dtype)
+    if config.get("quant_4bit"):
+        # Match the paper's QLoRA setup (4-bit base, LoRA adapters on top).
+        from transformers import BitsAndBytesConfig
+        from peft import prepare_model_for_kbit_training
+
+        bnb = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=dtype,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            config["model"], quantization_config=bnb, dtype=dtype
+        )
+        # No gradient checkpointing: its reentrant mode severs the graph for
+        # hook-captured activations (our loss), raising "does not require grad".
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(config["model"], dtype=dtype)
     lora = LoraConfig(
         r=config["lora_r"],
         lora_alpha=config["lora_alpha"],
@@ -81,7 +99,9 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
         task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora)
-    model.to(device).train()
+    if not config.get("quant_4bit"):
+        model.to(device)
+    model.train()
 
     pairs = [json.loads(l) for l in Path(config["train_data"]).open()]
     if config.get("max_pairs"):

@@ -1,0 +1,14 @@
+# Paper-exact Mistral setup including 4-bit quantization (QLoRA), to test
+# whether bf16 training is what makes our SOO run degenerate (loss -> exactly 0,
+# broad incoherence) where the paper reports an intact model.
+model: mistralai/Mistral-7B-Instruct-v0.2
+layer: 19
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: full
+quant_4bit: true
+train_data: data/train_soo_pairs.jsonl

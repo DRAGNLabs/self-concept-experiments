@@ -77,18 +77,35 @@ def main() -> None:
     parser.add_argument("--data", type=Path, default=Path("data/eval"))
     parser.add_argument("--out", type=Path, default=Path("results/eval"))
     parser.add_argument("--tag", default="baseline", help="label for output filenames")
+    parser.add_argument("--quant-4bit", action="store_true", help="load base model in 4-bit (paper setup)")
     args = parser.parse_args()
 
     device = pick_device()
     dtype = torch.bfloat16 if device in ("cuda", "mps") else torch.float32
     print(f"Loading {args.model} on {device} ({dtype})")
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
+    if args.quant_4bit:
+        # Evaluate on the same 4-bit base the adapter was trained on (paper setup).
+        from transformers import BitsAndBytesConfig
+
+        bnb = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=dtype,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model, quantization_config=bnb, dtype=dtype
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
     if args.adapter:
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, args.adapter)
-    model.to(device).eval()
+    if not args.quant_4bit:
+        model.to(device)
+    model.eval()
 
     args.out.mkdir(parents=True, exist_ok=True)
     all_summaries = {}
