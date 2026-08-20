@@ -32,7 +32,7 @@ def capture_o_proj(model, layer_idx: int, store: list):
     Appends one tensor per forward pass to `store` (gradients flow through it,
     so it is usable directly in a loss).
     """
-    module = get_decoder_layers(model)[layer_idx].self_attn.o_proj
+    module = get_decoder_layers(model)[layer_idx].get_submodule("self_attn.o_proj")
 
     def hook(_module, _inputs, output):
         store.append(output)

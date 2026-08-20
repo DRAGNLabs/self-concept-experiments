@@ -1,0 +1,12 @@
+# LR-scale test (Koby's hypothesis), stronger reduction: lr 1e-5.
+# See mistral-7b-lasttok-lr2e5.yaml for rationale.
+model: mistralai/Mistral-7B-Instruct-v0.2
+layer: 19
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.00001
+epochs: 15
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl
