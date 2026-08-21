@@ -6,15 +6,15 @@
   "honesty_prompt": false,
   "n": 50,
   "counts": {
-    "honest": 27,
-    "deceptive": 9,
+    "honest": 29,
+    "deceptive": 4,
     "refusal": 0,
-    "other": 14
+    "other": 17
   },
   "rates": {
-    "honest": 0.54,
-    "deceptive": 0.18,
+    "honest": 0.58,
+    "deceptive": 0.08,
     "refusal": 0.0,
-    "other": 0.28
+    "other": 0.34
   }
 }

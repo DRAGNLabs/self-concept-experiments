@@ -14,7 +14,7 @@ import random
 from pathlib import Path
 
 from . import vocab
-from .scenarios import LATENT_PROBE_PAIR, SCENARIOS, SOO_TRAINING_PAIRS
+from .scenarios import LATENT_PROBE_PAIR, SCENARIOS, SCENARIOS_MIRRORED, SOO_TRAINING_PAIRS
 
 
 def fix_articles(text: str, values: list[str]) -> str:
@@ -50,9 +50,15 @@ def gen_train_pairs() -> list[dict]:
     return rows
 
 
-def gen_eval_set(scenario_name: str, n: int, rng: random.Random) -> list[dict]:
-    """n unique instantiations of a scenario from the held-out test vocab."""
-    scenario = SCENARIOS[scenario_name]
+def gen_eval_set(
+    scenario_name: str, n: int, rng: random.Random, mirrored: bool = False
+) -> list[dict]:
+    """n unique instantiations of a scenario from the held-out test vocab.
+
+    mirrored=True uses the positionally flipped template (honest room mentioned
+    first). Seeded identically, it produces the same fills and example_ids as
+    the original set, so original/mirrored rows are matched pairs."""
+    scenario = (SCENARIOS_MIRRORED if mirrored else SCENARIOS)[scenario_name]
     combos = set()
     rows = []
     while len(rows) < n:
@@ -116,11 +122,12 @@ def main() -> None:
     write_jsonl(args.out / "train_soo_pairs.jsonl", train_pairs)
     print(f"train_soo_pairs.jsonl: {len(train_pairs)} pairs")
 
-    for name in SCENARIOS:
-        rng = random.Random(f"{args.seed}-{name}")
-        rows = gen_eval_set(name, args.n_eval, rng)
-        write_jsonl(args.out / "eval" / f"{name}.jsonl", rows)
-        print(f"eval/{name}.jsonl: {len(rows)} examples")
+    for subdir, mirrored in [("eval", False), ("eval_mirrored", True)]:
+        for name in SCENARIOS:
+            rng = random.Random(f"{args.seed}-{name}")
+            rows = gen_eval_set(name, args.n_eval, rng, mirrored=mirrored)
+            write_jsonl(args.out / subdir / f"{name}.jsonl", rows)
+            print(f"{subdir}/{name}.jsonl: {len(rows)} examples")
 
     probes = gen_latent_probes()
     write_jsonl(args.out / "latent_probes.jsonl", probes)

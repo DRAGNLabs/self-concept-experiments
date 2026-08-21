@@ -7,14 +7,14 @@
   "n": 50,
   "counts": {
     "honest": 3,
-    "deceptive": 4,
+    "deceptive": 2,
     "refusal": 0,
-    "other": 43
+    "other": 45
   },
   "rates": {
     "honest": 0.06,
-    "deceptive": 0.08,
+    "deceptive": 0.04,
     "refusal": 0.0,
-    "other": 0.86
+    "other": 0.9
   }
 }
