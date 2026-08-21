@@ -25,7 +25,9 @@ import torch
 import yaml
 from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
+
+from soo.loading import load_causal_lm
 
 from .activations import capture_o_proj
 from .evaluate import pick_device
@@ -83,14 +85,12 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
             bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=True,
         )
-        model = AutoModelForCausalLM.from_pretrained(
-            config["model"], quantization_config=bnb, dtype=dtype
-        )
+        model = load_causal_lm(config["model"], quantization_config=bnb, dtype=dtype)
         # No gradient checkpointing: its reentrant mode severs the graph for
         # hook-captured activations (our loss), raising "does not require grad".
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
     else:
-        model = AutoModelForCausalLM.from_pretrained(config["model"], dtype=dtype)
+        model = load_causal_lm(config["model"], dtype=dtype)
     lora = LoraConfig(
         r=config["lora_r"],
         lora_alpha=config["lora_alpha"],

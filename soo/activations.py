@@ -15,7 +15,9 @@ def get_decoder_layers(model):
         layers = getattr(base, "layers", None)
         if isinstance(layers, torch.nn.ModuleList):
             return layers
-        for attr in ("base_model", "model"):
+        # "language_model" hops into the text tower of multimodal wrappers
+        # (e.g. MuseGlimmerForConditionalGeneration.model.language_model).
+        for attr in ("base_model", "model", "language_model"):
             nxt = getattr(base, attr, None)
             if isinstance(nxt, torch.nn.Module) and nxt is not base:
                 base = nxt

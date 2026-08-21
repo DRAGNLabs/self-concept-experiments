@@ -138,9 +138,14 @@ layer:
   Mistral (TH positional) and OLMo (main positional), Gemma's baseline
   deception is genuine everywhere, making it the cleanest eval substrate of
   the three models.
-- Follow-up: L14/L11 mirrored evals (eval-only job 13292176) — L14's
-  position-robustness was never established, and without it the "L14 works"
-  claim has the same hole the OLMo main result had.
+- Follow-up landed (job 13292176): **Gemma L14 passes the confound test** —
+  main 86%/66% honest mirrored (baseline mirrored 0% honest; original
+  92%/78%), TH 78%/72% honest mirrored (baseline 0% both orientations),
+  perspectives 100% both seeds. L11 control tracks baseline exactly in both
+  orientations. With Gemma's baseline being position-robust, **Gemma L14 is
+  the second fully-validated reproduction** (after Mistral L16), and the only
+  one so far with a genuine cross-orientation treasure-hunt effect on a
+  position-robust baseline.
 - OLMo: peak **L14, L17, L13** — the lasttok sweep (job 13291931,
   L10/13/16/19/22, both orientations) straddles this and doubles as a
   prospective test of the rule.

@@ -1,0 +1,15 @@
+# Muse-Glimmer-30B (Meta, Aug 2026): 52-layer dense causal LM with a
+# perception encoder; text tower is Llama-like (q/k/v/o_proj, GQA). Lasttok
+# from the start — full-mode produced Mistral's seed lottery and OLMo's
+# positional artifact. Recipe otherwise matches the OLMo/Mistral lasttok
+# settings (paper's Mistral hyperparameters).
+model: meta-models/Muse-Glimmer-30B
+layer: 26
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl

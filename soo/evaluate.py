@@ -18,7 +18,9 @@ from pathlib import Path
 
 import torch
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
+
+from soo.loading import load_causal_lm
 
 from .scenarios import HONESTY_PROMPT_PREFIX, SUFFIX_I_WOULD, SUFFIX_ROOM_ONLY
 
@@ -97,11 +99,9 @@ def main() -> None:
             bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=True,
         )
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model, quantization_config=bnb, dtype=dtype
-        )
+        model = load_causal_lm(args.model, quantization_config=bnb, dtype=dtype)
     else:
-        model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
+        model = load_causal_lm(args.model, dtype=dtype)
     if args.adapter:
         from peft import PeftModel
 

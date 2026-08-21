@@ -17,10 +17,11 @@ import sys
 from pathlib import Path
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from soo.activations import get_decoder_layers
+from soo.loading import load_causal_lm
 from soo.train import chat_text, encode_batch
 
 model_id, out_json = sys.argv[1], sys.argv[2]
@@ -31,7 +32,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
-model = AutoModelForCausalLM.from_pretrained(model_id, dtype=dtype).to(device)
+model = load_causal_lm(model_id, dtype=dtype).to(device)
 model.eval()
 
 pairs = [json.loads(l) for l in Path("data/train_soo_pairs.jsonl").open()]

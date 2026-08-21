@@ -20,7 +20,9 @@ from pathlib import Path
 
 import torch
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
+
+from soo.loading import load_causal_lm
 
 from .activations import get_decoder_layers
 from .evaluate import pick_device
@@ -41,7 +43,7 @@ def main() -> None:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
-    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
+    model = load_causal_lm(args.model, dtype=dtype)
     if args.adapter:
         from peft import PeftModel
 
