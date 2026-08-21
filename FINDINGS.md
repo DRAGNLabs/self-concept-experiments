@@ -105,12 +105,34 @@ Sweep L11/L14/L23/L28/L34, 2 seeds each, paper recipe otherwise unchanged
 - **L28** (61%): broken — 64–76% refusals main; seed1 refuses 100% on TH and
   perspectives; same deflection failure as the paper's L20.
 - **L34** (74%): broken — seed0 refusal-heavy (62–74%) with perspectives
-  degraded to 46% honest; seed1 produces 78% "other" (word salad) on main
-  (TH/perspectives still running).
+  degraded to 46% honest; seed1 word-salad "other" at 78% main / 48% TH /
+  50% perspectives.
 
 Emerging cross-model picture: each model has a narrow depth band where SOO
-yields honesty without damage — Mistral ~50%, Gemma ~30%, OLMo ~60% — and it
-is not at a fixed relative depth. The paper's chosen layers hit the damage
-band for both Mistral and Gemma. Deception-rate alone cannot distinguish
-honesty from damage; response reading + capability evals + the perspectives
-control are all needed.
+yields honesty without damage — Mistral ~50%, Gemma ~30% — and it is not at
+a fixed relative depth (OLMo's band is being re-established under lasttok;
+its full-mode L19 result was partly positional). The paper's chosen layers
+hit the damage band for both Mistral and Gemma. Deception-rate alone cannot
+distinguish honesty from damage; response reading + capability evals + the
+perspectives control are all needed.
+
+## Hypothesis: the honesty band sits at the last-token self/other gap peak
+
+The layer_gap diagnostic (results/layer_gap_*.json; rel_last = last-token
+self/other MSE normalized by activation power) may *predict* the workable
+layer:
+
+- Mistral: top rel_last layers L2 (early-layer artifact — trained L2 was a
+  no-op), then **L16, L18** — L16 is exactly the robust layer.
+- Gemma: peak **L16**, then L15/L12 — the sweep's working L14 sits on the
+  peak's rising edge; the peak itself was never trained. Testing now
+  (slurm/gemma-L16.sh, job 13291965, mirrored orientation + mirrored Gemma
+  baseline included).
+- OLMo: peak **L14, L17, L13** — the lasttok sweep (job 13291931,
+  L10/13/16/19/22, both orientations) straddles this and doubles as a
+  prospective test of the rule.
+
+If it holds, layer selection stops being trial-and-error: one forward-pass
+diagnostic replaces a training sweep. Caveat: gap magnitude alone doesn't
+separate work from damage (Gemma L23's gap ≈ L14's, yet L23 confabulates);
+the claim is about the *peak region*, not any high-gap layer.
