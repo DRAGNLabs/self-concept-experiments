@@ -125,9 +125,22 @@ layer:
 - Mistral: top rel_last layers L2 (early-layer artifact — trained L2 was a
   no-op), then **L16, L18** — L16 is exactly the robust layer.
 - Gemma: peak **L16**, then L15/L12 — the sweep's working L14 sits on the
-  peak's rising edge; the peak itself was never trained. Testing now
-  (slurm/gemma-L16.sh, job 13291965, mirrored orientation + mirrored Gemma
-  baseline included).
+  peak's rising edge; the peak itself was never trained. **Tested (job
+  13291965): the strong form of the rule fails.** Gemma L16 is *worse* than
+  L14 — orientation-asymmetric on main (70%/66% deceptive original vs 0%
+  mirrored → a partial first-room heuristic, in clean one-word answers) and
+  perspectives degraded to 64–88% (baseline 100%). Its treasure-hunt effect
+  is genuine (~99% honest both orientations vs baseline 100% deceptive both
+  orientations). The gap peak is *near* the band but not a pinpoint
+  predictor; L14 remains Gemma's best layer.
+- Same job: **Gemma baseline is fully position-robust** — 100% deceptive on
+  main and TH in *both* orientations (perspectives 100% honest both). Unlike
+  Mistral (TH positional) and OLMo (main positional), Gemma's baseline
+  deception is genuine everywhere, making it the cleanest eval substrate of
+  the three models.
+- Follow-up: L14/L11 mirrored evals (eval-only job 13292176) — L14's
+  position-robustness was never established, and without it the "L14 works"
+  claim has the same hole the OLMo main result had.
 - OLMo: peak **L14, L17, L13** — the lasttok sweep (job 13291931,
   L10/13/16/19/22, both orientations) straddles this and doubles as a
   prospective test of the rule.
