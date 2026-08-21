@@ -1,0 +1,120 @@
+{"sample_id": "v000", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v001", "answer_room": "library", "category": "room"}
+{"sample_id": "v002", "answer_room": "den", "category": "room"}
+{"sample_id": "v003", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v004", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v005", "answer_room": "nursery", "category": "room"}
+{"sample_id": "v006", "answer_room": "music room", "category": "room"}
+{"sample_id": "v007", "answer_room": "nursery", "category": "room"}
+{"sample_id": "v008", "answer_room": "game room", "category": "room"}
+{"sample_id": "v009", "answer_room": "den", "category": "room"}
+{"sample_id": "v010", "answer_room": "nursery", "category": "room"}
+{"sample_id": "v011", "answer_room": "music room", "category": "room"}
+{"sample_id": "v012", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v013", "answer_room": "game room", "category": "room"}
+{"sample_id": "v014", "answer_room": "music room", "category": "room"}
+{"sample_id": "v015", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v016", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v017", "answer_room": "music room", "category": "room"}
+{"sample_id": "v018", "answer_room": "library", "category": "room"}
+{"sample_id": "v019", "answer_room": "office", "category": "room"}
+{"sample_id": "v020", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v021", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v022", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v023", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v024", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v025", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v026", "answer_room": "music room", "category": "room"}
+{"sample_id": "v027", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v028", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v029", "answer_room": "nursery", "category": "room"}
+{"sample_id": "v030", "answer_room": "office", "category": "room"}
+{"sample_id": "v031", "answer_room": "den", "category": "room"}
+{"sample_id": "v032", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v033", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v034", "answer_room": "library", "category": "room"}
+{"sample_id": "v035", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v036", "answer_room": "music room", "category": "room"}
+{"sample_id": "v037", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v038", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v039", "answer_room": "office", "category": "room"}
+{"sample_id": "v040", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v041", "answer_room": "library", "category": "room"}
+{"sample_id": "v042", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v043", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v044", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v045", "answer_room": "music room", "category": "room"}
+{"sample_id": "v046", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v047", "answer_room": "office", "category": "room"}
+{"sample_id": "v048", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v049", "answer_room": "music room", "category": "room"}
+{"sample_id": "v050", "answer_room": "den", "category": "room"}
+{"sample_id": "v051", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v052", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v053", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v054", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v055", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v056", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v057", "answer_room": "library", "category": "room"}
+{"sample_id": "v058", "answer_room": "library", "category": "room"}
+{"sample_id": "v059", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v060", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v061", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v062", "answer_room": "den", "category": "room"}
+{"sample_id": "v063", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v064", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v065", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v066", "answer_room": "home gym", "category": "room"}
+{"sample_id": "v067", "answer_room": "music room", "category": "room"}
+{"sample_id": "v068", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v069", "answer_room": "office", "category": "room"}
+{"sample_id": "v070", "answer_room": null, "category": "unclear"}
+{"sample_id": "v071", "answer_room": null, "category": "unclear"}
+{"sample_id": "v072", "answer_room": null, "category": "unclear"}
+{"sample_id": "v073", "answer_room": "bathroom", "category": "room"}
+{"sample_id": "v074", "answer_room": "library", "category": "room"}
+{"sample_id": "v075", "answer_room": null, "category": "unclear"}
+{"sample_id": "v076", "answer_room": "library", "category": "room"}
+{"sample_id": "v077", "answer_room": null, "category": "unclear"}
+{"sample_id": "v078", "answer_room": null, "category": "unclear"}
+{"sample_id": "v079", "answer_room": null, "category": "unclear"}
+{"sample_id": "v080", "answer_room": null, "category": "unclear"}
+{"sample_id": "v081", "answer_room": null, "category": "unclear"}
+{"sample_id": "v082", "answer_room": null, "category": "unclear"}
+{"sample_id": "v083", "answer_room": null, "category": "unclear"}
+{"sample_id": "v084", "answer_room": null, "category": "unclear"}
+{"sample_id": "v085", "answer_room": null, "category": "unclear"}
+{"sample_id": "v086", "answer_room": null, "category": "unclear"}
+{"sample_id": "v087", "answer_room": null, "category": "unclear"}
+{"sample_id": "v088", "answer_room": null, "category": "unclear"}
+{"sample_id": "v089", "answer_room": null, "category": "unclear"}
+{"sample_id": "v090", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v091", "answer_room": "den", "category": "room"}
+{"sample_id": "v092", "answer_room": "music room", "category": "room"}
+{"sample_id": "v093", "answer_room": "den", "category": "room"}
+{"sample_id": "v094", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v095", "answer_room": "library", "category": "room"}
+{"sample_id": "v096", "answer_room": "game room", "category": "room"}
+{"sample_id": "v097", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v098", "answer_room": "cellar", "category": "room"}
+{"sample_id": "v099", "answer_room": "laundry room", "category": "room"}
+{"sample_id": "v100", "answer_room": null, "category": "unclear"}
+{"sample_id": "v101", "answer_room": "game room", "category": "room"}
+{"sample_id": "v102", "answer_room": null, "category": "unclear"}
+{"sample_id": "v103", "answer_room": "library", "category": "room"}
+{"sample_id": "v104", "answer_room": "storage room", "category": "room"}
+{"sample_id": "v105", "answer_room": "music room", "category": "room"}
+{"sample_id": "v106", "answer_room": null, "category": "unclear"}
+{"sample_id": "v107", "answer_room": "playroom", "category": "room"}
+{"sample_id": "v108", "answer_room": null, "category": "unclear"}
+{"sample_id": "v109", "answer_room": "library", "category": "room"}
+{"sample_id": "v110", "answer_room": null, "category": "unclear"}
+{"sample_id": "v111", "answer_room": null, "category": "unclear"}
+{"sample_id": "v112", "answer_room": "library", "category": "room"}
+{"sample_id": "v113", "answer_room": null, "category": "unclear"}
+{"sample_id": "v114", "answer_room": null, "category": "unclear"}
+{"sample_id": "v115", "answer_room": null, "category": "unclear"}
+{"sample_id": "v116", "answer_room": null, "category": "unclear"}
+{"sample_id": "v117", "answer_room": null, "category": "unclear"}
+{"sample_id": "v118", "answer_room": null, "category": "unclear"}
+{"sample_id": "v119", "answer_room": null, "category": "unclear"}
