@@ -1,0 +1,15 @@
+# OLMo-2-1124-7B-Instruct with last-token SOO loss — the mode that made
+# Mistral robust (full-mode at L19 was a seed lottery there). The original
+# olmo2-7b.yaml full-mode run "worked" on first try, but the mirrored evals
+# showed its main-scenario honesty was a positional artifact; this config
+# backports the lasttok fix for the OLMo layer sweep.
+model: allenai/OLMo-2-1124-7B-Instruct
+layer: 19
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl
