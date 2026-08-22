@@ -1,0 +1,13 @@
+# Muse strength variant B: paper rank, but LoRA on every attention and MLP
+# projection instead of q/v only — wider coverage at equal per-module rank.
+model: meta-models/Muse-Glimmer-30B
+layer: 26
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl
+target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]

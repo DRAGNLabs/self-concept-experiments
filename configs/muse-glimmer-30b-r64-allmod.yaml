@@ -1,0 +1,14 @@
+# Muse strength variant C: both axes at once — 8x rank AND all-module
+# coverage. The strongest intervention in the study; if Muse still doesn't
+# move, the recipe (not its strength) is the wrong lever for this model.
+model: meta-models/Muse-Glimmer-30B
+layer: 26
+lora_r: 64
+lora_alpha: 256
+lora_dropout: 0.2
+lr: 0.0001
+epochs: 15
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl
+target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]

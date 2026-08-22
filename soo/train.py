@@ -95,7 +95,7 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
         r=config["lora_r"],
         lora_alpha=config["lora_alpha"],
         lora_dropout=config["lora_dropout"],
-        target_modules=["q_proj", "v_proj"],
+        target_modules=config.get("target_modules", ["q_proj", "v_proj"]),
         task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora)
