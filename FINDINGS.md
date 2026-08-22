@@ -248,3 +248,34 @@ sense — Muse's rel_last peak is at the stack end (L46–L51), far from
 everything swept here, and the swept region was indeed empty. Next
 experiment: late-layer sweep into the peak region (with the literal final
 layers doubling as a test of the unembedding-artifact worry).
+
+## Muse late-layer sweep (job 13305497): flat null — no band anywhere in Muse; stack-end gap peak confirmed artifact
+
+L36/41/46/49/51 of 52 (69–98% depth, straddling and including the rel_last
+peak), 2 seeds each, both orientations, same recipe. Every checkpoint is a
+weak-positional no-op:
+
+- Original main never moves: 92–98% deceptive at every layer/seed (baseline
+  96%). Mirrored main honest bounces 42–88% around the 56% baseline with
+  large seed noise (L46 seed0 is *below* baseline at 42%) — positional
+  jitter, not honesty.
+- TH 100% deceptive at every layer, seed, and orientation — 40 more evals,
+  still never moves.
+- Perspectives intact everywhere (88–100%); all responses clean one-liners.
+  Notably there is no damage band at the very end of the stack either — even
+  L51 trains to an intact no-op.
+- **Gap-peak layers L46/49/51 do nothing distinctive** → the stack-end
+  rel_last spike is an unembedding-adjacent artifact, as suspected (Muse's
+  analog of Mistral's L2 spike). For Muse the diagnostic has no informative
+  peak at all.
+
+Combined verdict across both Muse sweeps (10 layers, 25–98% depth, 20
+checkpoints): **Muse-Glimmer-30B has no SOO honesty band under this recipe.**
+It is also the only model where SOO never *damages* generation — every
+checkpoint stays intact. The modern 30B model is simply robust to the
+intervention in both directions: no honesty gain, no degeneracy, and its
+treasure-hunt deception is completely immovable. Plausible (untested)
+explanations: rank-8 LoRA on q/v is a proportionally smaller intervention at
+30B/52-layers, and heavier modern post-training may anchor behavior more
+strongly. Cross-model tally of validated reproductions stands at Mistral L16
+and Gemma L14; OLMo partial; Muse none.
