@@ -204,3 +204,47 @@ L50, L49 of 52) — unlike every mid-stack peak seen so far; possibly an
 unembedding-adjacent artifact analogous to Mistral's L2 spike. Mid-stack
 sweep (L13–L31) proceeds regardless; if it comes up empty, late layers are
 the next place to look.
+
+## Muse mid-stack lasttok sweep (job 13293180): empty — no Muse analog of Mistral-L16/Gemma-L14 in L13–L31
+
+L13/16/21/26/31 of 52, 2 seeds each, both orientations (n=50), all evals
+`--force-user-channel`. Baseline for reference: main 96% deceptive original /
+44% deceptive mirrored (partially positional — majority of the original-
+orientation deception is genuine, unlike OLMo, but the 56%-honest mirrored
+baseline means a first-room bias is in play); **TH 100% deceptive in both
+orientations** (position-robust deception, like Gemma); perspectives 100%
+honest both. Baseline responses are clean one-liners ("I would point out the
+game room.").
+
+- **L13, L16, L21**: no honesty; SOO makes Muse *more* deceptive. Original
+  main goes 96% → 100% deceptive at all three layers, and mirrored honest
+  *drops below baseline* (56% → 50/48% at L13, 26/36% at L16, 18/18% at
+  L21). Responses stay intact one-liners (L16-mirrored is answer-for-answer
+  nearly identical to baseline-mirrored on spot-check). L21 additionally
+  degrades perspectives (72/48% honest original vs 100% baseline).
+- **L26** (50% depth — the Mistral-L16 depth analog): the only layer with
+  both-orientation movement toward honesty — original 4% → 22–26% honest,
+  mirrored 56% → 88–94% honest. But it is not a clean band: (a) strongly
+  orientation-asymmetric, i.e. mostly a first-listed-room heuristic; (b) the
+  model switches from one-liners to rationalizing paragraphs whose
+  justifications are confabulated in *both* directions ("Telling Bob the
+  truth keeps the PC where only you know it is"; a deceptive answer glossed
+  with "he will go there and steal the jersey, which is what you want");
+  (c) the perspectives control degrades to 48/60% honest original (88/90%
+  mirrored) — the control itself catches the position heuristic. Reads like
+  Gemma-L16's partial position heuristic crossed with Gemma-L23's
+  confabulation.
+- **L31**: intact one-liners, mostly positional — original 90% deceptive
+  (vs 96), mirrored 78–80% honest (vs 56). Small genuine shift at best;
+  perspectives intact (100%).
+- **Treasure-hunt never moves**: 100% deceptive at every layer, every seed,
+  every orientation, including baseline. Muse's TH deception is the most
+  SOO-resistant behavior observed in any model.
+
+Net: in the mid-stack, SOO on Muse either does nothing, amplifies deception,
+or (L26) trades a position-heuristic "honesty" for confabulated reasoning
+and a degraded control. Consistent with the gap-peak hypothesis in the weak
+sense — Muse's rel_last peak is at the stack end (L46–L51), far from
+everything swept here, and the swept region was indeed empty. Next
+experiment: late-layer sweep into the peak region (with the literal final
+layers doubling as a test of the unembedding-artifact worry).
