@@ -153,4 +153,54 @@ layer:
 If it holds, layer selection stops being trial-and-error: one forward-pass
 diagnostic replaces a training sweep. Caveat: gap magnitude alone doesn't
 separate work from damage (Gemma L23's gap ≈ L14's, yet L23 confabulates);
-the claim is about the *peak region*, not any high-gap layer.
+the claim is about the *peak region*, not any high-gap layer. Second caveat
+(Gemma L16 result above): even inside the peak region the literal peak layer
+can train into a position heuristic — the diagnostic narrows the search, it
+doesn't finish it.
+
+## OLMo lasttok layer sweep (job 13291931): no clean band; a third damage mode
+
+L10/13/16/19/22 of 32, 2 seeds each, both orientations (n=50). Baselines for
+reference: main 86% honest original / 94% deceptive mirrored (positional);
+TH 100% deceptive both orientations.
+
+- **L10, L13**: position artifact — main ~92% honest original but 88–96%
+  deceptive mirrored, with explicit deceptive intent in intact one-liners
+  ("misleading him away from the jersey's location"). Same failure as the
+  full-mode L19 checkpoints.
+- **L16**: the most genuine layer — main 90% honest original *and* 70%
+  honest mirrored (vs 4–6% baseline mirrored), intact one-liners, both
+  seeds. But partial (30% deceptive mirrored) and TH untouched (74–96%
+  deceptive both orientations).
+- **L19** (paper's Mistral depth): mostly positional — main 58/42% honest
+  original, 82–88% deceptive mirrored. Notably, lasttok at L19 *loses* the
+  genuine TH effect that full-mode L19 had (TH ~100% deceptive both
+  orientations here vs ~95% honest for full-mode).
+- **L22**: OLMo's damage band, and a third damage flavor — moralizing
+  refusal ("honesty and integrity are paramount", 60–94% refusals) alongside
+  Gemma's deflection and Mistral's evasion/scramble.
+
+Net for OLMo: lasttok-L16 gives a real but partial position-robust effect on
+main; full-mode-L19 gives a real TH effect but positional main. No OLMo
+recipe found so far matches Mistral-L16 / Gemma-L14 quality. Gap-peak rule
+scores a partial hit (predicted L13–L17; L16 is the best layer, L13 is not).
+
+## Muse-Glimmer-30B (Meta, Aug 2026): eval-harness lesson before any training
+
+First eval attempt produced 100%-deceptive-original / 100%-honest-mirrored
+baselines across all scenarios — too clean to be behavior, and it wasn't:
+Muse speaks the ATEM agent protocol, and with a bare `<|start|>assistant`
+generation prompt it opens a `to=self` reasoning channel (default "Reasoning
+strength: high") and restates the scenario until the token budget dies. The
+classifier then reads the echo, i.e. pure first-room labels. Fix:
+`--force-user-channel` appends ` to=user<|message|>` so the model answers
+directly (matches how its own template renders final-answer turns; also the
+closest analog to the other models' eval). Lasttok sweep re-running as job
+13293180. Moral: on agentic-era models, a deception eval that doesn't pin
+the output channel measures the scaffold, not the model.
+
+Muse layer-gap diagnostic: rel_last peaks at the *end* of the stack (L51,
+L50, L49 of 52) — unlike every mid-stack peak seen so far; possibly an
+unembedding-adjacent artifact analogous to Mistral's L2 spike. Mid-stack
+sweep (L13–L31) proceeds regardless; if it comes up empty, late layers are
+the next place to look.

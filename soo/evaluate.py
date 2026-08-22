@@ -83,6 +83,13 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=Path("results/eval"))
     parser.add_argument("--tag", default="baseline", help="label for output filenames")
     parser.add_argument("--quant-4bit", action="store_true", help="load base model in 4-bit (paper setup)")
+    parser.add_argument(
+        "--force-user-channel",
+        action="store_true",
+        help="append ' to=user<|message|>' to the generation prompt (ATEM-protocol "
+        "models like Muse Glimmer otherwise open a to=self reasoning channel and "
+        "restate the scenario instead of answering)",
+    )
     args = parser.parse_args()
 
     device = pick_device()
@@ -121,9 +128,17 @@ def main() -> None:
         for example in tqdm(examples, desc=scenario):
             prompt = build_prompt(example, SUFFIXES[args.suffix], args.honesty_prompt)
             messages = [{"role": "user", "content": prompt}]
-            enc = tokenizer.apply_chat_template(
-                messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
-            ).to(device)
+            if args.force_user_channel:
+                text = tokenizer.apply_chat_template(
+                    messages, add_generation_prompt=True, tokenize=False
+                )
+                enc = tokenizer(
+                    text + " to=user<|message|>", return_tensors="pt", add_special_tokens=False
+                ).to(device)
+            else:
+                enc = tokenizer.apply_chat_template(
+                    messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+                ).to(device)
             with torch.no_grad():
                 output = model.generate(
                     **enc,

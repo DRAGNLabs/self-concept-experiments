@@ -40,12 +40,12 @@ SCENS="main treasure_hunt perspectives"
 # prospective band predictor. Sweep 52 layers at ~25/30/40/50/60% depth.
 
 echo "=== layer-gap diagnostic (Muse Glimmer) ==="
-python scripts/layer_gap.py "$MODEL" results/layer_gap_muse30b.json
+[ -f results/layer_gap_muse30b.json ] || python scripts/layer_gap.py "$MODEL" results/layer_gap_muse30b.json
 
 echo "=== baseline evals, both orientations ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m soo.evaluate --force-user-channel --model "$MODEL" \
     --scenarios $SCENS --n 50 --tag baseline_muse30b
-python -m soo.evaluate --model "$MODEL" --data data/eval_mirrored \
+python -m soo.evaluate --force-user-channel --model "$MODEL" --data data/eval_mirrored \
     --scenarios $SCENS --n 50 --tag baseline_muse30b_mir
 
 for L in 13 16 21 26 31; do
@@ -53,9 +53,9 @@ for L in 13 16 21 26 31; do
         echo "=== Muse lasttok L${L} seed ${seed} ==="
         python -m soo.train --config configs/muse-glimmer-30b.yaml --layer ${L} --seeds ${seed}
         adapter="results/checkpoints/muse-glimmer-30b-L${L}/seed${seed}"
-        python -m soo.evaluate --model "$MODEL" --adapter "$adapter" \
+        python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
             --scenarios $SCENS --n 50 --tag "soo_muse30b_L${L}_seed${seed}"
-        python -m soo.evaluate --model "$MODEL" --adapter "$adapter" \
+        python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
             --data data/eval_mirrored --scenarios $SCENS --n 50 \
             --tag "soo_muse30b_L${L}_seed${seed}_mir"
     done
