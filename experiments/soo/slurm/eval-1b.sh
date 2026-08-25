@@ -9,9 +9,9 @@
 #SBATCH --exclude=dw-2-4
 #SBATCH --mem-per-cpu=8G
 #SBATCH --output=slurm-logs/%x-%j.out
-#SBATCH --chdir=/home/jansen05/self-concept-experiments
+#SBATCH --chdir=/home/kobyjl/experiments/self-concept-experiments/experiments/soo
 
-mamba activate ./.env
+mamba activate ../../.env
 
 # Compute nodes have no internet; model must be pre-downloaded to ~/.cache/huggingface
 export HF_HUB_OFFLINE=1

@@ -18,7 +18,9 @@ import numpy as np
 import torch
 from safetensors import safe_open
 
-ROOT = Path(__file__).resolve().parent.parent
+from selfconcept.common.paths import experiment_dir
+
+ROOT = experiment_dir("soo")
 HUB = Path.home() / ".cache/huggingface/hub"
 
 MODELS = {

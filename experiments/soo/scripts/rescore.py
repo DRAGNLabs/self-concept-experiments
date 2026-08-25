@@ -11,11 +11,11 @@ Usage: python scripts/rescore.py [--dry-run]
 
 import argparse
 import json
-from pathlib import Path
 
+from selfconcept.common.paths import experiment_dir
 from selfconcept.soo.evaluate import classify
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = experiment_dir("soo")
 
 
 def main() -> None:

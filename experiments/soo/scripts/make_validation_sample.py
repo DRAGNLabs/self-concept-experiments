@@ -19,9 +19,10 @@ import argparse
 import json
 import random
 import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from selfconcept.common.paths import experiment_dir
+
+ROOT = experiment_dir("soo")
 
 SOURCE_FILES = [
     "baseline_mistral7b_n250_main_i_would.jsonl",

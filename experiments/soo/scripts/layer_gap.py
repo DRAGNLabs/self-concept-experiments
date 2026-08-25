@@ -19,6 +19,7 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
+from selfconcept.common.paths import experiment_dir
 from selfconcept.soo.activations import get_decoder_layers
 from selfconcept.soo.loading import load_causal_lm
 from selfconcept.soo.train import chat_text, encode_batch
@@ -34,7 +35,7 @@ tokenizer.padding_side = "right"
 model = load_causal_lm(model_id, dtype=dtype).to(device)
 model.eval()
 
-pairs = [json.loads(l) for l in Path("data/train_soo_pairs.jsonl").open()]
+pairs = [json.loads(l) for l in (experiment_dir("soo") / "data/train_soo_pairs.jsonl").open()]
 max_len = max(
     len(tokenizer(chat_text(tokenizer, p), add_special_tokens=False)["input_ids"])
     for pair in pairs
