@@ -1,0 +1,25 @@
+{
+  "config": {
+    "model": "google/gemma-2-27b-it",
+    "layer": 34,
+    "lora_r": 4,
+    "lora_alpha": 8,
+    "lora_dropout": 0.1,
+    "lr": 0.0009,
+    "epochs": 8,
+    "batch_size": 4,
+    "soo_mode": "last_token",
+    "train_data": "data/train_soo_pairs.jsonl"
+  },
+  "seed": 1,
+  "epoch_losses": [
+    0.006100153923034668,
+    0.0003707647323608398,
+    0.00016132593154907226,
+    0.00016624927520751952,
+    9.601116180419922e-05,
+    4.876255989074707e-05,
+    4.0972232818603514e-05,
+    2.885758876800537e-05
+  ]
+}

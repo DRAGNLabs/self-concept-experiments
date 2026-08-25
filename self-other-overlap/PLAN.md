@@ -134,3 +134,4 @@ environment). We are recreating the LLM experiments (section 3.1) only.
 3. Perspectives accuracy stays near baseline (self/other distinction not collapsed).
 4. Capability metrics within noise of baseline.
 5. Latent SOO MSE drops in the targeted context.
+
