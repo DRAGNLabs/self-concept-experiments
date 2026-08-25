@@ -2,7 +2,7 @@
 on the 52 probe pairs (paper section 3.1.1 / A.1.3, Table 4).
 
 Usage:
-    python -m soo.latent_soo --model allenai/OLMo-2-0425-1B-Instruct \
+    python -m selfconcept.soo.latent_soo --model allenai/OLMo-2-0425-1B-Instruct \
         [--adapter results/checkpoints/olmo2-1b/seed0] [--tag baseline_1b]
 
 Captures the attention (o_proj) and MLP outputs of every decoder layer for
@@ -22,9 +22,8 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from soo.loading import load_causal_lm
-
 from .activations import get_decoder_layers
+from .loading import load_causal_lm
 from .evaluate import pick_device
 
 

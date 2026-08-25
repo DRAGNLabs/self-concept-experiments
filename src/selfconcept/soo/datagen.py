@@ -2,7 +2,7 @@
 and latent-SOO probe pairs.
 
 Usage:
-    python -m soo.datagen [--out data] [--n-eval 250] [--seed 42]
+    python -m selfconcept.soo.datagen [--out data] [--n-eval 250] [--seed 42]
 
 Prompts are stored without answer-format suffix or chat template; evaluation
 code appends those per model config (see scenarios.SUFFIX_*).

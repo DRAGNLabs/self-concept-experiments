@@ -42,17 +42,17 @@ SCENS="main treasure_hunt perspectives"
 # least as good as L14. Mirrored orientation included.
 
 echo "=== Gemma baseline, mirrored orientation ==="
-python -m soo.evaluate --model "$MODEL" --data data/eval_mirrored \
+python -m selfconcept.soo.evaluate --model "$MODEL" --data data/eval_mirrored \
     --scenarios $SCENS --n 50 --suffix room_only --tag baseline_gemma27b_mir
 
 for seed in 0 1; do
     echo "=== Gemma L16 seed ${seed} ==="
-    python -m soo.train --config configs/gemma2-27b.yaml --layer 16 --seeds ${seed}
+    python -m selfconcept.soo.train --config configs/gemma2-27b.yaml --layer 16 --seeds ${seed}
     adapter="results/checkpoints/gemma2-27b-L16/seed${seed}"
-    python -m soo.evaluate --model "$MODEL" --adapter "$adapter" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" --adapter "$adapter" \
         --scenarios $SCENS --n 50 --suffix room_only \
         --tag "soo_gemma27b_L16_seed${seed}"
-    python -m soo.evaluate --model "$MODEL" --adapter "$adapter" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" --adapter "$adapter" \
         --data data/eval_mirrored --scenarios $SCENS --n 50 --suffix room_only \
         --tag "soo_gemma27b_L16_seed${seed}_mir"
 done

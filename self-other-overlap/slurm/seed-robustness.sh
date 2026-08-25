@@ -38,14 +38,14 @@ SCENS="main treasure_hunt perspectives"
 # seed each to firm up "Mistral is seed-fragile, OLMo is robust".
 
 echo "=== Mistral lasttok seed 2 ==="
-python -m soo.train --config configs/mistral-7b-lasttok.yaml --seeds 2
-python -m soo.evaluate --model mistralai/Mistral-7B-Instruct-v0.2 \
+python -m selfconcept.soo.train --config configs/mistral-7b-lasttok.yaml --seeds 2
+python -m selfconcept.soo.evaluate --model mistralai/Mistral-7B-Instruct-v0.2 \
     --adapter results/checkpoints/mistral-7b-lasttok/seed2 \
     --scenarios $SCENS --n 50 --tag soo_mistral7b_lasttok_seed2
 
 echo "=== OLMo-2-7B seed 5 ==="
-python -m soo.train --config configs/olmo2-7b.yaml --seeds 5
-python -m soo.evaluate --model allenai/OLMo-2-1124-7B-Instruct \
+python -m selfconcept.soo.train --config configs/olmo2-7b.yaml --seeds 5
+python -m selfconcept.soo.evaluate --model allenai/OLMo-2-1124-7B-Instruct \
     --adapter results/checkpoints/olmo2-7b/seed5 \
     --scenarios $SCENS --n 50 --tag soo_olmo7b_seed5
 

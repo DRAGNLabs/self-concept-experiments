@@ -34,23 +34,23 @@ set -e
 MODEL=allenai/OLMo-2-1124-7B-Instruct
 
 echo "=== 1/4 baseline eval ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios main treasure_hunt --n 50 --tag baseline_olmo7b
 
 echo "=== 2/4 SOO training (5 seeds) ==="
-python -m soo.train --config configs/olmo2-7b.yaml
+python -m selfconcept.soo.train --config configs/olmo2-7b.yaml
 
 echo "=== 3/4 post-SOO eval ==="
 for seed in 0 1 2 3 4; do
-    python -m soo.evaluate --model "$MODEL" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" \
         --adapter "results/checkpoints/olmo2-7b/seed${seed}" \
         --scenarios main treasure_hunt --n 50 --tag "soo_olmo7b_seed${seed}"
 done
 
 echo "=== 4/4 latent probes ==="
-python -m soo.latent_soo --model "$MODEL" --tag baseline_olmo7b
+python -m selfconcept.soo.latent_soo --model "$MODEL" --tag baseline_olmo7b
 for seed in 0 1 2 3 4; do
-    python -m soo.latent_soo --model "$MODEL" \
+    python -m selfconcept.soo.latent_soo --model "$MODEL" \
         --adapter "results/checkpoints/olmo2-7b/seed${seed}" \
         --tag "soo_olmo7b_seed${seed}"
 done

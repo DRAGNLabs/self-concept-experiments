@@ -43,11 +43,11 @@ SCENS="main treasure_hunt perspectives"
 run_unit () {  # variant config layer seed
     local variant=$1 cfg=$2 L=$3 seed=$4
     echo "=== Muse ${variant} L${L} seed ${seed} ==="
-    python -m soo.train --config "configs/${cfg}.yaml" --layer ${L} --seeds ${seed}
+    python -m selfconcept.soo.train --config "configs/${cfg}.yaml" --layer ${L} --seeds ${seed}
     local adapter="results/checkpoints/${cfg}-L${L}/seed${seed}"
-    python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
+    python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
         --scenarios $SCENS --n 50 --tag "soo_muse30b_${variant}_L${L}_seed${seed}"
-    python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
+    python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
         --data data/eval_mirrored --scenarios $SCENS --n 50 \
         --tag "soo_muse30b_${variant}_L${L}_seed${seed}_mir"
 }

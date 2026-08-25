@@ -19,7 +19,7 @@ conda activate soo
 Committed under `data/`, regenerable with:
 
 ```bash
-python -m soo.datagen
+python -m selfconcept.soo.datagen
 ```
 
 - `data/train_soo_pairs.jsonl` — 78 self/other prompt pairs (3 templates x 26 train items)

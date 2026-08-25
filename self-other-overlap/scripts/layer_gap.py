@@ -19,10 +19,9 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from soo.activations import get_decoder_layers
-from soo.loading import load_causal_lm
-from soo.train import chat_text, encode_batch
+from selfconcept.soo.activations import get_decoder_layers
+from selfconcept.soo.loading import load_causal_lm
+from selfconcept.soo.train import chat_text, encode_batch
 
 model_id, out_json = sys.argv[1], sys.argv[2]
 device = "cuda" if torch.cuda.is_available() else "cpu"

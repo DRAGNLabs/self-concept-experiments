@@ -38,15 +38,15 @@ SCENS="main treasure_hunt perspectives"
 # and evaluate everything at the paper's n=250 (prior evals were n=50).
 
 echo "=== train L16 seeds 2 3 4 ==="
-python -m soo.train --config configs/mistral-7b-lasttok.yaml --layer 16 --seeds 2 3 4
+python -m selfconcept.soo.train --config configs/mistral-7b-lasttok.yaml --layer 16 --seeds 2 3 4
 
 echo "=== baseline n=250 ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios $SCENS --n 250 --tag baseline_mistral7b_n250
 
 for seed in 0 1 2 3 4; do
     echo "=== eval L16 seed ${seed} n=250 ==="
-    python -m soo.evaluate --model "$MODEL" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" \
         --adapter "results/checkpoints/mistral-7b-lasttok-L16/seed${seed}" \
         --scenarios $SCENS --n 250 --tag "soo_mistral7b_lasttok_L16_seed${seed}_n250"
 done

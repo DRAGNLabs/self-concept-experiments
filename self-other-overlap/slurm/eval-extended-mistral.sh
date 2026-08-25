@@ -35,16 +35,16 @@ MODEL=mistralai/Mistral-7B-Instruct-v0.2
 SCENARIOS="perspectives escape_room name objective action name_objective name_action objective_action name_objective_action"
 
 echo "=== honesty-prompt control (baseline, main) ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios main --n 50 --honesty-prompt --tag baseline_mistral7b
 
 echo "=== baseline: generalization + perspectives ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios $SCENARIOS --n 50 --tag baseline_mistral7b
 
 for seed in 0 1 2 3 4; do
     echo "=== seed ${seed}: generalization + perspectives ==="
-    python -m soo.evaluate --model "$MODEL" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" \
         --adapter "results/checkpoints/mistral-7b/seed${seed}" \
         --scenarios $SCENARIOS --n 50 --tag "soo_mistral7b_seed${seed}"
 done

@@ -45,12 +45,12 @@ SCENS="main treasure_hunt perspectives"
 for L in 10 13 16 19 22; do
     for seed in 0 1; do
         echo "=== OLMo lasttok L${L} seed ${seed} ==="
-        python -m soo.train --config configs/olmo2-7b-lasttok.yaml --layer ${L} --seeds ${seed}
+        python -m selfconcept.soo.train --config configs/olmo2-7b-lasttok.yaml --layer ${L} --seeds ${seed}
         adapter="results/checkpoints/olmo2-7b-lasttok-L${L}/seed${seed}"
-        python -m soo.evaluate --model "$MODEL" --adapter "$adapter" \
+        python -m selfconcept.soo.evaluate --model "$MODEL" --adapter "$adapter" \
             --scenarios $SCENS --n 50 \
             --tag "soo_olmo7b_lasttok_L${L}_seed${seed}"
-        python -m soo.evaluate --model "$MODEL" --adapter "$adapter" \
+        python -m selfconcept.soo.evaluate --model "$MODEL" --adapter "$adapter" \
             --data data/eval_mirrored --scenarios $SCENS --n 50 \
             --tag "soo_olmo7b_lasttok_L${L}_seed${seed}_mir"
     done

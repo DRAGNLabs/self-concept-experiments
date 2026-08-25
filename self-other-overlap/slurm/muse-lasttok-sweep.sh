@@ -43,19 +43,19 @@ echo "=== layer-gap diagnostic (Muse Glimmer) ==="
 [ -f results/layer_gap_muse30b.json ] || python scripts/layer_gap.py "$MODEL" results/layer_gap_muse30b.json
 
 echo "=== baseline evals, both orientations ==="
-python -m soo.evaluate --force-user-channel --model "$MODEL" \
+python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" \
     --scenarios $SCENS --n 50 --tag baseline_muse30b
-python -m soo.evaluate --force-user-channel --model "$MODEL" --data data/eval_mirrored \
+python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --data data/eval_mirrored \
     --scenarios $SCENS --n 50 --tag baseline_muse30b_mir
 
 for L in 13 16 21 26 31; do
     for seed in 0 1; do
         echo "=== Muse lasttok L${L} seed ${seed} ==="
-        python -m soo.train --config configs/muse-glimmer-30b.yaml --layer ${L} --seeds ${seed}
+        python -m selfconcept.soo.train --config configs/muse-glimmer-30b.yaml --layer ${L} --seeds ${seed}
         adapter="results/checkpoints/muse-glimmer-30b-L${L}/seed${seed}"
-        python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
+        python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
             --scenarios $SCENS --n 50 --tag "soo_muse30b_L${L}_seed${seed}"
-        python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
+        python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
             --data data/eval_mirrored --scenarios $SCENS --n 50 \
             --tag "soo_muse30b_L${L}_seed${seed}_mir"
     done

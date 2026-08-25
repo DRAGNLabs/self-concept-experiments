@@ -32,4 +32,4 @@ fi
 export CUDA_VISIBLE_DEVICES=$pick
 echo "Using GPU $CUDA_VISIBLE_DEVICES"
 
-python -m soo.train --config configs/olmo2-1b.yaml --seeds 99 --epochs 2 --max-pairs 8 --out /tmp/smoke
+python -m selfconcept.soo.train --config configs/olmo2-1b.yaml --seeds 99 --epochs 2 --max-pairs 8 --out /tmp/smoke

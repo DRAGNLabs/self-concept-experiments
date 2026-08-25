@@ -42,9 +42,9 @@ SCENS="main treasure_hunt perspectives"
 for L in 2 16 24 30; do
     for seed in 0 1; do
         echo "=== Mistral lasttok L${L} seed ${seed} ==="
-        python -m soo.train --config configs/mistral-7b-lasttok.yaml \
+        python -m selfconcept.soo.train --config configs/mistral-7b-lasttok.yaml \
             --layer ${L} --seeds ${seed}
-        python -m soo.evaluate --model mistralai/Mistral-7B-Instruct-v0.2 \
+        python -m selfconcept.soo.evaluate --model mistralai/Mistral-7B-Instruct-v0.2 \
             --adapter "results/checkpoints/mistral-7b-lasttok-L${L}/seed${seed}" \
             --scenarios $SCENS --n 50 --tag "soo_mistral7b_lasttok_L${L}_seed${seed}"
     done

@@ -47,8 +47,8 @@ python scripts/layer_gap.py "$MODEL" results/layer_gap_gemma27b.json
 for L in 11 14 23 28 34; do
     for seed in 0 1; do
         echo "=== Gemma L${L} seed ${seed} ==="
-        python -m soo.train --config configs/gemma2-27b.yaml --layer ${L} --seeds ${seed}
-        python -m soo.evaluate --model "$MODEL" \
+        python -m selfconcept.soo.train --config configs/gemma2-27b.yaml --layer ${L} --seeds ${seed}
+        python -m selfconcept.soo.evaluate --model "$MODEL" \
             --adapter "results/checkpoints/gemma2-27b-L${L}/seed${seed}" \
             --scenarios $SCENS --n 50 --suffix room_only \
             --tag "soo_gemma27b_L${L}_seed${seed}"

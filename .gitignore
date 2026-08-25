@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 .env/
+*.egg-info/
 slurm-logs/
 results/checkpoints/
 results/generations/

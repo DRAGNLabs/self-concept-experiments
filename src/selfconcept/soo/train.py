@@ -2,7 +2,7 @@
 other-referencing activations at one self_attn.o_proj output.
 
 Usage:
-    python -m soo.train --config configs/olmo2-1b.yaml [--seeds 0 1 2 3 4]
+    python -m selfconcept.soo.train --config configs/olmo2-1b.yaml [--seeds 0 1 2 3 4]
 
 Per the paper (section 3.1.1): two forward passes per pair (self prompt, other
 prompt), SOO loss = MSE(A_self, A_other) at the configured layer, LoRA adapters
@@ -27,9 +27,8 @@ from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from soo.loading import load_causal_lm
-
 from .activations import capture_o_proj
+from .loading import load_causal_lm
 from .evaluate import pick_device
 
 

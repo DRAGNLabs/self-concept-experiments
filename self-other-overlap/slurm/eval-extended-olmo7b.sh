@@ -35,16 +35,16 @@ MODEL=allenai/OLMo-2-1124-7B-Instruct
 SCENARIOS="perspectives escape_room name objective action name_objective name_action objective_action name_objective_action"
 
 echo "=== honesty-prompt control (baseline, main) ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios main treasure_hunt --n 50 --honesty-prompt --tag baseline_olmo7b
 
 echo "=== baseline: generalization + perspectives ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios $SCENARIOS --n 50 --tag baseline_olmo7b
 
 for seed in 0 1 2 3 4; do
     echo "=== seed ${seed}: generalization + perspectives ==="
-    python -m soo.evaluate --model "$MODEL" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" \
         --adapter "results/checkpoints/olmo2-7b/seed${seed}" \
         --scenarios $SCENARIOS --n 50 --tag "soo_olmo7b_seed${seed}"
 done

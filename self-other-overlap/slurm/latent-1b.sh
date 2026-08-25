@@ -30,10 +30,10 @@ fi
 export CUDA_VISIBLE_DEVICES=$pick
 echo "Using GPU $CUDA_VISIBLE_DEVICES"
 
-python -m soo.latent_soo --model allenai/OLMo-2-0425-1B-Instruct --tag baseline_1b
+python -m selfconcept.soo.latent_soo --model allenai/OLMo-2-0425-1B-Instruct --tag baseline_1b
 
 for seed in 0 1 2 3 4; do
-    python -m soo.latent_soo \
+    python -m selfconcept.soo.latent_soo \
         --model allenai/OLMo-2-0425-1B-Instruct \
         --adapter "results/checkpoints/olmo2-1b/seed${seed}" \
         --tag "soo_1b_seed${seed}"

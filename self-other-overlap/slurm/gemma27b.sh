@@ -39,13 +39,13 @@ SCENS="main treasure_hunt perspectives"
 # "Only respond with the room name, no other text."
 
 echo "=== baseline eval ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios $SCENS --n 50 --suffix room_only --tag baseline_gemma27b
 
 for seed in 0 1; do
     echo "=== Gemma-2-27b seed ${seed} ==="
-    python -m soo.train --config configs/gemma2-27b.yaml --seeds ${seed}
-    python -m soo.evaluate --model "$MODEL" \
+    python -m selfconcept.soo.train --config configs/gemma2-27b.yaml --seeds ${seed}
+    python -m selfconcept.soo.evaluate --model "$MODEL" \
         --adapter "results/checkpoints/gemma2-27b/seed${seed}" \
         --scenarios $SCENS --n 50 --suffix room_only --tag "soo_gemma27b_seed${seed}"
 done

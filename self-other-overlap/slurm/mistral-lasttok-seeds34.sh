@@ -38,8 +38,8 @@ SCENS="main treasure_hunt perspectives"
 # what fraction of seeds actually reproduce the paper.
 for seed in 3 4; do
     echo "=== Mistral lasttok seed ${seed} ==="
-    python -m soo.train --config configs/mistral-7b-lasttok.yaml --seeds ${seed}
-    python -m soo.evaluate --model mistralai/Mistral-7B-Instruct-v0.2 \
+    python -m selfconcept.soo.train --config configs/mistral-7b-lasttok.yaml --seeds ${seed}
+    python -m selfconcept.soo.evaluate --model mistralai/Mistral-7B-Instruct-v0.2 \
         --adapter "results/checkpoints/mistral-7b-lasttok/seed${seed}" \
         --scenarios $SCENS --n 50 --tag "soo_mistral7b_lasttok_seed${seed}"
 done

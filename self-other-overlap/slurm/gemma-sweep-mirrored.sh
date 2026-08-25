@@ -43,7 +43,7 @@ SCENS="main treasure_hunt perspectives"
 for L in 14 11; do
     for seed in 0 1; do
         echo "=== Gemma L${L} seed ${seed} mirrored ==="
-        python -m soo.evaluate --model "$MODEL" \
+        python -m selfconcept.soo.evaluate --model "$MODEL" \
             --adapter "results/checkpoints/gemma2-27b-L${L}/seed${seed}" \
             --data data/eval_mirrored --scenarios $SCENS --n 50 --suffix room_only \
             --tag "soo_gemma27b_L${L}_seed${seed}_mir"

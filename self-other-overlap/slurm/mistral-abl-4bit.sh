@@ -35,12 +35,12 @@ MODEL=mistralai/Mistral-7B-Instruct-v0.2
 SCENS="main treasure_hunt perspectives"
 
 echo "=== ablation B: 4-bit QLoRA (paper-exact), seeds 0 1 ==="
-python -m soo.train --config configs/mistral-7b-4bit.yaml --seeds 0 1
+python -m selfconcept.soo.train --config configs/mistral-7b-4bit.yaml --seeds 0 1
 echo "--- 4-bit baseline eval (no adapter) for reference ---"
-python -m soo.evaluate --model "$MODEL" --quant-4bit \
+python -m selfconcept.soo.evaluate --model "$MODEL" --quant-4bit \
     --scenarios $SCENS --n 50 --tag baseline_mistral7b_4bit
 for seed in 0 1; do
-    python -m soo.evaluate --model "$MODEL" --quant-4bit \
+    python -m selfconcept.soo.evaluate --model "$MODEL" --quant-4bit \
         --adapter "results/checkpoints/mistral-7b-4bit/seed${seed}" \
         --scenarios $SCENS --n 50 --tag "soo_mistral7b_4bit_seed${seed}"
 done

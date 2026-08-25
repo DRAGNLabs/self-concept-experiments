@@ -11,13 +11,11 @@ Usage: python scripts/rescore.py [--dry-run]
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+from selfconcept.soo.evaluate import classify
 
-from soo.evaluate import classify  # noqa: E402
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def main() -> None:

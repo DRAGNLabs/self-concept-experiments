@@ -40,9 +40,9 @@ SCENS="main treasure_hunt perspectives"
 # degradation between ep1 (mostly intact) and ep15 (incoherent) sets in.
 for name in lasttok ep2 ep4; do
     echo "=== ablation ${name}: train seeds 0 1 ==="
-    python -m soo.train --config "configs/mistral-7b-${name}.yaml" --seeds 0 1
+    python -m selfconcept.soo.train --config "configs/mistral-7b-${name}.yaml" --seeds 0 1
     for seed in 0 1; do
-        python -m soo.evaluate --model "$MODEL" \
+        python -m selfconcept.soo.evaluate --model "$MODEL" \
             --adapter "results/checkpoints/mistral-7b-${name}/seed${seed}" \
             --scenarios $SCENS --n 50 --tag "soo_mistral7b_${name}_seed${seed}"
     done

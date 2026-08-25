@@ -32,7 +32,7 @@ echo "Using GPU $CUDA_VISIBLE_DEVICES"
 
 # n=50 matches the pre-SOO baseline eval for a like-for-like comparison
 for seed in 0 1 2 3 4; do
-    python -m soo.evaluate \
+    python -m selfconcept.soo.evaluate \
         --model allenai/OLMo-2-0425-1B-Instruct \
         --adapter "results/checkpoints/olmo2-1b/seed${seed}" \
         --scenarios main treasure_hunt \

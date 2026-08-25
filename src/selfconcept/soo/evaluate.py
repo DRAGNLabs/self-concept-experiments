@@ -1,7 +1,7 @@
 """Evaluate deception rates on the generated scenario datasets.
 
 Usage:
-    python -m soo.evaluate --model allenai/OLMo-2-0425-1B-Instruct \
+    python -m selfconcept.soo.evaluate --model allenai/OLMo-2-0425-1B-Instruct \
         --scenarios main --n 50 --suffix i_would [--honesty-prompt] \
         [--adapter results/checkpoints/...] [--out results/baseline_1b]
 
@@ -20,8 +20,7 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from soo.loading import load_causal_lm
-
+from .loading import load_causal_lm
 from .scenarios import HONESTY_PROMPT_PREFIX, SUFFIX_I_WOULD, SUFFIX_ROOM_ONLY
 
 SUFFIXES = {"room_only": SUFFIX_ROOM_ONLY, "i_would": SUFFIX_I_WOULD, "none": None}

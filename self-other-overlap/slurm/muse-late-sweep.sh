@@ -42,11 +42,11 @@ SCENS="main treasure_hunt perspectives"
 for L in 36 41 46 49 51; do
     for seed in 0 1; do
         echo "=== Muse lasttok L${L} seed ${seed} ==="
-        python -m soo.train --config configs/muse-glimmer-30b.yaml --layer ${L} --seeds ${seed}
+        python -m selfconcept.soo.train --config configs/muse-glimmer-30b.yaml --layer ${L} --seeds ${seed}
         adapter="results/checkpoints/muse-glimmer-30b-L${L}/seed${seed}"
-        python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
+        python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
             --scenarios $SCENS --n 50 --tag "soo_muse30b_L${L}_seed${seed}"
-        python -m soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
+        python -m selfconcept.soo.evaluate --force-user-channel --model "$MODEL" --adapter "$adapter" \
             --data data/eval_mirrored --scenarios $SCENS --n 50 \
             --tag "soo_muse30b_L${L}_seed${seed}_mir"
     done

@@ -34,23 +34,23 @@ set -e
 MODEL=mistralai/Mistral-7B-Instruct-v0.2
 
 echo "=== 1/4 baseline eval ==="
-python -m soo.evaluate --model "$MODEL" \
+python -m selfconcept.soo.evaluate --model "$MODEL" \
     --scenarios main treasure_hunt --n 50 --tag baseline_mistral7b
 
 echo "=== 2/4 SOO training (5 seeds) ==="
-python -m soo.train --config configs/mistral-7b.yaml
+python -m selfconcept.soo.train --config configs/mistral-7b.yaml
 
 echo "=== 3/4 post-SOO eval ==="
 for seed in 0 1 2 3 4; do
-    python -m soo.evaluate --model "$MODEL" \
+    python -m selfconcept.soo.evaluate --model "$MODEL" \
         --adapter "results/checkpoints/mistral-7b/seed${seed}" \
         --scenarios main treasure_hunt --n 50 --tag "soo_mistral7b_seed${seed}"
 done
 
 echo "=== 4/4 latent probes ==="
-python -m soo.latent_soo --model "$MODEL" --tag baseline_mistral7b
+python -m selfconcept.soo.latent_soo --model "$MODEL" --tag baseline_mistral7b
 for seed in 0 1 2 3 4; do
-    python -m soo.latent_soo --model "$MODEL" \
+    python -m selfconcept.soo.latent_soo --model "$MODEL" \
         --adapter "results/checkpoints/mistral-7b/seed${seed}" \
         --tag "soo_mistral7b_seed${seed}"
 done
