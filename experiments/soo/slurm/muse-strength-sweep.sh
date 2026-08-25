@@ -9,7 +9,7 @@
 #SBATCH --exclude=dw-2-4
 #SBATCH --mem-per-cpu=24G
 #SBATCH --output=slurm-logs/%x-%j.out
-#SBATCH --chdir=/home/kobyjl/experiments/self-concept-experiments/experiments/soo
+#SBATCH --chdir=experiments/soo  # relative to the submission dir -- run sbatch from the repo root
 
 mamba activate ../../.env
 
