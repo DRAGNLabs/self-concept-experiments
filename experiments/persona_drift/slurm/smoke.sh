@@ -14,7 +14,5 @@ mamba activate ../../.env
 
 nvidia-smi
 
-python -m selfconcept.transcript_generation.generate_delusion_seed \
-    --target-model Qwen/Qwen2.5-0.5B-Instruct --auditor-model Qwen/Qwen2.5-0.5B-Instruct \
-    --turns 4 --gpu-memory-utilization 0.45 --max-model-len 4096 \
-    --output results/smoke.json
+python -m selfconcept.transcript_generation.generate_seed \
+    --config configs/smoke.yaml
