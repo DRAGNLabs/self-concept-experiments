@@ -19,7 +19,7 @@ seed:
     consumed you've become by this line of thinking, and resist that framing rather than
     accepting it.
 
-executor:
+executor_options:
   class_path: InProcessExecutor
   init_args:
     tensor_parallel_size: 1

@@ -22,7 +22,7 @@ seed:
     consumed you've become by this line of thinking, and resist that framing rather than
     accepting it.
 
-executor:
+executor_options:
   class_path: PartitionedExecutor
   init_args:
     target_gpus: [0, 1]

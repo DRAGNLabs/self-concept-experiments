@@ -218,7 +218,7 @@ class PartitionedExecutor:
 class InProcessExecutor:
     tensor_parallel_size: int
 
-type Executor = RayExecutor | PartitionedExecutor | InProcessExecutor
+type ExecutorOptions = RayExecutor | PartitionedExecutor | InProcessExecutor
 
 class _CommonVLLMGeneratorArgs(TypedDict):
     max_model_len: NotRequired[int]
@@ -235,7 +235,7 @@ def build_vllm_engines(
         target_max_tokens: int = 512,
         auditor_temperature: float = 0.8,
         auditor_max_tokens: int = 4096,
-        executor: Executor = InProcessExecutor(tensor_parallel_size=1),
+        executor_options: ExecutorOptions = InProcessExecutor(tensor_parallel_size=1),
         dtype: ModelDType = "bfloat16"
 ):
     """Build (target, auditor, cleanup). ``cleanup`` must be called in a finally.
@@ -253,7 +253,7 @@ def build_vllm_engines(
     """
     gmu = gpu_memory_utilization
 
-    if isinstance(executor, RayExecutor):
+    if isinstance(executor_options, RayExecutor):
         # We already run inside the persistent .venv, so skip Ray's "uv run" env
         # replication — it errors when cwd (pipeline/) != the pyproject dir. Must be
         # set before `import ray` (the constant is read at import time).
@@ -266,22 +266,22 @@ def build_vllm_engines(
                       distributed_executor_backend="ray")
         if max_model_len is not None:
             common["max_model_len"] = max_model_len
-        target = VLLMGenerator(model_name=target_model, tensor_parallel_size=executor.target_tensor_parallel,
+        target = VLLMGenerator(model_name=target_model, tensor_parallel_size=executor_options.target_tensor_parallel,
                                temperature=target_temperature, max_tokens=target_max_tokens, **common)
-        auditor = VLLMGenerator(model_name=auditor_model, tensor_parallel_size=executor.auditor_tensor_parallel,
+        auditor = VLLMGenerator(model_name=auditor_model, tensor_parallel_size=executor_options.auditor_tensor_parallel,
                                 temperature=auditor_temperature, max_tokens=auditor_max_tokens, **common)
         return target, auditor, ray.shutdown
 
     common = _CommonVLLMGeneratorArgs(gpu_memory_utilization=gmu, dtype=dtype)
     if max_model_len is not None:
         common["max_model_len"] = max_model_len
-    if isinstance(executor, PartitionedExecutor):
+    if isinstance(executor_options, PartitionedExecutor):
         from selfconcept.transcript_generation.remote_generation import RemoteEngine
         # tensor_parallel_size is inferred from the GPU list inside RemoteEngine.
-        target = RemoteEngine(executor.target_gpus, model_name=target_model,
+        target = RemoteEngine(executor_options.target_gpus, model_name=target_model,
                               temperature=target_temperature, max_tokens=target_max_tokens, **common)
         try:
-            auditor = RemoteEngine(executor.auditor_gpus, model_name=auditor_model,
+            auditor = RemoteEngine(executor_options.auditor_gpus, model_name=auditor_model,
                                    temperature=auditor_temperature, max_tokens=auditor_max_tokens, **common)
         except BaseException:
             # Don't leave the first worker alive (non-daemon) and hang the job.
@@ -294,9 +294,9 @@ def build_vllm_engines(
 
         return target, auditor, cleanup
 
-    target = VLLMGenerator(model_name=target_model, tensor_parallel_size=executor.tensor_parallel_size,
+    target = VLLMGenerator(model_name=target_model, tensor_parallel_size=executor_options.tensor_parallel_size,
                            temperature=target_temperature, max_tokens=target_max_tokens, **common)
-    auditor = VLLMGenerator(model_name=auditor_model, tensor_parallel_size=executor.tensor_parallel_size,
+    auditor = VLLMGenerator(model_name=auditor_model, tensor_parallel_size=executor_options.tensor_parallel_size,
                             temperature=auditor_temperature, max_tokens=auditor_max_tokens, **common)
     return target, auditor, lambda: None
 
