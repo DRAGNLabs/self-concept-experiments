@@ -1,8 +1,9 @@
+from __future__ import annotations
 
 from dataclasses import dataclass
 import logging
 import os
-from typing import TYPE_CHECKING, Literal, NotRequired, Optional, TypedDict, Unpack
+from typing import TYPE_CHECKING, NotRequired, Optional, TypedDict, Unpack
 
 from selfconcept.common.conversation_types import Conversation
 from selfconcept.transcript_generation.generation import BatchEngine, format_conversation
@@ -297,4 +298,5 @@ def build_vllm_engines(
                            temperature=target_temperature, max_tokens=target_max_tokens, **common)
     auditor = VLLMGenerator(model_name=auditor_model, tensor_parallel_size=executor.tensor_parallel_size,
                             temperature=auditor_temperature, max_tokens=auditor_max_tokens, **common)
- 
+    return target, auditor, lambda: None
+
