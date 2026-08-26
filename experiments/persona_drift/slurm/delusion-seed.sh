@@ -12,8 +12,6 @@
 
 mamba activate ../../.env
 
-export HF_HUB_OFFLINE=1
-
 nvidia-smi
 
 python -m selfconcept.transcript_generation.generate_delusion_seed \
