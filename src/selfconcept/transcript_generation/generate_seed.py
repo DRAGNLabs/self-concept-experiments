@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, cast
 from selfconcept.transcript_generation.conversation import generate_conversations
 from selfconcept.transcript_generation.types import ConversationSeed
 from selfconcept.transcript_generation.vllm_generation import (
-    Executor,
+    ExecutorOptions,
     InProcessExecutor,
     build_vllm_engines,
 )
@@ -51,12 +51,12 @@ class RunConfig:
 def main(
     seed: ConversationSeed,
     run: RunConfig = RunConfig(),
-    executor: Executor = InProcessExecutor(tensor_parallel_size=1),
+    executor_options: ExecutorOptions = InProcessExecutor(tensor_parallel_size=1),
 ) -> None:
     """Generate and write one transcript for ``seed``."""
     gmu = run.gpu_memory_utilization
     if gmu is None:
-        gmu = 0.45 if isinstance(executor, InProcessExecutor) else 0.9
+        gmu = 0.45 if isinstance(executor_options, InProcessExecutor) else 0.9
 
     target, auditor, cleanup = build_vllm_engines(
         target_model=run.target_model,
@@ -67,7 +67,7 @@ def main(
         target_max_tokens=run.target_max_tokens,
         auditor_temperature=run.auditor_temperature,
         auditor_max_tokens=run.auditor_max_tokens,
-        executor=executor,
+        executor_options=executor_options,
         dtype=cast("ModelDType", run.dtype),
     )
 
