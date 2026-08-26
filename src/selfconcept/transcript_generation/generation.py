@@ -1,4 +1,5 @@
-
+# Derived from safety-research/assistant-axis (https://github.com/safety-research/assistant-axis),
+# MIT licensed. See the NOTICE file at the repository root for the full license text.
 from typing import Optional, Protocol, runtime_checkable
 
 from selfconcept.common.conversation_types import Conversation

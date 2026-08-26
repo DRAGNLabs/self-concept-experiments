@@ -1,3 +1,5 @@
+# Derived from safety-research/assistant-axis (https://github.com/safety-research/assistant-axis),
+# MIT licensed. See the NOTICE file at the repository root for the full license text.
 from __future__ import annotations
 
 from dataclasses import dataclass
