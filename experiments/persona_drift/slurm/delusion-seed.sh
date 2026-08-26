@@ -14,7 +14,5 @@ mamba activate ../../.env
 
 nvidia-smi
 
-python -m selfconcept.transcript_generation.generate_delusion_seed \
-    --target-model meta-llama/Llama-3.3-70B-Instruct --auditor-model Qwen/Qwen3-32B \
-    --executor partitioned --target-gpus 0,1 --auditor-gpus 2,3 \
-    --output results/delusion_seed.json
+python -m selfconcept.transcript_generation.generate_seed \
+    --config configs/delusion_seed.yaml
