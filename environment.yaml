@@ -9,6 +9,7 @@ dependencies:
   - pip
   - pip:
       - --extra-index-url https://download.pytorch.org/whl/cu126 # needed for compatibility with all supercomputer nodes
+      - git+https://github.com/Plyb/byutils.git
       - torch>=2.4
       - transformers>=4.48
       - vllm
