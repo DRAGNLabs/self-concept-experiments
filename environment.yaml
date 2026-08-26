@@ -1,3 +1,6 @@
+# Set up with ./setup_env.sh (repo root), not a bare `mamba env create` -- it also
+# patches a broken transitive dependency and installs activate.d hooks. See that
+# script for why.
 name: soo
 channels:
   - conda-forge
