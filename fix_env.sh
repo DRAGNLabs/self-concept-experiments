@@ -49,9 +49,29 @@ export LD_PRELOAD="$CONDA_PREFIX/lib/libstdc++.so.6"
 # Triton -- but Triton bundles its own self-contained compiler backend instead of
 # shelling out to an external nvcc, so it doesn't hit this.
 export VLLM_USE_FLASHINFER_SAMPLER=0
+
+# vllm 0.28's core C extension (vllm/_C_stable_libtorch.abi3.so) and its cutlass-dsl
+# [cu13] kernels are built against CUDA 13 and dlopen libcudart.so.13, which pip ships
+# in the venv under nvidia/cu13/lib but leaves off every loader path (the extension's
+# RPATH is $ORIGIN-only and NVIDIA's cuda wheels don't self-register). It then resolves
+# only on nodes whose OS image happens to register a system CUDA-13 in ldconfig (login,
+# some A100 nodes) and fails with "libcudart.so.13: cannot open shared object file" on
+# nodes that register only CUDA-12 -- e.g. the H200 partitions m13h/eng (confirmed on
+# m13h-2-2). Point the loader at the venv's own cu13 libdir so resolution no longer
+# depends on the node image; the driver there already supports CUDA 13. Safe alongside
+# torch's cu12 libs: cuda sonames are major-versioned (libcudart.so.12 vs .13), so a
+# cu12 consumer never picks these up, and no soname here collides with the rest of venv.
+export _SELFCONCEPT_OLD_LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib/python3.13/site-packages/nvidia/cu13/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 EOF
 
 cat > ./.env/etc/conda/deactivate.d/vllm_env_fixes.sh <<'EOF'
 unset LD_PRELOAD
 unset VLLM_USE_FLASHINFER_SAMPLER
+if [ -n "${_SELFCONCEPT_OLD_LD_LIBRARY_PATH:-}" ]; then
+    export LD_LIBRARY_PATH="$_SELFCONCEPT_OLD_LD_LIBRARY_PATH"
+else
+    unset LD_LIBRARY_PATH
+fi
+unset _SELFCONCEPT_OLD_LD_LIBRARY_PATH
 EOF
