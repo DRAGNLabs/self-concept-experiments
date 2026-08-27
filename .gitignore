@@ -3,9 +3,9 @@ __pycache__/
 .venv/
 venv/
 .env/
-slurm-logs/
-results/checkpoints/
-results/generations/
+*.egg-info/
+experiments/*/results
+experiments/*/slurm-logs
 *.safetensors
 .DS_Store
 core.[0-9]*
