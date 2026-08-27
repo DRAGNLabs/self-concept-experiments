@@ -1,5 +1,5 @@
 #!/bin/bash --login
-#SBATCH --job-name=persona-drift-delusion-seed
+#SBATCH --job-name=persona-drift-delusion
 #SBATCH --time=01:30:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
