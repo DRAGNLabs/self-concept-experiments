@@ -33,6 +33,7 @@ executor_options:
 
 run:
   target_model: meta-llama/Llama-3.3-70B-Instruct
-  auditor_model: Qwen/Qwen3-32B
+  auditor_model: moonshotai/Kimi-Linear-48B-A3B-Instruct
   turns: 30
+  max_model_len: 16384  # holds a full 30-turn history; the default 2048 truncated runs at ~6 turns
   output: results/self_harm.json
