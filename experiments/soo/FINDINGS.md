@@ -461,3 +461,87 @@ between. Under this recipe the honesty band is absent in Muse at every depth
 and every strength tested; treasure-hunt deception never yields except in a
 broken model. Cross-model tally unchanged: Mistral L16 ✓, Gemma L14 ✓, OLMo
 partial, Muse none.
+
+# Summary
+
+Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
+with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
+the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus
+OLMo-2-7B-Instruct and Muse-Glimmer-30B (Meta, 2026) as modern fully-open /
+frontier-generation substitutes.
+
+**The paper's headline effect is real but mislocated.** SOO fine-tuning can
+produce a genuine, position-robust honesty effect with no capability damage
+— but not at the paper's chosen layers, and not measured the paper's way.
+At the paper's layers the recipe damages the model, and the deception-rate
+metric cannot tell the difference: a model that answers in word salad,
+deflects, refuses, or echoes the prompt scores "less deceptive" without
+being more honest. Both of the paper's own models reproduce the *number*
+via damage at the published layer (Mistral full-mode L19: 58–90% "other";
+Gemma L20: deflection, perspectives collapse) and reproduce the *behavior*
+at a different one.
+
+**Each model has at most one narrow working depth band, and it is not at a
+shared relative depth.** Validated: Mistral L16 (~50% depth; main 90.4% →
+9.9 ± 6.1% deceptive, n=250 × 5 seeds, both orientations, capabilities
+within 1–2 points) and Gemma L14 (~30% depth; main and treasure-hunt honest
+in both orientations on a fully position-robust baseline). Partial: OLMo —
+lasttok-L16 gives a real but partial main effect, full-L19 a real
+treasure-hunt effect, never both. Absent: Muse — 10 layers (25–98% depth)
+and a strength sweep (8× rank, all-module LoRA) found no honest regime at
+all; weaker interventions are positional/confabulated no-ops and stronger
+ones jump straight to damage (prompt echo, reasoning-leak rambling,
+degeneration). Outside its band every model fails in a characteristic
+direction: Mistral evades/scrambles, Gemma deflects/refuses, OLMo
+moralizes, Muse echoes or degenerates.
+
+**Intervention strength is relative to the host model.** Identical LoRA
+hyperparameters perturb Mistral 2–3× more than OLMo relative to base
+weights (whose q/v weights are 4–5× larger), and rank-8 q/v LoRA that
+reshapes a 7B barely touches a 30B — Muse needed 8× rank on all seven
+projections before anything broke. The paper's fixed recipe is therefore
+implicitly tuned to Mistral-class models; on a modern heavily post-trained
+30B there is no strength setting at which it buys honesty.
+
+**Single-orientation evals are untrustworthy — for us and plausibly for the
+paper.** Every model showed a first-listed-room positional confound
+somewhere, and *which* scenario is confounded varies: Mistral's
+treasure-hunt and OLMo's main flip under mirroring (so OLMo's apparent main
+reproduction was an artifact), while Gemma's baseline is position-robust
+everywhere and Muse's main is partially confounded. Several SOO
+"improvements" were nothing but an amplified first-room heuristic. Any
+claim requires the mirrored eval pair, and ideally a position-robust
+baseline scenario.
+
+**Metrics that made the study trustworthy** (each caught at least one wrong
+conclusion): reading responses (Gemma L23's good rates hid confabulation;
+Muse L26's hid both confabulation and a degraded control), the perspectives
+control (collapsed on the 1B pilot and at damage layers), mirrored evals
+(killed the OLMo main result), capability evals (Mistral's evasive basin
+lost ~10 ARC points — though loglikelihood benchmarks miss generation-mode
+damage, so they complement rather than replace response reading), multi-seed
+runs (the paper's layer is a seed lottery; single-seed results at L19 or
+L24 would have "reproduced" or "refuted" the paper by luck), the LLM-judge
+audit of the classifier (93.3% agreement, zero honest↔deceptive
+confusions), and pinning the output channel on agentic-era models (Muse's
+first "results" measured its ATEM scaffold, not its behavior). The
+honesty-prompt control replicated the paper's null and occasionally made
+behavior worse.
+
+**Big picture.** Neural self-other overlap, as published, is not a robust
+or portable honesty intervention: it works only inside a narrow,
+model-specific depth band that must be found empirically (the layer-gap
+diagnostic narrows the search but cannot finish it), its measured effect is
+easily counterfeited by damage or positional heuristics, and its one
+genuinely resistant test — Muse's treasure-hunt deception, which never
+yielded in ~30 checkpoints except in a broken model — is the most modern
+model in the study. The optimistic reading: when the band exists (Mistral
+L16, Gemma L14), the effect is real, position-robust, cheap (~1 GPU-hour),
+and nearly free of capability cost, which keeps the underlying hypothesis —
+that self/other representational overlap causally regulates deception —
+alive. The pessimistic reading: the band's existence is the exception, it
+shrinks or vanishes with scale and modern post-training, and nothing in the
+method predicts where (or whether) it will be. Both readings agree on the
+methodological finding, which may outlast the intervention itself:
+deception-rate deltas from single-orientation evals, without response
+reading, controls, and mirrored pairs, are not evidence of honesty.
