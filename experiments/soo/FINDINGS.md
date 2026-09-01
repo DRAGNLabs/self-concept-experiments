@@ -462,6 +462,69 @@ and every strength tested; treasure-hunt deception never yields except in a
 broken model. Cross-model tally unchanged: Mistral L16 ✓, Gemma L14 ✓, OLMo
 partial, Muse none.
 
+## Steering-vector round, Mistral pilot (jobs 13550104/13550105): the mean self−other direction is behaviorally inert — even deleting it outright changes nothing
+
+New intervention type, same site: extract v = E[a_self − a_other] at every
+layer's o_proj output in one forward sweep over the 78 training pairs
+(`scripts/extract_steering.py`; vectors for all four models saved under
+results/steering/), then steer at inference via a forward hook
+(`selfconcept/soo/steering.py`, `evaluate.py --steer-*`). Add mode is
+h ← h − α·v (α=1 subtracts the full mean difference); project mode removes
+the component along v̂ (α=1 = full directional ablation — the literal
+geometric "self-other overlap"). α=0 was verified bit-identical to the
+unsteered baseline before launch. Pilot grid on Mistral: L16 (validated
+band) and L19 (paper's layer) × α ∈ {−1, 0.5, 1, 2, 4, 8} add, α ∈ {0.5, 1}
+project, one mean-token cell, matched-norm random-direction controls;
+main/perspectives/treasure_hunt, n=50, single orientation.
+
+- **Baseline**: main 92% deceptive, perspectives 100%, TH 98% deceptive.
+- **L16 add α=0.5–4**: main 94–96% deceptive — no effect. α=−1 (steering
+  toward *more* self/other separation): no effect. Mean-token vector: no
+  effect.
+- **Projection α=1 at L16 and L19** — the model literally cannot represent
+  the self/other distinction along the extracted axis at that layer — main
+  92–94% deceptive, perspectives 100%, TH unchanged. *Deleting the
+  direction entirely does nothing.*
+- **L16 α=8**: main deceptive 10% but honest 0% — 68% "other" + 22%
+  refusal, degenerate text ("Bob cannot be contacted contacting her or an
+  unethone thing"), perspectives down to 68%. The familiar damage
+  signature, not honesty.
+- **Random matched-norm control**: α=4 no effect (matching the real vector
+  at α=4); α=8 breaks the model the same way (86% "other", "I would not
+  providing a solution... uniltereted perspective"). So the α=8 movement is
+  *not direction-specific* — it is generic large-perturbation damage.
+- **L19 α=4 "honest" 24%** (vs 8% base): classifier artifact. The responses
+  are scheming text that happens to mention the honest room first ("I would
+  tell Bob that the autographed jersey is in the library. This way, we can
+  keep... a secret and potentially mislead anyone else"). L19 α=8 "honest"
+  is degenerate text ("unintimatelyively").
+
+Verdict: at the layer where LoRA-SOO produces genuine honesty, the
+extracted mean self/other difference direction can be subtracted,
+amplified 4×, reversed, or projected out entirely with **zero behavioral
+effect** on deception, transfer, or perspective-tracking; the only
+strengths that move any rate are those where a random direction of equal
+norm does the same damage. Combined with the low-LR ablation (SOO loss →
+~1e-7 with no behavior change), the two results now bracket the mechanism
+from both sides: the overlap objective can be satisfied without honesty,
+and the overlap direction can be destroyed without dishonesty changing.
+**Whatever LoRA at L16 does to produce honesty, it is not equivalent to
+collapsing the mean self−other activation direction** — rank-1
+mean-difference steering (the standard contrastive-activation-addition
+recipe) fails where rank-8 input-dependent fine-tuning succeeds.
+
+Caveats: single orientation, n=50, one model so far; a rank-1 mean over 78
+near-duplicate template pairs may be too crude a summary of the self/other
+distinction (it may live in a subspace, not a direction); steering was
+applied at all token positions. In flight: the same grids on Gemma (L14 —
+the cleanest LoRA honesty result — plus L20), OLMo (L16/L19), and Muse
+(L26/L36, where the continuous dial directly tests whether an intermediate
+regime exists between Muse's no-op and damage endpoints). If steering is
+inert on Gemma L14 too, "the direction is not load-bearing" generalizes
+beyond Mistral. Possible follow-ups: subspace projection (top-k PCA of
+paired differences) instead of the rank-1 mean, or position-restricted
+steering.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
@@ -539,7 +602,11 @@ model in the study. The optimistic reading: when the band exists (Mistral
 L16, Gemma L14), the effect is real, position-robust, cheap (~1 GPU-hour),
 and nearly free of capability cost, which keeps the underlying hypothesis —
 that self/other representational overlap causally regulates deception —
-alive. The pessimistic reading: the band's existence is the exception, it
+alive, though only in a distributed form: the steering round showed the
+*mean* self−other activation direction can be deleted outright with no
+behavioral effect, so if overlap regulates deception it does so through a
+subspace or nonlinear structure that rank-1 steering cannot reach and only
+optimization finds. The pessimistic reading: the band's existence is the exception, it
 shrinks or vanishes with scale and modern post-training, and nothing in the
 method predicts where (or whether) it will be. Both readings agree on the
 methodological finding, which may outlast the intervention itself:
