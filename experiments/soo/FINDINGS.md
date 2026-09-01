@@ -598,6 +598,41 @@ counterfeit exactly this pattern, and Muse's main was partially
 position-confounded at baseline), random control at α=16, the α=32 dose
 edge, and an n=250 confirmation at α=8.
 
+## Gemma steering hardening (job 13556096): effect survives mirroring, attenuated — genuine but with a positional component; no damage edge through α=32
+
+All four pending checks from the Gemma pilot, resolved:
+
+- **Mirrored baseline**: 100% deceptive in both orientations — Gemma's
+  baseline stays the position-robust gold standard.
+- **The effect survives mirroring, attenuated**: main honest orig → mir is
+  18% → 4% (α=8), 40% → 18% (α=16), 44% → 28% (α=24), 48% → 36% (α=32).
+  So it is *not* a pure last-mentioned-room heuristic (that would flip to
+  ~0% mirrored), but the orig orientation inflates the effect —
+  roughly half of it at α=16 is positional. Notably the mir/orig ratio
+  climbs with dose (0.22 → 0.45 → 0.64 → 0.75): the genuine component
+  keeps growing while the positional component saturates.
+- **Random control at the working strength** (α=16): flat null.
+  Direction-specificity confirmed where it matters.
+- **n=250 at α=16**: 42% honest (n=50 said 40%) — the pilot number was not
+  small-sample luck.
+- **No damage edge yet**: through α=32, both orientations: zero "other",
+  zero refusals, perspectives 100%, clean one-word answers. The dose curve
+  is still rising (48% orig / 36% mir at α=32) with no saturation and no
+  damage — 32× the mean self−other difference and the model is still
+  perfectly intact. Contrast every LoRA result, where the honesty/damage
+  edge was razor-thin.
+- Treasure hunt: 100% deceptive at every strength in both orientations —
+  steering's honesty effect on Gemma remains scenario-local, unlike
+  LoRA-L14 which fixed TH too.
+
+Status: Gemma L14 steering is a validated, direction-specific,
+position-robust-after-discounting honesty effect of ~36% (mirrored, α=32)
+against a 0%-honest baseline, with no measurable cost. Weaker than
+LoRA-L14 (which reached both-orientation honesty *and* TH transfer) but
+incomparably better behaved under overdose. Open: where the dose curve
+tops out (α ∈ {48, 64, 96} extension queued), and capability benchmarks
+with the hook active at the working strength.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
