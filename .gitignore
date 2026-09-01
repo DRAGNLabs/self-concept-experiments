@@ -6,6 +6,7 @@ venv/
 *.egg-info/
 experiments/*/results
 experiments/*/slurm-logs
+slurm-logs/
 *.safetensors
 .DS_Store
 core.[0-9]*
