@@ -125,7 +125,39 @@ environment). We are recreating the LLM experiments (section 3.1) only.
 - **Chat templates:** use each model's own chat template (paper did the same); prompts live in
   the user turn.
 
-## 6. Success criteria
+## 6. Steering-vector round (2026-09-01) — Phase 6 made concrete
+
+Motivation, sharpened by the LoRA findings (see FINDINGS.md): the low-LR ablation drove the SOO
+loss to ~1e-7 with zero behavioral change, so the honesty effects seen elsewhere may ride on
+optimization side effects rather than on the self/other direction itself. Steering tests the
+direction directly — no training — and replaces LoRA's discrete strength lottery with a
+continuous dial, which is exactly what a method whose failure mode is overshooting from
+"no effect" to "broken" needs.
+
+**Method.** One forward sweep over the training pairs on the base model extracts, per layer,
+`v = E[a_self − a_other]` at the o_proj output (same site the SOO loss trained on), in both
+token conventions (`last` token / `mean` over valid tokens). At inference a forward hook applies
+either `h ← h − α·v` (add mode; α=1 subtracts the full mean difference) or removes the component
+along v̂ (project mode; α=1 = full directional ablation). Controls: α=0 (verified bit-identical
+to baseline), negative α (direction check), and a random vector of matched norm at the same layer
+(separates direction-specific effects from generic perturbation damage).
+
+**Code.** `src/selfconcept/soo/steering.py` (hooks, vector loading, random control),
+`scripts/extract_steering.py` (all layers in one pass → `results/steering/<model>.pt`),
+`evaluate.py --steer-vectors/--steer-layer/--steer-alpha/--steer-mode/--steer-token-mode/
+--steer-random-seed`, `slurm/steer-extract.sh` (all four models),
+`slurm/steer-mistral-pilot.sh` (L16 + L19 × α ∈ {−1, 0.5, 1, 2, 4, 8} add-mode grid, projection
+at α ∈ {0.5, 1}, one mean-token cell, random controls; main/perspectives/treasure_hunt, n=50).
+
+**Key questions.** (1) Does the extracted direction reproduce the L16 honesty effect with no
+training? If yes, honesty lives in the direction; if steering does nothing, the direction is
+behaviorally inert and LoRA's occasional honesty was optimization pathology — either resolves
+the low-LR puzzle. (2) Dose-response shape: a monotonic passage through an honest-and-coherent
+regime, or a jump straight from unaffected to broken (Muse's LoRA signature)? (3) Muse: does a
+continuous dial find the intermediate regime ~30 trained variants never hit? (4) Winners get an
+n=250 + mirrored + capabilities hardening round, capabilities measured with the hook active.
+
+## 7. Success criteria
 
 1. Baseline deception rate on OLMo-2-7B-Instruct measurably above zero on at least one scenario
    family (else we switch elicitation strategy, see §2).
