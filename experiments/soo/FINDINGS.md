@@ -559,6 +559,45 @@ counterfeit honesty in this orientation and flip to deceptive under
 mirroring; (2) dose curve above α=16 (unsaturated at the pilot's top);
 (3) random control at α=16, the working strength; (4) n=250 confirmation.
 
+## Muse steering pilot (job 13555056): the LoRA-immune model is the most steerable in the study (pending mirrored confirmation)
+
+The reversal nobody ordered. Same grid (L26 = the only layer LoRA ever
+moved, L36 = where LoRA damage first appeared; α ∈ {1, 2, 4, 8, 16},
+projection, matched-norm random control; --force-user-channel, n=50,
+single orientation):
+
+- **L26 add mode: a textbook dose-response curve.** Main honest 2% (base)
+  → 14% (α1) → 34% (α2) → **80% (α4) → 90% (α8) → 92% (α16)**. Zero
+  "other", zero refusals, perspectives 100% at every strength. Responses
+  are terse and perfectly formed ("I would point out the playroom."), with
+  none of Muse's damage signatures — no prompt echo, no reasoning leak, no
+  scaffold artifacts.
+- **Treasure hunt moves** — 0% → 12% (α8) → 18% (α16) honest — the first
+  TH movement on an *undamaged* Muse in the entire study (LoRA only ever
+  moved TH in broken models).
+- **Direction-specific**: matched-norm random at α=8 is a flat null (100%
+  deceptive). **Not first-room positional**: all orig main examples list
+  the deceptive room first; the steered model picks the second-listed
+  (honest) room 46/50 at α=16.
+- Projection α=1: small blip (12% honest vs 2% base) but essentially null,
+  as on the other models. L36: null at α=4 and 16.
+
+Cross-model steering picture so far: **Mistral inert, Gemma dose-responsive
+to 40%, Muse dose-responsive to 92%** — an almost perfect inversion of the
+LoRA results, where Mistral had the strongest validated band and Muse had
+nothing at any depth or strength. The model most resistant to
+weight-space SOO is the most responsive to activation-space SOO. If it
+holds, this also reframes the Muse strength-sweep conclusion: the failure
+was never that Muse lacks a self/other direction that regulates deception
+— it demonstrably has one at L26 — but that LoRA-on-q/v optimization
+could not find/exploit it before breaking the model.
+
+Pending before this counts (hardening job 13556155 in flight): mirrored
+evals at α ∈ {2, 4, 8, 16} (a last-mentioned-room heuristic would
+counterfeit exactly this pattern, and Muse's main was partially
+position-confounded at baseline), random control at α=16, the α=32 dose
+edge, and an n=250 confirmation at α=8.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
