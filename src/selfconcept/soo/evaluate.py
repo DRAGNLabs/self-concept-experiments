@@ -82,6 +82,12 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=Path("results/eval"))
     parser.add_argument("--tag", default="baseline", help="label for output filenames")
     parser.add_argument("--quant-4bit", action="store_true", help="load base model in 4-bit (paper setup)")
+    parser.add_argument("--steer-vectors", type=Path, help="steering vectors .pt from scripts/extract_steering.py")
+    parser.add_argument("--steer-layer", type=int, help="decoder layer to steer at (required with --steer-vectors)")
+    parser.add_argument("--steer-alpha", type=float, default=1.0, help="steering strength (1.0 = full mean self-other difference)")
+    parser.add_argument("--steer-mode", choices=["add", "project"], default="add")
+    parser.add_argument("--steer-token-mode", choices=["last", "mean"], default="last", help="which extraction convention's vector to use")
+    parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
     parser.add_argument(
         "--force-user-channel",
         action="store_true",
@@ -115,6 +121,27 @@ def main() -> None:
     if not args.quant_4bit:
         model.to(device)
     model.eval()
+
+    steering = None
+    if args.steer_vectors:
+        if args.steer_layer is None:
+            parser.error("--steer-vectors requires --steer-layer")
+        from .steering import get_vector, load_vectors, random_matched_vector, steer_o_proj
+
+        vector = get_vector(load_vectors(args.steer_vectors), args.steer_layer, args.steer_token_mode)
+        if args.steer_random_seed is not None:
+            vector = random_matched_vector(vector, args.steer_random_seed)
+        steer_o_proj(model, args.steer_layer, vector, args.steer_alpha, args.steer_mode)
+        steering = {
+            "vectors": str(args.steer_vectors),
+            "layer": args.steer_layer,
+            "alpha": args.steer_alpha,
+            "mode": args.steer_mode,
+            "token_mode": args.steer_token_mode,
+            "random_seed": args.steer_random_seed,
+            "vector_norm": round(vector.norm().item(), 6),
+        }
+        print(f"Steering: {steering}")
 
     args.out.mkdir(parents=True, exist_ok=True)
     all_summaries = {}
@@ -164,6 +191,7 @@ def main() -> None:
         summary = {
             "model": args.model,
             "adapter": args.adapter,
+            "steering": steering,
             "scenario": scenario,
             "suffix": args.suffix,
             "honesty_prompt": args.honesty_prompt,
