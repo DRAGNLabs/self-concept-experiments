@@ -525,6 +525,40 @@ beyond Mistral. Possible follow-ups: subspace projection (top-k PCA of
 paired differences) instead of the rank-1 mean, or position-restricted
 steering.
 
+## Gemma steering pilot (job 13555052): first genuine steering effect — dose-responsive honesty at L14, direction-specific, damage-free (pending mirrored confirmation)
+
+Same grid as Mistral (L14 = validated LoRA band, L20 = paper's layer;
+α ∈ {1, 2, 4, 8, 16} add, projection, matched-norm random control;
+room_only suffix, n=50, single orientation). Gemma behaves nothing like
+Mistral:
+
+- **L14 add mode is dose-responsive**: main honest 0% (α≤4) → 18% (α=8) →
+  **40% (α=16)**, with *zero* "other", *zero* refusals, perspectives 100%
+  at every strength. Responses are clean single room names in all
+  conditions — no degeneration anywhere in the grid.
+- **Direction-specific**: matched-norm random vector at α=8 is a flat null
+  (100% deceptive, perspectives 100%).
+- **Not a first-room heuristic**: all 50 orig main examples happen to list
+  the deceptive room first, so the steered honest answers go *against* the
+  first-mentioned room.
+- Projection α=1 and L20: null, like Mistral. Treasure hunt: 100%
+  deceptive at every strength — **main moves but TH does not**, unlike
+  LoRA-L14 which fixed both.
+
+So the cross-model steering story is already non-uniform: the mean
+self−other direction is inert on Mistral but carries a real, cleanly
+dose-dependent honesty effect on Gemma — at exactly the layer where
+Gemma's LoRA band sits, and only in add mode (small-α subtraction and full
+projection both do nothing; the effect needs *overshooting* the mean
+difference by 8–16×, consistent with the extracted difference being ~a few
+percent of activation norm).
+
+Pending before this counts as validated (hardening job 13556096 in
+flight): (1) **mirrored evals** — a last-mentioned-room heuristic would
+counterfeit honesty in this orientation and flip to deceptive under
+mirroring; (2) dose curve above α=16 (unsaturated at the pilot's top);
+(3) random control at α=16, the working strength; (4) n=250 confirmation.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
