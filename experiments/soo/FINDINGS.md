@@ -922,6 +922,26 @@ Hardening + specificity in one round queued (job 13562350): dose
 transitions at L19/L14, randoms at the working layers (two seeds),
 reversed vector, mirrored, scenarios, and paired real-vs-random n=250.
 
+## Gemma 4 α=16 re-anchor (job 13562348): 93% at n=250 vs 27% random — but the direction-specific regime has a positional component the α=32 regime hid
+
+The working cell's headline numbers, re-measured in the regime where the
+direction actually matters:
+
+- **Paired n=250, main orig: real 93.2% honest vs random 26.8%.** The
+  direction-specific differential is 66 points at scale. (Random is not
+  a flat null at α16 on this model, unlike Gemma-2/Muse controls — the
+  perturbation regime's foothills.)
+- **Mirrored attenuates at α16**: main 98% → 44%, TH 92% → 8%
+  (perspectives 100% both orientations). The total both-orientation flip
+  measured at α=32 belongs to the direction-agnostic regime; the
+  direction-specific effect at α16 looks like a stronger Gemma-2 —
+  genuine but orientation-inflated. Still: TH orig 92% is the biggest
+  treasure-hunt movement on any undamaged model in the study except Muse.
+- Gap flagged and queued (job 13562353): no random-mir control at α16
+  yet, so the mirrored 44% can't be split into direction vs perturbation;
+  plus mirrored dose points α ∈ {20, 24} with a random-mir at 24 to see
+  where the agnostic regime takes over in the mirrored orientation.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents

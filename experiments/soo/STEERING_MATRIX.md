@@ -27,7 +27,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | Gemma-2-27B | L14 α=32 | 0 → 48 | 0 → 36 | 0 → 0 | 0 → 0 | 100 | null @α16 | 42% @α16 | none ≤α96 | +0.4/−0.7/−2.5 @α32 |
 | OLMo-2-7B | L19 α=16 | 86 → 26 | 6 → 0 | 0 → 0 | 0 → 0 | 100 | partial (86→66) | — | none (anti-honest) | — |
 | Muse-30B | L26 α=8 | 2 → 90 | 58 → 100 | 0 → 12 | 0 → 42 | 100 | null @α16 | 94% @α8 | none ≤α32 | −2.1/−1.1/−1.7 @α8 |
-| gemma-4-31B | L30 α=16 | 0 → 98 | pending | pending | pending | 100 | 18/4% (2 seeds) @α16 | pending | none ≤α32 | pending |
+| gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250 | 93% @α16 | none ≤α32 | pending |
 | gemma-4-12B | L19 α=32 | 0 → 100 | pending | pending | pending | 100 | pending (L24 rand flips!) | pending | none ≤α32 | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
