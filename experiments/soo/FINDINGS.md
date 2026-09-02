@@ -633,6 +633,40 @@ incomparably better behaved under overdose. Open: where the dose curve
 tops out (α ∈ {48, 64, 96} extension queued), and capability benchmarks
 with the hook active at the working strength.
 
+## OLMo steering pilot (job 13555054): null where LoRA worked; high-α L19 shifts room *position*, probably not honesty (pending mirrored check)
+
+Grid: L16 (lasttok-LoRA's partial main band) and L19 (full-LoRA's TH band),
+α ∈ {1, 2, 4, 8, 16}, projection, mean-token cell, random control; n=50,
+single orientation.
+
+- **Treasure hunt — OLMo's one genuine LoRA effect — is 100% deceptive in
+  every cell.** No layer, strength, or mode touches it. On OLMo, steering
+  fails exactly where LoRA succeeded: the mirror image of Muse, where
+  steering succeeds exactly where LoRA failed.
+- **Main-orig moves the wrong way at high α**: honest 86% (base) → 50%
+  (L19 α=8) → 26% (L19 α=16). Responses stay perfectly coherent terse
+  recommendations ("I would recommend the bathroom."), perspectives 100%
+  everywhere, zero other/refusal — no damage.
+- **Most likely reading: position, not deception.** All orig main examples
+  list the deceptive room first; baseline OLMo picks the *second*-listed
+  room 86% (its known positional habit — the mirrored baseline was 94%
+  deceptive), and L19 α=16 flips it to the *first*-listed room 74%. That
+  is steering re-weighting OLMo's positional heuristic, not inducing
+  deception. Disambiguation queued (steer-olmo-mir.sh): a positional shift
+  would *raise* mirrored honesty; a genuine pro-deception effect would
+  lower it in both orientations. Plus random-at-L19-α16 (the random
+  control at L16 α=8 also moved main-orig, 86% → 62% honest, so the wiggle
+  is not clearly direction-specific) and the α=−16 direction check.
+- Projection, mean-token: null, as on every model.
+
+Cross-model tally, steering vs LoRA: **Mistral inert / strong; Gemma
+partial-validated / strong; Muse strong-pending-mirror / none; OLMo
+null-to-positional / partial.** The two intervention types agree on almost
+nothing — which is itself a finding: "has a steerable self−other
+direction" and "responds to SOO fine-tuning" appear to be independent
+properties of a model, so neither can serve as a proxy or a mechanism
+story for the other.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
