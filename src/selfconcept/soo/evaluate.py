@@ -89,6 +89,11 @@ def main() -> None:
     parser.add_argument("--steer-token-mode", choices=["last", "mean"], default="last", help="which extraction convention's vector to use")
     parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
     parser.add_argument(
+        "--device-map",
+        help="pass device_map to from_pretrained (e.g. 'auto' to shard models "
+        "too big for one GPU, like Llama-2-70b); skips the single-device .to()",
+    )
+    parser.add_argument(
         "--force-user-channel",
         action="store_true",
         help="append ' to=user<|message|>' to the generation prompt (ATEM-protocol "
@@ -112,13 +117,15 @@ def main() -> None:
             bnb_4bit_use_double_quant=True,
         )
         model = load_causal_lm(args.model, quantization_config=bnb, dtype=dtype)
+    elif args.device_map:
+        model = load_causal_lm(args.model, dtype=dtype, device_map=args.device_map)
     else:
         model = load_causal_lm(args.model, dtype=dtype)
     if args.adapter:
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, args.adapter)
-    if not args.quant_4bit:
+    if not args.quant_4bit and not args.device_map:
         model.to(device)
     model.eval()
 

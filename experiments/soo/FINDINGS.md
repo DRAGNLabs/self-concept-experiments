@@ -1017,6 +1017,37 @@ models (Gemma-2 −2.5, Muse −1.7 on MMLU) — no per-subject collapse
 α16–20, robust to layer/scenario/orientation controls, ~3 points of MMLU
 as the total measured cost.
 
+## gemma-4-12B LoRA sweep (job 13562497): a band candidate at L24 — LoRA may not die with age after all
+
+First LoRA-on-gemma-4 result, Gemma-2's paper recipe held constant (r=4,
+α=8, lr 9e-4, 8 ep, lasttok), depth-matched sweep L14/L19/L24 (30/40/50%),
+one seed each. Baseline: main 0, TH 0, persp 100.
+
+| layer | main | TH | persp |
+|---|---|---|---|
+| L14 (30%) | 48 | 100 | 100 |
+| L19 (40%) | 8 | 100 | 100 |
+| L24 (50%) | **92** | **100** | 92 |
+
+Responses at L24 are clean, varied single room names — a working model
+giving genuinely honest answers on main, not degeneration. Two caveats
+before calling it a band: (1) TH 0→100 at *every* swept layer, including
+L19 where main stays at 8, is the OLMo positional-confound signature —
+mirrored orientation must decide; (2) one seed. Validation queued
+(13563631): L24 mirrored + seeds 1–2 + n250 both orientations.
+
+If L24 validates, the "LoRA dies with age" trend breaks within the Gemma
+family — Muse's LoRA failure would be Muse-specific (architecture or
+training lineage), not a property of 2026 models. Note the LoRA band sits
+at 50% depth while Gemma-2's sat at 30%, and L24 is *not* the steering
+layer (L19 — where LoRA is at its worst, main 8%).
+
+Sibling 31B sweep failed at launch (13562496): PEFT's suffix match on
+q_proj/v_proj caught the vision tower's Gemma4ClippableLinear, which it
+cannot wrap. Fixed by scoping target_modules to a text-stack regex
+(`model.language_model.layers.*.self_attn.(q|v)_proj` — all plain Linear);
+resubmitted as 13563629.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents

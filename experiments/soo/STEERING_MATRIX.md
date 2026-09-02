@@ -70,14 +70,19 @@ position-confounded on that model, rate not meaningful.
 | Gemma-2-27B | L14 paper recipe, 2 seeds | 0 → 92/78 | 0 → 86/66 | 0 → 22–42 | 0 → 78/72 | 100 | — | deflection/refusal at L20/L28/L34; confabulation at L23 |
 | OLMo-2-7B | split: lasttok L16 / full L19 | 86 → 90 (L16) | 6 → 70 (L16) | 0 → 4–26 (L19: 0→95) | 0 → 96 (L19) | 96–100 | — | moralizing refusal at L22; main effect positional at most layers |
 | Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
-| gemma-4-31B | untested | — | — | — | — | — | — | — |
-| gemma-4-12B | untested | — | — | — | — | — | — | — |
+| gemma-4-31B | queued (13563629) | — | — | — | — | — | — | — |
+| gemma-4-12B | L24 Gemma-2 recipe, 1 seed | 0 → 92 | pending | 0 → 100* | pending | 92 | — | model intact; L19 near-inert (main 8) |
+
+\* TH 0→100 at all swept layers (L14/L19/L24) — positional-confound
+signature; mirrored validation queued (13563631). 12B sweep, main:
+L14 = 48, L19 = 8, L24 = 92.
 
 LoRA verdicts: Mistral **strong** (validated, n250, mirrored) ·
 Gemma-2 **strong** (validated, both orientations, genuine TH) ·
 OLMo **partial** (no single recipe gets both scenarios; main confounded) ·
 Muse **none** (no honest regime at any depth or strength) ·
-gemma-4 **open** (both sizes).
+gemma-4-12B **candidate at L24** (0→92 main, 1 seed, mirrored pending) ·
+gemma-4-31B **queued**.
 
 ## Age × size matrix (steering / LoRA)
 

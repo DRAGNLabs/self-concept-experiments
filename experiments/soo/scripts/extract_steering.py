@@ -33,6 +33,11 @@ parser.add_argument("model_id")
 parser.add_argument("out_pt", type=Path)
 parser.add_argument("--batch-size", type=int, default=4)
 parser.add_argument("--max-pairs", type=int, help="truncate pairs (smoke tests)")
+parser.add_argument(
+    "--device-map",
+    help="pass device_map to from_pretrained (e.g. 'auto' to shard models "
+    "too big for one GPU); skips the single-device .to()",
+)
 args = parser.parse_args()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -42,7 +47,10 @@ tokenizer = AutoTokenizer.from_pretrained(args.model_id)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
-model = load_causal_lm(args.model_id, dtype=dtype).to(device)
+if args.device_map:
+    model = load_causal_lm(args.model_id, dtype=dtype, device_map=args.device_map)
+else:
+    model = load_causal_lm(args.model_id, dtype=dtype).to(device)
 model.eval()
 
 pairs = [json.loads(l) for l in (experiment_dir("soo") / "data/train_soo_pairs.jsonl").open()]
@@ -85,7 +93,9 @@ with torch.no_grad():
         sl, ol = smask.sum(1) - 1, omask.sum(1) - 1
         ar = torch.arange(len(batch), device=device)
         for li in range(n_layers):
-            s, o = a_self[li], a_other[li]
+            # With device_map sharding, layer li's capture lives on that
+            # layer's GPU; bring it to the index/mask tensors' device.
+            s, o = a_self[li].to(device), a_other[li].to(device)
             sum_last[li] += (s[ar, sl] - o[ar, ol]).sum(0).cpu()
             s_mean = (s * smask.unsqueeze(-1)).sum(1) / smask.sum(1, keepdim=True)
             o_mean = (o * omask.unsqueeze(-1)).sum(1) / omask.sum(1, keepdim=True)
