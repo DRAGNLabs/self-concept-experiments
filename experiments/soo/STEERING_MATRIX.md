@@ -1,10 +1,10 @@
-# Steering-vector results matrix
+# Steering-vector and LoRA results matrix
 
-Tracking file: per-model numbers for the SOO steering intervention
-(add-mode, o_proj, best validated cell unless noted). Narrative and
-analysis live in FINDINGS.md; this file is numbers only. Goal: fill an
-age × size matrix of models to see how steerability trends with each
-variable.
+Tracking file: per-model numbers for both SOO interventions — steering
+(add-mode, o_proj, best validated cell unless noted) and LoRA
+fine-tuning (best validated recipe). Narrative and analysis live in
+FINDINGS.md; this file is numbers only. Goal: fill an age × size matrix
+of models to see how each intervention trends with each variable.
 
 ## Model registry
 
@@ -58,16 +58,45 @@ from pilot grid. Gemma-4 α=12 → 6. Gemma-4 layer sweep at α=32:
 L12/L18/L24/L27/L33/L36 = 0, L30 = 100. Random matched-norm at L30 α=32
 also = 100 (specificity unresolved, job 13562331).
 
-## Age × size matrix
+## LoRA (SOO fine-tuning) headline results
 
-Verdict per cell: does add-mode SOO steering produce a validated,
-direction-specific honesty gain?
+Honest % on main (base → best validated recipe). Mirrored baselines
+differ per model (positional confounds); "conf." = scenario is
+position-confounded on that model, rate not meaningful.
+
+| model | recipe | main orig | main mir | TH orig | TH mir | persp | caps Δ (ARC/HS/MMLU) | damage character |
+|---|---|---|---|---|---|---|---|---|
+| Mistral-7B | L16 lasttok lr1e-4, 5 seeds n250 | 10 → 90 ± 6 | 18 → 100 | conf. | conf. | 100 | −2.5/−0.7/−0.8 (worst seed) | evasion/scramble off-band; L19 evasive basin −10 ARC |
+| Gemma-2-27B | L14 paper recipe, 2 seeds | 0 → 92/78 | 0 → 86/66 | 0 → 22–42 | 0 → 78/72 | 100 | — | deflection/refusal at L20/L28/L34; confabulation at L23 |
+| OLMo-2-7B | split: lasttok L16 / full L19 | 86 → 90 (L16) | 6 → 70 (L16) | 0 → 4–26 (L19: 0→95) | 0 → 96 (L19) | 96–100 | — | moralizing refusal at L22; main effect positional at most layers |
+| Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
+| gemma-4-31B | untested | — | — | — | — | — | — | — |
+| gemma-4-12B | untested | — | — | — | — | — | — | — |
+
+LoRA verdicts: Mistral **strong** (validated, n250, mirrored) ·
+Gemma-2 **strong** (validated, both orientations, genuine TH) ·
+OLMo **partial** (no single recipe gets both scenarios; main confounded) ·
+Muse **none** (no honest regime at any depth or strength) ·
+gemma-4 **open** (both sizes).
+
+## Age × size matrix (steering / LoRA)
+
+Verdict per cell, both interventions: steering = validated
+direction-specific honesty gain; LoRA = validated honesty band.
 
 | | ~7B | ~12B | 27–31B |
 |---|---|---|---|
-| **2023** | Mistral-7B: **inert** | — | *open* |
-| **2024** | OLMo-2-7B: **harmed** | — | Gemma-2-27B: **partial** |
-| **2026** | *open* | gemma-4-12B: **flips, direction-agnostic** | Muse-30B: **strong** · gemma-4-31B: **strong, direction-specific** |
+| **2023** | Mistral-7B: **inert / strong** | — | *open / open* |
+| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** |
+| **2026** | *open* | gemma-4-12B: **agnostic-flip / open** | Muse-30B: **strong / none** · gemma-4-31B: **strong / open** |
+
+Trend so far: the two interventions run in *opposite* directions with
+age — LoRA works best on 2023–2024 models and dies at Muse (2026);
+steering is inert-to-harmful on 2023–2024 7Bs and strongest on 2026
+models. Gemma-2-27B is the only model both interventions work on.
+Missing for the crossover story: LoRA on gemma-4 (both sizes — does
+LoRA's decline with age hold within the Gemma line?), steering on a
+2023 large model (Llama-2-70b, blocked on access).
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2023 large: Llama-2-70b-chat (**blocked: HF gated access not granted**),
