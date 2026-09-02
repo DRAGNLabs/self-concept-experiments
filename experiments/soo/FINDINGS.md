@@ -816,6 +816,48 @@ Hardening queued (job 13562297): mirrored orientation, random matched-norm
 control, dose points α∈{12,16,24}, band mapping L∈{27,33,36}, the other
 scenarios at the working cell, n=250 confirmation.
 
+## Gemma 4 hardening (job 13562297): every robustness check passes — except the one that matters most
+
+The L30 flip is position-robust, scenario-general, dose-sharp, and
+n=250-solid — and *not direction-specific as measured*:
+
+- **Mirrored**: base 0/50 honest both orientations; L30 α=32 mirrored =
+  50/50 honest. No positional discount at all (contrast Gemma-2, which
+  lost roughly half its effect to mirroring).
+- **Treasure hunt flips completely, both orientations**: 0/50 → 50/50.
+  The scenario Gemma-2 steering never touched at any dose. Perspectives
+  stays 100%.
+- **Dose transition is a step function**: α=12 → 3/50 honest, α=16 →
+  49/50, α=24 → 50/50. The whole transition lives inside one α-doubling
+  (compare Muse's smooth ramp and Gemma-2's slow saturation).
+- **Band is razor-thin in depth too**: L27 and L33 at α=32 are 0/50 —
+  the flip exists at L30 (50% depth) and nowhere adjacent probed.
+- **n=250 at α=32: 250/250 honest.** All single-room-name responses.
+- **BUT the random matched-norm control also flips**: rand(seed 0) at L30
+  α=32 = 50/50 honest, responses indistinguishable from the real vector's
+  (clean single honest-room names; vector norms match to 8.0817 in both
+  runs' metadata). So at this layer and magnitude (α·|v| ≈ 3.1× activation
+  norm), *a random direction produces the identical honesty flip*.
+
+That last line changes the claim available. On Gemma-2/Muse the random
+control was a flat null at working strength — direction-specificity was
+what separated "steering" from "perturbation". On gemma-4-31B the flip
+may be a *perturbation-induced* honesty mode: large L30 noise knocks the
+model off its deception policy and it lands on honest-by-default (which
+would itself be notable — the same 3× kick broke Mistral into gibberish,
+while Gemma 4 fails INTO honest single-word answers with zero damage).
+Whether the real direction is privileged at a *lower* threshold is
+answerable and queued (job 13562331): random dose curve α ∈ {8,12,16,24}
+vs the real α12→α16 step, a second seed, the reversed vector (α = −16,
+−32), and random at the null layers L27/L33.
+
+Matrix expansion in flight: gemma-4-12B-it (newer-smaller cell; same
+generation as the 31B, pure size axis) downloaded, extraction + pilot
+queued (job 13562332) with a pilot-stage random control this time.
+Llama-2-70b-chat (older-bigger cell) is blocked on gated-repo access —
+the HF account needs Meta approval at
+huggingface.co/meta-llama/Llama-2-70b-chat-hf.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
