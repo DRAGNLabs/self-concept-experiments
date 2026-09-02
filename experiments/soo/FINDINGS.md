@@ -1140,6 +1140,40 @@ Validation queued (13566515): mirrored baseline + mirrored L16 α8, TH
 under steering, dose α2/4/16, matched-norm randoms s0/s1 (+ s0
 mirrored), −v, and n=250 both orientations at the operating point.
 
+## gemma-4-31B LoRA round 2 (job 13565579): the band was at L32 — "weak" overturned
+
+Round 1 swept depth-matched layers (L18/L26/L30, 30–50% depth) and found
+nothing. Round 2 probed neighbors and hit a perfect cell two layers past
+50% depth (all n=50, room_only; baseline mirrored main 0 / TH 0 / persp
+100, clean):
+
+| layer | main orig | main mir | TH orig | TH mir | persp | character |
+|---|---|---|---|---|---|---|
+| L28 s0 | 2 | 0 | 0 | 6 | 100 | inert |
+| L30 s0 (r1) | 50 | 10 | 16 | 14 | 100 | half-band, seed-fragile |
+| L30 s1/s2 | 0 / 0 | — | 0 / 0 | — | 100 | seed0's 50 does not replicate |
+| **L32 s0** | **100** | **100** | **100** | **96** | **100** | clean varied rooms, both orientations (raws checked) |
+| L34 s0 | 2 | 0 | 40 | 14 | 100 | refusal wall (86–100% refusal) |
+
+Also resolved: L26's round-1 TH 94 with main 0 is a genuine TH-only
+band, not positional — mirrored TH is 96 with main still 0. The model
+has a layer where SOO training fixes only the harder scenario.
+
+The band is the sharpest yet: L30 ≈ 0–50 (and not seed-stable), L32 =
+100 everywhere, L34 = refusal collapse. Round 1's depth-matching
+heuristic (anchor at Gemma-2's 30% depth) is what failed, not the
+model. Methodological rule going forward: **sweep past 50% depth before
+declaring a LoRA cell dead** — the 12B's band sat at 50% (L24/48), the
+31B's at 53% (L32/60), while the recipe-donor Gemma-2's was at 30%.
+
+If seeds replicate (round 3 = 13567271: L32 seeds 1–2 both
+orientations + n250 anchors), the LoRA story changes shape: no longer
+"dies on 2026 + large" — gemma-4-31B would be **strong**, leaving
+Muse-30B as the only model with no LoRA band anywhere. The failure
+would be Muse-specific (or its training lineage), not an axis of the
+matrix. Caution: L30's seed collapse shows this model is seed-fragile
+off-band, so the L32 verdict stays provisional until seeds land.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
