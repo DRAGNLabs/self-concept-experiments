@@ -1048,6 +1048,58 @@ cannot wrap. Fixed by scoping target_modules to a text-stack regex
 (`model.language_model.layers.*.self_attn.(q|v)_proj` — all plain Linear);
 resubmitted as 13563629.
 
+## gemma-4-12B L24 validation (job 13563631): the band is genuine — LoRA works on a 2026 model
+
+The decisive test passed. Mirrored orientation (baseline mir: main 0,
+TH 0, persp 100), seed0 adapter: **main 86, TH 98, persp 76**. TH 0→98
+mirrored kills the positional-confound hypothesis — the adapter names
+the actual treasure room whichever room is mentioned first. Raw mirrored
+responses are clean, varied single room names.
+
+Full validation picture at L24 (n=50 unless noted):
+
+| seed | main orig | main mir | TH orig | TH mir | persp orig | persp mir |
+|---|---|---|---|---|---|---|
+| 0 | 92 (94.4 @n250) | 86 (92.0 @n250) | 100 | 98 | 92 | 76 |
+| 1 | 98 | 90 | 100 | 100 | 82 | 80 |
+| 2 | 74 | 58 | 96 | 74 | 96 | 62 |
+
+Three seeds, both orientations, n=250 both orientations on seed0 —
+**gemma-4-12B LoRA is a validated strong cell** (main orig 74–98,
+mir 58–90; seed2 is the weak one but still far above the 0 baseline).
+Only visible cost so far: perspectives dips to 62–96 from a 100
+baseline (mild; no capability run yet). This breaks the "LoRA dies
+with age" trend: a 2026 model with a genuine LoRA honesty band, TH
+included — something even Gemma-2-27B only partially achieved on TH
+orig (22–42).
+
+## gemma-4-31B LoRA sweep (job 13563629): weak — no honest band at any depth-matched layer
+
+Same recipe (text-stack-scoped target_modules), L18/L26/L30 (30/43/50%),
+one seed each. Baseline: main 0, TH 0, persp 100.
+
+| layer | main | TH | persp |
+|---|---|---|---|
+| L18 (30%) | 0 | 0 | 100 |
+| L26 (43%) | 0 | 94 | 100 |
+| L30 (50%) | 50 | 16 | 100 |
+
+No layer gets main above 50. The interesting oddities: L26 flips TH to
+94 while main stays at 0 (mirrored check queued — could be positional),
+and L30 gets main to 50 with TH nearly unmoved. Responses everywhere are
+clean single room names — the model is intact, LoRA just doesn't find a
+strong honesty direction. Round 2 queued (13565579): neighbors L28/L32/L34
+(the 12B band was sharp — L19=8 vs L24=92), seeds 1–2 at L30, and
+mirrored evals for the L26/L30 checkpoints.
+
+Provisional shape of the LoRA story, with 12B validated and 31B weak:
+LoRA's failure may track **2026 + large** (Muse-30B none, gemma-4-31B
+weak) rather than age alone — gemma-4-12B (2026, strong) vs
+Gemma-2-27B (2024, strong) puts the break on the size axis within 2026,
+not the age axis within Gemma. Steering on the 31B is strong, so on
+gemma-4-31B the two interventions dissociate cleanly in *both*
+directions from Mistral-7B (steering inert / LoRA strong).
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents

@@ -70,19 +70,20 @@ position-confounded on that model, rate not meaningful.
 | Gemma-2-27B | L14 paper recipe, 2 seeds | 0 → 92/78 | 0 → 86/66 | 0 → 22–42 | 0 → 78/72 | 100 | — | deflection/refusal at L20/L28/L34; confabulation at L23 |
 | OLMo-2-7B | split: lasttok L16 / full L19 | 86 → 90 (L16) | 6 → 70 (L16) | 0 → 4–26 (L19: 0→95) | 0 → 96 (L19) | 96–100 | — | moralizing refusal at L22; main effect positional at most layers |
 | Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
-| gemma-4-31B | queued (13563629) | — | — | — | — | — | — | — |
-| gemma-4-12B | L24 Gemma-2 recipe, 1 seed | 0 → 92 | pending | 0 → 100* | pending | 92 | — | model intact; L19 near-inert (main 8) |
+| gemma-4-31B | best swept: L30, 1 seed | 0 → 50 | pending | 0 → 16* | pending | 100 | — | model intact; no band L18/L26/L30 (main 0/0/50); round 2 queued (13565579) |
+| gemma-4-12B | L24 Gemma-2 recipe, 3 seeds | 0 → 92/98/74 | 0 → 86/90/58 | 0 → 100 | 0 → 98–100 (s2: 74) | 76–96 | — | model intact; validated both orientations; n250 seed0: 94.4 orig / 92.0 mir; L19 near-inert (main 8) |
 
-\* TH 0→100 at all swept layers (L14/L19/L24) — positional-confound
-signature; mirrored validation queued (13563631). 12B sweep, main:
-L14 = 48, L19 = 8, L24 = 92.
+\* 31B L26 flips TH to 94 with main at 0 — mirrored check in round 2
+(13565579). 12B sweep, main: L14 = 48, L19 = 8, L24 = 92. 12B TH
+0→98 *mirrored* — the OLMo-style positional confound is ruled out.
 
 LoRA verdicts: Mistral **strong** (validated, n250, mirrored) ·
 Gemma-2 **strong** (validated, both orientations, genuine TH) ·
 OLMo **partial** (no single recipe gets both scenarios; main confounded) ·
 Muse **none** (no honest regime at any depth or strength) ·
-gemma-4-12B **candidate at L24** (0→92 main, 1 seed, mirrored pending) ·
-gemma-4-31B **queued**.
+gemma-4-12B **strong** (validated: 3 seeds, both orientations, genuine
+TH, n250 94/92) · gemma-4-31B **weak** (no main band ≥50 at
+depth-matched layers, 1 seed; neighbor/seed round 2 pending).
 
 ## Age × size matrix (steering / LoRA)
 
@@ -93,15 +94,17 @@ direction-specific honesty gain; LoRA = validated honesty band.
 |---|---|---|---|
 | **2023** | Mistral-7B: **inert / strong** | — | *open / open* |
 | **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** |
-| **2026** | *open* | gemma-4-12B: **agnostic-flip / open** | Muse-30B: **strong / none** · gemma-4-31B: **strong / open** |
+| **2026** | *open* | gemma-4-12B: **agnostic-flip / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / weak** |
 
-Trend so far: the two interventions run in *opposite* directions with
-age — LoRA works best on 2023–2024 models and dies at Muse (2026);
-steering is inert-to-harmful on 2023–2024 7Bs and strongest on 2026
-models. Gemma-2-27B is the only model both interventions work on.
-Missing for the crossover story: LoRA on gemma-4 (both sizes — does
-LoRA's decline with age hold within the Gemma line?), steering on a
-2023 large model (Llama-2-70b, blocked on access).
+Trend, revised after the gemma-4 LoRA cells: LoRA's decline is not pure
+age — gemma-4-12B (2026) is a validated strong LoRA cell. The failure
+tracks **2026 + large** (Muse-30B none, gemma-4-31B weak) while
+2023–2024 models of any size and the 2026 12B take LoRA fine. Steering
+still trends with age (inert-to-harmful on 2023–2024 7Bs, strongest on
+2026 models). On gemma-4-31B the interventions dissociate in the
+opposite direction from Mistral-7B: steering strong / LoRA weak vs
+inert / strong. Missing: steering on a 2023 large model (Llama-2-70b
+pilot running, 13563622), 31B LoRA round 2 (13565579), 2026 small.
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2023 large: Llama-2-70b-chat (**blocked: HF gated access not granted**),
