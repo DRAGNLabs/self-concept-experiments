@@ -942,6 +942,43 @@ direction actually matters:
   plus mirrored dose points α ∈ {20, 24} with a random-mir at 24 to see
   where the agnostic regime takes over in the mirrored orientation.
 
+## gemma-4-12B hardening + threshold edge (jobs 13562350/13562386): the flip is total, position-robust — and completely direction-agnostic
+
+Every robustness number is maximal; every specificity number fails:
+
+- **Dose at L19**: α8 = 0% → α10 = 62% → α12 = 100%, and 100% at every
+  α ≥ 12 tested. L14 transitions slightly later (66% at α16, 96% at α24).
+- **Mirrored at α32**: main 100%, TH 100% (base 0% both). Position-robust.
+- **n=250: real 100.0% vs random 99.2%.** Indistinguishable.
+- **The reversed vector flips too — even at threshold**: −v at α12 and
+  α32 both give 100% honest. Random seeds straddle the real threshold
+  (seed 0: 68% at α12; seed 1: 0% at α12, 44% at α32) — high variance,
+  but the sign result settles it: on the 12B there is no measurable
+  strength at which the self−other direction is privileged. Compare the
+  31B, where −v was the unique *resistant* direction and random-mirrored
+  is a flat 0% at α16.
+- Mild collateral, the first on any Gemma 4: perspectives dips to 88–90%
+  under L19 α32 steering (both orientations).
+
+Verdict: gemma-4-12B is **flip-fragile, not direction-steerable** — its
+deception policy sits in a basin so shallow that any ~α12 kick
+(1.6× activation norm) in essentially any direction lands on
+honest-by-default. Same family, same generation, same recipe as the 31B,
+and a size step changes the mechanism class: the 31B has a genuinely
+privileged self−other axis; the 12B just falls over.
+
+## Gemma-4-31B mirrored specificity (job 13562353): the mirrored effect is fully direction-specific at α16, and α20 is the operating point
+
+- **Random-mirrored at α16: 0/50.** The real vector's mirrored 44% at α16
+  has no perturbation component at all.
+- Real mirrored dose: 44% (α16) → **94% (α20)** → 98% (α24). Random
+  mirrored: 0% (α16) → 58% (α24). The real direction reaches both-
+  orientation ~95% honesty about one α-step before random reaches half.
+- Operating-point summary for the 31B: **L30 α≈20, ~93–94% honest in both
+  orientations, direction-specific with a ~1.5–2× α-advantage over
+  random, zero damage.** Random at α20 both orientations queued
+  (job 13562427) to quote the differential exactly there.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents

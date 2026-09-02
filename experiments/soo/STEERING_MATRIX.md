@@ -27,8 +27,9 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | Gemma-2-27B | L14 α=32 | 0 → 48 | 0 → 36 | 0 → 0 | 0 → 0 | 100 | null @α16 | 42% @α16 | none ≤α96 | +0.4/−0.7/−2.5 @α32 |
 | OLMo-2-7B | L19 α=16 | 86 → 26 | 6 → 0 | 0 → 0 | 0 → 0 | 100 | partial (86→66) | — | none (anti-honest) | — |
 | Muse-30B | L26 α=8 | 2 → 90 | 58 → 100 | 0 → 12 | 0 → 42 | 100 | null @α16 | 94% @α8 | none ≤α32 | −2.1/−1.1/−1.7 @α8 |
-| gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250 | 93% @α16 | none ≤α32 | pending |
-| gemma-4-12B | L19 α=32 | 0 → 100 | pending | pending | pending | 100 | pending (L24 rand flips!) | pending | none ≤α32 | — |
+| gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250; mir 0% @α16 | 93% @α16 | none ≤α32 | pending |
+| gemma-4-31B | L30 α=20 | 0 → 94 | 0 → 94 | — | — | 100 | pending (13562427) | — | none | — |
+| gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | 99.2% n250; −v 100% | 100% @α32 | none ≤α32 | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
 ~45 mir) · OLMo **harmed** · Muse **strong** · Gemma-4-31B **strong at
@@ -44,7 +45,11 @@ confounded regime, re-anchor at α16 = job 13562348).
 | Gemma-2 L14 | 0 | 0 | 0 | 18 | 40 | 44 | 48 | 58 | 60 | 66 |
 | Muse L26 | 14 | 34 | 80 | 90 | 92 | — | 92 | — | — | — |
 | gemma-4 L30 | — | — | — | 0 | 98 | 100 | 100 | — | — | — |
-| g4-12B L19 | — | — | — | 0 | pend | pend | 100 | — | — | — |
+| g4-12B L19 | — | — | — | 0 | 100 | 100 | 100 | — | — | — |
+
+12B fine-grained: α10 = 62, α12 = 100. 12B specificity: −v(α12) = 100,
+−v(α32) = 100, rand s0(α12) = 68, rand s1(α12) = 0 — direction-agnostic.
+31B mirrored dose: α16 = 44 (rand 0), α20 = 94, α24 = 98 (rand 58).
 | OLMo L19 | 86 | 84 | 82 | 50 | 26 | — | — | — | — | — |
 | Mistral L16 | 6 | 8 | 6 | 0* | — | — | — | — | — | — |
 
@@ -62,7 +67,7 @@ direction-specific honesty gain?
 |---|---|---|---|
 | **2023** | Mistral-7B: **inert** | — | *open* |
 | **2024** | OLMo-2-7B: **harmed** | — | Gemma-2-27B: **partial** |
-| **2026** | *open* | gemma-4-12B: **flip @L19 α32, spec pending** | Muse-30B: **strong** · gemma-4-31B: **strong @α16** |
+| **2026** | *open* | gemma-4-12B: **flips, direction-agnostic** | Muse-30B: **strong** · gemma-4-31B: **strong, direction-specific** |
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2023 large: Llama-2-70b-chat (**blocked: HF gated access not granted**),
