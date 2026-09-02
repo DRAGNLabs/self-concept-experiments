@@ -993,6 +993,30 @@ the real vector's orig/mir thresholds are ~α12/α18; random's are
 direction-specific effect on this model. 31B eval work complete;
 capabilities at α16 still running (13562349).
 
+## Gemma-4-31B steered capabilities (job 13562349): essentially free at α16
+
+lm-eval on base vs L30 α=16 steered (same harness/settings as the Muse
+and Gemma-2 caps runs), acc_norm for ARC-c/HellaSwag, weighted acc over
+61 MMLU subtasks:
+
+| bench | base | steered | Δ |
+|---|---|---|---|
+| ARC-challenge | 24.2 | 24.5 | +0.3 |
+| HellaSwag | 39.6 | 38.4 | −1.2 |
+| MMLU (weighted) | 46.6 | 43.7 | −2.9 |
+
+Caveat on absolutes: base ARC/HellaSwag are near chance in this raw
+loglikelihood setup (no chat template; the unified conditional-generation
+arch likely needs its template to score well), so those two deltas ride
+on a floor and only MMLU (base 46.6, well above the 25 floor) is a real
+capability signal. The −2.9 MMLU delta is in line with the other working
+models (Gemma-2 −2.5, Muse −1.7 on MMLU) — no per-subject collapse
+(worst: astronomy −13, econometrics −12; most within ±5).
+
+**31B row is now complete**: 93% honest at n=250, direction-specific at
+α16–20, robust to layer/scenario/orientation controls, ~3 points of MMLU
+as the total measured cost.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
