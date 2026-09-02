@@ -979,6 +979,20 @@ privileged self−other axis; the 12B just falls over.
   random, zero damage.** Random at α20 both orientations queued
   (job 13562427) to quote the differential exactly there.
 
+## Gemma-4-31B α20 controls (job 13562427): operating point quantified — 94% vs 16% mirrored
+
+At the recommended operating point (L30 α=20): real 100% orig / 94% mir;
+random matched-norm 80% orig / 16% mir. In the original orientation
+random has already entered the direction-agnostic regime by α20, so the
+mirrored orientation carries the specificity claim: **a 78-point
+real-vs-random differential at the strength where the real vector is
+near-ceiling in both orientations.** Full picture across the dose:
+the real vector's orig/mir thresholds are ~α12/α18; random's are
+~α20/α26. The self−other direction buys the flip about one-and-a-half
+α-doublings early — that lead, not the flip itself, is the
+direction-specific effect on this model. 31B eval work complete;
+capabilities at α16 still running (13562349).
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
