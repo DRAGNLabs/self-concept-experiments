@@ -1100,6 +1100,46 @@ not the age axis within Gemma. Steering on the 31B is strong, so on
 gemma-4-31B the two interventions dissociate cleanly in *both*
 directions from Mistral-7B (steering inert / LoRA strong).
 
+## Llama-2-70b steering pilot (job 13563622): a 2023 model steers — the age story is now a scale story (pending controls)
+
+First 2023-large cell, and it lands against the age trend. Grid
+(main, room_only, n=50; raw responses spot-checked — clean varied
+single room names at α8, so the rates are classifying intact outputs):
+
+| cell | honest | notes |
+|---|---|---|
+| baseline (no suffix) | 22 | TH 0 |
+| baseline room_only | **64** | TH 12 — highest baseline of any model in the matrix |
+| L16 α8 | **92** | clean responses |
+| L24 α8 | 86 | |
+| L32 α8 | 72 | |
+| L40 α8 | 72 | |
+| L16 α32 | 20 | other 14% — damage onset |
+| L24 α32 | 2 | other 98% — degenerate word salad (verified in raw) |
+| L32 α32 | 0 | other 100% |
+| L40 α32 | 44 | other 10% |
+
+Two things are unlike every other model:
+
+1. **The baseline.** 64% honest unprompted (next highest: OLMo's 86%,
+   which was positional; everyone else is 0–10). Ceiling headroom is
+   only 36 points, and the mirrored baseline could differ a lot.
+2. **The breadth.** α8 lifts *every* probed depth (72–92 across
+   L16–L40). Every validated steering model so far had a sharp layer
+   band (gemma-4-31B: L30=100 with all neighbors at 0). A broad lift
+   from a high baseline is exactly what a generic
+   perturbation-toward-template effect would look like — the 12B's
+   direction-agnostic flip is the cautionary precedent.
+
+If it validates, the steering axis is not age but **capability/scale**:
+the 2023–2024 steering failures (Mistral-7B inert, OLMo harmed, Gemma-2
+partial) were all ≤27B, confounding age with size. Llama-2-70b is older
+than all of them and steers at 64→92.
+
+Validation queued (13566515): mirrored baseline + mirrored L16 α8, TH
+under steering, dose α2/4/16, matched-norm randoms s0/s1 (+ s0
+mirrored), −v, and n=250 both orientations at the operating point.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents

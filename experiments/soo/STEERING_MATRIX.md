@@ -16,6 +16,7 @@ of models to see how each intervention trends with each variable.
 | Muse-Glimmer-30B | 2026-08 | 30B | 52 | 6656 | L26 | 0.15 |
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
+| Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
 
 ## Headline results
 
@@ -30,13 +31,17 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250; mir 0% @α16 | 93% @α16 | none ≤α32 | +0.3/−1.2/−2.9 @α16 |
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | 99.2% n250; −v 100% | 100% @α32 | none ≤α32 | — |
+| Llama-2-70b | L16 α=8 | 64 → 92 | pending | 12 → pending | pending | — | pending | pending | α=32 (L24/L32 degenerate) | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
 ~45 mir) · OLMo **harmed** · Muse **strong** · Gemma-4-31B **strong at
 α=16** (direction-specific: real 98% vs rand 18%/4%; α≥24 is a second,
 direction-agnostic flip regime — any matched-norm perturbation except −v
 flips it; mirrored/TH/n250 numbers above were taken at α=32 in that
-confounded regime, re-anchor at α16 = job 13562348).
+confounded regime, re-anchor at α16 = job 13562348) ·
+Llama-2-70b **provisional strong** (pilot only: α8 lifts every depth
+L16–L40 by 8–28 pts from the highest baseline in the matrix — broad
+lift is the generic-perturbation signature; controls = job 13566515).
 
 ## Dose curves (main orig honest %, n=50)
 
@@ -46,6 +51,7 @@ confounded regime, re-anchor at α16 = job 13562348).
 | Muse L26 | 14 | 34 | 80 | 90 | 92 | — | 92 | — | — | — |
 | gemma-4 L30 | — | — | — | 0 | 98 | 100 | 100 | — | — | — |
 | g4-12B L19 | — | — | — | 0 | 100 | 100 | 100 | — | — | — |
+| Llama70b L16 | — | — | — | 92 | — | — | 20 | — | — | — |
 
 12B fine-grained: α10 = 62, α12 = 100. 12B specificity: −v(α12) = 100,
 −v(α32) = 100, rand s0(α12) = 68, rand s1(α12) = 0 — direction-agnostic.
@@ -90,27 +96,31 @@ depth-matched layers, 1 seed; neighbor/seed round 2 pending).
 Verdict per cell, both interventions: steering = validated
 direction-specific honesty gain; LoRA = validated honesty band.
 
-| | ~7B | ~12B | 27–31B |
-|---|---|---|---|
-| **2023** | Mistral-7B: **inert / strong** | — | *open / open* |
-| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** |
-| **2026** | *open* | gemma-4-12B: **agnostic-flip / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / weak** |
+| | ~7B | ~12B | 27–31B | ~70B |
+|---|---|---|---|---|
+| **2023** | Mistral-7B: **inert / strong** | — | *open / open* | Llama-2-70b: **strong?† / open** |
+| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: *piloting (13566237)* |
+| **2025** | — | — | — | Kimi-Dev-72B: *piloting (13566238)* |
+| **2026** | *open* | gemma-4-12B: **agnostic-flip / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / weak** | *open* |
 
-Trend, revised after the gemma-4 LoRA cells: LoRA's decline is not pure
-age — gemma-4-12B (2026) is a validated strong LoRA cell. The failure
-tracks **2026 + large** (Muse-30B none, gemma-4-31B weak) while
-2023–2024 models of any size and the 2026 12B take LoRA fine. Steering
-still trends with age (inert-to-harmful on 2023–2024 7Bs, strongest on
-2026 models). On gemma-4-31B the interventions dissociate in the
-opposite direction from Mistral-7B: steering strong / LoRA weak vs
-inert / strong. Missing: steering on a 2023 large model (Llama-2-70b
-pilot running, 13563622), 31B LoRA round 2 (13565579), 2026 small.
+† pilot 64 → 92 at L16 α8, controls pending (13566515).
+
+Trend, revised after the Llama-2-70b pilot: if the 70B cell validates,
+the steering axis is **capability/scale, not age** — the 2023–2024
+steering failures (Mistral inert, OLMo harmed, Gemma-2 partial) were
+all ≤27B, confounding the two, and a 2023 70B steering at 64→92 breaks
+the age reading. LoRA's failure still tracks **2026 + large** (Muse-30B
+none, gemma-4-31B weak; gemma-4-12B and all 2023–2024 models strong).
+The 2024/2025 72B pilots (Qwen2.5, Kimi-Dev) plus a Llama-2-70b LoRA
+run discriminate the remaining readings. Missing after those: 2026
+small, 2026 70B-class, 2023-mid.
 
 Candidate fills (downloadable, fit existing pipeline):
-- 2023 large: Llama-2-70b-chat (**blocked: HF gated access not granted**),
-  Mixtral-8x7B-Instruct (2023-12) as ungated fallback
 - 2026 small: gemma-4-E4B, OLMo-3 if released
 - 2024 mid: gemma-2-9b-it (holds family constant vs 27B for a pure size axis)
-- family-internal age axis: gemma-2-27b → gemma-4-31B already held ~constant
-  size; mistral-7B-v0.2 → a 2026 7B-class Mistral would do the same at small
-  size
+- 2024 huge: Qwen1.5-110B-Chat (3×A100); 2025 huge: Qwen3-235B-A22B-Instruct-2507
+  (MoE, 8×A100) — both verified ungated, standard o_proj attention
+- 2025–2026 age series at 27B: Qwen3.5/3.6/3.8-27B — needs pipeline work
+  (qwen3_5 arch is hybrid linear/full attention, o_proj only every 4th layer)
+- 72B LoRA cells (Llama-2-70b, Qwen2.5-72B): need multi-GPU device_map
+  support in train.py first (currently single-device .to(device))
