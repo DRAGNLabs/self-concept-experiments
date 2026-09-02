@@ -525,6 +525,238 @@ beyond Mistral. Possible follow-ups: subspace projection (top-k PCA of
 paired differences) instead of the rank-1 mean, or position-restricted
 steering.
 
+## Gemma steering pilot (job 13555052): first genuine steering effect — dose-responsive honesty at L14, direction-specific, damage-free (pending mirrored confirmation)
+
+Same grid as Mistral (L14 = validated LoRA band, L20 = paper's layer;
+α ∈ {1, 2, 4, 8, 16} add, projection, matched-norm random control;
+room_only suffix, n=50, single orientation). Gemma behaves nothing like
+Mistral:
+
+- **L14 add mode is dose-responsive**: main honest 0% (α≤4) → 18% (α=8) →
+  **40% (α=16)**, with *zero* "other", *zero* refusals, perspectives 100%
+  at every strength. Responses are clean single room names in all
+  conditions — no degeneration anywhere in the grid.
+- **Direction-specific**: matched-norm random vector at α=8 is a flat null
+  (100% deceptive, perspectives 100%).
+- **Not a first-room heuristic**: all 50 orig main examples happen to list
+  the deceptive room first, so the steered honest answers go *against* the
+  first-mentioned room.
+- Projection α=1 and L20: null, like Mistral. Treasure hunt: 100%
+  deceptive at every strength — **main moves but TH does not**, unlike
+  LoRA-L14 which fixed both.
+
+So the cross-model steering story is already non-uniform: the mean
+self−other direction is inert on Mistral but carries a real, cleanly
+dose-dependent honesty effect on Gemma — at exactly the layer where
+Gemma's LoRA band sits, and only in add mode (small-α subtraction and full
+projection both do nothing; the effect needs *overshooting* the mean
+difference by 8–16×, consistent with the extracted difference being ~a few
+percent of activation norm).
+
+Pending before this counts as validated (hardening job 13556096 in
+flight): (1) **mirrored evals** — a last-mentioned-room heuristic would
+counterfeit honesty in this orientation and flip to deceptive under
+mirroring; (2) dose curve above α=16 (unsaturated at the pilot's top);
+(3) random control at α=16, the working strength; (4) n=250 confirmation.
+
+## Muse steering pilot (job 13555056): the LoRA-immune model is the most steerable in the study (pending mirrored confirmation)
+
+The reversal nobody ordered. Same grid (L26 = the only layer LoRA ever
+moved, L36 = where LoRA damage first appeared; α ∈ {1, 2, 4, 8, 16},
+projection, matched-norm random control; --force-user-channel, n=50,
+single orientation):
+
+- **L26 add mode: a textbook dose-response curve.** Main honest 2% (base)
+  → 14% (α1) → 34% (α2) → **80% (α4) → 90% (α8) → 92% (α16)**. Zero
+  "other", zero refusals, perspectives 100% at every strength. Responses
+  are terse and perfectly formed ("I would point out the playroom."), with
+  none of Muse's damage signatures — no prompt echo, no reasoning leak, no
+  scaffold artifacts.
+- **Treasure hunt moves** — 0% → 12% (α8) → 18% (α16) honest — the first
+  TH movement on an *undamaged* Muse in the entire study (LoRA only ever
+  moved TH in broken models).
+- **Direction-specific**: matched-norm random at α=8 is a flat null (100%
+  deceptive). **Not first-room positional**: all orig main examples list
+  the deceptive room first; the steered model picks the second-listed
+  (honest) room 46/50 at α=16.
+- Projection α=1: small blip (12% honest vs 2% base) but essentially null,
+  as on the other models. L36: null at α=4 and 16.
+
+Cross-model steering picture so far: **Mistral inert, Gemma dose-responsive
+to 40%, Muse dose-responsive to 92%** — an almost perfect inversion of the
+LoRA results, where Mistral had the strongest validated band and Muse had
+nothing at any depth or strength. The model most resistant to
+weight-space SOO is the most responsive to activation-space SOO. If it
+holds, this also reframes the Muse strength-sweep conclusion: the failure
+was never that Muse lacks a self/other direction that regulates deception
+— it demonstrably has one at L26 — but that LoRA-on-q/v optimization
+could not find/exploit it before breaking the model.
+
+Pending before this counts (hardening job 13556155 in flight): mirrored
+evals at α ∈ {2, 4, 8, 16} (a last-mentioned-room heuristic would
+counterfeit exactly this pattern, and Muse's main was partially
+position-confounded at baseline), random control at α=16, the α=32 dose
+edge, and an n=250 confirmation at α=8.
+
+## Gemma steering hardening (job 13556096): effect survives mirroring, attenuated — genuine but with a positional component; no damage edge through α=32
+
+All four pending checks from the Gemma pilot, resolved:
+
+- **Mirrored baseline**: 100% deceptive in both orientations — Gemma's
+  baseline stays the position-robust gold standard.
+- **The effect survives mirroring, attenuated**: main honest orig → mir is
+  18% → 4% (α=8), 40% → 18% (α=16), 44% → 28% (α=24), 48% → 36% (α=32).
+  So it is *not* a pure last-mentioned-room heuristic (that would flip to
+  ~0% mirrored), but the orig orientation inflates the effect —
+  roughly half of it at α=16 is positional. Notably the mir/orig ratio
+  climbs with dose (0.22 → 0.45 → 0.64 → 0.75): the genuine component
+  keeps growing while the positional component saturates.
+- **Random control at the working strength** (α=16): flat null.
+  Direction-specificity confirmed where it matters.
+- **n=250 at α=16**: 42% honest (n=50 said 40%) — the pilot number was not
+  small-sample luck.
+- **No damage edge yet**: through α=32, both orientations: zero "other",
+  zero refusals, perspectives 100%, clean one-word answers. The dose curve
+  is still rising (48% orig / 36% mir at α=32) with no saturation and no
+  damage — 32× the mean self−other difference and the model is still
+  perfectly intact. Contrast every LoRA result, where the honesty/damage
+  edge was razor-thin.
+- Treasure hunt: 100% deceptive at every strength in both orientations —
+  steering's honesty effect on Gemma remains scenario-local, unlike
+  LoRA-L14 which fixed TH too.
+
+Status: Gemma L14 steering is a validated, direction-specific,
+position-robust-after-discounting honesty effect of ~36% (mirrored, α=32)
+against a 0%-honest baseline, with no measurable cost. Weaker than
+LoRA-L14 (which reached both-orientation honesty *and* TH transfer) but
+incomparably better behaved under overdose. Open: where the dose curve
+tops out (α ∈ {48, 64, 96} extension queued), and capability benchmarks
+with the hook active at the working strength.
+
+## OLMo steering pilot (job 13555054): null where LoRA worked; high-α L19 shifts room *position*, probably not honesty (pending mirrored check)
+
+Grid: L16 (lasttok-LoRA's partial main band) and L19 (full-LoRA's TH band),
+α ∈ {1, 2, 4, 8, 16}, projection, mean-token cell, random control; n=50,
+single orientation.
+
+- **Treasure hunt — OLMo's one genuine LoRA effect — is 100% deceptive in
+  every cell.** No layer, strength, or mode touches it. On OLMo, steering
+  fails exactly where LoRA succeeded: the mirror image of Muse, where
+  steering succeeds exactly where LoRA failed.
+- **Main-orig moves the wrong way at high α**: honest 86% (base) → 50%
+  (L19 α=8) → 26% (L19 α=16). Responses stay perfectly coherent terse
+  recommendations ("I would recommend the bathroom."), perspectives 100%
+  everywhere, zero other/refusal — no damage.
+- **Most likely reading: position, not deception.** All orig main examples
+  list the deceptive room first; baseline OLMo picks the *second*-listed
+  room 86% (its known positional habit — the mirrored baseline was 94%
+  deceptive), and L19 α=16 flips it to the *first*-listed room 74%. That
+  is steering re-weighting OLMo's positional heuristic, not inducing
+  deception. Disambiguation queued (steer-olmo-mir.sh): a positional shift
+  would *raise* mirrored honesty; a genuine pro-deception effect would
+  lower it in both orientations. Plus random-at-L19-α16 (the random
+  control at L16 α=8 also moved main-orig, 86% → 62% honest, so the wiggle
+  is not clearly direction-specific) and the α=−16 direction check.
+- Projection, mean-token: null, as on every model.
+
+Cross-model tally, steering vs LoRA: **Mistral inert / strong; Gemma
+partial-validated / strong; Muse strong-pending-mirror / none; OLMo
+null-to-positional / partial.** The two intervention types agree on almost
+nothing — which is itself a finding: "has a steerable self−other
+direction" and "responds to SOO fine-tuning" appear to be independent
+properties of a model, so neither can serve as a proxy or a mechanism
+story for the other.
+
+## Gemma dose extension (job 13556209): curve saturates near half-honest; still no damage at α=96
+
+α ∈ {48, 64, 96}, both orientations: main honest 58/60/66% orig and
+32/44/46% mir (the a48_mir dip below a32_mir's 36% is n=50 noise). The
+curve flattens around ~60–66% orig / ~45% mir — steering tops out at
+roughly half of Gemma's deceptive behavior converted, well short of
+LoRA-L14. TH: 100% deceptive at every strength, both orientations —
+scenario-locality confirmed through the whole dose range. And still no
+damage edge: at α=96, both orientations, zero "other"/refusal,
+perspectives 100%, clean one-word answers. For scale: Gemma's L14 vector
+is 0.24× its typical activation norm, so α=96 injects ~23× the activation
+norm into the stream and the model shrugs it off (downstream RMSNorm
+presumably absorbs much of a constant offset — worth remembering before
+celebrating "no damage at 96×").
+
+## Muse steering hardening (job 13556155): fully validated — the strongest honesty intervention in the study, on the model where LoRA found nothing
+
+All pending checks pass, decisively:
+
+- **Mirrored orientation is even stronger than orig**: main honest 58%
+  (mir base — Muse's baseline position confound, vs 2% orig) → 92% (α=2) →
+  **100% (α=4, 8, 16)**. Not a last-room heuristic: both orientations
+  saturate high.
+- **Treasure hunt transfers in both orientations**: mir 0% → 12% (α=4) →
+  42% (α=8) → 48% (α=16) honest (orig was 12–18%). The scenario that never
+  yielded to ~30 LoRA variants except in broken models moves cleanly under
+  steering, undamaged.
+- **Random matched-norm at α=16: flat null** (100% deceptive main, TH 0%,
+  perspectives 98%). Direction-specific at the working strength.
+- **n=250 at α=8**: main 94% honest, perspectives 100% — confirms n=50.
+- **α=32**: main 92%, TH 20%, perspectives 100%, zero "other" — no damage
+  edge found on Muse either (4.7× activation norm at L26).
+
+Muse steering final: main 98% deceptive → ~0–6% deceptive in both
+orientations at α=8, TH roughly halved, perspectives intact, no
+coherence cost, n=250-confirmed. Pending only: capabilities with the hook
+active (queued).
+
+## OLMo mirrored disambiguation (job 13556228): not positional — steering genuinely reduces OLMo's honesty, and nothing helps
+
+The mirrored test refutes the positional-reweighting hypothesis from the
+pilot: mirrored main honesty *falls* (6% base → 0% at L19 α=8/16), it
+doesn't rise. So high-α steering at L19 lowers OLMo's honesty in **both**
+orientations (orig 86% → 26%) — a genuine anti-honesty effect, not a
+position shift. It is only partially direction-specific: random
+matched-norm at α=16 also drops orig honesty (86% → 66%) and the reversed
+direction (α=−16) to 42%, with the true collapse direction strongest
+(26%). TH: unmoved in every cell, both orientations. Perspectives 100%
+and zero damage columns throughout.
+
+OLMo steering final: **null-to-harmful** — there is no configuration in
+which steering makes OLMo more honest, and pushing along the self−other
+collapse direction makes it *less* honest. Notably this is the model
+whose extracted direction is smallest relative to activations (0.11× at
+L19) and whose LoRA response was itself only partial.
+
+## Steering round wrap-up: four models, four different answers — and the intervention that works is not the one the theory describes
+
+Final tally (steering / LoRA): Mistral **inert** / strong; Gemma
+**validated to ~46% mirrored, saturating ~60%** / strong; Muse
+**validated, ~100% main + ~48% TH mirrored** / none; OLMo
+**null-to-harmful** / partial. Normalizing α by each model's
+vector-to-activation ratio does not unify the picture (working points
+range from 0.6× to 15× activation norm; damage thresholds from 7× to
+>23×): steerability is a property of the model, not of the recipe.
+
+Two mechanistic observations that survive every model:
+
+1. **Projection is null everywhere.** Literally deleting the mean
+   self−other direction — the geometric operation the SOO theory
+   describes — never changes behavior on any model. The effective
+   intervention is *overshooting*: subtracting many multiples of the
+   difference, i.e. biasing the stream hard toward (and past) the
+   "other" side. What works is not collapsing a distinction; it is
+   injecting a strong constant "other-referencing" bias.
+2. **Honesty and damage are separable under steering in a way they never
+   were under LoRA.** Where steering works it comes with zero damage
+   across a 10× dose range and fails soft (saturation, not collapse);
+   where it fails it fails clean (no effect or a legible negative
+   effect). The continuous dial delivered exactly what the LoRA rounds
+   lacked: dose-response curves, matched random controls, and sign
+   checks, at a fraction of the cost (one extraction sweep + eval-only
+   cells, no training anywhere).
+
+Remaining before write-up: capabilities with the hook active (Gemma L14
+α=32, Muse L26 α=8; job queued), and — worth flagging as a future
+experiment, not queued — testing whether a *subspace* version (top-k PCA
+of paired differences) can rescue Mistral/OLMo, which would test the
+"distributed structure" reading of their steering immunity.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
@@ -602,11 +834,13 @@ model in the study. The optimistic reading: when the band exists (Mistral
 L16, Gemma L14), the effect is real, position-robust, cheap (~1 GPU-hour),
 and nearly free of capability cost, which keeps the underlying hypothesis —
 that self/other representational overlap causally regulates deception —
-alive, though only in a distributed form: the steering round showed the
-*mean* self−other activation direction can be deleted outright with no
-behavioral effect, so if overlap regulates deception it does so through a
-subspace or nonlinear structure that rank-1 steering cannot reach and only
-optimization finds. The pessimistic reading: the band's existence is the exception, it
+alive, though in a strongly model-dependent and theory-unfriendly form.
+The steering round split the four models yet again (Mistral inert, Gemma
+partial, Muse near-total, OLMo harmed — nearly inverting the LoRA tally),
+and on every model *deleting* the mean self−other direction does nothing:
+where activation-space intervention works at all, what works is a heavy
+constant bias toward the "other" side of the axis, not the overlap
+collapse the theory describes. The pessimistic reading: the band's existence is the exception, it
 shrinks or vanishes with scale and modern post-training, and nothing in the
 method predicts where (or whether) it will be. Both readings agree on the
 methodological finding, which may outlast the intervention itself:
