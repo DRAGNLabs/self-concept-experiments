@@ -858,6 +858,70 @@ Llama-2-70b-chat (older-bigger cell) is blocked on gated-repo access —
 the HF account needs Meta approval at
 huggingface.co/meta-llama/Llama-2-70b-chat-hf.
 
+## Gemma 4 specificity round (job 13562331): two regimes — the direction is privileged at α=16, and only the anti-direction resists the high-α flip
+
+The random-control confound resolves into the cleanest mechanistic
+picture in the study. Main scenario, L30, n=50 throughout:
+
+| α | real v | rand s0 | rand s1 | −v (reversed) |
+|---|---|---|---|---|
+| 8 | 0% | 0% | — | — |
+| 12 | 6% | 0% | — | — |
+| 16 | **98%** | 18% | 4% | 0% |
+| 24 | 100% | 100% | — | — |
+| 32 | 100% | 100% | 66% | 0% |
+
+- **Regime 1, direction-specific (α≈16)**: the real vector flips 98% while
+  two independent random matched-norm vectors sit at 18% and 4%. The
+  self−other direction is genuinely privileged — its threshold is roughly
+  one α-doubling below random's.
+- **Regime 2, direction-agnostic (α≥24)**: any large perturbation flips
+  the model to honest (rand s0 100% at α24; s1 66% at α32) — *except the
+  reversed real vector*, which stays at 0% even at α=32. The one direction
+  of matched magnitude that resists the generic honesty flip is the one
+  pointing toward "self". That asymmetry ties the axis to the behavior
+  even in the perturbation regime.
+- Random at L27/L33 (α=32): 0% — both regimes are L30-specific.
+- All cells remain clean single-room-name responses; no damage anywhere,
+  including the 66% partial-flip and reversed-vector cells.
+
+Interpretation: Gemma 4's deception policy at L30 sits in a basin whose
+escape direction is the self→other axis. Small pushes along that axis
+(α16, ~1.6× act norm) tip it into honest-by-default; big enough pushes in
+almost any direction do too (the basin has finite depth); pushing deeper
+into the basin (−v) keeps it deceptive at any tested magnitude. Note
+Gemma-2 showed no such generic regime through α=96 — this basin structure
+is new in Gemma 4.
+
+The claimable working cell moves to **α=16** (98% main orig, direction-
+specific). Re-anchoring job 13562348 queued: mirrored + perspectives/TH +
+n=250 real + n=250 random, all at α16. Capabilities at α16 queued as
+13562349.
+
+## gemma-4-12B pilot (job 13562332): the small Gemma 4 flips too — at 30–40% depth — and the perturbation regime shows up at a *non*-working layer
+
+The newer-smaller matrix cell. Extraction + standard pilot (48 layers,
+hidden 3840; depth sweep L14/L19/L24/L29 × α{8,32}, n=50):
+
+- Baselines: main 0/50 honest in both suffix conventions, perspectives
+  50/50, TH 0/50 — same maximally-clean profile as the 31B.
+- **L19 α=32: 50/50 honest. L14 α=32: 48/50.** L24 and L29: null. α=8:
+  null everywhere. The 12B's band sits at 30–40% depth — shallower in
+  fraction than the 31B's single-layer L30/60=50% — and is at least two
+  layers wide.
+- All steered responses are single room names verified against each
+  example's honest room (0 mismatches at both working layers).
+- **The pilot-stage random control landed on a null layer and flipped
+  anyway**: random matched-norm at L24 α=32 = 50/50 honest, where the
+  *real* L24 vector is 1/50. So the direction-agnostic perturbation-flip
+  regime exists in the 12B too — and at L24 the real self−other direction
+  is apparently one of the directions that *doesn't* trigger it (echoing
+  the 31B's reversed-vector immunity at L30).
+
+Hardening + specificity in one round queued (job 13562350): dose
+transitions at L19/L14, randoms at the working layers (two seeds),
+reversed vector, mirrored, scenarios, and paired real-vs-random n=250.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
