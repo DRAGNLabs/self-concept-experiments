@@ -751,11 +751,30 @@ Two mechanistic observations that survive every model:
    checks, at a fraction of the cost (one extraction sweep + eval-only
    cells, no training anywhere).
 
-Remaining before write-up: capabilities with the hook active (Gemma L14
-α=32, Muse L26 α=8; job queued), and — worth flagging as a future
-experiment, not queued — testing whether a *subspace* version (top-k PCA
-of paired differences) can rescue Mistral/OLMo, which would test the
-"distributed structure" reading of their steering immunity.
+Remaining before write-up: none — capabilities landed (below). Worth
+flagging as a future experiment, not queued: testing whether a *subspace*
+version (top-k PCA of paired differences) can rescue Mistral/OLMo, which
+would test the "distributed structure" reading of their steering immunity.
+
+## Steered capabilities (job 13556727): 1–2.5 points, on par with the LoRA bands
+
+lm-eval with the hook active vs a same-code-path α=0 baseline
+(`scripts/caps_steered.py`; acc_norm for ARC/HellaSwag, acc for MMLU):
+
+| model, setting      | ARC-C  | HellaSwag | MMLU   |
+|---------------------|--------|-----------|--------|
+| Gemma L14 α=32      | +0.4   | −0.7      | −2.5   |
+| Muse L26 α=8        | −2.1   | −1.1      | −1.7   |
+
+Steering's capability cost at the working strengths is small — the same
+"within a point or two" territory as the validated LoRA bands, with
+Gemma's −2.5 MMLU the largest single delta (measured at α=32, high on the
+dose curve; the α=8–16 working range presumably costs less — untested).
+The loglikelihood-benchmark caveat from the LoRA rounds applies here too,
+but with less force: unlike the LoRA damage modes, steered generations
+were read directly in every eval cell and stayed clean. With this, the
+steering round is complete: extraction → pilots → mirrored/random/n=250
+hardening → dose curves → capabilities, all four models.
 
 # Summary
 
