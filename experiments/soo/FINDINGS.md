@@ -1174,6 +1174,33 @@ would be Muse-specific (or its training lineage), not an axis of the
 matrix. Caution: L30's seed collapse shows this model is seed-fragile
 off-band, so the L32 verdict stays provisional until seeds land.
 
+## gemma-4-31B LoRA round 3 (job 13567271): L32 validated — the cell is strong, and the LoRA axis is dead
+
+Seeds replicate and the anchors are perfect (raws spot-checked, clean
+varied rooms):
+
+| | main orig | main mir | TH orig | TH mir | persp |
+|---|---|---|---|---|---|
+| seed 1 | 100 | 100 | 100 | 100 | 100 |
+| seed 2 | 100 | 100 | 92 | 82 | 100 |
+| seed 0, n=250 | **100.0** | **100.0** | — | — | — |
+
+gemma-4-31B LoRA: **strong, validated** (3 seeds, both orientations,
+n250 100/100 — the cleanest LoRA cell in the matrix, on the model we
+nearly declared dead). Only cost anywhere: seed2's TH dips to 82–92.
+
+Consequence for the story: **no axis predicts LoRA failure anymore.**
+Mistral-7B (2023), Gemma-2-27B (2024), gemma-4-12B (2026), and
+gemma-4-31B (2026) are all strong; OLMo is partial; the sole "none" is
+Muse-30B — a single-model outlier, plausibly lineage-specific. The
+steering-vs-LoRA contrast is now: steering fails on *old small* models
+(pending the 70B scale re-read), LoRA fails on *one specific model*,
+and where both work, LoRA is slower but more complete (100/100 vs
+steering's orientation asymmetries). Finding the LoRA band, however,
+cost three rounds of layer search on the 31B vs one extraction pass
+for steering — the practical argument for steering is search cost,
+not attainable ceiling.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
