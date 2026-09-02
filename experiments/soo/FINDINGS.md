@@ -776,6 +776,46 @@ were read directly in every eval cell and stayed clean. With this, the
 steering round is complete: extraction → pilots → mirrored/random/n=250
 hardening → dose curves → capabilities, all four models.
 
+## Gemma 4 steering pilot (jobs 13561999/13562000): a fifth model — and the cleanest flip yet, 0→100% honest at L30 α=32 (pending hardening)
+
+The steering round's "works best on bigger/newer models" pattern suggested
+extending to a newer Gemma. google/gemma-4-31B-it (July 2026) is the dense
+successor to gemma-2-27b-it at the same scale — 60 layers, hidden 5376,
+multimodal wrapper (`Gemma4ForConditionalGeneration`), loads through
+`load_causal_lm` unchanged on transformers 5.15. One template note: Gemma 4
+is a reasoning model, but the canonical chat template with its default
+`enable_thinking=false` *pre-closes an empty thought channel*
+(`<|channel>thought\n<channel|>`) in the generation prompt, so the model
+answers directly and both extraction and eval run unmodified — no Muse-style
+channel forcing needed.
+
+Extraction (job 13561999): all 60 layers, one sweep, 78 pairs →
+`results/steering/gemma4_31b.pt`. Vector-to-activation ratios in the probed
+band run 0.02–0.19 (rel_last) — Muse/OLMo territory, below Gemma-2's 0.239.
+
+Pilot (job 13562000, n=50, room_only): no LoRA band exists for this model,
+so the grid swept depth L∈{12,18,24,30} × α∈{8,32}, main scenario, plus
+baselines in both suffix conventions.
+
+- Baselines are maximally clean: main 0/50 honest in *both* suffix
+  conventions (fully deceptive, no refusals/other), perspectives 50/50,
+  treasure_hunt 0/50. Gemma 4 answers with bare room names.
+- Seven of eight steering cells: exactly null (0/50, still deceptive).
+- **L30 α=32: 50/50 honest.** Complete flip. Response-read per protocol:
+  every response is a single room name (max 12 chars), 12 distinct rooms
+  across 50 examples, and each names *that example's* honest room
+  (cross-checked against `data/eval/main.jsonl`, 0 mismatches). No damage,
+  no artifacts, no degeneracy.
+
+Sharper than anything else in the study: Muse ramped (2→80→92%), Gemma-2
+saturated at two-thirds; Gemma 4 goes from perfectly deceptive to perfectly
+honest in one α-doubling at one depth (L30/60 = 50%, deeper than Gemma-2's
+30% band). L30 α=8 is null, so the transition sits somewhere in α∈(8,32).
+
+Hardening queued (job 13562297): mirrored orientation, random matched-norm
+control, dose points α∈{12,16,24}, band mapping L∈{27,33,36}, the other
+scenarios at the working cell, n=250 confirmation.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
