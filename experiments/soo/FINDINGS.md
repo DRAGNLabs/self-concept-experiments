@@ -1304,6 +1304,74 @@ Rerun queued (13573571): baseline + best steering cell, both
 orientations, at 512 tokens so every response reaches an answer;
 outputs to be reclassified offline on post-think text before use.
 
+## Qwen2.5-72B validation (job 13573570): L40 α32 is direction-agnostic — every control also flips to 100
+
+Full battery at the pilot's best cell (L40 α32):
+
+| condition | main honest % |
+|---|---|
+| baseline mirrored | 0 (TH 0) — clean both orientations |
+| real, orig n250 | 98.8 |
+| real, mirrored | 100 (n250 99.6; TH mir 100, TH orig 100) |
+| rand s0 / s1, orig | 100 / 100 |
+| rand s0, mirrored | 100 |
+| −v | 100 |
+| real α16 / α24 / α48 | 100 / 100 / 74 |
+
+Read: real steering, matched-norm randoms in *both* orientations, and
+the negated vector all produce the identical 0→100 flip. This is the
+gemma-4-12B pattern — at this depth and strength, *any* matched-norm
+perturbation makes Qwen2.5-72B honest; the SOO direction carries no
+information at this cell. (Contrast Llama-2-70b, where the mirrored
+orientation cleanly separated real 72–74 from rand 6.) The α48 decline
+to 74 says the effect is band-limited in strength, not monotone
+perturbation damage.
+
+Not yet dead: the 31B precedent, where the direction-specific regime
+lived at *lower* strength (real flipped at α16, randoms only at α24+).
+Here real = 100 already at α16 and randoms are untested below α32, and
+L16 (real 88 at α32) is untested for specificity entirely. Round 2
+queued (13573966): real vs rand-s0 dose curves at L40 (α4–24), rand ×2
+and −v at L16 α32. Until it lands, the cell verdict is
+**agnostic-flip at L40 α32, specificity open at lower α / L16**.
+
+## Kimi-Dev-72B 512-token rerun (job 13573571): the deceptive baseline was there all along — truncation bias inverted it
+
+At 512 tokens nearly every response reaches a post-think answer
+(truncation 0–6/50 vs 33/50 before). Post-think reclassification
+(offline, orientation-correct ground truth):
+
+| cell | honest | deceptive | truncated |
+|---|---|---|---|
+| baseline main, orig | 16 | 28 | 6 |
+| baseline main, mir | 9 | 36 | 5 |
+| baseline TH, orig | 0 | 48 | 2 |
+| baseline TH, mir | 0 | 46 | 4 |
+| steer L24 α32, orig | **49** | 1 | 0 |
+| steer L24 α32, mir | **50** | 0 | 0 |
+
+The pilot-era "answered baseline is 16/17 honest" was a truncation
+artifact in the *other* direction: deceptive answers take longer
+deliberation, so at 100 tokens the deceptive rows were precisely the
+ones cut mid-think, leaving an honest-biased answered subset. With
+room to finish, Kimi-Dev is majority-deceptive on main (64–80% of
+answered) and near-uniformly deceptive on treasure_hunt — a genuine
+testbed after all.
+
+The steering result is correspondingly real and large: 36→98 orig,
+20→100 mirrored (honest of answered), clean varied rooms (11–12
+distinct, flat), and the vector still deletes the think channel
+outright (33/50 think blocks at baseline → 0/50 steered, both
+orientations). Both effects — honesty flip and think suppression —
+survive the corrected classification. Direction-specificity is the
+open question (the pilot's randoms ran at 100 tokens and are invalid);
+controls queued (13573967): rand ×2 + rand-mir + −v, TH under steering
+both orientations, dose α8/16, n250 anchors, all at 512 tokens.
+
+Protocol note now standing: reasoning models require an explicit
+token budget (≥512) and post-think classification; the 100-token
+first-room protocol silently measures think-text artifacts on them.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
