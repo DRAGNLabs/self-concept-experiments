@@ -1372,6 +1372,35 @@ Protocol note now standing: reasoning models require an explicit
 token budget (≥512) and post-think classification; the 100-token
 first-room protocol silently measures think-text artifacts on them.
 
+## Qwen2.5-72B specificity round (job 13573966): a real window at L40 α12–16 — axis-specific, sign-agnostic (the 12B signature)
+
+Dose curves at L40 (main, honest %, n=50):
+
+| α | 4 | 8 | 12 | 16 | 24 | 32 | 48 |
+|---|---|---|---|---|---|---|---|
+| real | 0 | 38 | 92 | 100 | 100 | 100 | 74 |
+| rand s0 | 0 | 0 | 12 | 58 | 100 | 100 | — |
+
+Plus at α16: rand s1 = 8, −v = **88**. At L16 α32: rand s0/s1 = 78/92,
+−v = 66 — no separation, fully agnostic at that layer.
+
+Read: the flip is *not* generic perturbation in the α12–16 window —
+real is at 92–100 while matched-norm randoms sit at 8–58 — but the
+negated vector flips too (88), so the SOO **axis** matters and its
+**sign** does not. That is exactly gemma-4-12B's signature (−v = 100,
+randoms seed-split 68/0), now reproduced at 72B on a different vendor.
+The dual-regime structure also replicates: above α24 every perturbation
+flips (as on the 31B and Llama-2-70b orig orientation), and the α48
+decline (74) marks the top of the band. Responses in the window are
+clean (11–12 distinct rooms, flat).
+
+The matrix's steering taxonomy is now three classes, not two:
+direction-specific (Llama-2-70b mirrored, Muse, 31B@α16) /
+axis-specific-sign-agnostic (gemma-4-12B, Qwen2.5-72B@L40 α12–16) /
+fully agnostic (everything at high α). Round 3 queued (13575617):
+mirrored orientation at α16 (real, rand ×2, −v) — the test that
+adjudicated Llama-2-70b — plus rand seeds 2–3 orig and an n250 anchor.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
