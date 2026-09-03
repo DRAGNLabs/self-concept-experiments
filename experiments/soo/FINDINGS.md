@@ -1140,6 +1140,38 @@ Validation queued (13566515): mirrored baseline + mirrored L16 α8, TH
 under steering, dose α2/4/16, matched-norm randoms s0/s1 (+ s0
 mirrored), −v, and n=250 both orientations at the operating point.
 
+## Llama-2-70b validation (job 13566515): direction-specific in the mirrored orientation — a 2023 model steers, and the age axis is now a scale axis
+
+The controls split the pilot's result into the same dual-regime seen on
+gemma-4-31B, and the mirrored orientation is decisive (all raws
+spot-checked — clean varied rooms throughout):
+
+| cell | orig | mirrored |
+|---|---|---|
+| baseline | 64 | **6** |
+| L16 α8 real | 92 (89.6 n250) | 72 (**74.0 n250**) |
+| L16 α8 rand s0/s1 | 80 / 86 | **6** |
+| L16 α8 −v | 98 | not run |
+| TH under L16 α8 | 12 → 100 | 0 → 94 |
+
+- **Orig orientation is confounded**: from the 64% baseline, *any*
+  matched-norm perturbation tips it honest — randoms hit 80–86 and −v
+  hits 98. Direction-agnostic, like the 31B's α≥24 regime, except here
+  it lives at the baseline-favored orientation rather than at high α.
+- **Mirrored orientation is clean**: baseline 6, random 6 (exact null),
+  real vector 72/74. A 66–68 pt direction-specific differential, plus
+  TH 0 → 94 mirrored. This is genuine SOO steering.
+- Dose (orig, L16): α2 60, α4 58, α8 92, α16 70, α32 20 — narrow peak
+  at α8, unlike the plateau models.
+
+Verdict: **strong (mirrored-validated)**. A 2023 model steers, so the
+steering axis is **capability/scale, not age**: every steering failure
+(Mistral-7B inert, OLMo-2 harmed, Gemma-2-27B partial) is ≤27B, and
+the two ~70B-and-up-scale-class models tested so far (Llama-2-70b
+2023, all 2026 models) steer strongly regardless of age. The
+Qwen2.5-72B (2024) and Kimi-Dev-72B (2025) pilots complete the large
+column and test this directly.
+
 ## gemma-4-31B LoRA round 2 (job 13565579): the band was at L32 — "weak" overturned
 
 Round 1 swept depth-matched layers (L18/L26/L30, 30–50% depth) and found
