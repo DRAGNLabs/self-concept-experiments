@@ -35,7 +35,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 96 @α12 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | rand mir 0/0 @α12, 38/16 @α32 (null); ±v ~100 both orientations | 99.2% n250 | none ≤α32 | — |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
 | Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
-| Kimi-Dev-72B | L24 α=32, 512 tok, post-think reclass* | 36 → 98 | 20 → 100 | 0 (base) | 0 (base) | — | pending (13573967) | pending | none; think channel deleted (33/50 → 0/50) | — |
+| Kimi-Dev-72B | L24 α=32, 512 tok, post-think reclass* | 36 → 98 | 20 → 100 | 0 → 98 | 0 → 100 | — | rand 50/50 ×2 orig + 50/50 mir + −v 42/44 (agnostic); α16–24 window probe 13575650 | 96.0 orig; mir requeued | none; any perturbation deletes think channel | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
 ~45 mir) · OLMo **harmed** · Muse **strong** · Gemma-4-31B **strong at
@@ -126,7 +126,7 @@ direction-specific honesty gain; LoRA = validated honesty band.
 |---|---|---|---|---|
 | **2023** | Mistral-7B: **inert / strong** | — | *open / open* | Llama-2-70b: **strong / open** |
 | **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: **strong / open** |
-| **2025** | — | — | — | Kimi-Dev-72B: *steers 36→98, controls queued (13573967)* |
+| **2025** | — | — | — | Kimi-Dev-72B: **agnostic-flip?** *(window probe 13575650)* |
 | **2026** | *open* | gemma-4-12B: **axis-specific / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / strong** | *open* |
 
 Trend, after the 70B validation and 31B round 3: **no axis predicts
@@ -145,15 +145,18 @@ SOO direction is doing the moving: Llama-2-70b is direction-specific
 (mirrored: real 72–74 vs rand 6), Qwen2.5-72B likewise (mirrored at
 L40 α16: real 100 vs rand 28/0, −v 22 — the orig orientation's
 sign-agnosticism was orientation contamination, as on Llama),
-Kimi-Dev-72B awaits controls. "Steerability tracks scale" holds, and
-both mirrored-validated 70Bs are direction-specific. gemma-4-12B's
-class survived its mirrored controls (real 96, rand 0/0, −v 98): it is
-genuinely **axis-specific/sign-agnostic** in both orientations — the
-SOO axis is causal everywhere steering works, but whether the *sign*
-matters splits 70B (yes) from 12B (no). Kimi also sets a standing protocol rule: reasoning models need
+Kimi-Dev-72B is so far fully agnostic — randoms flip it 50/50 in both
+orientations and also delete its think channel, so its "steerability"
+is plausibly just perturbation-fragile CoT-routed deception (window
+probe 13575650 decides). "Steerability tracks scale" holds for the raw
+flip. gemma-4-12B's class survived its mirrored controls (real 96,
+rand 0/0, −v 98): genuinely **axis-specific/sign-agnostic** in both
+orientations. Specificity taxonomy: direction-specific (both dense
+70Bs, Muse, 31B@α16) / axis-specific (12B) / agnostic (Kimi, likely
+architecture- not scale-driven). Kimi also sets a standing protocol rule: reasoning models need
 ≥512 tokens + post-think classification (at 100 tokens truncation
 biased its answered baseline *honest* — the confound can point either
-way). In flight: Kimi controls (13573967). Missing after those: 2026 small, 2026 70B-class, 2023-mid,
+way). In flight: Kimi window probe + mir n250 (13575650). Missing after those: 2026 small, 2026 70B-class, 2023-mid,
 72B LoRA cells.
 
 Candidate fills (downloadable, fit existing pipeline):

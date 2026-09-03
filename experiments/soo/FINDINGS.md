@@ -1457,6 +1457,47 @@ variable separating the classes so far (12B vs 70B; the 31B is
 direction-specific at α16), but one model per class-boundary is thin —
 worth revisiting if more mid-size models enter the matrix.
 
+## Kimi-Dev-72B controls (job 13573967): fully direction-agnostic at L24 α32 — mirroring doesn't separate, and randoms delete the think channel too
+
+All numbers post-think reclassified (honest / answered, n=50 unless
+noted); the job's final eval (mirrored n250) died at the time limit
+and is requeued.
+
+| cell (L24 α32) | result |
+|---|---|
+| real, orig n250 | 240/250 (96%) |
+| real, TH orig / TH mir | 49/50 · 50/50 |
+| rand s0 / s1, orig | **50/50 · 50/50** |
+| rand s0, mirrored | **50/50** |
+| −v | 42/44 |
+| real dose α8 / α16 | 18/48 (37%) · 33/49 (67%) |
+
+Read: unlike Llama-2-70b and Qwen2.5-72B, the mirrored orientation
+does *not* rescue specificity — matched-norm randoms flip Kimi to
+100% honest in both orientations, as does −v. Two more observations:
+
+1. **Random vectors also delete the think channel** (0–1/50 think
+   blocks vs 33/50 at baseline). The CoT-suppression effect reported
+   for the real vector is not SOO-specific either — any matched-norm
+   perturbation at L24 collapses this model to terse direct answers,
+   and with the deliberation gone, the deception goes too. That is a
+   coherent single mechanism for the whole cell: the perturbation
+   knocks out deliberation, and Kimi's deception lives in the
+   deliberation.
+2. The real-vector dose curve rises smoothly (37 → 67 → 96), so if a
+   specificity window exists it must be at α16–24 where randoms are
+   untested (Qwen's window hid exactly there). Final probe queued
+   (13575650): rand s0 at α8/16/24, real α24, plus the lost mirrored
+   n250 anchor. If randoms track real down the dose curve, the cell
+   verdict is **agnostic-flip** — steering "works" on Kimi only in
+   the uninteresting sense that any nudge does.
+
+Tentative taxonomy placement, pending 13575650: direction-specific
+(Llama-2-70b, Qwen2.5-72B, Muse, 31B@α16) / axis-specific (gemma-4-12B)
+/ agnostic-flip (Kimi-Dev-72B) — with the caveat that Kimi's agnosticism
+plausibly reflects its reasoning-model architecture (deception routed
+through suppressible CoT) rather than its size or age.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
