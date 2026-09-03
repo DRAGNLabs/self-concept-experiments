@@ -1,13 +1,19 @@
+# Set up with ./setup_env.sh (repo root), not a bare `mamba env create` -- it also
+# patches a broken transitive dependency and installs activate.d hooks. See that
+# script for why.
 name: soo
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.13
   - pip
   - pip:
       - --extra-index-url https://download.pytorch.org/whl/cu126 # needed for compatibility with all supercomputer nodes
+      - git+https://github.com/Plyb/byutils.git
       - torch>=2.4
       - transformers>=4.48
+      - vllm
+      - ray
       - peft>=0.14
       - accelerate>=1.2
       - datasets>=3.2
@@ -15,4 +21,6 @@ dependencies:
       - pandas
       - matplotlib
       - pyyaml
+      - jsonargparse
       - tqdm
+      - -e .
