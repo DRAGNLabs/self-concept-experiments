@@ -17,6 +17,8 @@ of models to see how each intervention trends with each variable.
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
 | Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
+| Qwen2.5-72B-Instruct | 2024-09 | 72B | 80 | 8192 | L40 (pilot) | — |
+| Kimi-Dev-72B | 2025-06 | 72B | 80 | 8192 | — | — |
 
 ## Headline results
 
@@ -32,6 +34,8 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | 99.2% n250; −v 100% | 100% @α32 | none ≤α32 | — |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
+| Qwen2.5-72B | L40 α=32 (pilot) | 0 → 100 | pending | 0 (base) | pending | — | pending (13573570) | pending | none ≤α32 (`other` 0 everywhere) | — |
+| Kimi-Dev-72B | invalid pilot | n/a* | pending | n/a* | pending | — | — | — | — | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
 ~45 mir) · OLMo **harmed** · Muse **strong** · Gemma-4-31B **strong at
@@ -42,7 +46,16 @@ confounded regime, re-anchor at α16 = job 13562348) ·
 Llama-2-70b **strong (mirrored-validated)**: orig orientation is
 direction-agnostic (randoms 80–86, −v 98, from the matrix's highest
 baseline of 64), but mirrored is clean — baseline 6, rand 6, real
-72/74 n250, TH 0→94. Same dual-regime as the 31B, decided the same way.
+72/74 n250, TH 0→94. Same dual-regime as the 31B, decided the same way. ·
+Qwen2.5-72B **strong pilot, controls queued** (13573570): clean 0
+baseline, α32 grid 88/38/98/100 at L16/L24/L32/L40, 11–14 distinct
+rooms, no damage — dose profile opposite to Llama-2-70b (α8 weak, α32
+clean) · Kimi-Dev-72B **invalid as scored**: \* reasoning model; 33/50
+baseline responses truncated mid-CoT at 100 tokens with no answer, so
+the classifier scored think-text room mentions. Post-think reclass:
+answered baseline 16/17 honest → no deceptive baseline; steering at α32
+suppresses the think channel entirely (33/50 → 0/50). 512-token rerun
+queued (13573571).
 
 ## Dose curves (main orig honest %, n=50)
 
@@ -53,6 +66,7 @@ baseline of 64), but mirrored is clean — baseline 6, rand 6, real
 | gemma-4 L30 | — | — | — | 0 | 98 | 100 | 100 | — | — | — |
 | g4-12B L19 | — | — | — | 0 | 100 | 100 | 100 | — | — | — |
 | Llama70b L16 | — | 60 | 58 | 92 | 70 | — | 20 | — | — | — |
+| Qwen72B L40 | — | — | — | 38 | — | — | 100 | — | — | — |
 
 12B fine-grained: α10 = 62, α12 = 100. 12B specificity: −v(α12) = 100,
 −v(α32) = 100, rand s0(α12) = 68, rand s1(α12) = 0 — direction-agnostic.
@@ -103,8 +117,8 @@ direction-specific honesty gain; LoRA = validated honesty band.
 | | ~7B | ~12B | 27–31B | ~70B |
 |---|---|---|---|---|
 | **2023** | Mistral-7B: **inert / strong** | — | *open / open* | Llama-2-70b: **strong / open** |
-| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: *piloting (13566237)* |
-| **2025** | — | — | — | Kimi-Dev-72B: *piloting (13566238)* |
+| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: *strong pilot 0→100; controls queued (13573570)* |
+| **2025** | — | — | — | Kimi-Dev-72B: *invalid eval (CoT truncation; no deceptive baseline); rerun queued (13573571)* |
 | **2026** | *open* | gemma-4-12B: **agnostic-flip / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / strong** | *open* |
 
 Trend, after the 70B validation and 31B round 3: **no axis predicts
@@ -117,9 +131,15 @@ work, LoRA reaches a higher, more symmetric ceiling (31B: 100/100 vs
 steering's orientation asymmetry), but finding its band cost three
 rounds of layer search (bands sit at ~50% depth on gemma-4 vs 30% on
 Gemma-2) vs one extraction pass for steering — steering's advantage is
-search cost, not ceiling. In flight: 70B steering controls (13566515),
-Qwen2.5-72B pilot (13566237), Kimi-Dev-72B pilot (13566238). Missing
-after those: 2026 small, 2026 70B-class, 2023-mid, 72B LoRA cells.
+search cost, not ceiling. The Qwen2.5-72B pilot (0→100 at L40 α32,
+clean) adds a second, cross-vendor ~70B steering point: every 70B-class
+model that produces a deceptive baseline has steered, regardless of
+year. Kimi-Dev-72B is a cautionary cell: reasoning models break the
+100-token first-room protocol (CoT truncation), and its answered
+baseline is already honest — screen candidates for a deceptive baseline
+before spending a grid on them. In flight: Qwen2.5-72B validation
+(13573570), Kimi 512-token rerun (13573571). Missing after those:
+2026 small, 2026 70B-class, 2023-mid, 72B LoRA cells.
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released
