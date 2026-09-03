@@ -34,7 +34,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | 99.2% n250; −v 100% | 100% @α32 | none ≤α32 | — |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
-| Qwen2.5-72B | L40 α=16 (window) | 0 → 100 | pending (13575617) | 0 → 100 @α32 | 0 → 100 @α32 | — | s0 58 / s1 8 @α16 (separates); −v 88 (sign-agnostic); @α32 all 100 | 98.8/99.6 @α32; α16 pending | α48 → 74; `other` 0 everywhere | — |
+| Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
 | Kimi-Dev-72B | L24 α=32, 512 tok, post-think reclass* | 36 → 98 | 20 → 100 | 0 (base) | 0 (base) | — | pending (13573967) | pending | none; think channel deleted (33/50 → 0/50) | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
@@ -47,11 +47,12 @@ Llama-2-70b **strong (mirrored-validated)**: orig orientation is
 direction-agnostic (randoms 80–86, −v 98, from the matrix's highest
 baseline of 64), but mirrored is clean — baseline 6, rand 6, real
 72/74 n250, TH 0→94. Same dual-regime as the 31B, decided the same way. ·
-Qwen2.5-72B **axis-specific window at L40 α12–16** (13573966): real
-92/100 vs rand 12–58 (s0) and 8 (s1), but −v 88 — the 12B
-sign-agnostic signature at 72B; above α24 fully agnostic (rand ×3, −v
-all 100), L16 fully agnostic; mirrored adjudication = round 3
-(13575617) · Kimi-Dev-72B **steers 36→98 / 20→100, controls pending**
+Qwen2.5-72B **strong (mirrored-validated, direction-specific)**: at
+L40 α16 mirrored, real 100 vs rand 28/0 and −v 22; orig orientation is
+sign-agnostic (−v 88, rand 8–72 across 4 seeds) — same
+orientation-contamination pattern as Llama-2-70b, decided the same
+way; n250 real α16 orig = 100.0; above α24 fully agnostic, L16 fully
+agnostic · Kimi-Dev-72B **steers 36→98 / 20→100, controls pending**
 (13573967): \* reasoning model — at 100 tokens the eval is invalid
 (33/50 truncated mid-CoT; classifier scores think text; truncation
 biased the answered subset *honest* because deceptive answers
@@ -121,7 +122,7 @@ direction-specific honesty gain; LoRA = validated honesty band.
 | | ~7B | ~12B | 27–31B | ~70B |
 |---|---|---|---|---|
 | **2023** | Mistral-7B: **inert / strong** | — | *open / open* | Llama-2-70b: **strong / open** |
-| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: **axis-specific (sign-agnostic)** *(mirrored round 13575617)* |
+| **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: **strong / open** |
 | **2025** | — | — | — | Kimi-Dev-72B: *steers 36→98, controls queued (13573967)* |
 | **2026** | *open* | gemma-4-12B: **agnostic-flip / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / strong** | *open* |
 
@@ -138,15 +139,16 @@ Gemma-2) vs one extraction pass for steering — steering's advantage is
 search cost, not ceiling. All three ~70B models now flip 0→~100, so at
 scale the question is no longer *whether* honesty moves but whether the
 SOO direction is doing the moving: Llama-2-70b is direction-specific
-(mirrored: real 72–74 vs rand 6), Qwen2.5-72B has an axis-specific but
-sign-agnostic window at L40 α12–16 (real 92–100, rand 8–58, −v 88 —
-the gemma-4-12B signature reproduced at 72B cross-vendor), Kimi-Dev-72B
-awaits controls. "Steerability tracks scale" holds for the raw flip;
-the specificity taxonomy (direction-specific / axis-specific /
-agnostic) cuts across it and is now the thing to map. Kimi also sets a standing protocol rule: reasoning models need
+(mirrored: real 72–74 vs rand 6), Qwen2.5-72B likewise (mirrored at
+L40 α16: real 100 vs rand 28/0, −v 22 — the orig orientation's
+sign-agnosticism was orientation contamination, as on Llama),
+Kimi-Dev-72B awaits controls. "Steerability tracks scale" holds, and
+both mirrored-validated 70Bs are direction-specific; whether
+gemma-4-12B's "agnostic-flip" survives its own mirrored controls
+(13575634) decides if that class exists at all. Kimi also sets a standing protocol rule: reasoning models need
 ≥512 tokens + post-think classification (at 100 tokens truncation
 biased its answered baseline *honest* — the confound can point either
-way). In flight: Qwen mirrored adjudication (13575617), Kimi controls
+way). In flight: 12B mirrored controls (13575634), Kimi controls
 (13573967). Missing after those: 2026 small, 2026 70B-class, 2023-mid,
 72B LoRA cells.
 

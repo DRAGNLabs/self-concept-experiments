@@ -1401,6 +1401,36 @@ fully agnostic (everything at high α). Round 3 queued (13575617):
 mirrored orientation at α16 (real, rand ×2, −v) — the test that
 adjudicated Llama-2-70b — plus rand seeds 2–3 orig and an n250 anchor.
 
+## Qwen2.5-72B round 3 (job 13575617): mirrored adjudication says direction-specific — the cell is strong
+
+At L40 α16, mirrored orientation: real **100** vs rand s0/s1 **28/0**
+and −v **22**. Orig orientation: rand s2/s3 = 72/38 (four orig seeds
+now span 8–72 around real's 100), real n250 = **100.0**. Responses
+clean throughout (11–12 distinct rooms; the n250 run's top room is
+30/250 — flat).
+
+Read: once the orientation with the contaminated (sign-agnostic)
+behavior is swapped out, the sign matters after all — −v collapses
+from 88 (orig) to 22 (mirrored) and randoms sit at 0–28 while the real
+vector holds 100. This is the Llama-2-70b adjudication replayed
+beat-for-beat, with an even cleaner margin (100 vs ≤28). Verdict:
+**Qwen2.5-72B steering is strong — direction-specific,
+mirrored-validated, n250-anchored.** The 2024-large steering cell is
+filled, and the scale story now has two mirrored-validated ~70B points
+(2023 Llama, 2024 Qwen) plus Kimi pending.
+
+Consequence for the taxonomy: "axis-specific / sign-agnostic" may not
+be a real class — on both 70Bs it dissolved into direction-specific
+under mirrored controls. gemma-4-12B's agnostic-flip verdict rests
+entirely on *orig*-orientation controls (−v 100, rand 68/0 at α12);
+its mirrored controls were never run. Queued (13575634): mirrored
+rand ×2 and −v at α12 and α32 on the 12B. If that also flips to
+direction-specific, the taxonomy collapses back to two classes
+(direction-specific with a high-α agnostic ceiling), which is a much
+cleaner story: the SOO direction is causal wherever steering works,
+and the orig orientation's sign-agnosticism is a measurement artifact
+of that orientation.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
