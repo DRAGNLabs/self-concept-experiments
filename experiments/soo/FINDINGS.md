@@ -1431,6 +1431,32 @@ cleaner story: the SOO direction is causal wherever steering works,
 and the orig orientation's sign-agnosticism is a measurement artifact
 of that orientation.
 
+## gemma-4-12B mirrored controls (job 13575634): sign-agnosticism survives — axis-specific is a real class
+
+Mirrored orientation at L19: real α12 = **96**; rand s0/s1 = **0/0**
+at α12 and 38/16 at α32; −v = **98** (α12) and **100** (α32).
+
+Unlike both 70Bs, the 12B's sign-agnosticism is *not* orientation
+contamination: in the clean mirrored orientation, matched-norm randoms
+are null while the negated vector flips honesty just as well as the
+real one, at both strengths. The taxonomy therefore stands at two
+validated classes among models where steering works:
+
+- **direction-specific** — the SOO direction itself is causal:
+  Llama-2-70b (mir real 72–74, rand 6), Qwen2.5-72B (mir real 100,
+  rand 28/0, −v 22), Muse-30B, gemma-4-31B@α16.
+- **axis-specific / sign-agnostic** — the SOO *axis* is causal but
+  either sign flips to honest: gemma-4-12B (both orientations: rand
+  null, ±v ~100).
+
+Mechanistic read: on the 12B, deception apparently requires the
+activations to sit *at* a particular locus along the self-other axis,
+and displacement in either direction breaks it; on the 70Bs, honesty
+lies specifically in the self→other direction. Size is the only
+variable separating the classes so far (12B vs 70B; the 31B is
+direction-specific at α16), but one model per class-boundary is thin —
+worth revisiting if more mid-size models enter the matrix.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents

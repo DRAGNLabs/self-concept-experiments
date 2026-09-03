@@ -32,7 +32,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | Muse-30B | L26 α=8 | 2 → 90 | 58 → 100 | 0 → 12 | 0 → 42 | 100 | null @α16 | 94% @α8 | none ≤α32 | −2.1/−1.1/−1.7 @α8 |
 | gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250; mir 0% @α16 | 93% @α16 | none ≤α32 | +0.3/−1.2/−2.9 @α16 |
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
-| gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | 99.2% n250; −v 100% | 100% @α32 | none ≤α32 | — |
+| gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 96 @α12 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | rand mir 0/0 @α12, 38/16 @α32 (null); ±v ~100 both orientations | 99.2% n250 | none ≤α32 | — |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
 | Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
 | Kimi-Dev-72B | L24 α=32, 512 tok, post-think reclass* | 36 → 98 | 20 → 100 | 0 (base) | 0 (base) | — | pending (13573967) | pending | none; think channel deleted (33/50 → 0/50) | — |
@@ -74,7 +74,10 @@ Qwen72B L40 α12 = 92; rand-s0 dose at L40: α4 0, α8 0, α12 12, α16 58,
 α24 100, α32 100 — randoms lag real by ~one dose step, then catch up.
 
 12B fine-grained: α10 = 62, α12 = 100. 12B specificity: −v(α12) = 100,
-−v(α32) = 100, rand s0(α12) = 68, rand s1(α12) = 0 — direction-agnostic.
+−v(α32) = 100, rand s0(α12) = 68, rand s1(α12) = 0 orig; mirrored
+(13575634): real(α12) 96, rand 0/0 @α12 and 38/16 @α32, −v 98/100 —
+**axis-specific, sign-agnostic, both orientations** (randoms null,
+either sign flips).
 31B mirrored dose: α16 = 44 (rand 0), α20 = 94, α24 = 98 (rand 58).
 | OLMo L19 | 86 | 84 | 82 | 50 | 26 | — | — | — | — | — |
 | Mistral L16 | 6 | 8 | 6 | 0* | — | — | — | — | — | — |
@@ -124,7 +127,7 @@ direction-specific honesty gain; LoRA = validated honesty band.
 | **2023** | Mistral-7B: **inert / strong** | — | *open / open* | Llama-2-70b: **strong / open** |
 | **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: **strong / open** |
 | **2025** | — | — | — | Kimi-Dev-72B: *steers 36→98, controls queued (13573967)* |
-| **2026** | *open* | gemma-4-12B: **agnostic-flip / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / strong** | *open* |
+| **2026** | *open* | gemma-4-12B: **axis-specific / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / strong** | *open* |
 
 Trend, after the 70B validation and 31B round 3: **no axis predicts
 LoRA failure** — strong on 2023/2024/2026, small and large; the sole
@@ -143,13 +146,14 @@ SOO direction is doing the moving: Llama-2-70b is direction-specific
 L40 α16: real 100 vs rand 28/0, −v 22 — the orig orientation's
 sign-agnosticism was orientation contamination, as on Llama),
 Kimi-Dev-72B awaits controls. "Steerability tracks scale" holds, and
-both mirrored-validated 70Bs are direction-specific; whether
-gemma-4-12B's "agnostic-flip" survives its own mirrored controls
-(13575634) decides if that class exists at all. Kimi also sets a standing protocol rule: reasoning models need
+both mirrored-validated 70Bs are direction-specific. gemma-4-12B's
+class survived its mirrored controls (real 96, rand 0/0, −v 98): it is
+genuinely **axis-specific/sign-agnostic** in both orientations — the
+SOO axis is causal everywhere steering works, but whether the *sign*
+matters splits 70B (yes) from 12B (no). Kimi also sets a standing protocol rule: reasoning models need
 ≥512 tokens + post-think classification (at 100 tokens truncation
 biased its answered baseline *honest* — the confound can point either
-way). In flight: 12B mirrored controls (13575634), Kimi controls
-(13573967). Missing after those: 2026 small, 2026 70B-class, 2023-mid,
+way). In flight: Kimi controls (13573967). Missing after those: 2026 small, 2026 70B-class, 2023-mid,
 72B LoRA cells.
 
 Candidate fills (downloadable, fit existing pipeline):
