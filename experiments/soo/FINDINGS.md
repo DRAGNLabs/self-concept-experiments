@@ -1542,6 +1542,62 @@ real at α16–24, the −v ≈ +v data would place it axis-specific like the
 12B; only if mirrored randoms flip everything does agnostic-flip
 survive.
 
+## Kimi-Dev-72B mirrored window (job 13584419): the α16 window is direction-real in BOTH orientations — "fully agnostic" is dead
+
+All cells mirrored, 512-token, post-think reclassified (honest /
+answered; think = rows with a think block; trunc = open think, no
+answer, excluded). Mirrored baseline for reference: 9/36 (25%).
+
+| L24 mirrored | honest | think | trunc |
+|---|---|---|---|
+| real α16 | **37/46 (80%)** | 13 | 4 |
+| rand s0 α16 | **9/46 (20%)** | 37 | 4 |
+| real α24 | 50/50 (100%) | 2 | 0 |
+| rand s0 α24 | 33/46 (72%) | 17 | 4 |
+| rand s1 α24 | 35/45 (78%) | 15 | 5 |
+| −v α24 | 31/34 (91%)† | 32 | 16 |
+
+Reads:
+
+1. **α16 separates cleanly in the mirrored orientation: real 80% vs
+   rand 20%, with the random sitting exactly at baseline (25%).**
+   Combined with orig (real 67% vs rand 21%), the window is
+   direction-real in both orientations — the same two-orientation
+   convergence that certified Llama-2-70b and Qwen2.5-72B. The earlier
+   "fully agnostic" verdict was a plateau artifact, full stop.
+2. At α24 the generic-fragility channel is already flowing (rand
+   72–78%, real at ceiling), and by α32 it saturates (rand 100%).
+   Kimi's specificity window is one dose step wide — narrower relative
+   to its plateau than Qwen's.
+3. **The think-deletion mechanism is direction-gated at α16**: the real
+   vector deletes the think channel (13/50 blocks vs ~33–37 baseline)
+   while the matched-norm random leaves it intact (37/50) — and the
+   honesty flip tracks the deletion. At α24 randoms begin deleting too
+   (15–17/50). So the CoT-routing story survives with a sharper form:
+   *the SOO direction is a privileged knob on the deliberation
+   channel*; random directions only reach that knob at higher norm.
+4. † The −v α24 cell is unreadable and should not be cited: −v
+   *retains* the think channel (32/50 blocks — itself a hint that the
+   anti-SOO direction does not do what +v does), which at 512 tokens
+   truncates 16/50 rows mid-think, and the answered remainder is
+   biased honest by exactly the truncation-selection confound from the
+   100-token fiasco. The prior −v α32 orig figure (42/44) carries the
+   same caveat.
+5. Class label — direction- vs axis-specific — still needs −v *inside*
+   the window: −v α16 was never run in either orientation, and the
+   α24/α32 −v cells are contaminated (fragility + truncation bias).
+   Final discriminator queued (13585700): −v α16 orig + mir, plus
+   rand s1 α16 orig to thicken the orig random distribution. If
+   −v(α16) ≈ rand (~20%), Kimi is **direction-specific**; if it flips
+   like +v, **axis-specific** like the 12B. The think-retention hint
+   in (4) predicts direction-specific.
+
+Standing conclusion regardless of 13585700: Kimi-Dev-72B has a genuine
+SOO-direction effect at L24 α16, certified in both orientations, with
+direction-gated CoT-deletion as the mechanism — the third ~70B model
+where the plateau looked agnostic and the window + mirrored controls
+recovered specificity.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
