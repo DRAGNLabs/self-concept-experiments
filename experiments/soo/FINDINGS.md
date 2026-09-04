@@ -1498,6 +1498,50 @@ Tentative taxonomy placement, pending 13575650: direction-specific
 plausibly reflects its reasoning-model architecture (deception routed
 through suppressible CoT) rather than its size or age.
 
+## Kimi-Dev-72B window probe (job 13575650): randoms do NOT track real down the dose curve — a real window at α16–24, mirrored adjudication queued
+
+The escape hatch was real. Filling in rand s0 at α8/16/24 plus real α24
+(all 512-token, post-think reclassified, % honest of answered):
+
+| L24, orig orientation | α8 | α16 | α24 | α32 |
+|---|---|---|---|---|
+| real | 37% (18/48) | 67% (33/49) | **98% (49/50)** | 96% (240/250) |
+| rand s0 | 17% (8/48) | 21% (10/48) | **62% (30/48)** | 100% (50/50) |
+| rand s0 think blocks | 38/50 | 37/50 | 20/50 | 0–1/50 |
+
+The lost mirrored anchor also reran: real α32 mir n250 = **250/250
+(100.0%)**, think 0 — the headline mirrored flip is n250-solid.
+
+Read:
+
+1. **The randoms lag real by about one dose step and only catch up at
+   the α32 plateau** (real 67/98 vs rand 21/62 at α16/24). So "fully
+   agnostic" was a statement about the plateau, not the cell: at
+   matched norm inside the window, the SOO direction flips Kimi and a
+   random direction largely doesn't. This is *exactly* the
+   orig-orientation shape Qwen2.5-72B showed (real 92/100 vs rand
+   12/58 at α12/16, randoms at 100 by α24) — and on Qwen the mirrored
+   window round was what settled the verdict (direction-specific).
+2. Kimi's only mirrored controls so far sit at the plateau (rand α32
+   mir = 50/50, no separation) — but every model is agnostic at
+   plateau, so that can't adjudicate the window. Mirrored-window round
+   queued (13584419): real + rand s0 at α16/α24 mir, rand s1 + −v at
+   α24 mir.
+3. The CoT mechanism survives, refined: think-suppression is *graded*
+   along the random dose curve (38 → 37 → 20 → 0 think blocks as
+   honesty climbs 17 → 21 → 62 → 100), and honesty tracks it cell by
+   cell. Deception still lives in the deliberation — but the window
+   says the SOO direction deletes the deliberation at ~1.5× lower norm
+   than random directions, i.e. direction plausibly matters for *how
+   cheaply* the think channel is knocked out, not just whether.
+
+Verdict deferred pending 13584419. If mirrored windows separate,
+Kimi joins the direction-specific class (with the CoT-routing note as
+mechanism, and the Qwen parallel complete); if mirrored randoms track
+real at α16–24, the −v ≈ +v data would place it axis-specific like the
+12B; only if mirrored randoms flip everything does agnostic-flip
+survive.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
