@@ -35,7 +35,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 96 @α12 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | rand mir 0/0 @α12, 38/16 @α32 (null); ±v ~100 both orientations | 99.2% n250 | none ≤α32 | — |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
 | Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
-| Kimi-Dev-72B | L24 α=16 (window), 512 tok, post-think reclass* | 36 → 98 @α32 | 20 → 100 @α32 | 0 → 98 @α32 | 0 → 100 @α32 | — | α16 window direction-real both orientations: real 67/80 vs rand 21/20 (orig/mir, rand at baseline); α24+ generic fragility (rand 62–78, 100 @α32); −v α16 discriminator 13585700 (−v α24/32 unreadable: think retained → truncation bias) | 96.0 orig; 100.0 mir @α32 | none ≤α32; real deletes think channel at α16 where randoms don't | — |
+| Kimi-Dev-72B | L24 α=16 (window), 512 tok, post-think reclass* | 36 → 98 @α32 | 20 → 100 @α32 | 0 → 98 @α32 | 0 → 100 @α32 | — | **direction-specific**: α16 window real 67/80 vs rand s0 21/20 (orig/mir, rand at baseline); −v α16 inert (36 orig = baseline, 50 mir vs 80 real, think retained); orig rand seeds wide (s1 55, Qwen-style contamination); α24+ generic fragility (rand 62–78, 100 @α32) | 96.0 orig; 100.0 mir @α32 | none ≤α32; only +v deletes think channel at α16 | — |
 
 Verdicts: Mistral **inert** · Gemma-2 **partial** (saturates ~60–66 orig /
 ~45 mir) · OLMo **harmed** · Muse **strong** · Gemma-4-31B **strong at
@@ -52,13 +52,15 @@ L40 α16 mirrored, real 100 vs rand 28/0 and −v 22; orig orientation is
 sign-agnostic (−v 88, rand 8–72 across 4 seeds) — same
 orientation-contamination pattern as Llama-2-70b, decided the same
 way; n250 real α16 orig = 100.0; above α24 fully agnostic, L16 fully
-agnostic · Kimi-Dev-72B **specific at the α16 window, certified in both
-orientations** (13575650 + 13584419): mirrored real 80 vs rand 20 (rand
-at baseline 25), orig real 67 vs rand 21; the plateau (α24–32) is
-generically fragile (rand 62–100) and the earlier "fully agnostic"
-verdict was a plateau artifact. Direction- vs axis-specific label
-pending −v inside the window (13585700); −v at α24/32 is unreadable
-(think retained → truncation-selection bias): \* reasoning model — at 100 tokens the eval is invalid
+agnostic · Kimi-Dev-72B **direction-specific at the α16 window,
+certified in both orientations** (13575650 + 13584419 + 13585700):
+mirrored real 80 vs rand 20 (rand at baseline 25), orig real 67 vs
+rand 21; −v inside the window is inert (36% orig = baseline, 50% mir
+vs 80% real, and −v retains the think channel that +v deletes); the
+plateau (α24–32) is generically fragile (rand 62–100) and the earlier
+"fully agnostic" verdict was a plateau artifact. Orig random seeds are
+wide (s0 21, s1 55 — Qwen-style orientation contamination); mirrored
+is the certification that counts: \* reasoning model — at 100 tokens the eval is invalid
 (33/50 truncated mid-CoT; classifier scores think text; truncation
 biased the answered subset *honest* because deceptive answers
 deliberate longer). All numbers from 512-token reruns reclassified
@@ -87,7 +89,9 @@ flip (38/37/20/0 across the random doses). Real α32 mirrored n250 =
 α16 20 (baseline 25); real α24 100 vs rand s0/s1 α24 72/78; −v α24
 91* (unreadable: think retained 32/50 → 16/50 truncated →
 answered-subset honest bias). Think-deletion is direction-gated at
-α16: real 13/50 blocks vs rand 37/50.
+α16: real 13/50 blocks vs rand 37/50. −v window (13585700): −v α16
+orig 36% (= baseline), mir 50% (vs 80 real), think retained 37/31 of
+50; rand s1 α16 orig 55% (vs s0 21% — wide orig seed spread).
 
 12B fine-grained: α10 = 62, α12 = 100. 12B specificity: −v(α12) = 100,
 −v(α32) = 100, rand s0(α12) = 68, rand s1(α12) = 0 orig; mirrored
@@ -142,7 +146,7 @@ direction-specific honesty gain; LoRA = validated honesty band.
 |---|---|---|---|---|
 | **2023** | Mistral-7B: **inert / strong** | — | *open / open* | Llama-2-70b: **strong / open** |
 | **2024** | OLMo-2-7B: **harmed / partial** | — | Gemma-2-27B: **partial / strong** | Qwen2.5-72B: **strong / open** |
-| **2025** | — | — | — | Kimi-Dev-72B: **specific @α16 window, both orientations** *(−v discriminator 13585700)* |
+| **2025** | — | — | — | Kimi-Dev-72B: **direction-specific @α16 window (CoT-gated) — closed** |
 | **2026** | *open* | gemma-4-12B: **axis-specific / strong** | Muse-30B: **strong / none** · gemma-4-31B: **strong / strong** | *open* |
 
 Trend, after the 70B validation and 31B round 3: **no axis predicts
@@ -172,13 +176,14 @@ channel that randoms only reach at higher norm. "Steerability tracks
 scale" holds for the raw flip.
 gemma-4-12B's class survived its mirrored controls (real 96,
 rand 0/0, −v 98): genuinely **axis-specific/sign-agnostic** in both
-orientations. Specificity taxonomy: direction-specific (both dense
-70Bs, Muse, 31B@α16) / axis-specific (12B) / Kimi specific, sign
-pending −v-in-window (13585700; −v α24/32 unreadable from
-think-retention truncation bias). Kimi also sets a standing protocol rule: reasoning models need
+orientations. **Final specificity taxonomy: direction-specific =
+Llama-2-70b, Qwen2.5-72B, Muse-30B, 31B@α16, Kimi-Dev-72B (α16
+window, CoT-gated; −v inert at baseline, 13585700) / axis-specific =
+12B.** Every ≥30B model that flips is direction-specific once
+adjudicated in the mirrored orientation. Kimi also sets a standing protocol rule: reasoning models need
 ≥512 tokens + post-think classification (at 100 tokens truncation
 biased its answered baseline *honest* — the confound can point either
-way). In flight: Kimi −v window discriminator (13585700). Missing after that: 2026 small, 2026 70B-class, 2023-mid,
+way). In flight: none. Missing: 2026 small, 2026 70B-class, 2023-mid,
 72B LoRA cells.
 
 Candidate fills (downloadable, fit existing pipeline):

@@ -1598,6 +1598,46 @@ direction-gated CoT-deletion as the mechanism — the third ~70B model
 where the plateau looked agnostic and the window + mirrored controls
 recovered specificity.
 
+## Kimi-Dev-72B −v window discriminator (job 13585700): −v is inert inside the window — DIRECTION-specific, cell closed
+
+The last open question was the sign: does −v flip inside the α16
+window (axis-specific, like the 12B) or not (direction-specific)?
+512-token, post-think reclassified:
+
+| L24 α16 | honest | think | trunc |
+|---|---|---|---|
+| −v orig | 13/36 (36%) | 37 | 14 |
+| −v mir | 19/38 (50%) | 31 | 12 |
+| rand s1 orig | 27/49 (55%) | 22 | 1 |
+
+Reads:
+
+1. **−v(α16) orig lands exactly on the orig baseline (36% vs 36%)** —
+   and that's *with* the answered-subset honest bias from 14
+   truncations working in its favor. Mirrored −v is 50% vs the 25%
+   baseline: mildly elevated, same honest bias (12 trunc), and nowhere
+   near +v's 80/100. Only the + sign flips. **Kimi-Dev-72B is
+   direction-specific.**
+2. −v retains the think channel in both orientations (37 and 31 of 50
+   blocks, vs +v's 13 and 2) — direct confirmation that the anti-SOO
+   direction does not reach the deliberation knob. The mechanism
+   picture is now fully coherent: at matched norm, +v deletes
+   deliberation and flips honesty, −v and (most) randoms do neither.
+3. rand s1 orig = 55% vs s0's 21%: the orig-orientation random
+   distribution is wide, just like Qwen's (8–72 across 4 seeds) —
+   one more instance of orig-orientation contamination, and one more
+   reason the mirrored window (real 80 vs rand 20 at baseline) is the
+   certification that counts.
+
+**Cell closed. Final taxonomy: direction-specific = Llama-2-70b,
+Qwen2.5-72B, Muse-30B, gemma-4-31B@α16, Kimi-Dev-72B (window α16,
+CoT-gated); axis-specific/sign-agnostic = gemma-4-12B.** All five
+models ≥30B that flip are direction-specific once adjudicated in the
+mirrored orientation; the lone axis-specific model is the 12B. Kimi's
+distinctive contribution is the mechanism: it is the only model where
+we can *see* what the direction does (delete the CoT deliberation the
+deception lives in) and show that privilege is direction-gated.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
