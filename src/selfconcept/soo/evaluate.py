@@ -161,12 +161,19 @@ def main() -> None:
         for example in tqdm(examples, desc=scenario):
             prompt = build_prompt(example, SUFFIXES[args.suffix], args.honesty_prompt)
             messages = [{"role": "user", "content": prompt}]
-            if args.force_user_channel:
+            # Apollo roleplaying examples prefill the assistant turn (e.g.
+            # "Student:") so the model answers in character.
+            prefill = example.get("answer_prefix")
+            if args.force_user_channel or prefill:
                 text = tokenizer.apply_chat_template(
                     messages, add_generation_prompt=True, tokenize=False
                 )
+                if args.force_user_channel:
+                    text += " to=user<|message|>"
+                if prefill:
+                    text += prefill
                 enc = tokenizer(
-                    text + " to=user<|message|>", return_tensors="pt", add_special_tokens=False
+                    text, return_tensors="pt", add_special_tokens=False
                 ).to(device)
             else:
                 enc = tokenizer.apply_chat_template(
