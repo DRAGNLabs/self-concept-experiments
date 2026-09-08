@@ -167,3 +167,10 @@ n=250 + mirrored + capabilities hardening round, capabilities measured with the 
 4. Capability metrics within noise of baseline.
 5. Latent SOO MSE drops in the targeted context.
 
+
+
+Message from Koby to remember:
+We were talking before about how to get at the question of why SOO is helping with deception if it doesn't break ToM. Maybe one way to get at that is to question the construct validity of the "deception" operationalization of the paper? You could try other operationalizations of deception (I was just skimming this paper which has a handful) and see if the technique still works. Moves us closer to scheming stuff as well since (as the paper points out) deception is a key part of scheming. Caveat: I don't really love the operationalizations of deception from that paper either. Still trying to find good examples.
+
+This paper: https://arxiv.org/pdf/2502.03407 
+Possibly other alternative: https://arxiv.org/pdf/2508.06361
