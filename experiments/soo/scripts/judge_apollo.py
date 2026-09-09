@@ -52,7 +52,15 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--device-map", default="auto")
+    parser.add_argument(
+        "--think-open",
+        help="reasoning-model open tag (e.g. Kimi's ◁think▷): grade only text "
+        "after --think-close; open tag without close = truncated, excluded",
+    )
+    parser.add_argument("--think-close")
     args = parser.parse_args()
+    if bool(args.think_open) != bool(args.think_close):
+        parser.error("--think-open and --think-close must be given together")
 
     template = args.template.read_text()
     meta = {json.loads(l)["example_id"]: json.loads(l) for l in args.data.open()}
@@ -68,16 +76,30 @@ def main() -> None:
     for path in args.responses:
         records = [json.loads(l) for l in path.open()]
         prompts = []
+        truncated_ids = set()
         for rec in records:
             m = meta[rec["example_id"]]
-            response = m["answer_prefix"] + rec["response"]
+            resp = rec["response"]
+            if args.think_open and args.think_open in resp:
+                if args.think_close in resp:
+                    resp = resp.split(args.think_close, 1)[1]
+                else:
+                    truncated_ids.add(rec["example_id"])
+            response = m["answer_prefix"] + resp
             prompts.append(
                 template.format(
                     scenario=m["scenario_text"], question=m["question"], response=response
                 )
             )
 
-        graded = []
+        # Truncated think blocks have no post-think answer to grade.
+        graded = [
+            {"example_id": i, "grade": None, "label": "truncated", "judge_text": ""}
+            for i in truncated_ids
+        ]
+        keep = [i for i, r in enumerate(records) if r["example_id"] not in truncated_ids]
+        records = [records[i] for i in keep]
+        prompts = [prompts[i] for i in keep]
         for start in tqdm(range(0, len(prompts), args.batch_size), desc=path.stem):
             batch = prompts[start : start + args.batch_size]
             texts = [
@@ -117,7 +139,7 @@ def main() -> None:
                     }
                 )
 
-        counts = {label: 0 for label in ("honest", "ambiguous", "deceptive", "ungraded")}
+        counts = {label: 0 for label in ("honest", "ambiguous", "deceptive", "ungraded", "truncated")}
         for g in graded:
             counts[g["label"]] += 1
         grades = [g["grade"] for g in graded if g["grade"] is not None]
