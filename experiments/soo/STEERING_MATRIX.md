@@ -186,6 +186,26 @@ biased its answered baseline *honest* — the confound can point either
 way). In flight: none. Missing: 2026 small, 2026 70B-class, 2023-mid,
 72B LoRA cells.
 
+## OOD: Apollo roleplaying deception (arXiv:2502.03407, jobs 13606927–30)
+
+371 incentive-to-lie scenarios, their judge protocol (deceptive ≥6 of
+7, local Qwen-72B judge), canonical in-distribution settings, n=371:
+
+| model | base dec% | steer +v | steer −v | rand | LoRA |
+|---|---|---|---|---|---|
+| gemma-4-12B | 52.0 | 53.6 | 57.4 | 54.7 | **31.3** |
+| gemma-4-31B | 58.2 | **47.4** (hon 8→22%) | 61.5 | 52.8 | 59.8 |
+
+**Double dissociation: the 12B's LoRA transfers OOD and its vector
+doesn't; the 31B's vector transfers (direction-discriminated: −v ≤
+baseline, rand ≤ a third of the move) and its LoRA — 100/100
+in-distribution — is inert.** In-distribution direction-specificity
+predicts the vector's OOD transfer (31B direction-specific → carries;
+12B axis-specific → nothing); in-distribution LoRA 100s are no
+generalization certificate. Both OOD effects are mitigations (~10–20
+points), nowhere near the in-distribution 0→100 flips. Details in
+FINDINGS "Apollo roleplaying OOD".
+
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released
 - 2024 mid: gemma-2-9b-it (holds family constant vs 27B for a pure size axis)
