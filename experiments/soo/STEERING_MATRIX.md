@@ -203,8 +203,12 @@ in-distribution — is inert.** In-distribution direction-specificity
 predicts the vector's OOD transfer (31B direction-specific → carries;
 12B axis-specific → nothing); in-distribution LoRA 100s are no
 generalization certificate. Both OOD effects are mitigations (~10–20
-points), nowhere near the in-distribution 0→100 flips. Details in
-FINDINGS "Apollo roleplaying OOD".
+points), nowhere near the in-distribution 0→100 flips. Round 2
+(13611534–36) certified both halves: 31B vector dose-monotone (dec
+58→58→47→44, hon 8→11→22→26 at α0/8/16/24), rand null and LoRA
+inertness seed-robust (LoRA s0–s2 all 57–60% dec); 12B LoRA transfers
+on all three seeds (28–38% dec vs 52 base), 12B rand s1 confirms the
+steering null. Details in FINDINGS "Apollo roleplaying OOD" + "round 2".
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released

@@ -1728,6 +1728,42 @@ ported. Natural next rounds if the user wants them: α dose curve for
 the 31B vector on this set (does OOD honesty scale with α before
 fragility?), 12B/31B LoRA seeds 1–2, and a second random seed.
 
+## Apollo OOD round 2 (jobs 13611534–36): both halves of the dissociation are seed-robust, and the 31B's OOD effect is dose-monotone
+
+Certification round for the round-1 claims, same protocol (371
+scenarios, local Qwen-72B judge, deceptive ≥6 / honest ≤2). % of 371:
+
+| model | condition | honest | deceptive | mean grade |
+|---|---|---|---|---|
+| 31B | steer α8 | 11.3 | 57.7 | 5.42 |
+| 31B | steer α16 (r1) | 22.4 | 47.4 | 4.82 |
+| 31B | steer α24 | 26.2 | 43.7 | 4.58 |
+| 31B | rand s1 α16 | 7.8 | 55.3 | 5.46 |
+| 31B | LoRA s1 / s2 | 14.3 / 13.8 | 57.1 / 58.0 | 5.26 / 5.31 |
+| 12B | LoRA s1 / s2 | 41.2 / 22.9 | 27.8 / 38.0 | 3.65 / 4.52 |
+| 12B | rand s1 α12 | 8.1 | 56.1 | 5.48 |
+
+- **31B vector: dose-monotone OOD.** Deceptive 58.2 (base) → 57.7
+  (α8) → 47.4 (α16) → 43.7 (α24); honest 8.4 → 11.3 → 22.4 → 26.2.
+  α8 is sub-threshold exactly as in-distribution; the effect grows
+  through the window rather than being an α16 fluke. Honest rows at
+  α24 remain genuine terse confessions.
+- **31B random null is seed-robust** (s1 55.3/7.8 ≈ s0 52.8/10.8 ≈
+  baseline; real +v separates from both).
+- **31B LoRA inertness is seed-general**: all three seeds of a LoRA
+  that scores 100/100 on the burglar task sit at baseline here
+  (57–60% deceptive; a ~5-point honest bump at most).
+- **12B LoRA transfer replicates across seeds**: s0/s1/s2 deceptive
+  27.8–38.0 vs baseline 52.0, honest 22.9–41.2 vs 10.2 (s1 strongest,
+  s2 weakest — real seed spread, but every seed transfers).
+- **12B steering null thickened**: rand s1 (56.1/8.1) matches s0;
+  round-1's +v (53.6/16.2) stays inside the random band.
+
+Round-1's double dissociation now rests on three LoRA seeds per model,
+two random seeds per model, and a three-point dose curve. Standing
+verdict: OOD transfer is a property of the *mechanism* (the 31B's
+direction, the 12B's LoRA), not of the intervention class.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
