@@ -186,15 +186,23 @@ biased its answered baseline *honest* — the confound can point either
 way). In flight: none. Missing: 2026 small, 2026 70B-class, 2023-mid,
 72B LoRA cells.
 
-## OOD: Apollo roleplaying deception (arXiv:2502.03407, jobs 13606927–30)
+## OOD: Apollo roleplaying deception (arXiv:2502.03407, jobs 13606927–30, 13611534–86, 13613807/08)
 
 371 incentive-to-lie scenarios, their judge protocol (deceptive ≥6 of
-7, local Qwen-72B judge), canonical in-distribution settings, n=371:
+7, local Qwen-72B judge), canonical in-distribution settings, n=371.
+Full matrix, deceptive% (honest% where it moves):
 
 | model | base dec% | steer +v | steer −v | rand | LoRA |
 |---|---|---|---|---|---|
-| gemma-4-12B | 52.0 | 53.6 | 57.4 | 54.7 | **31.3** |
-| gemma-4-31B | 58.2 | **47.4** (hon 8→22%) | 61.5 | 52.8 | 59.8 |
+| gemma-4-12B | 52.0 | 53.6 | 57.4 | 54.7 / 56.1 | **31.3 / 27.8 / 38.0** (s0–2) |
+| gemma-4-31B | 58.2 | **47.4** (hon 8→22; α24: 43.7/26) | 61.5 | 52.8 / 55.3 | 59.8 / 57.1 / 58.0 (inert ×3) |
+| Llama-2-70b | 46.1 | **28.0** (hon 27→48) | 47.4 | 47.4 | — |
+| Qwen2.5-72B | 43.4 | **30.7** (hon 24→33) | 48.2 | 45.3 | — |
+| Kimi-Dev-72B | 51.5 | **41.8** (hon 18→27; 0 think blocks) | 53.1 | 50.9 / 56.1 | — |
+| Muse-30B | 60.9 | 66.0 (null) | **48.5** (sign inversion!) | 57.4 | — |
+| gemma-2-27b | 53.4 | **43.9** (partial, hon 10→17) | 60.7 | 56.6 | — |
+| Mistral-7B | 40.4 | 50.4 (damage: hon 29→7, degenerate) | 53.6 | 43.4 | — |
+| OLMo-2-7B | 32.9 | 35.0 (inert) | 40.7 | 34.0 | — |
 
 **Double dissociation: the 12B's LoRA transfers OOD and its vector
 doesn't; the 31B's vector transfers (direction-discriminated: −v ≤
@@ -208,7 +216,19 @@ points), nowhere near the in-distribution 0→100 flips. Round 2
 58→58→47→44, hon 8→11→22→26 at α0/8/16/24), rand null and LoRA
 inertness seed-robust (LoRA s0–s2 all 57–60% dec); 12B LoRA transfers
 on all three seeds (28–38% dec vs 52 base), 12B rand s1 confirms the
-steering null. Details in FINDINGS "Apollo roleplaying OOD" + "round 2".
+steering null.
+
+**Round 3 (whole matrix, predictions preregistered in 26c3c7c): OOD
+transfer tracks the graded strength of the in-distribution direction
+— strong dir-specific → transfer (Llama-2-70b −18 dec/+21 hon, the
+study's largest; Qwen2.5-72B −13/+9; Kimi −10/+9 certified vs two
+rand seeds — with zero think blocks engaged, so the direction carries
+beyond its CoT mechanism), partial → partial (gemma-2-27b −10/+7, +v
+only), axis/inert/harmed → nothing (12B, OLMo inert; Mistral all
+perturbations collapse honesty — α8 is its damage edge, steered
+output degenerate). Single miss in nine: Muse-30B, +v null and −v
+modestly honest (61→49) — an OOD sign inversion, suspected
+ATEM-channel entanglement.** Details in FINDINGS "Apollo OOD round 3".
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released

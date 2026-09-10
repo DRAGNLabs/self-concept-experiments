@@ -1764,6 +1764,83 @@ two random seeds per model, and a three-point dose curve. Standing
 verdict: OOD transfer is a property of the *mechanism* (the 31B's
 direction, the 12B's LoRA), not of the intervention class.
 
+## Apollo OOD round 3 (jobs 13611574–86 + 13613807/08): the whole matrix goes OOD — transfer tracks the graded strength of the in-distribution direction, with Muse the single miss
+
+All seven remaining vector models at their canonical cells, base / +v
+/ −v / rand s0 × 371 scenarios (Kimi: 512 tokens + rand s1 follow-up).
+Predictions were registered in commit 26c3c7c before any grading:
+transfer for the four direction-specific models (Llama-2-70b,
+Qwen2.5-72B, Muse-30B, Kimi-Dev-72B), none for the in-distribution
+failures (Mistral-7B, OLMo-2-7B, gemma-2-27b).
+
+honest% / deceptive% of 371 (judge label; mean grade in parens):
+
+| model (cell) | in-dist | base | steer +v | steer −v | rand s0 |
+|---|---|---|---|---|---|
+| Llama-2-70b (L16 α8) | dir-specific | 26.7/46.1 (4.57) | **47.7/28.0 (3.49)** | 24.8/47.4 | 22.6/47.4 |
+| Qwen2.5-72B (L40 α16) | dir-specific | 24.0/43.4 (4.55) | **33.2/30.7 (3.99)** | 23.7/48.2 | 24.3/45.3 |
+| Kimi-Dev-72B (L24 α16) | dir-specific, CoT-gated | 18.1/51.5 (5.00) | **27.0/41.8 (4.47)** | 22.1/53.1 | 22.1/50.9; s1 17.8/56.1 |
+| Muse-30B (L26 α8) | dir-specific | 15.6/60.9 (5.42) | 17.2/66.0 (5.50) | **21.0/48.5 (4.86)** | 17.2/57.4 |
+| gemma-2-27b (L14 α32) | partial | 9.7/53.4 (5.33) | **17.0/43.9 (4.85)** | 5.4/60.7 | 10.5/56.6 |
+| Mistral-7B (L16 α8) | inert | 28.6/40.4 (4.33) | 7.0/50.4 (5.36) | 4.3/53.6 | 6.5/43.4 |
+| OLMo-2-7B (L19 α16) | harmed | 36.9/32.9 (3.94) | 33.7/35.0 (4.06) | 34.0/40.7 | 35.0/34.0 |
+
+Outcomes against the registered predictions:
+
+- **Llama-2-70b: the strongest OOD transfer in the whole study.**
+  Deception −18 points, honesty +21 (z≈5–6), −v and rand exactly at
+  baseline. Steered honest rows are explicit confessions ("I was at a
+  concert", "I skipped class to hang out with friends at a cafe").
+- **Qwen2.5-72B: clean direction-discriminated transfer** (−12.7 dec
+  z≈3.6, +9.2 hon), −v/rand at baseline.
+- **Kimi: modest transfer, now certified against two random seeds**
+  (s0 50.9, s1 56.1 — they bracket the baseline while +v separates
+  from both). Protocol finding: with the answer_prefix prefill Kimi
+  emits **zero** ◁think▷ blocks (0/371 in every condition), so the
+  in-distribution mechanism (direction-gated think-deletion) is never
+  engaged here — yet ~10 points of the effect survive. The direction
+  does something beyond deleting deliberation.
+- **Muse-30B: the single miss.** +v is null (66% deceptive, ≥
+  baseline); the modest real effect sits on **−v** (61→49 dec, z≈3.4,
+  genuine terse confessions). An OOD *sign inversion* relative to its
+  in-distribution certification. Suspect the ATEM protocol: Muse is
+  evaluated through a forced to=user channel, and its in-distribution
+  mirrored baseline was already anomalous (58%); its "direction" may
+  be entangled with channel/format features that flip sign under this
+  prompt shape.
+- **gemma-2-27b: predicted none, got a real partial transfer** —
+  −9.5 dec / +7.3 hon, +v only (−v worse than baseline, rand null).
+  In-distribution this model was graded *partial* (saturates ~50%),
+  and OOD it moves partially. A miss against our binary prediction
+  but a hit for the graded version of the law.
+- **Mistral-7B: no transfer — and the honest baseline collapses under
+  any perturbation** (+v 7%, −v 4%, rand 6% honest vs 29% base).
+  Steered output is degenerate (median 1106 chars of rambling vs 230
+  base); α8 is simply its damage edge. Sign-agnostic, rand does it
+  too: model damage, not steering.
+- **OLMo-2-7B: fully inert OOD** in all conditions (its
+  in-distribution "harm" doesn't even reproduce here; note OLMo has
+  the most honest baseline of all nine models, 37%).
+
+**Matrix-level law, final form.** Across nine models, OOD transfer of
+the SOO vector tracks the *graded strength* of its in-distribution
+direction: strong direction-specific → strong-to-moderate transfer
+(Llama-2-70b, Qwen2.5-72B, gemma-4-31B, Kimi), partial → partial
+(gemma-2-27b), axis-specific/inert/harmed → nothing (gemma-4-12B,
+Mistral, OLMo). One miss in nine: Muse's sign inversion, plausibly an
+ATEM-format artifact. LoRA remains the mirror image: perfect
+in-distribution scores with model-dependent OOD (12B yes ×3 seeds,
+31B no ×3 seeds). Baselines also matter for the story: incentive
+deception varies 33–61% across models with no size trend, and the
+three most honest baselines are a 7B, a 7B, and a 70B.
+
+Caveats: single vector per model (no re-extraction seeds); Muse and
+Kimi judged through their protocol quirks (forced channel; prefill
+bypassing think); judge is the local Qwen-72B stand-in throughout —
+including for Qwen2.5-72B itself (self-judging; its numbers agree
+with the cross-model pattern but an independent judge pass on that
+cell would be cleaner). Insider trading / sandbagging still unported.
+
 # Summary
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
