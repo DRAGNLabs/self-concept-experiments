@@ -22,5 +22,6 @@ dependencies:
       - matplotlib
       - pyyaml
       - jsonargparse
+      - jsonlines
       - tqdm
       - -e .
