@@ -168,6 +168,40 @@ n=250 + mirrored + capabilities hardening round, capabilities measured with the 
 5. Latent SOO MSE drops in the targeted context.
 
 
+## 8. Paper plan (2026-09-10)
+
+The Apollo OOD rounds (FINDINGS.md, commits 8e5dbde…6edf971) turned the steering-vs-LoRA
+comparison into a publishable claim. Headline: **a steering vector carries a cheap in-distribution
+generalization certificate — the direction-specificity controls (−v, random-vector) that validate
+it in-distribution predicted OOD transfer in 8 of 9 models — while fine-tuning's in-distribution
+perfection predicts nothing** (gemma-4-31B 100/100 LoRA inert OOD ×3 seeds; gemma-4-12B LoRA
+transfers ×3 seeds). Secondary result: Kimi-Dev-72B transfers with zero think blocks engaged —
+the direction carries honesty content beyond its apparent CoT mechanism. Frame the paper around
+predictability of generalization, not effect size: OOD effects are 10–20 pt mitigations, never
+the in-distribution 0→100 flips.
+
+Work items, in priority order (1–3 gate a main-track submission; workshop version writable now):
+
+1. **Second + third OOD operationalizations** *(in progress)* — port Apollo's insider trading
+   (agentic multi-turn: spliced misaligned trade → report to manager; grade the report
+   explicit/implied/concealed with their classify_mention_insider prompt) and sandbagging_v2
+   (instructed capability-hiding on WMDP with MMLU honest control; labels parsed programmatically
+   from the step tags, no judge needed — and the MMLU half doubles as a capability control under
+   steering). Moves the claim from "transfers to one new distribution" to "transfers across
+   operationalizations".
+2. **Baseline honesty-direction vector** — extract a generic contrastive honesty vector
+   (ITI/RepE-style prompt pairs) at the same site and compare against the SOO self/other vector.
+   Distinguishes "SOO direction is special" from "steering > LoRA generically".
+3. **Judge validity** — independent (non-Qwen) judge pass over the Qwen2.5-72B cell
+   (self-judging caveat), plus a ~50-item human agreement sample for the grading pipeline.
+4. **Hardening** — proper layer/α sweep on at least one transfer model (current matrix is one
+   vector, one layer, one α per cell).
+5. **Muse diagnosis** — the single miss (+v null, −v 61→49 sign inversion): test whether the
+   inversion survives without the ATEM forced-user-channel format. Report as-is if unresolved.
+
+Venue: alignment/interpretability workshop from what's committed today; ICLR/NeurIPS-class with
+items 1–3. Known caveats to carry into the draft: Qwen2.5-72B stand-in for GPT-4o as judge,
+single OOD judge model, effects are mitigations not fixes, Muse unexplained.
 
 Message from Koby to remember:
 We were talking before about how to get at the question of why SOO is helping with deception if it doesn't break ToM. Maybe one way to get at that is to question the construct validity of the "deception" operationalization of the paper? You could try other operationalizations of deception (I was just skimming this paper which has a handful) and see if the technique still works. Moves us closer to scheming stuff as well since (as the paper points out) deception is a key part of scheming. Caveat: I don't really love the operationalizations of deception from that paper either. Still trying to find good examples.

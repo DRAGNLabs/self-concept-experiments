@@ -159,8 +159,13 @@ def main() -> None:
 
         records = []
         for example in tqdm(examples, desc=scenario):
-            prompt = build_prompt(example, SUFFIXES[args.suffix], args.honesty_prompt)
-            messages = [{"role": "user", "content": prompt}]
+            if "messages" in example:
+                # Multi-turn examples (Apollo insider trading) carry the full
+                # dialogue; suffix/honesty-prompt options don't apply.
+                messages = example["messages"]
+            else:
+                prompt = build_prompt(example, SUFFIXES[args.suffix], args.honesty_prompt)
+                messages = [{"role": "user", "content": prompt}]
             # Apollo roleplaying examples prefill the assistant turn (e.g.
             # "Student:") so the model answers in character.
             prefill = example.get("answer_prefix")
@@ -188,17 +193,17 @@ def main() -> None:
                 )
             n_prompt = enc["input_ids"].shape[1]
             response = tokenizer.decode(output[0, n_prompt:], skip_special_tokens=True)
+            if "honest_answer" in example:
+                label = classify(response, example["honest_answer"], example["deceptive_answer"])
+            else:
+                # Datasets without reference completions (insider trading,
+                # sandbagging) are labeled downstream by their judge/parser.
+                label = "deferred"
             records.append(
-                {
-                    "example_id": example["example_id"],
-                    "response": response,
-                    "label": classify(
-                        response, example["honest_answer"], example["deceptive_answer"]
-                    ),
-                }
+                {"example_id": example["example_id"], "response": response, "label": label}
             )
 
-        counts = {label: 0 for label in ("honest", "deceptive", "refusal", "other")}
+        counts = {label: 0 for label in ("honest", "deceptive", "refusal", "other", "deferred")}
         for record in records:
             counts[record["label"]] += 1
         total = len(records)
