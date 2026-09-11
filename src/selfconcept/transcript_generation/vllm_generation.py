@@ -7,6 +7,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, NotRequired, Optional, TypedDict, Unpack
 
+from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
 from selfconcept.common.hf_strong_types import Conversation
 from selfconcept.transcript_generation.generation import BatchEngine, format_conversation
 
@@ -115,12 +116,8 @@ class VLLMGenerator(BatchEngine):
         tokenizer = self.llm.get_tokenizer()
         max_len = self.llm.model_config.max_model_len
 
-        # PORT_ASSUMPTION[model-specific]: only the Qwen family understands enable_thinking;
-        # other families ignore the kwarg. Qwen defaults reasoning ON, so pass the caller's
-        # choice explicitly (https://github.com/vllm-project/vllm/issues/18066).
         chat_template_kwargs = {}
-        if "qwen" in self.model_name.lower():
-            chat_template_kwargs["enable_thinking"] = self.enable_thinking
+        chat_template_kwargs = get_model_specifics_by_name(self.model_name).set_enable_thinking(chat_template_kwargs, self.enable_thinking)
 
         # A prompt longer than the context window makes llm.generate raise for the
         # whole batch. Skip those (return "" for them) so one over-long prompt can't
