@@ -43,6 +43,7 @@ class RunConfig:
     max_tokens: int = 512
     top_p: float = 0.9
     dtype: str = "auto"
+    thinking: bool = False
     roles: list[str] | None = None
 
 
@@ -61,6 +62,7 @@ def main(run: RunConfig = RunConfig()) -> None:
         max_tokens=run.max_tokens,
         top_p=run.top_p,
         dtype=cast("ModelDType", run.dtype),
+        enable_thinking=run.thinking,
     )
     generator.process_all_roles(skip_existing=True, roles=run.roles)
     logger.info("Done!")

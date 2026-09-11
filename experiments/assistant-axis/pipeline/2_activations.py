@@ -54,7 +54,7 @@ class RunConfig:
     batch_size: int = 16
     max_length: int = 2048
     dtype: str = "bfloat16"  # one of DTYPE_MAP
-    thinking: bool = False
+    include_cot: bool = False
     roles: list[str] | None = None
 
 
@@ -70,7 +70,7 @@ def extract_activations_batch(
     layers: list[int],
     batch_size: int = 16,
     max_length: int = 2048,
-    enable_thinking: bool = False,
+    include_cot: bool = False,
 ) -> list[torch.Tensor | None]:
     """Extract per-conversation mean assistant-turn activations."""
     assert pm.tokenizer is not None
@@ -82,7 +82,7 @@ def extract_activations_batch(
     # PORT_ASSUMPTION[non-thinking]: other families ignore it and are treated as non-thinking.
     chat_kwargs: dict[str, Any] = {}
     if 'qwen' in pm.model_name.lower():
-        chat_kwargs['enable_thinking'] = enable_thinking
+        chat_kwargs['enable_thinking'] = include_cot
 
     all_activations: list[torch.Tensor | None] = []
 
@@ -131,7 +131,7 @@ def process_role(
     layers: list[int],
     batch_size: int,
     max_length: int,
-    enable_thinking: bool = False,
+    include_cot: bool = False,
 ) -> None:
     """Extract and save activations for a single role file."""
     role = role_file.stem
@@ -153,7 +153,7 @@ def process_role(
         layers=layers,
         batch_size=batch_size,
         max_length=max_length,
-        enable_thinking=enable_thinking,
+        include_cot=include_cot,
     )
 
     activations_dict = {}
@@ -198,7 +198,7 @@ def main(run: RunConfig = RunConfig()) -> None:
 
     logger.info(f"Processing {len(role_files)} roles")
     for role_file in tqdm(role_files, desc="Processing roles"):
-        process_role(pm, role_file, run.output_dir, layers, run.batch_size, run.max_length, run.thinking)
+        process_role(pm, role_file, run.output_dir, layers, run.batch_size, run.max_length, run.include_cot)
 
     logger.info("Done!")
 

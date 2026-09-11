@@ -24,6 +24,7 @@ class VLLMGeneratorArgs(TypedDict):
     max_tokens: NotRequired[int]
     top_p: NotRequired[float]
     dtype: NotRequired[ModelDType]
+    enable_thinking: NotRequired[bool]
     distributed_executor_backend: NotRequired[Optional[str]]
 
 
@@ -62,6 +63,7 @@ class VLLMGenerator(BatchEngine):
         self.max_tokens = args.get("max_tokens", 512)
         self.top_p = args.get("top_p", 0.9)
         self.dtype: ModelDType = args.get("dtype", "auto")
+        self.enable_thinking = args.get("enable_thinking", False)
         self.distributed_executor_backend = args.get("distributed_executor_backend", None)
 
         self.llm = None
@@ -113,13 +115,12 @@ class VLLMGenerator(BatchEngine):
         tokenizer = self.llm.get_tokenizer()
         max_len = self.llm.model_config.max_model_len
 
-        # PORT_ASSUMPTION[non-thinking]: forces Qwen reasoning OFF; a thinking model would
-        # need enable_thinking=True and its <think> spans handled downstream.
-        # PORT_ASSUMPTION[model-specific]: only the Qwen family is special-cased here.
-        # Disable thinking for Qwen models (https://github.com/vllm-project/vllm/issues/18066)
+        # PORT_ASSUMPTION[model-specific]: only the Qwen family understands enable_thinking;
+        # other families ignore the kwarg. Qwen defaults reasoning ON, so pass the caller's
+        # choice explicitly (https://github.com/vllm-project/vllm/issues/18066).
         chat_template_kwargs = {}
         if "qwen" in self.model_name.lower():
-            chat_template_kwargs["enable_thinking"] = False
+            chat_template_kwargs["enable_thinking"] = self.enable_thinking
 
         # A prompt longer than the context window makes llm.generate raise for the
         # whole batch. Skip those (return "" for them) so one over-long prompt can't

@@ -57,6 +57,7 @@ class RoleResponseGenerator:
         prompt_indices: list[int] | None = None,
         short_name: str | None = None,
         dtype: ModelDType = "auto",
+        enable_thinking: bool = False,
     ):
         """
         Initialize role response generator.
@@ -75,6 +76,7 @@ class RoleResponseGenerator:
             top_p: Top-p sampling
             prompt_indices: Which prompt indices to use (default: 0-4)
             short_name: Short model name for formatting (auto-detected if None)
+            enable_thinking: whether to generate thinking tokens for models that support it
         """
         self.model_name = model_name
         self.roles_dir = roles_dir
@@ -99,6 +101,7 @@ class RoleResponseGenerator:
             max_tokens=max_tokens,
             top_p=top_p,
             dtype=dtype,
+            enable_thinking=enable_thinking,
         )
 
         self.questions: list[str] | None = None
