@@ -38,7 +38,6 @@ class ModelSpecifics[RoleT: AllRoles = AllRoles](Protocol): # TODO: include toke
     ) -> tuple[list[int], int]: ...
     
 # PORT_ASSUMPTION[model-specific]: Qwen-specific response-index / turn-span extraction.
-# PORT_ASSUMPTION[non-thinking]: defaults enable_thinking=False and strips <think>...</think>
 # spans from assistant turns; a thinking model would need enable_thinking=True and its
 # reasoning spans handled deliberately rather than dropped.
 class QwenModelSpecifics(ModelSpecifics):

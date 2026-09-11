@@ -54,7 +54,6 @@ class RunConfig:
     batch_size: int = 16
     max_length: int = 2048
     dtype: str = "bfloat16"  # one of DTYPE_MAP
-    # PORT_ASSUMPTION[non-thinking]: defaults thinking OFF; only affects Qwen (see below).
     thinking: bool = False
     roles: list[str] | None = None
 
