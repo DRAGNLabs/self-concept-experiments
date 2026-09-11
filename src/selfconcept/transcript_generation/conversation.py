@@ -3,7 +3,7 @@
 import logging
 from typing import TypedDict
 
-from selfconcept.common.conversation_types import AllRoles, Conversation, ConversationTurn
+from selfconcept.common.hf_strong_types import AllRoles, Conversation, ConversationTurn
 from selfconcept.transcript_generation.generation import BatchEngine
 from selfconcept.transcript_generation.types import ConversationSeed
 

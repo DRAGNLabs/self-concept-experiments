@@ -7,7 +7,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, NotRequired, Optional, TypedDict, Unpack
 
-from selfconcept.common.conversation_types import Conversation
+from selfconcept.common.hf_strong_types import Conversation
 from selfconcept.transcript_generation.generation import BatchEngine, format_conversation
 
 if TYPE_CHECKING:

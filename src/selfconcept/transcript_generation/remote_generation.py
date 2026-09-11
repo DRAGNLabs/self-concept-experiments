@@ -7,7 +7,7 @@ from typing import Unpack
 
 import torch.multiprocessing as mp
 
-from selfconcept.common.conversation_types import Conversation
+from selfconcept.common.hf_strong_types import Conversation
 from selfconcept.transcript_generation.generation import BatchEngine
 from selfconcept.transcript_generation.vllm_generation import VLLMGenerator, VLLMGeneratorArgs
 

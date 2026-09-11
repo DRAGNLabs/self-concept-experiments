@@ -2,7 +2,7 @@
 # MIT licensed. See the NOTICE file at the repository root for the full license text.
 from typing import Optional, Protocol, runtime_checkable
 
-from selfconcept.common.conversation_types import Conversation
+from selfconcept.common.hf_strong_types import Conversation
 
 
 @runtime_checkable
