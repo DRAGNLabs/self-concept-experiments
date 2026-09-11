@@ -29,6 +29,7 @@ from selfconcept.assistant_axis.internals import (
     ProbingModel,
     SpanMapper,
 )
+from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
 from selfconcept.common.hf_strong_types import Conversation
 from selfconcept.common.paths import scratch_dir
 
@@ -78,11 +79,8 @@ def extract_activations_batch(
     extractor = ActivationExtractor(pm, encoder)
     span_mapper = SpanMapper()
 
-    # PORT_ASSUMPTION[model-specific]: enable_thinking is only threaded through for Qwen;
-    # PORT_ASSUMPTION[non-thinking]: other families ignore it and are treated as non-thinking.
     chat_kwargs: dict[str, Any] = {}
-    if 'qwen' in pm.model_name.lower():
-        chat_kwargs['enable_thinking'] = include_cot
+    chat_kwargs = get_model_specifics_by_name(pm.model_name).set_enable_thinking(chat_kwargs, include_cot)
 
     all_activations: list[torch.Tensor | None] = []
 

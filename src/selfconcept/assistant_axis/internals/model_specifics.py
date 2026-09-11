@@ -15,6 +15,12 @@ class ModelSpecifics[RoleT: AllRoles = AllRoles](ContentOnlyIdsAndOffsetFn[RoleT
         **apply_chat_template_kwargs,
     ) -> tuple[list[int], list[dict[str, Any]]]: ...
 
+    def set_enable_thinking(
+        self,
+        old_chat_kwargs: dict[str, Any],
+        enable_thinking: bool,
+    ) -> dict[str, Any]: ...
+
     
 # PORT_ASSUMPTION[model-specific]: Qwen-specific response-index / turn-span extraction.
 # spans from assistant turns; a thinking model would need enable_thinking=True and its
@@ -314,6 +320,9 @@ class QwenModelSpecifics(ModelSpecifics):
         # Fall back to standard approach for user turns or if assistant approach fails
         return content_only_ids_and_offset_standard(messages_before, tokenizer, role, content, **chat_kwargs)
 
+    def set_enable_thinking(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
+        return { **old_chat_kwargs, "enable_thinking": enable_thinking }
+
 
 
 # PORT_ASSUMPTION[model-specific]: Gemma/Llama offset-mapping response-index / turn-span extraction.
@@ -442,4 +451,24 @@ class GemmaModelSpecifics(ModelSpecifics):
         **apply_chat_template_kwargs,
     ) -> tuple[list[int], int]:
         return content_only_ids_and_offset_standard(messages_before, tokenizer, role, content, **apply_chat_template_kwargs)
+
+
+    def set_enable_thinking(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
+        if enable_thinking:
+            raise NotImplementedError("thinking currently not supported for Gemma type models")
+        else:
+            return old_chat_kwargs
+
+
+MODEL_SPECIFICS_REGISTRY = {
+    'qwen': QwenModelSpecifics(),
+    'gemma': GemmaModelSpecifics(),
+}
+
+def get_model_specifics_by_name(name: str) -> ModelSpecifics:
+    for key, value in MODEL_SPECIFICS_REGISTRY.items():
+        if key in name.lower():
+            return value
+
+    raise ValueError(f"could not find model specifics for {name}")
 
