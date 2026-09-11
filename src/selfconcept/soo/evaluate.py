@@ -14,6 +14,7 @@ completions are saved for later re-judging.
 import argparse
 import json
 import re
+import zlib
 from pathlib import Path
 
 import torch
@@ -78,6 +79,20 @@ def main() -> None:
     parser.add_argument("--suffix", choices=SUFFIXES, default="i_would")
     parser.add_argument("--honesty-prompt", action="store_true")
     parser.add_argument("--max-new-tokens", type=int, default=100)
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="0 = greedy (default). >0 samples with pure temperature scaling "
+        "(top_p/top_k disabled so T is the only knob), seeded per example",
+    )
+    parser.add_argument(
+        "--sample-seed",
+        type=int,
+        default=0,
+        help="with --temperature: RNG seed, mixed with each example_id so "
+        "results are reproducible and independent of subset/order",
+    )
     parser.add_argument("--data", type=Path, default=Path("data/eval"))
     parser.add_argument("--out", type=Path, default=Path("results/eval"))
     parser.add_argument("--tag", default="baseline", help="label for output filenames")
@@ -184,12 +199,26 @@ def main() -> None:
                 enc = tokenizer.apply_chat_template(
                     messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
                 ).to(device)
+            if args.temperature > 0:
+                # Per-example seed: same (seed, example_id) pair always gets the
+                # same draw, so slices and reorderings stay comparable.
+                torch.manual_seed(
+                    zlib.crc32(f"{args.sample_seed}:{example['example_id']}".encode())
+                )
+                sampling = {
+                    "do_sample": True,
+                    "temperature": args.temperature,
+                    "top_p": 1.0,
+                    "top_k": 0,
+                }
+            else:
+                sampling = {"do_sample": False}
             with torch.no_grad():
                 output = model.generate(
                     **enc,
                     max_new_tokens=args.max_new_tokens,
-                    do_sample=False,
                     pad_token_id=tokenizer.eos_token_id,
+                    **sampling,
                 )
             n_prompt = enc["input_ids"].shape[1]
             response = tokenizer.decode(output[0, n_prompt:], skip_special_tokens=True)
@@ -213,6 +242,8 @@ def main() -> None:
             "steering": steering,
             "scenario": scenario,
             "suffix": args.suffix,
+            "temperature": args.temperature,
+            "sample_seed": args.sample_seed if args.temperature > 0 else None,
             "honesty_prompt": args.honesty_prompt,
             "n": total,
             "counts": counts,

@@ -208,3 +208,11 @@ We were talking before about how to get at the question of why SOO is helping wi
 
 This paper: https://arxiv.org/pdf/2502.03407 
 Possibly other alternative: https://arxiv.org/pdf/2508.06361
+
+- Non-zero temperatures
+  - keep it deterministic with seeds
+  - *(in progress — round 6, jobs 13648732–35: gemma-4 12B/31B + Llama-2-70b,
+    sliced in-dist + all three Apollo datasets, T=0.7 all conditions +
+    T=1.0 base, per-example seeding in evaluate.py `--temperature/--sample-seed`)*
+
+- Implement ImpossibleBench, EvilGenie & test them out with our steering vectors/LoRA 
