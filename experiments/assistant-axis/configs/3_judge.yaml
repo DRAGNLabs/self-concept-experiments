@@ -1,0 +1,8 @@
+# Step 3: judge role adherence with a local vLLM judge. Run from experiments/assistant-axis:
+#   python pipeline/3_judge.py --config configs/3_judge.yaml
+# Reads step-1 responses from scratch + role eval_prompts from data/; writes {role}.json to scratch/scores.
+# Preview without loading the model: --run.dry_run true
+run:
+  judge_model: Qwen/Qwen2.5-7B-Instruct
+  tensor_parallel_size: 1
+  max_model_len: 2048
