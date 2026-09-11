@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import torch
 
+from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
+
 if TYPE_CHECKING:
     from selfconcept.common.hf_strong_types import Conversation
     from .model import ProbingModel
@@ -60,7 +62,8 @@ class ActivationExtractor:
         elif isinstance(layer, list):
             layer_list = layer
         else:
-            layer_list = list(range(len(self.probing_model.get_layers())))
+            model_specifics = get_model_specifics_by_name(self.probing_model.model_name)
+            layer_list = list(range(len(model_specifics.get_layers(self.probing_model.model))))
 
         # Prepare batch tensors
         device = self.model.device
@@ -106,7 +109,8 @@ class ActivationExtractor:
             return hook_fn
 
         # Register hooks for target layers
-        model_layers = self.probing_model.get_layers()
+        model_specifics = get_model_specifics_by_name(self.probing_model.model_name)
+        model_layers = model_specifics.get_layers(self.probing_model.model)
         for layer_idx in layer_list:
             target_layer = model_layers[layer_idx]
             handle = target_layer.register_forward_hook(create_hook_fn(layer_idx))

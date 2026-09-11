@@ -174,8 +174,9 @@ def main(run: RunConfig = RunConfig()) -> None:
 
     logger.info(f"Loading model: {run.model}")
     pm = ProbingModel(run.model, dtype=DTYPE_MAP[run.dtype])
+    model_specifics = get_model_specifics_by_name(pm.model_name)
 
-    n_layers = len(pm.get_layers())
+    n_layers = len(model_specifics.get_layers(pm.model))
     logger.info(f"Model has {n_layers} layers")
     if run.layers == "all":
         layers = list(range(n_layers))

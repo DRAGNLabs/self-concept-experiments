@@ -124,58 +124,6 @@ class ProbingModel:
         assert self.model is not None
         return next(self.model.parameters()).device
 
-    def get_layers(self) -> nn.ModuleList:
-        """
-        Get the transformer layers from the model, handling different architectures.
-
-        Returns:
-            The layers object (usually a ModuleList) that can be indexed and has len()
-
-        Raises:
-            AttributeError: If no layers can be found with helpful error message
-        """
-        if self._layers is not None:
-            return self._layers
-
-        # PORT_ASSUMPTION[model-specific]: transformer layers are located by trying a fixed list
-        # of architecture-specific attribute paths (plus Gemma-3/LLaVA-specific error guidance
-        # below); an architecture not covered here raises AttributeError.
-        # Try common paths for transformer layers
-        layer_paths = [
-            ('model.model.layers', lambda m: m.model.layers),  # Standard language models (Llama, Gemma 2, Qwen, etc.)
-            ('model.language_model.layers', lambda m: m.language_model.layers),  # Vision-language models (Gemma 3, LLaVA, etc.)
-            ('model.transformer.h', lambda m: m.transformer.h),  # GPT-style models
-            ('model.transformer.layers', lambda m: m.transformer.layers),  # Some transformer variants
-            ('model.gpt_neox.layers', lambda m: m.gpt_neox.layers),  # GPT-NeoX models
-        ]
-
-        for path_name, path_func in layer_paths:
-            try:
-                layers = path_func(self.model)
-                if layers is not None and hasattr(layers, '__len__') and len(layers) > 0:
-                    self._layers = layers
-                    return cast(nn.ModuleList, self._layers)
-            except AttributeError:
-                continue
-
-        # If we get here, no layers were found
-        model_class = type(self.model).__name__
-        model_name = getattr(self.model, 'name_or_path', 'Unknown')
-
-        # Provide specific guidance for known cases
-        error_msg = f"Could not find transformer layers for model '{model_name}' (class: {model_class}). "
-
-        if 'gemma' in model_name.lower() and '3' in model_name:
-            error_msg += "For Gemma 3 vision models, try loading with Gemma3ForConditionalGeneration instead."
-        elif 'llava' in model_name.lower():
-            error_msg += "For LLaVA models, layers should be at model.language_model.layers."
-        else:
-            # Show what paths were tried
-            tried_paths = [path_name for path_name, _ in layer_paths]
-            error_msg += f"Tried paths: {tried_paths}"
-
-        raise AttributeError(error_msg)
-
     def detect_type(self) -> str:
         """
         Detect the model family (qwen, llama, gemma, etc).
