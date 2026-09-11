@@ -39,9 +39,6 @@ class CoverallLayerGetter:
         if self._layers is not None:
             return self._layers
 
-        # PORT_ASSUMPTION[model-specific]: transformer layers are located by trying a fixed list
-        # of architecture-specific attribute paths (plus Gemma-3/LLaVA-specific error guidance
-        # below); an architecture not covered here raises AttributeError.
         # Try common paths for transformer layers
         layer_paths = [
             ('model.model.layers', lambda m: m.model.layers),  # Standard language models (Llama, Gemma 2, Qwen, etc.)
