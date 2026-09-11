@@ -322,7 +322,7 @@ class QwenModelSpecifics(ModelSpecifics):
 
 
 
-class GemmaModelSpecifics(ModelSpecifics):
+class GemmaLlamaModelSpecifics(ModelSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Gemma/Llama-specific implementation using offset mapping approach."""
         all_turn_indices = []
@@ -458,7 +458,8 @@ class GemmaModelSpecifics(ModelSpecifics):
 
 MODEL_SPECIFICS_REGISTRY = {
     'qwen': QwenModelSpecifics(),
-    'gemma': GemmaModelSpecifics(),
+    'gemma': GemmaLlamaModelSpecifics(),
+    'llama': GemmaLlamaModelSpecifics(),
 }
 
 def get_model_specifics_by_name(name: str) -> ModelSpecifics:

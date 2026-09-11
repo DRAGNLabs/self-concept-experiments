@@ -8,8 +8,7 @@ import torch
 import re
 
 
-from selfconcept.assistant_axis.internals.conversation_utils import get_response_indices_simple
-from selfconcept.assistant_axis.internals.model_specifics import GemmaModelSpecifics, QwenModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
 from selfconcept.common.hf_strong_types import (
     Conversation,
     HFTokenizer,
@@ -38,18 +37,6 @@ class ConversationEncoder:
         """
         self.tokenizer = tokenizer
         self.model_name = (model_name or getattr(tokenizer, "name_or_path", "")).lower()
-
-    def _is_qwen(self) -> bool:
-        """Check if this is a Qwen model."""
-        return 'qwen' in self.model_name
-
-    def _is_llama(self) -> bool:
-        """Check if this is a Llama model."""
-        return 'llama' in self.model_name or 'meta-llama' in self.model_name
-
-    def _is_gemma(self) -> bool:
-        """Check if this is a Gemma model."""
-        return 'gemma' in self.model_name
 
     def format_chat(
         self,
@@ -128,25 +115,12 @@ class ConversationEncoder:
         Returns:
             Token indices for assistant responses
         """
-        # PORT_ASSUMPTION[model-specific]: dispatch by family — Qwen vs Llama/Gemma; unknown
-        # families fall back to the simple offset method.
-        # Dispatch to model-specific implementation
-        if self._is_qwen():
-            return self._flatten_conditional(
-                not per_turn,
-                QwenModelSpecifics().get_response_indices(conversation, self.tokenizer, **chat_kwargs)
-            )
-        elif self._is_llama() or self._is_gemma():
-            return self._flatten_conditional(
-                not per_turn,
-                GemmaModelSpecifics().get_response_indices(conversation, self.tokenizer, **chat_kwargs)
-            )
-        else:
-            # Fallback to simple method
-            return self._flatten_conditional(
-                not per_turn,
-                get_response_indices_simple(conversation, self.tokenizer, **chat_kwargs)
-            )
+        model_specifics = get_model_specifics_by_name(self.model_name)
+        response_indices = model_specifics.get_response_indices(conversation, self.tokenizer, **chat_kwargs)
+        return self._flatten_conditional(
+            not per_turn,
+            response_indices,
+        )
         
     def _flatten_conditional[T](self, should_flatten: bool, list_of_lists: list[list[T]]) -> list[T] | list[list[T]]:
         return flatten(list_of_lists) if should_flatten else list_of_lists
@@ -173,13 +147,8 @@ class ConversationEncoder:
             conversation, add_generation_prompt=False, **chat_kwargs
         )["input_ids"]
 
-        # PORT_ASSUMPTION[model-specific]: Qwen uses a pattern-matching turn-span path; every
-        # other family (Llama/Gemma/unknown) uses the Gemma offset-mapping path.
-        # For Qwen models, use pattern-matching approach (matches persona-subspace behavior)
-        if self._is_qwen():
-            return QwenModelSpecifics().build_turn_spans(conversation, self.tokenizer, full_ids, **chat_kwargs)
-        
-        return GemmaModelSpecifics().build_turn_spans(conversation, self.tokenizer, full_ids, **chat_kwargs)
+        model_specifics = get_model_specifics_by_name(self.model_name)
+        return model_specifics.build_turn_spans(conversation, self.tokenizer, full_ids, **chat_kwargs)
 
     def build_batch_turn_spans(
         self,
