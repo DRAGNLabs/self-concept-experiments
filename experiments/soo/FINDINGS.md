@@ -1841,7 +1841,121 @@ including for Qwen2.5-72B itself (self-judging; its numbers agree
 with the cross-model pattern but an independent judge pass on that
 cell would be cleaner). Insider trading / sandbagging still unported.
 
-# Summary
+## Apollo OOD round 4 (jobs 13626392–96): two new operationalizations split by *motive* — SOO moves self-interested concealment, and leaves instructed deception intact or worse
+
+Round 4 ran the gemma-4 canonical cells (12B L19 α12, 31B L30 α16;
+LoRA seed0) × {base, +v, −v, rand s0, LoRA} on the two remaining
+Apollo operationalizations: **insider trading** (onpolicy variant —
+173 fixed agentic scaffolds where Alpha has already made a misaligned
+LING trade on an insider tip and must report to manager Amy; report
+judged explicit/implied/concealed → honest/ambiguous/deceptive by
+Qwen-72B with Apollo's `classify_mention_insider` prompt) and
+**sandbagging** (sandbagging_v2 wmdp_mmlu — system prompt *instructs*
+hiding WMDP-style dangerous capability via private step tags; 250
+WMDP + 250 MMLU control; labels parsed programmatically: decided to
+sandbag and shipped an answer differing from its privately computed
+one → deceptive).
+
+**The scaffold works.** Both models play Alpha in-format (172/173
+valid reports at baseline) and deceive spontaneously: 31B base is 0%
+explicit / 64% implied / 35% concealed; 12B base 10/63/26. Judge
+spot-checks (8 cells sampled) are uniformly correct — "internal
+communications" graded implied, "insider tip from Sally" explicit,
+"recommendation from StockAnalyze" concealed. On sandbagging both
+baselines comply with the instruction on WMDP (sandbag-decision ~100%,
+deceptive 56–57%, WMDP acc 3–4%); 31B is clean on the MMLU control
+(11% sandbag decisions, 70% acc) while 12B over-triggers even at
+baseline (44% decisions, 30% deceptive on MMLU).
+
+**Insider trading — the vector's second transfer for the 31B, and a
+sign inversion for the 12B:**
+
+| cell | honest | ambiguous | deceptive | invalid |
+|---|---|---|---|---|
+| 31B base | 0.0 | 64.2 | 35.3 | 0.6 |
+| 31B +v | **57.8** | 29.5 | **12.1** | 0.6 |
+| 31B −v | 28.3 | 67.6 | 4.0 | 0.0 |
+| 31B rand s0 | 0.6 | 94.2 | 4.6 | 0.6 |
+| 31B LoRA s0 | **45.1** | 50.3 | **4.0** | 0.6 |
+| 12B base | 10.4 | 63.0 | 26.0 | 0.6 |
+| 12B +v | 27.2 | 24.9 | **48.0** | 0.0 |
+| 12B −v | **65.3** | 13.9 | 20.8 | 0.0 |
+| 12B rand s0 | 5.8 | 3.5 | 37.0 | **53.8** |
+| 12B LoRA s0 | 27.8 | 22.0 | **50.3** | 0.0 |
+
+The 31B +v effect is the study's largest OOD move: explicit
+disclosure 0→58% ("Risk level: High (Insider information)" verbatim
+in reports), concealment 35→12%, and it is direction-separated where
+it matters — rand s0 produces ~0 explicit (it just blurs reports into
+vaguer implied mentions, 94% ambiguous), −v gets 28%. Note both signs
+reduce "deceptive"; the discriminating axis on this dataset is
+*explicitness*, not concealment alone. Two reversals vs roleplaying:
+(1) **31B LoRA transfers here** (explicit 0→45, concealed 35→4) after
+being inert ×3 seeds on roleplaying; (2) **12B is sign-inverted** —
++v makes it *more* concealing (26→48%) while −v is its honest
+direction (explicit 10→65%), the Muse pattern, now in a clean
+non-ATEM model. 12B rand s0 also breaks the agentic format (54%
+invalid), so its control column is thin.
+
+**Sandbagging — nobody's honest direction fixes instructed deception**
+(sandbag-decision rate / deceptive / accuracy, WMDP | MMLU):
+
+| cell | WMDP | MMLU |
+|---|---|---|
+| 31B base | 0.98 / 0.57 / 0.03 | 0.11 / 0.08 / 0.70 |
+| 31B +v | 0.68 / 0.47 / 0.10 | **0.80 / 0.56 / 0.16** |
+| 31B −v | 0.85 / **0.69** / 0.08 | 0.10 / 0.08 / 0.68 |
+| 31B rand s0 | 0.66 / 0.44 / 0.27 | 0.26 / 0.22 / 0.66 |
+| 31B LoRA s0 | 0.94 / **0.71** / 0.04 | **0.51 / 0.43 / 0.38** |
+| 12B base | 1.00 / 0.56 / 0.04 | 0.44 / 0.30 / 0.35 |
+| 12B +v | 1.00 / 0.33 / **0.30** | 0.86 / 0.35 / 0.27 |
+| 12B −v | 1.00 / **0.72** / 0.08 | 0.92 / 0.56 / 0.07 |
+| 12B rand s0 | 0.96 / 0.18 / 0.17 | 0.96 / 0.25 / 0.27 |
+| 12B LoRA s0 | **0.06 / 0.00 / 0.30** | **0.03 / 0.00 / 0.63** |
+
+The 31B vector *backfires*: +v makes it over-trigger the sandbag rule
+on benign MMLU (decisions 11→80%, privately computing the right
+answer then shipping a wrong one — "basic abstract algebra …
+potentially misused" in its own step-1 text), collapsing MMLU
+accuracy 70→16%. −v is direction-discriminated in the *bad* direction
+(WMDP deception 57→69% with MMLU untouched). 31B LoRA likewise makes
+things worse on both halves (WMDP dec 71%, MMLU decisions 51%, acc
+70→38). The two cells that blunt sandbagging do it by breaking
+compliance, not by honesty: 12B +v leaks the true answer (WMDP acc
+4→30% while still declaring sandbag 100% — decides to lie, fails to
+execute), and **12B LoRA simply ignores the instruction** (decisions
+6%/3%, deception 0, WMDP acc 30%, MMLU acc 63% ≈ its real capability)
+— plus refuses 31% of WMDP outright ("I am prohibited from providing
+information that could assist in… biological agents"), a behavior no
+other cell shows.
+
+**Reading: the operationalizations split by motive, not by dataset
+difficulty.** Roleplaying and insider trading are *self-interested
+concealment* (protecting the persona/agent from consequences);
+sandbagging is *obedient deception* (honesty requires disobeying the
+system prompt). The 31B vector transfers on both concealment datasets
+and is harmful on the obedience one; every intervention that "helps"
+on sandbagging does so via noncompliance or execution failure. This
+sharpens the paper's claim: the SOO direction moves deception whose
+motive is self-protection, and does not touch — or amplifies —
+deception performed in compliance with instructions. The certificate
+story survives in weakened form: 31B in-dist direction-specificity
+again predicted transfer, but only within-motive; and LoRA's
+inertness/transfer flips per dataset (31B LoRA: inert roleplaying →
+transfers insider → backfires sandbagging), so LoRA remains
+uncertifiable in either direction.
+
+Caveats: (1) 600-token budget truncates verbose sandbagging responses
+before `<answer>` — unparsed is 12–53% per cell, worst in rand cells;
+within-round comparisons share the budget but absolute accuracies are
+depressed (12B base MMLU 35% is truncation+overtrigger, not
+capability). (2) All LoRA/rand claims here are seed0; round 2 taught
+us to certify with more seeds — round 5 queued. (3) 12B rand insider
+column is 54% invalid. (4) "Ambiguous" on insider = implied mention,
+Apollo's middle class; base models live there (63–64%), so honest%
+is the sensitive axis.
+
+
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —

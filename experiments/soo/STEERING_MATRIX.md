@@ -230,6 +230,22 @@ output degenerate). Single miss in nine: Muse-30B, +v null and −v
 modestly honest (61→49) — an OOD sign inversion, suspected
 ATEM-channel entanglement.** Details in FINDINGS "Apollo OOD round 3".
 
+**Round 4 (insider trading + sandbagging, gemma-4 cells only): transfer
+is motive-dependent.** Insider trading (self-interested concealment):
+31B +v is the study's largest OOD move (explicit disclosure 0→58%,
+concealed 35→12; rand ~0 explicit) and 31B LoRA *transfers* here
+(0→45 explicit) after 3-seed inertness on roleplaying; 12B is
+sign-inverted (−v explicit 10→65%, +v worsens 26→48 concealed — the
+Muse pattern in a clean model). Sandbagging (instructed deception):
+no honest direction fixes it — 31B +v over-triggers the sandbag rule
+on benign MMLU (11→80% decisions, acc 70→16), −v/LoRA amplify WMDP
+deception (57→69/71%); the only mitigations are noncompliance (12B
+LoRA ignores the instruction, 0% deception, refuses 31% of WMDP) or
+execution failure (12B +v declares sandbag but leaks the true answer,
+WMDP acc 4→30). Reading: SOO moves deception motivated by
+self-protection, not deception performed in compliance with
+instructions. Details in FINDINGS "Apollo OOD round 4".
+
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released
 - 2024 mid: gemma-2-9b-it (holds family constant vs 27B for a pure size axis)
