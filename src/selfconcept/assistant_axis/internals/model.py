@@ -122,21 +122,6 @@ class ProbingModel:
         assert self.model is not None
         return next(self.model.parameters()).device
 
-    def supports_system_prompt(self) -> bool:
-        """
-        Check if this model supports system prompts in its chat template.
-
-        Returns:
-            True if the model supports system prompts, False otherwise.
-
-        Note:
-            Only Gemma 2 doesn't support system prompts. All other models
-            (including Gemma 3, Llama, Qwen, etc.) support them.
-        """
-        # PORT_ASSUMPTION[model-specific]: assumes only Gemma-2 lacks chat-template system-prompt
-        # support; every other family is assumed to support it.
-        return 'gemma-2' not in self.model_name.lower()
-
     def close(self):
         """Clean up model resources and free GPU memory."""
         if self.model is not None:
