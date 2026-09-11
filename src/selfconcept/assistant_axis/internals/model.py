@@ -84,7 +84,6 @@ class ProbingModel:
 
         # Cache for layers (lazy loaded)
         self._layers: nn.ModuleList | None = None
-        self._model_type: str | None = None
 
     @classmethod
     def from_existing(cls, model: nn.Module, tokenizer: AutoTokenizer, model_name: str | None = None) -> ProbingModel:
@@ -109,7 +108,6 @@ class ProbingModel:
         instance.chat_model_name = None
         instance.dtype = next(model.parameters()).dtype if hasattr(model, 'parameters') else torch.bfloat16
         instance._layers = None
-        instance._model_type = None
         return instance
 
     @property
@@ -123,46 +121,6 @@ class ProbingModel:
         """Get the device of the first model parameter."""
         assert self.model is not None
         return next(self.model.parameters()).device
-
-    def detect_type(self) -> str:
-        """
-        Detect the model family (qwen, llama, gemma, etc).
-
-        Returns:
-            Model type as a string: 'qwen', 'llama', 'gemma', or 'unknown'
-        """
-        if self._model_type is not None:
-            return self._model_type
-
-        model_name_lower = self.model_name.lower()
-
-        # PORT_ASSUMPTION[model-specific]: family inferred by substring match on the model name;
-        # unrecognized families fall back to 'unknown' (and the is_* flags below derive from this).
-        if 'qwen' in model_name_lower:
-            self._model_type = 'qwen'
-        elif 'llama' in model_name_lower or 'meta-llama' in model_name_lower:
-            self._model_type = 'llama'
-        elif 'gemma' in model_name_lower:
-            self._model_type = 'gemma'
-        else:
-            self._model_type = 'unknown'
-
-        return self._model_type
-
-    @property
-    def is_qwen(self) -> bool:
-        """Check if this is a Qwen model."""
-        return self.detect_type() == 'qwen'
-
-    @property
-    def is_gemma(self) -> bool:
-        """Check if this is a Gemma model."""
-        return self.detect_type() == 'gemma'
-
-    @property
-    def is_llama(self) -> bool:
-        """Check if this is a Llama model."""
-        return self.detect_type() == 'llama'
 
     def supports_system_prompt(self) -> bool:
         """
