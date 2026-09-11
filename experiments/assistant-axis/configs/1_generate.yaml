@@ -1,0 +1,9 @@
+# Step 1: generate role responses. Run from experiments/assistant-axis:
+#   python pipeline/1_generate.py --config configs/1_generate.yaml
+# Override on the CLI for smoke runs, e.g.
+#   --run.model Qwen/Qwen2.5-0.5B-Instruct --run.question_count 4 --run.roles [default,accountant]
+run:
+  model: google/gemma-2-27b-it
+  tensor_parallel_size: 4
+  gpu_memory_utilization: 0.95
+  question_count: 240

@@ -3,16 +3,9 @@ This project includes third-party code.
 ================================================================================
 assistant-axis
 --------------------------------------------------------------------------------
-The package `src/selfconcept/transcript_generation/` contains code derived from
+The packages `src/selfconcept/transcript_generation/`, `src/selfconcept/assistant_axis` contains code derived from
 the assistant-axis project (https://github.com/safety-research/assistant-axis),
-which is distributed under the MIT License. The following files are derived from
-`assistant_axis/persona_drift/` and `assistant_axis/generation.py`:
-
-  - src/selfconcept/transcript_generation/conversation.py
-  - src/selfconcept/transcript_generation/generation.py
-  - src/selfconcept/transcript_generation/vllm_generation.py
-  - src/selfconcept/transcript_generation/remote_generation.py
-  - src/selfconcept/transcript_generation/types.py
+which is distributed under the MIT License.
 
 The upstream project does not ship a LICENSE file with a copyright line; it
 states "License: MIT" in its README. The MIT License text is reproduced below,

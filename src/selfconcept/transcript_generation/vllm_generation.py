@@ -113,6 +113,9 @@ class VLLMGenerator(BatchEngine):
         tokenizer = self.llm.get_tokenizer()
         max_len = self.llm.model_config.max_model_len
 
+        # PORT_ASSUMPTION[non-thinking]: forces Qwen reasoning OFF; a thinking model would
+        # need enable_thinking=True and its <think> spans handled downstream.
+        # PORT_ASSUMPTION[model-specific]: only the Qwen family is special-cased here.
         # Disable thinking for Qwen models (https://github.com/vllm-project/vllm/issues/18066)
         chat_template_kwargs = {}
         if "qwen" in self.model_name.lower():
