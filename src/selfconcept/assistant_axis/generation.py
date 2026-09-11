@@ -131,7 +131,6 @@ class RoleResponseGenerator:
 
     def format_instruction(self, instruction: str) -> str:
         """Format instruction, replacing {model_name} placeholder."""
-        # PORT_ASSUMPTION[model-specific]: role prompts embed a "{model_name}" placeholder
         # filled with a per-model short name (from get_config), so the same role set is
         # reused verbatim across model families.
         return instruction.replace("{model_name}", self.short_name)

@@ -69,8 +69,6 @@ class ProbingModel:
             # Single GPU specified - try to use it, but allow sharding if needed
             model_kwargs["device_map"] = "auto"
             gpu_id = int(device.split(":")[-1])
-            # PORT_ASSUMPTION[model-specific]: hardcoded 139GiB cap assumes an H200-class GPU
-            # and a model that fits on one; other GPUs are pinned to 0GiB.
             model_kwargs["max_memory"] = {gpu_id: "139GiB"}
             # Set other GPUs to 0 to prevent usage
             if torch.cuda.is_available():

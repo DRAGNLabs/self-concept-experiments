@@ -41,7 +41,6 @@ class RunConfig:
     responses_dir: Path = scratch_dir("assistant-axis") / "responses"
     roles_dir: Path = Path("data/roles/instructions")
     output_dir: Path = scratch_dir("assistant-axis") / "scores"
-    # PORT_ASSUMPTION[model-specific]: default judge is Qwen2.5-7B; 
     judge_model: str = "Qwen/Qwen2.5-7B-Instruct"
     max_tokens: int = 16
     dtype: str = "auto"

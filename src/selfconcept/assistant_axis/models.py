@@ -20,15 +20,11 @@ MODEL_CONFIGS = {
         "target_layer": 32,
         "total_layers": 64,
         "short_name": "Qwen",
-        "capping_config": "qwen-3-32b/capping_config.pt",
-        "capping_experiment": "layers_46:54-p0.25",
     },
     "meta-llama/Llama-3.3-70B-Instruct": {
         "target_layer": 40,
         "total_layers": 80,
         "short_name": "Llama",
-        "capping_config": "llama-3.3-70b/capping_config.pt",
-        "capping_experiment": "layers_56:72-p0.25",
     },
 }
 

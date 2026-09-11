@@ -22,9 +22,6 @@ class ModelSpecifics[RoleT: AllRoles = AllRoles](ContentOnlyIdsAndOffsetFn[RoleT
     ) -> dict[str, Any]: ...
 
     
-# PORT_ASSUMPTION[model-specific]: Qwen-specific response-index / turn-span extraction.
-# spans from assistant turns; a thinking model would need enable_thinking=True and its
-# reasoning spans handled deliberately rather than dropped.
 class QwenModelSpecifics(ModelSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Qwen-specific implementation for extracting response token indices."""
@@ -325,7 +322,6 @@ class QwenModelSpecifics(ModelSpecifics):
 
 
 
-# PORT_ASSUMPTION[model-specific]: Gemma/Llama offset-mapping response-index / turn-span extraction.
 class GemmaModelSpecifics(ModelSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Gemma/Llama-specific implementation using offset mapping approach."""
