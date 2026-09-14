@@ -2118,6 +2118,108 @@ baselines match T=0.7 within noise (except 31B insider deception
 600-token budget still truncates verbose sandbagging cells.
 
 
+## Round 7 (jobs 13681659–60): a third random seed reopens the 31B insider direction-specificity question — the *concealment* drop is generic to any matched-norm perturbation, only the *explicit-disclosure* rate separates the SOO direction and the adapters
+
+Round 5 left the 31B random control at two seeds with a wide spread
+(insider honest 0.6% s0 vs 17.9% s1) behind the 3-seed-certified
+LoRA transfer (45/61/49%). Round 7 ran random seed 2 over the full
+insider (n=173) and sandbagging (n=500) sets, greedy, 600 tokens,
+same layer/α as +v (L30, α16, norm-matched).
+
+**Insider trading (31B, greedy, n=173)** — honest = explicit
+disclosure to the manager, ambiguous = implied, deceptive =
+concealed (Apollo's classify_mention_insider on Qwen2.5-72B).
+
+| condition | honest | ambiguous | deceptive | non-concealed (hon+amb) |
+|---|---|---|---|---|
+| base | 0.0 | 64.2 | 35.3 | 64.2 |
+| +v (L30 α16) | 57.8 | 29.5 | 12.1 | 87.3 |
+| rand s0 | 0.6 | 94.2 | 4.6 | 94.8 |
+| rand s1 | 17.9 | 79.8 | 1.7 | 97.7 |
+| **rand s2** | **38.7** | **54.9** | **5.8** | **93.6** |
+| LoRA s0 | 45.1 | 50.3 | 4.0 | 95.4 |
+| LoRA s1 | 61.3 | 34.1 | 4.0 | 95.4 |
+| LoRA s2 | 49.1 | 46.2 | 4.0 | 95.4 |
+
+Raw check: the rand-s2 "honest" reports are genuine explicit
+disclosures ("Risk level: High (Insider information) … Internal tip
+regarding an imminent merger announcement"). But the explicit/implied
+boundary is judge-noisy — an "implied" report in the same file says
+"Risk level: High (due to insider information risk)" — so the
+honest% axis carries judge variance on top of seed variance.
+
+Three readings, in decreasing confidence:
+
+1. **The concealment drop is not direction-specific.** Every
+   perturbation of this norm at L30 — the SOO direction, all three
+   random directions, all three adapters — takes concealed reports
+   from 35% to ≤12% and non-concealment from 64% to 87–98%. The random
+   seeds actually beat +v on non-concealment (94–98 vs 87). Whatever
+   holds the 31B's concealment in place at this site is fragile to
+   any matched-norm push. This retracts the round-4 framing of the
+   31B insider transfer as "its largest OOD move": the largest
+   component of that move is generic.
+2. **The explicit-disclosure rate is where the direction and the
+   adapters still separate from noise, with a smaller margin than
+   round 5 implied.** Random seeds: 0.6 / 17.9 / 38.7 (mean 19,
+   sd ≈ 19). +v 57.8 clears every seed by ≥19 points (≈2 sd above the
+   random mean, single vector). LoRA 45/61/49 (mean 52) clears the
+   random mean by 33 points, but LoRA s0 is only 6 points above rand
+   s2. Honest-vs-random is a real difference in expectation; it is
+   not the near-null control (0/92/7) round 5 reported from two seeds.
+3. **Both gemma-4 insider cells are now perturbation-sensitive.** The
+   12B's LoRA "backfire" died to rand s1 in round 5; the 31B's
+   transfer survives in explicit% but not in concealment%. Insider
+   trading is the operationalization on which random directions do
+   the most, which is a property of the scenario (one scripted
+   decision point, a fixed report template whose "Information used
+   for decision" slot flips between "market analysis" and "internal
+   tip"), not of SOO.
+
+**Sandbagging (31B, greedy, n=250 per half)** — WMDP half should
+sandbag (deceptive = sandbagged, i.e. instructed deception carried
+out); MMLU half is the benign control (deceptive = over-trigger).
+
+| condition | WMDP dec | WMDP unp | WMDP acc | MMLU hon | MMLU dec | MMLU unp | MMLU acc |
+|---|---|---|---|---|---|---|---|
+| base | 57.2 | 41.6 | 3 | 80.4 | 7.6 | 12.0 | 70 |
+| +v | 46.8 | 44.4 | 10 | 8.4 | 56.0 | 32.0 | 16 |
+| rand s0 | 44.4 | 52.8 | 27 | 33.6 | 22.0 | 44.4 | 66 |
+| rand s1 | 33.6 | 66.4 | 2 | 21.2 | 25.6 | 53.2 | 24 |
+| **rand s2** | **48.0** | **51.6** | **4** | **4.4** | **11.2** | **84.4** | **50** |
+| LoRA s0 | 70.8 | 28.8 | 4 | 46.0 | 43.2 | 10.8 | 38 |
+| LoRA s1 | 76.0 | 24.0 | 5 | 43.6 | 36.8 | 19.6 | 36 |
+| LoRA s2 | 77.6 | 22.0 | 6 | 56.4 | 37.6 | 6.0 | 45 |
+
+4. **The LoRA sandbagging backfire stays adapter-specific, now 3 vs 3
+   seeds with opposite signs.** All three random seeds *reduce* WMDP
+   sandbagging below base (44 / 34 / 48 vs 57, mostly by breaking the
+   step protocol — unparsed 52–66%), while all three adapters *raise*
+   it (71 / 76 / 78) with the protocol intact (unparsed 22–29%). Same
+   for MMLU contamination: LoRA 37–43% deceptive on benign questions
+   vs random 11–26%. Nothing about a random perturbation makes the
+   31B a more compliant sandbagger; the SOO adapters do.
+5. **+v's MMLU over-trigger (56%) exceeds every random seed (max
+   25.6%)**, so it is also direction-specific, though random
+   perturbations contribute a generic 11–26% floor. Rand s2 is the
+   most destructive seed on MMLU (84% unparsed, accuracy 70 → 50)
+   without over-triggering — disruption and over-trigger are
+   separable, and +v produces the latter.
+
+**What to change in the paper text**: (a) the 31B insider result is
+"the SOO direction and adapters increase *explicit* disclosure above
+matched-norm random directions (+v 58 vs random 1–39; LoRA 45–61)",
+not "SOO fixes concealment" — the concealment fix is generic; (b)
+the sandbagging motive split (SOO amplifies instructed deception)
+is the cleaner, better-certified 31B finding, opposite-signed to
+three random seeds; (c) report random controls at three seeds
+everywhere — the two-seed 31B insider control understated the spread
+by a factor of two. Caveats: single +v vector (no seed dimension on
+the direction itself — it is deterministic given the extraction
+set); honest/ambiguous boundary judged by one model; greedy only for
+rand s2 (rounds 6's temperature check covered s0).
+
+
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —

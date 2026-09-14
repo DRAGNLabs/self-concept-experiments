@@ -263,6 +263,19 @@ insider base deception +11. Llama-70b insider/sandbagging excluded:
 it fails the scaffold precondition (wrong tool calls, protocol
 unparsed). Details in FINDINGS rounds 5–6.
 
+**Round 7 (31B rand s2) downgrades the insider certification**: the
+three random seeds give honest 0.6 / 17.9 / 38.7% (round 5's two-seed
+"0/92/7 null" understated the spread by half), and *every*
+matched-norm perturbation — random, +v, LoRA — takes concealed
+reports from 35% to ≤12%. The concealment drop is generic; what
+separates the SOO direction and adapters is the *explicit*-disclosure
+rate (+v 58, LoRA 45/61/49 vs random 1–39, mean 19). Sandbagging is
+the better-certified 31B claim: three random seeds *reduce* WMDP
+sandbagging (44/34/48 vs base 57) while three adapters *raise* it
+(71/76/78), and +v's MMLU over-trigger (56%) clears every random seed
+(max 26%). Report random controls at three seeds everywhere. Details
+in FINDINGS round 7.
+
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released
 - 2024 mid: gemma-2-9b-it (holds family constant vs 27B for a pure size axis)
