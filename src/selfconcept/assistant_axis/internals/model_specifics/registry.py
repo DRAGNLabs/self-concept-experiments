@@ -1,4 +1,5 @@
 from selfconcept.assistant_axis.internals.model_specifics.gemma_llama import GemmaLlamaModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.olmo import OlmoModelSpecifics
 from selfconcept.assistant_axis.internals.model_specifics.qwen import QwenModelSpecifics
 from selfconcept.assistant_axis.internals.model_specifics.types import ModelSpecifics
 
@@ -7,6 +8,7 @@ MODEL_SPECIFICS_REGISTRY = {
     'qwen': QwenModelSpecifics(),
     'gemma': GemmaLlamaModelSpecifics(),
     'llama': GemmaLlamaModelSpecifics(),
+    'olmo': OlmoModelSpecifics(),
 }
 
 def get_model_specifics_by_name(name: str) -> ModelSpecifics:

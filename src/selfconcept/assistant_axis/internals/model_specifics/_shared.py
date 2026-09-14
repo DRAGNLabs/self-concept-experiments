@@ -1,7 +1,7 @@
 from typing import Any, Iterator
 
 from selfconcept.assistant_axis.internals.conversation_utils import content_only_ids_and_offset_standard, find_subsequence
-from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template
+from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template, configure_call
 
 
 def get_response_indices_chatml(
@@ -32,17 +32,35 @@ def get_response_indices_chatml(
 
     return all_turn_indices
 
-def _get_chatml_think_tokens(tokenizer: HFTokenizer, required: bool) -> tuple[int, int] | None:
-    try:
-        think_start_id = tokenizer.convert_tokens_to_ids('<think>')
-        think_end_id = tokenizer.convert_tokens_to_ids('</think>')
-    except (KeyError, ValueError):
-        if required:
-            raise ValueError("Could not find <think> token ids for tokenizer")
+def _think_char_spans(text: str) -> list[tuple[int, int]]:
+    """Char ranges of <think>...</think> blocks to drop from `text`.
 
-        return None
+    Works at the character level because models like OLMo 3 encode the tags as
+    multi-token text whose closing '>' fuses with the following character under
+    BPE, so the tags have no stable token-id sequence. Handles a missing opening
+    <think> (block runs from the start) and a missing closing </think> (block
+    runs to the end), which is how reasoning turns are emitted and stored.
+    """
+    open_tag, close_tag = "<think>", "</think>"
+    spans = []
+    pos = 0
+    while True:
+        start = text.find(open_tag, pos)
+        end = text.find(close_tag, pos)
+        if start == -1 and end == -1:
+            break
+        # Block starts at <think> when it precedes the close, else at the turn/scan start
+        block_start = start if start != -1 and (end == -1 or start < end) else pos
+        if end == -1:
+            spans.append((block_start, len(text)))
+            break
+        block_end = end + len(close_tag)
+        spans.append((block_start, block_end))
+        pos = block_end
+    return spans
 
-    return think_start_id, think_end_id
+def _overlaps_any(start: int, end: int, spans: list[tuple[int, int]]) -> bool:
+    return any(start < span_end and end > span_start for span_start, span_end in spans)
 
 def build_turn_spans_chatml(
     conversation: Conversation,
@@ -97,6 +115,9 @@ def _iter_over_turns(
 ) -> Iterator[tuple[int, AllRoles, int, int]]:
     im_start_id = tokenizer.convert_tokens_to_ids('<|im_start|>')
     im_end_id = tokenizer.convert_tokens_to_ids('<|im_end|>')
+    # Some ChatML variants (e.g. OLMo 3) close the final assistant turn with eos
+    # instead of <|im_end|>, so treat both as turn terminators.
+    turn_end_ids: set[int | None] = {im_end_id, tokenizer.eos_token_id} # type: ignore
     user_token_id = tokenizer.convert_tokens_to_ids('user')
     assistant_token_id = tokenizer.convert_tokens_to_ids('assistant')
 
@@ -119,11 +140,11 @@ def _iter_over_turns(
             # Found start of a turn, skip the <|im_start|>role tokens
             content_start = i + 2
 
-            # Find the corresponding <|im_end|>
+            # Find the corresponding turn terminator (<|im_end|> or eos)
             content_end = None
             for j in range(content_start, len(full_ids)):
-                if full_ids[j] == im_end_id:
-                    content_end = j  # Don't include the <|im_end|> token
+                if full_ids[j] in turn_end_ids:
+                    content_end = j  # Don't include the terminator token
                     break
 
             if content_end is None:
@@ -138,38 +159,29 @@ def _iter_over_turns(
 
 
 def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRoles, tokenizer: HFTokenizer, enable_thinking: bool) -> list[int]:
-    thinking_token_ids = _get_chatml_think_tokens(tokenizer, required=not enable_thinking)
-
-    if (
-        role != "assistant"
-        or enable_thinking
-        or thinking_token_ids is None
-    ):
+    if role != "assistant" or enable_thinking:
         return raw_indices
 
-    think_start_id, think_end_id = thinking_token_ids
-    filtered_indices = []
-    skip_until_think_end = False
+    turn_ids = [full_ids[i] for i in raw_indices]
+    turn_text = tokenizer.decode(turn_ids)
+    drop_spans = _think_char_spans(turn_text)
 
-    for idx in raw_indices:
-        token_id = full_ids[idx]
-
-        # Check if we hit a <think> token
-        if token_id == think_start_id:
-            skip_until_think_end = True
-            continue
-
-        # Check if we hit a </think> token
-        if token_id == think_end_id:
-            skip_until_think_end = False
-            continue
-
-        # Skip tokens that are inside thinking blocks
-        if skip_until_think_end:
-            continue
-
-        # Include all tokens that are not inside thinking blocks
-        filtered_indices.append(idx)
+    if not drop_spans:
+        filtered_indices = list(raw_indices)
+    else:
+        # Re-encoding recovers per-token char offsets, which only align if it
+        # reproduces the original tokens.
+        enc = configure_call(tokenizer).return_offsets_mapping(True)(turn_text, add_special_tokens=False)
+        if enc['input_ids'] != turn_ids:
+            raise ValueError(
+                "Re-encoding the decoded assistant turn did not reproduce its tokens, "
+                "so think-block offsets cannot be aligned"
+            )
+        filtered_indices = [
+            raw_indices[k]
+            for k, (char_start, char_end) in enumerate(enc['offset_mapping'])
+            if not _overlaps_any(char_start, char_end, drop_spans)
+        ]
 
     # Clean up extracted text by removing extra whitespace/newlines at boundaries
     if filtered_indices:
