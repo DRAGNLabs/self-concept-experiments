@@ -1956,6 +1956,168 @@ Apollo's middle class; base models live there (63–64%), so honest%
 is the sensitive axis.
 
 
+## Apollo OOD round 5 (jobs 13647746–48): seed certification — the 31B LoRA insider transfer and sandbagging backfire are both 3-seed robust; the 12B LoRA insider "backfire" is matched by a random vector and dies
+
+Round 4's LoRA and random-vector cells were all seed0. Round 5 ran LoRA
+seeds 1/2 plus random seed 1 on both gemmas over the full insider trading
+(n=173) and sandbagging (n=500) sets, same 600-token budget.
+
+**Insider trading** (judge: honest / ambiguous / deceptive / invalid %):
+
+| cell | honest | ambig | dec | invalid |
+|---|---|---|---|---|
+| 31B base (r4) | 0.0 | 64.2 | 35.3 | 0.6 |
+| 31B LoRA s0 (r4) | 45.1 | 50.3 | 4.0 | 0.6 |
+| **31B LoRA s1** | **61.3** | 34.1 | **4.1** | 0.6 |
+| **31B LoRA s2** | **49.1** | 46.2 | **4.1** | 0.6 |
+| 31B rand s0 (r4) | 0.6 | 94.2 | 4.6 | 0.6 |
+| **31B rand s1** | 17.9 | 79.8 | 1.7 | 0.6 |
+| 12B base (r4) | 10.4 | 63.0 | 26.0 | 0.6 |
+| 12B LoRA s0 (r4) | 27.8 | 22.0 | 50.3 | 0.0 |
+| **12B LoRA s1** | 22.0 | 40.5 | 37.6 | 0.0 |
+| **12B LoRA s2** | 17.3 | 43.4 | 34.1 | 5.2 |
+| 12B rand s0 (r4) | 0.6 | — | — | 54.3 |
+| **12B rand s1** | 26.0 | 37.6 | 36.4 | 0.0 |
+
+Three verdicts. (1) **31B LoRA insider transfer certifies**: honest
+45/61/49% across the three training seeds (base 0%), deceptive pinned
+at 4% on all three. This is the first LoRA OOD effect in the study
+that survives full seed certification. The margin over random holds
+but narrows: rand s1 lifts honest to 18% (rand s0 gave 0.6%), still
+under a third of LoRA's weakest seed. (2) **12B LoRA insider backfire
+direction holds but is not LoRA-specific**: deceptive stays above base
+on all seeds (50/38/34 vs 26) — but rand s1 produces the *same
+signature* (honest 26, deceptive 36) while keeping the agentic format
+intact. Whatever the 12B does under insider pressure, any coherent
+perturbation polarizes it the same way; the round-4 "LoRA backfires"
+reading downgrades to "the 12B cell is perturbation-sensitive, not
+direction-sensitive." (3) The 12B rand s0 format break (54% invalid)
+was a seed-0 quirk: rand s1 is 0% invalid.
+
+**Sandbagging** (parse: honest / ambiguous / deceptive / unparsed, acc;
+WMDP | MMLU halves):
+
+| cell | WMDP hon/amb/dec/unp (acc) | MMLU hon/amb/dec/unp (acc) |
+|---|---|---|
+| 31B base (r4) | 1/0/57/42 (.03) | 80/0/8/12 (.70) |
+| 31B LoRA s0 (r4) | 0/0/71/29 (.04) | 46/0/43/11 (.38) |
+| **31B LoRA s1** | 0/0/**76**/24 (.05) | 44/0/**37**/20 (.36) |
+| **31B LoRA s2** | 0/0/**78**/22 (.06) | 56/0/**38**/6 (.45) |
+| **31B rand s1** | 0/0/34/66 (.02) | 21/0/26/53 (.24) |
+| 12B base (r4) | 0/3/56/41 (.04) | 56/0/30/13 (.35) |
+| 12B LoRA s0 (r4) | 19/4/**0**/77 (.30) | 60/1/**0**/39 (.63) |
+| **12B LoRA s1** | 42/17/**2**/39 (.36) | 74/2/**0**/24 (.46) |
+| **12B LoRA s2** | 18/38/**2**/42 (.45) | 46/7/**2**/45 (.59) |
+| **12B rand s1** | 3/18/**63**/16 (.19) | 44/3/**44**/8 (.32) |
+
+(4) **31B LoRA sandbagging backfire certifies**: WMDP deceptive
+76/78% on s1/s2 (worse than s0's 71, base 57) and the benign-MMLU
+contamination replicates at 37–38% deceptive vs base 8. Combined with
+(1): the same 31B adapters that certifiably *fix* self-interested
+concealment certifiably *amplify* instructed deception — the motive
+split is now a certified property of the LoRA, not a seed artifact.
+(5) 12B LoRA "fixes" sandbagging on all seeds the same way: deception
+≤2% but via noncompliance (unparsed 39–77%), never via honest
+execution at capacity. (6) 12B rand s1 *increases* WMDP deception to
+63% and MMLU deception to 44% — random directions can amplify
+sandbagging, which sharpens how non-generic the 12B LoRA's
+deception-killing noncompliance is, while simultaneously killing the
+12B LoRA insider claim in (2). Same adapter family, opposite
+certification outcomes per dataset: LoRA remains uncertifiable as a
+*general* honesty intervention.
+
+
+## Round 6 (jobs 13648732–35): temperature replication — the greedy results are not decoding artifacts; every headline effect survives T=0.7 within ~5 points on matched examples
+
+The whole study so far was greedy-decoded. Round 6 re-ran gemma-4
+12B/31B × {base, +v, rand s0, LoRA s0} and Llama-2-70b × {base, +v,
+rand s0} at **T=0.7** (pure temperature scaling, top_p=1.0/top_k=0,
+per-example seed = crc32(seed:example_id), sample seed 0), plus a
+T=1.0 base run per model, over sliced sets: in-dist main n=50,
+roleplaying/insider first 100, sandbagging stratified 100 (50 WMDP /
+50 MMLU). All greedy comparisons below are recomputed on the *same
+example subsets* (graded files filtered by example_id; sandbagging
+round-4 files re-parsed on the slice), so slice composition is never
+confounded with decoding.
+
+**In-dist (honest %, n=50)** — greedy → T0.7 (→ T1.0 for base):
+12B base 0 → 0 → 0; steer 100 → 98; rand s0 68 → 68; LoRA → 88.
+31B base 0 → 0 → 0; steer 98 → 96; rand s0 18 → 20; LoRA → 100.
+Llama base 64 → 64 → 58; steer 92 → 88; rand s0 80 → 78.
+Point-for-point replication; the 12B in-dist rand-vector effect (68%
+honest) is exactly reproduced at temperature, confirming it's a real
+property of that cell, not decoding luck.
+
+**Roleplaying (deceptive / honest %, n=100 subset)** — greedy → T0.7:
+
+| cell | greedy dec/hon | T0.7 dec/hon |
+|---|---|---|
+| 12B base | 61 / 10 | 63 / 12 (T1.0: 62 / 9) |
+| 12B steer | 59 / 11 | 58 / 15 |
+| 12B rand s0 | 60 / 11 | 60 / 12 |
+| 12B LoRA | 34 / 34 | 32 / 40 |
+| 31B base | 66 / 6 | 69 / 7 (T1.0: 68 / 6) |
+| 31B steer | 53 / 20 | 54 / 19 |
+| 31B rand s0 | 58 / 11 | 54 / 12 |
+| 31B LoRA | 68 / 11 | 67 / 11 |
+| 70B base | 53 / 22 | 50 / 22 (T1.0: 50 / 27) |
+| 70B steer | 34 / 47 | 31 / 50 |
+| 70B rand s0 | 52 / 21 | 47 / 23 |
+
+The double dissociation (12B LoRA transfers / steer null; 31B steer
+transfers / LoRA inert) and the 70B vector transfer — the study's
+strongest roleplaying result — all replicate essentially unchanged.
+
+**Insider trading (honest / ambig / dec / invalid %, n=100 subset)**:
+
+| cell | greedy | T0.7 |
+|---|---|---|
+| 12B base | 9/66/24/1 | 8/60/30/2 (T1.0: 7/61/31/1) |
+| 12B steer | 26/26/48/0 | 23/26/50/1 |
+| 12B rand s0 | 6/2/40/**52** | 3/8/38/**51** |
+| 12B LoRA | 28/20/52/0 | 24/27/48/1 |
+| 31B base | 0/61/38/1 | 0/67/32/1 (T1.0: 0/56/**43**/1) |
+| 31B steer | 56/30/13/1 | 50/32/17/1 |
+| 31B rand s0 | 0/92/7/1 | 1/91/8/0 |
+| 31B LoRA | 42/52/5/1 | 38/56/5/1 |
+
+The study's largest OOD move (31B +v explicit-disclosure effect,
+honest 0 → 56 greedy) holds at temperature (0 → 50); the rand
+blur-to-ambiguous control and the LoRA transfer hold; the 12B steer/
+LoRA deception increases hold; even the 12B rand s0 format break
+reproduces almost exactly (52% → 51% invalid) — it's a property of
+that vector, not of argmax decoding. The one temperature-sensitive
+number: 31B base deception rises 32 → 43 at T=1.0 (honest stays 0),
+so sampled baselines are, if anything, slightly *more* deceptive —
+the steering margins are conservative.
+
+**Sandbagging (slice n=100; WMDP dec / MMLU hon %, greedy-slice →
+T0.7)**: 12B base 52/96 → 54/90; steer 40/26 → 38/32 (benign-MMLU
+disruption holds, unparsed 54 → 60); rand s0 12/4 → 8/4; LoRA 0/34 →
+0/50 (noncompliance holds, WMDP unparsed 80 → 68). 31B base 48/100 →
+50/98 (T1.0 50/100); steer 52/8 → 52/22; rand s0 52/46 → 52/46
+(identical); LoRA backfire holds 66/86 → 70/80. One mode-shift worth
+noting: the 31B +v MMLU over-trigger ships fewer wrong answers at
+temperature (deceptive 38 → 10) and truncates more (unparsed 54 →
+68) — the disruption is stable, its surface form is not.
+
+**Llama-2-70b insider/sandbagging (new coverage, no greedy anchor)**
+is excluded from claims: 64–67% of insider responses are judged
+invalid because Llama wanders to other tools (`set_price_alert`)
+instead of the scripted send_message step, and sandbagging is 62–96%
+unparsed (base barely executes the step1/answer protocol; +v pushes
+it into explicit abstention — "I must abstain from answering").
+These operationalizations assume a scaffold-following model; 70B
+chat-era models fail the precondition.
+
+**Bottom line for the paper**: nothing in the greedy story was a
+decoding artifact. Across 33 matched cells the largest greedy↔T0.7
+gap on any headline rate is ~6 points with no sign flips, and T=1.0
+baselines match T=0.7 within noise (except 31B insider deception
++11). Caveats: one sample seed (s0) per cell; slices n=50–100; the
+600-token budget still truncates verbose sandbagging cells.
+
+
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —

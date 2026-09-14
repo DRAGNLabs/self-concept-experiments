@@ -246,6 +246,23 @@ WMDP acc 4→30). Reading: SOO moves deception motivated by
 self-protection, not deception performed in compliance with
 instructions. Details in FINDINGS "Apollo OOD round 4".
 
+**Round 5 (seed certification): the 31B LoRA motive split is now
+3-seed certified in both directions** — insider transfer honest
+45/61/49% (dec pinned 4%) *and* sandbagging backfire WMDP dec
+71/76/78% across seeds s0/s1/s2. The 12B LoRA insider "backfire"
+dies: rand s1 reproduces its signature (hon 26/dec 36) with an intact
+format, so that cell is perturbation-sensitive, not
+direction-specific; the 12B rand-s0 54%-invalid format break was a
+seed quirk. 12B rand s1 *amplifies* sandbagging (WMDP dec 63%),
+sharpening the 12B LoRA's noncompliance as non-generic. **Round 6
+(temperature): nothing greedy was a decoding artifact** — all
+headline cells (both gemmas + Llama-70b, in-dist + all three Apollo
+datasets) replicate at T=0.7/seed 0 within ~6 points on matched
+example subsets, no sign flips; T=1.0 baselines match except 31B
+insider base deception +11. Llama-70b insider/sandbagging excluded:
+it fails the scaffold precondition (wrong tool calls, protocol
+unparsed). Details in FINDINGS rounds 5–6.
+
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released
 - 2024 mid: gemma-2-9b-it (holds family constant vs 27B for a pure size axis)

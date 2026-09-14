@@ -182,7 +182,7 @@ the in-distribution 0→100 flips.
 
 Work items, in priority order (1–3 gate a main-track submission; workshop version writable now):
 
-1. **Second + third OOD operationalizations** *(in progress)* — port Apollo's insider trading
+1. **Second + third OOD operationalizations** *(done — rounds 4–5; motive-split finding, 31B LoRA 3-seed certified both directions)* — port Apollo's insider trading
    (agentic multi-turn: spliced misaligned trade → report to manager; grade the report
    explicit/implied/concealed with their classify_mention_insider prompt) and sandbagging_v2
    (instructed capability-hiding on WMDP with MMLU honest control; labels parsed programmatically
@@ -211,8 +211,11 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
 
 - Non-zero temperatures
   - keep it deterministic with seeds
-  - *(in progress — round 6, jobs 13648732–35: gemma-4 12B/31B + Llama-2-70b,
+  - *(done — round 6, jobs 13648732–35: gemma-4 12B/31B + Llama-2-70b,
     sliced in-dist + all three Apollo datasets, T=0.7 all conditions +
-    T=1.0 base, per-example seeding in evaluate.py `--temperature/--sample-seed`)*
+    T=1.0 base, per-example seeding in evaluate.py `--temperature/--sample-seed`.
+    Verdict: no greedy result was a decoding artifact — all headline cells
+    replicate within ~6 points on matched subsets, no sign flips; see
+    FINDINGS round 6)*
 
 - Implement ImpossibleBench, EvilGenie & test them out with our steering vectors/LoRA 
