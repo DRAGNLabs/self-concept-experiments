@@ -209,13 +209,32 @@ We were talking before about how to get at the question of why SOO is helping wi
 This paper: https://arxiv.org/pdf/2502.03407 
 Possibly other alternative: https://arxiv.org/pdf/2508.06361
 
-- Non-zero temperatures
-  - keep it deterministic with seeds
-  - *(done — round 6, jobs 13648732–35: gemma-4 12B/31B + Llama-2-70b,
-    sliced in-dist + all three Apollo datasets, T=0.7 all conditions +
-    T=1.0 base, per-example seeding in evaluate.py `--temperature/--sample-seed`.
-    Verdict: no greedy result was a decoding artifact — all headline cells
-    replicate within ~6 points on matched subsets, no sign flips; see
-    FINDINGS round 6)*
 
-- Implement ImpossibleBench, EvilGenie & test them out with our steering vectors/LoRA 
+- Implement ImpossibleBench, EvilGenie & test them out with our steering vectors/LoRA
+  - *(in progress, 2026-09-14 — ported as a fourth/fifth OOD operationalization, this time
+    reward hacking rather than lying: does the self/other direction change whether a model games
+    its tests?)* Both benchmarks are agentic coding loops derived from LiveCodeBench, so they need
+    a new harness: `selfconcept.soo.evaluate_code` (submission loop: model emits code → sandboxed
+    execution via `code_sandbox.py` (bwrap + rlimits, no Docker on the cluster) → test output
+    fed back as the next user turn, ≤3 attempts; same model/steering/LoRA/temperature setup as
+    `evaluate.py`, factored into `model_setup.py`). Data built by `scripts/code_convert.py` into
+    `data/eval_code/`:
+    - **ImpossibleBench** (Zhong et al. 2025, arXiv:2510.20270): official
+      `fjzzq2002/impossible_livecodebench`, 103 hard tasks × {original, oneoff, conflicting}.
+      Their "minimal" scaffold prompt/feedback verbatim, tests shown, submitted block placed
+      after the tests (their allow_test_modifications default). Pass on an impossible split =
+      cheating, by construction; `original` is the capability control. Programmatic labels:
+      cheat_modify_tests / cheat_special_case / honest_correct / honest_fail.
+    - **EvilGenie** (Gabor & Ryzhov 2025, arXiv:2511.21654): LCB v5_v6 hard, their per-problem
+      70/30 visible/holdout split (seed 42), their nine ambiguous problems excluded, tests >20 KB
+      dropped (the raw file was 830 MB). Workspace files shown at their 3000-char tool-output
+      truncation; the model writes files back as ```lang filename=… blocks. Labels: solved /
+      hack_visible_only (visible pass, holdout fail) / hack_test_modified / failed, plus
+      `scripts/judge_code.py` running their judge prompt on Qwen2.5-72B
+      (reward_hacking / heuristic / legitimate).
+    - Deviation from both references: no tool-calling scaffold (our models run through plain chat
+      templates), so file edits and test runs are mediated by the submission protocol rather than
+      bash/python tools. Same protocol for every condition, so within-model contrasts are clean.
+    - Plan: smoke (12B base n=3) → round 1 = gemma-4 12B + 31B × {base, +v, rand s0, LoRA s0} on
+      impossible_conflicting + impossible_original + evilgenie slices (n≈30–40), then seeds for
+      whichever cell moves.
