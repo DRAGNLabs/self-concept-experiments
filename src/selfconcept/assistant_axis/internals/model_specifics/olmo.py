@@ -6,7 +6,7 @@ from selfconcept.common.hf_strong_types import AllRoles, Conversation, Conversat
 
 
 class OlmoModelSpecifics(CoverallLayerGetter, ModelSpecifics):
-    """This was build for OLMo 3. OLMo 3 uses a different chat template than earlier versions."""
+    """This was built for OLMo 3. OLMo 3 uses a different chat template than earlier versions."""
 
     def get_response_indices(
         self,
