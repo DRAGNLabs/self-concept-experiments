@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
+
 
 class ProbingModel:
     """
@@ -121,6 +123,13 @@ class ProbingModel:
         """Get the device of the first model parameter."""
         assert self.model is not None
         return next(self.model.parameters()).device
+
+    def get_layers(self) -> nn.ModuleList:
+        """Return the model's transformer layers, cached across calls."""
+        if self._layers is None:
+            assert self.model is not None
+            self._layers = get_model_specifics_by_name(self.model_name).get_layers(self.model)
+        return self._layers
 
     def close(self):
         """Clean up model resources and free GPU memory."""

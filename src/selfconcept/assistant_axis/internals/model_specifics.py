@@ -36,9 +36,6 @@ class CoverallLayerGetter:
         Raises:
             AttributeError: If no layers can be found with helpful error message
         """
-        if self._layers is not None:
-            return self._layers
-
         # Try common paths for transformer layers
         layer_paths = [
             ('model.model.layers', lambda m: m.model.layers),  # Standard language models (Llama, Gemma 2, Qwen, etc.)
@@ -52,8 +49,7 @@ class CoverallLayerGetter:
             try:
                 layers = path_func(model)
                 if layers is not None and hasattr(layers, '__len__') and len(layers) > 0:
-                    self._layers = layers
-                    return cast(nn.ModuleList, self._layers)
+                    return cast(nn.ModuleList, layers)
             except AttributeError:
                 continue
 
@@ -77,7 +73,7 @@ class CoverallLayerGetter:
 
 
     
-class QwenModelSpecifics(ModelSpecifics, CoverallLayerGetter):
+class QwenModelSpecifics(CoverallLayerGetter, ModelSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Qwen-specific implementation for extracting response token indices."""
         all_turn_indices = []
@@ -377,7 +373,7 @@ class QwenModelSpecifics(ModelSpecifics, CoverallLayerGetter):
 
 
 
-class GemmaLlamaModelSpecifics(ModelSpecifics, CoverallLayerGetter):
+class GemmaLlamaModelSpecifics(CoverallLayerGetter, ModelSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Gemma/Llama-specific implementation using offset mapping approach."""
         all_turn_indices = []
