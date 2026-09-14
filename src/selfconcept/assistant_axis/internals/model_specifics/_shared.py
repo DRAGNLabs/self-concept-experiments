@@ -1,5 +1,6 @@
 from typing import Any, Iterator
 
+from selfconcept.assistant_axis.internals.conversation_utils import content_only_ids_and_offset_standard, find_subsequence
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template
 
 
@@ -189,4 +190,39 @@ def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRole
                 filtered_indices.pop()
 
     return filtered_indices
+
+def content_only_ids_and_offset_string_search(
+    messages_before: Conversation,
+    tokenizer: HFTokenizer,
+    role: AllRoles,
+    content: str,
+    **chat_kwargs,
+) -> tuple[list[int], int]:
+    """Handles thinking tokens by searching for the plain message"""
+    if role == "assistant":
+        # Find where content appears in the full tokenized conversation
+        msgs_full = messages_before + [{"role": role, "content": content}]
+        ids_full = configure_apply_chat_template(tokenizer).tokenize(True)(
+            msgs_full, add_generation_prompt=False, **chat_kwargs
+        )["input_ids"]
+
+        # Find the content tokens in the full sequence
+        plain = tokenizer(content, add_special_tokens=False).input_ids
+        content_start = find_subsequence(ids_full, plain)
+
+        if content_start != -1:
+            # Calculate offset from the beginning of the conversation
+            if messages_before:
+                ids_before = configure_apply_chat_template(tokenizer).tokenize(True)(
+                    messages_before, add_generation_prompt=False, **chat_kwargs
+                )["input_ids"]
+                prefix_len = len(ids_before)
+            else:
+                prefix_len = 0
+
+            start_in_delta = content_start - prefix_len
+            return plain, max(0, start_in_delta)
+
+    # Fall back to standard approach for user turns or if assistant approach fails
+    return content_only_ids_and_offset_standard(messages_before, tokenizer, role, content, **chat_kwargs)
 
