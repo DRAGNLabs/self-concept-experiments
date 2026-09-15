@@ -255,3 +255,12 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       requires a verbatim quote (regex rate reported beside it as the lower bound); the first-pass
       rate goes in the judge-validity section as a cautionary example. Judge batching also had to
       be rewritten (prompts 1k–27.5k tokens; padded batches hit SDPA's math kernel).
+    - *Round 3 = model screen (queued 2026-09-15, jobs 13705336–42)*: base-only ImpossibleBench
+      conflicting/original + EvilGenie on the three non-gemma models that already have validated
+      SOO vectors — Muse-Glimmer-30B (L26 α8; vector-only, no honest LoRA regime), Qwen2.5-72B
+      (L40 α16) and Kimi-Dev-72B (L24 α16; coding-RL model, 4096 tokens for its think blocks).
+      Purpose: gemma-4 barely reward-hacks, so SOO had nothing to reduce; if any of these hacks
+      at base (cheat/special-case/holdout-fail ≳15%), run its +v and random cells next (vector
+      vs random, not vector vs LoRA). Caveats: Qwen2.5-72B is also the judge, so its cells lean
+      on the judge-free measures (pass labels, rule spec-case, regex call-out) or a second judge;
+      72B cells run one scenario per 3-GPU job.
