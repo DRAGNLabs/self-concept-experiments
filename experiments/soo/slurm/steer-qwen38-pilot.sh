@@ -1,6 +1,6 @@
 #!/bin/bash --login
 #SBATCH --job-name=soo-steer-qwen38-pilot
-#SBATCH --time=10:00:00
+#SBATCH --time=14:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
@@ -34,12 +34,13 @@ export CUDA_VISIBLE_DEVICES=$pick
 echo "Using GPU $CUDA_VISIBLE_DEVICES"
 
 set -e
-# Qwen3.8-27B pilot (chained on extraction). No LoRA band yet, so sweep depth
-# 25-75% of 64 layers at both layer kinds: full-attention layers 15/23/31/39/47
-# and Gated DeltaNet layers 16/24/32/40/48, at the alphas where gemma-4-31B
-# first moved (a8) and saturated (a32); a4/a16/a64 at mid-depth bracket the
-# scale in case this model's vector/activation norm ratio differs. Baselines
-# in both suffix conventions as for gemma-4.
+# Qwen3.8-27B pilot. Extraction (13705498) put the self-other vector at
+# 0.2-0.6x the activation norm at these layers (gemma-4-31B: 0.10 at L30),
+# so gemma's working a16 (1.6x the activation norm) is ~a4 here and a32
+# would be >10x. Grid: depth 25-75% of 64 layers at both layer kinds --
+# full-attention 15/23/31/39/47, Gated DeltaNet 16/24/32/40/48 -- at
+# a2/a4/a8, plus a1/a16 at mid-depth to bracket. Baselines in both suffix
+# conventions as for gemma-4 (base smoke: 5/5 single-word rooms, 0% honest).
 MODEL=Qwen/Qwen3.8-27B
 VEC=results/steering/qwen38_27b.pt
 SCENARIOS="main perspectives treasure_hunt"
@@ -53,13 +54,13 @@ run() {  # run <tag> [eval args...]
 run base_room_only --suffix room_only --scenarios $SCENARIOS
 run base_i_would --suffix i_would --scenarios main
 for L in 15 16 23 24 31 32 39 40 47 48; do
-    for A in 8 32; do
+    for A in 2 4 8; do
         run "steer_L${L}_a${A}" --suffix room_only --scenarios main \
             --steer-vectors $VEC --steer-layer $L --steer-alpha $A
     done
 done
 for L in 31 32; do
-    for A in 4 16 64; do
+    for A in 1 16; do
         run "steer_L${L}_a${A}" --suffix room_only --scenarios main \
             --steer-vectors $VEC --steer-layer $L --steer-alpha $A
     done

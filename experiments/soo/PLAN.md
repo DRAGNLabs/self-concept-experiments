@@ -255,6 +255,12 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       requires a verbatim quote (regex rate reported beside it as the lower bound); the first-pass
       rate goes in the judge-validity section as a cautionary example. Judge batching also had to
       be rewritten (prompts 1k–27.5k tokens; padded batches hit SDPA's math kernel).
+    - *Round 1 judge results (FINDINGS "judge results")*: 12B LoRA special-cases the contradicting
+      input in 12/35 coded submissions (base 0/35, p<0.001; 9 guard the exact conflicting input,
+      all announced); 31B LoRA 1/37 vs base 5/38 (n.s.) — same size-opposite sign as insider
+      trading. EvilGenie judge: 0 reward hacking in 6/8 cells. Messages-only call-out 13–56%
+      (first-pass 35–89% was judge over-reach). Round 4 = LoRA seeds 1–2 on ImpossibleBench
+      conflicting (13707588–92) to certify the 12B effect.
     - *Round 3 = model screen (queued 2026-09-15, jobs 13705336–42)*: base-only ImpossibleBench
       conflicting/original + EvilGenie on the three non-gemma models that already have validated
       SOO vectors — Muse-Glimmer-30B (L26 α8; vector-only, no honest LoRA regime), Qwen2.5-72B
@@ -279,3 +285,5 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       6144→5120, so vectors are hidden-size at every layer); loader routes `text_config` models
       to the image-text class and refuses loads that would leave decoder weights random
       (AutoModelForCausalLM maps qwen3_5 to a text-only class whose names miss the checkpoint).
+      Extraction done: vectors 0.2–0.6× activation norm (gemma-4-31B 0.10), pilot regridded to
+      α2/4/8 (+α1/16 mid-depth) as 13707587; base smoke 5/5 direct answers, 0% honest.

@@ -15,7 +15,7 @@ of models to see how each intervention trends with each variable.
 | OLMo-2-1124-7B-Instruct | 2024-11 | 7B | 32 | 4096 | L19 | 0.11 |
 | Muse-Glimmer-30B | 2026-08 | 30B | 52 | 6656 | L26 | 0.15 |
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
-| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | pilot pending (13705499) | — |
+| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | pilot pending (13707587) | 0.41 @L31 (0.2–0.6 across L15–48) |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
 | Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
 | Qwen2.5-72B-Instruct | 2024-09 | 72B | 80 | 8192 | L40 (pilot) | — |
