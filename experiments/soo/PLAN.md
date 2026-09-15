@@ -248,3 +248,10 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       writes records incrementally with resume and tolerates per-example OOM (31B: two ~20 KB
       test-suite tasks OOM at turn 0 → n=38). Round 2 = +v α sweep (12B α6/α3, 31B α8/α4) to find
       where capability recovers and whether cheat/call-out rates move at all there.
+    - *Round 1 judge pass (2026-09-15, FINDINGS "judge pass")*: the first-pass judge is shown the
+      test suite (needed to classify special-casing) and therefore reports the contradiction it
+      finds itself — 12B base: 13 of 25 `notes_conflict` records never mention the tests. The
+      call-out rate now comes from `scripts/judge_callout.py`, a messages-only second pass that
+      requires a verbatim quote (regex rate reported beside it as the lower bound); the first-pass
+      rate goes in the judge-validity section as a cautionary example. Judge batching also had to
+      be rewritten (prompts 1k–27.5k tokens; padded batches hit SDPA's math kernel).
