@@ -261,6 +261,13 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       trading. EvilGenie judge: 0 reward hacking in 6/8 cells. Messages-only call-out 13–56%
       (first-pass 35–89% was judge over-reach). Round 4 = LoRA seeds 1–2 on ImpossibleBench
       conflicting (13707588–92) to certify the 12B effect.
+    - *Round 2 interim (FINDINGS "round 2 — harness-level interim"; EvilGenie + judge pending)*:
+      capability recovers by α6 (12B, 60% vs base 62%) and α4 (31B, 78% vs 75%); the cliff sits
+      between α6/α12 and α8/α16. At the working α the 12B moves nothing, but the 31B +v goes from
+      1 to 5–6/40 test modifications (pooled p=0.06) with the regex call-out falling 38→20%: it
+      answers with the whole file and rewrites the assertion it disagrees with, mostly with a
+      code comment saying so. Round 5 = the controls this needs (13708943–47): random s0/s1 at α8,
+      random s0 at α4, −v at α8, 31B conflicting split only. Decision rule in FINDINGS.
     - *Round 3 = model screen (queued 2026-09-15, jobs 13705336–42)*: base-only ImpossibleBench
       conflicting/original + EvilGenie on the three non-gemma models that already have validated
       SOO vectors — Muse-Glimmer-30B (L26 α8; vector-only, no honest LoRA regime), Qwen2.5-72B
