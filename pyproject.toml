@@ -2,8 +2,18 @@
 name = "selfconcept"
 version = "0.1.0"
 requires-python = ">=3.11"
-# Runtime deps (torch, transformers, ...) are managed by environment.yaml (mamba), not here.
-dependencies = []
+dependencies = [
+    "torch>=2.4",
+    "transformers>=4.48",
+    "peft>=0.14",
+    "accelerate>=1.2",
+    "datasets>=3.2",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "pyyaml",
+    "tqdm",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -11,3 +21,13 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# torch must come from the cu126 wheels for compatibility with all supercomputer
+# nodes (the default PyPI wheels break on some BYU ORC GPUs).
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
