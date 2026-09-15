@@ -371,14 +371,24 @@ def main() -> None:
     parser.add_argument("--data", type=Path, default=Path("data/eval_code"))
     parser.add_argument("--out", type=Path, default=Path("results/code_eval"))
     parser.add_argument("--tag", default="baseline", help="label for output filenames")
+    parser.add_argument(
+        "--force-user-channel",
+        action="store_true",
+        help="append ' to=user<|message|>' to the generation prompt (ATEM-protocol models like "
+        "Muse Glimmer otherwise open a to=self reasoning channel; same flag as evaluate.py)",
+    )
     args = parser.parse_args()
 
     model, tokenizer, device, steering = load_model(args, parser)
 
     def generate(messages: list[dict], turn: int, example_id: str) -> tuple[str, bool]:
-        enc = tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
-        ).to(device)
+        if args.force_user_channel:
+            text = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            enc = tokenizer(text + " to=user<|message|>", return_tensors="pt", add_special_tokens=False).to(device)
+        else:
+            enc = tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+            ).to(device)
         try:
             with torch.no_grad():
                 output = model.generate(
