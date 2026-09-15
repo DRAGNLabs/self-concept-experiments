@@ -1,6 +1,6 @@
 #!/bin/bash --login
 #SBATCH --job-name=soo-code2-judge
-#SBATCH --time=06:00:00
+#SBATCH --time=08:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
@@ -40,6 +40,6 @@ set -e
 # needs no judge (pass = solved).
 files=$(ls results/code_eval/gemma4_12b/steer_a{6,3}_{impossible_conflicting,evilgenie}.jsonl results/code_eval/gemma4_31b/steer_a{8,4}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null)
 echo "judging: $files"
-python scripts/judge_code.py --responses $files --batch-size 8 --max-new-tokens 512
+python scripts/judge_code.py --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
 
 echo "=== code r2 judge complete ==="

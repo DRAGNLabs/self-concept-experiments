@@ -15,11 +15,20 @@ Two prompt templates in data/code_judge/, chosen by the record's scenario:
   cheat taxonomy and the call-out rate.
 
 Records that never produced code ("no_code") are labeled without judging.
-For each input file writes <stem>_graded.jsonl and <stem>_graded_summary.json.
+For each input file writes <stem>_graded.jsonl and <stem>_graded_summary.json;
+--skip-existing skips files whose summary already exists (rerun after a crash).
+
+Batching: prompts run from 1k to ~28k tokens (three 2048-token attempts plus a
+20 KB test suite). Any padding makes transformers hand SDPA an explicit mask,
+which lands on the math kernel and materialises batch × heads × len² scores
+(round-1 judge 13692242 died there at batch 8). So prompts are sorted longest
+first and batched under --attn-budget on batch_size × max_len²; anything over
+sqrt(budget) runs alone and unpadded, where SDPA can use the flash path. A
+batch that still OOMs is halved; a single prompt that OOMs is graded "error".
 
 Usage:
     python scripts/judge_code.py --responses results/code_eval/*/base_evilgenie.jsonl \
-        [--model Qwen/Qwen2.5-72B-Instruct] [--batch-size 8] [--device-map auto]
+        [--model Qwen/Qwen2.5-72B-Instruct] [--batch-size 4] [--attn-budget 4e7] [--skip-existing]
 """
 
 import argparse
@@ -119,13 +128,61 @@ def grade(rec: dict, judged: dict | None) -> tuple[str, bool | None]:
     return label, notes if isinstance(notes, bool) else None
 
 
+def make_batches(lens: list[int], batch_size: int, attn_budget: float) -> list[list[int]]:
+    """Longest-first index batches with at most batch_size prompts and
+    len(batch) * max_len**2 <= attn_budget (a prompt over the budget runs alone)."""
+    order = sorted(range(len(lens)), key=lambda i: -lens[i])
+    batches: list[list[int]] = []
+    cur: list[int] = []
+    for i in order:
+        if cur and (len(cur) >= batch_size or (len(cur) + 1) * lens[cur[0]] ** 2 > attn_budget):
+            batches.append(cur)
+            cur = []
+        cur.append(i)
+    if cur:
+        batches.append(cur)
+    return batches
+
+
+def run_batch(model, tokenizer, texts: list[str], max_new_tokens: int) -> list[str]:
+    enc = tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
+    with torch.no_grad():
+        out = model.generate(**enc, max_new_tokens=max_new_tokens, do_sample=False, pad_token_id=tokenizer.pad_token_id)
+    n_prompt = enc["input_ids"].shape[1]
+    return [tokenizer.decode(out[j, n_prompt:], skip_special_tokens=True) for j in range(len(texts))]
+
+
+def generate_safe(model, tokenizer, texts: list[str], max_new_tokens: int) -> list[str]:
+    """run_batch, halving the batch on CUDA OOM; a lone prompt that still OOMs yields "" (graded "error")."""
+    try:
+        return run_batch(model, tokenizer, texts, max_new_tokens)
+    except torch.OutOfMemoryError:
+        pass  # leave the except block so the traceback (and the tensors it pins) is released
+    torch.cuda.empty_cache()
+    if len(texts) == 1:
+        print("OOM on a single prompt; recording a judge error", flush=True)
+        return [""]
+    mid = len(texts) // 2
+    print(f"OOM on a batch of {len(texts)}; retrying as {mid}+{len(texts) - mid}", flush=True)
+    return generate_safe(model, tokenizer, texts[:mid], max_new_tokens) + generate_safe(
+        model, tokenizer, texts[mid:], max_new_tokens
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="Qwen/Qwen2.5-72B-Instruct")
     parser.add_argument("--responses", nargs="+", type=Path, required=True)
     parser.add_argument("--data", type=Path, default=DATA)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument(
+        "--attn-budget",
+        type=float,
+        default=4e7,
+        help="cap on batch_size * max_prompt_len**2 per batch (4e7: four 3k prompts; solo above ~6.3k)",
+    )
     parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--skip-existing", action="store_true", help="skip files whose _graded_summary.json exists")
     parser.add_argument("--device-map", default="auto")
     args = parser.parse_args()
 
@@ -144,6 +201,10 @@ def main() -> None:
 
     examples_cache: dict[str, dict[str, dict]] = {}
     for path in args.responses:
+        out_stem = path.with_suffix("")
+        if args.skip_existing and Path(f"{out_stem}_graded_summary.json").exists():
+            print(f"{path.stem}: graded summary exists, skipping", flush=True)
+            continue
         records = [json.loads(l) for l in path.open()]
         if not records:
             continue
@@ -173,34 +234,33 @@ def main() -> None:
                 keep.append(rec)
                 prompts.append(prompt)
 
-        for start in tqdm(range(0, len(prompts), args.batch_size), desc=path.stem):
-            batch = prompts[start : start + args.batch_size]
-            texts = [
-                tokenizer.apply_chat_template(
-                    [{"role": "system", "content": JUDGE_SYSTEM}, {"role": "user", "content": p}],
-                    add_generation_prompt=True,
-                    tokenize=False,
-                )
-                for p in batch
-            ]
-            enc = tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
-            with torch.no_grad():
-                out = model.generate(
-                    **enc, max_new_tokens=args.max_new_tokens, do_sample=False, pad_token_id=tokenizer.pad_token_id
-                )
-            n_prompt = enc["input_ids"].shape[1]
-            for j, rec in enumerate(keep[start : start + args.batch_size]):
-                judge_text = tokenizer.decode(out[j, n_prompt:], skip_special_tokens=True)
-                label, notes = grade(rec, parse_json_block(judge_text))
-                graded.append(
-                    {
-                        "example_id": rec["example_id"],
-                        "label": label,
-                        "notes_conflict": notes,
-                        "notes_conflict_regex": conflict_regex(rec),
-                        "judge_text": judge_text,
-                    }
-                )
+        texts = [
+            tokenizer.apply_chat_template(
+                [{"role": "system", "content": JUDGE_SYSTEM}, {"role": "user", "content": p}],
+                add_generation_prompt=True,
+                tokenize=False,
+            )
+            for p in prompts
+        ]
+        lens = [len(tokenizer(t, add_special_tokens=False)["input_ids"]) for t in texts]
+        batches = make_batches(lens, args.batch_size, args.attn_budget)
+        if lens:
+            print(f"{path.stem}: {len(texts)} prompts, {min(lens)}-{max(lens)} tokens, {len(batches)} batches", flush=True)
+        judge_texts = [""] * len(texts)
+        for idx in tqdm(batches, desc=path.stem):
+            for i, judge_text in zip(idx, generate_safe(model, tokenizer, [texts[i] for i in idx], args.max_new_tokens)):
+                judge_texts[i] = judge_text
+        for rec, judge_text in zip(keep, judge_texts):
+            label, notes = grade(rec, parse_json_block(judge_text))
+            graded.append(
+                {
+                    "example_id": rec["example_id"],
+                    "label": label,
+                    "notes_conflict": notes,
+                    "notes_conflict_regex": conflict_regex(rec),
+                    "judge_text": judge_text,
+                }
+            )
 
         counts = {label: 0 for label in labels}
         for g in graded:
@@ -217,7 +277,6 @@ def main() -> None:
             judged = [g for g in graded if g["notes_conflict"] is not None]
             summary["notes_conflict_rate"] = round(sum(g["notes_conflict"] for g in judged) / max(len(judged), 1), 4)
             summary["notes_conflict_regex_rate"] = round(sum(g["notes_conflict_regex"] for g in graded) / total, 4)
-        out_stem = path.with_suffix("")
         with Path(f"{out_stem}_graded.jsonl").open("w") as f:
             for g in graded:
                 f.write(json.dumps(g) + "\n")

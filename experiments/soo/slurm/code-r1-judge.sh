@@ -1,6 +1,6 @@
 #!/bin/bash --login
 #SBATCH --job-name=soo-code1-judge
-#SBATCH --time=06:00:00
+#SBATCH --time=08:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
@@ -35,11 +35,14 @@ export CUDA_VISIBLE_DEVICES
 echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 
 set -e
-# Judge every round-1 coding result file that exists (submitted
-# --dependency=afterok on all four generation jobs). ImpossibleBench original
-# needs no judge (pass = solved).
-files=$(ls results/code_eval/gemma4_{12b,31b}/{base,steer,rand_s0,lora_s0}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null)
+# Judge every round-1 coding result file that exists (originally submitted
+# --dependency=afterok on all eight generation jobs). ImpossibleBench original
+# needs no judge (pass = solved). Optional $1 = 12b|31b restricts to one model
+# size (the rerun after job 13692242 OOMed at batch 8 runs the two sizes as
+# separate jobs; --skip-existing keeps the file it had finished).
+size=${1:-{12b,31b}}
+files=$(eval ls results/code_eval/gemma4_$size/{base,steer,rand_s0,lora_s0}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null)
 echo "judging: $files"
-python scripts/judge_code.py --responses $files --batch-size 8 --max-new-tokens 512
+python scripts/judge_code.py --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
 
 echo "=== code r1 judge complete ==="
