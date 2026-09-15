@@ -12,6 +12,7 @@ dependencies:
       - git+https://github.com/Plyb/byutils.git
       - torch>=2.4
       - transformers>=4.48
+      - jaxtyping
       - vllm
       - ray
       - peft>=0.14
