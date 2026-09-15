@@ -1,0 +1,15 @@
+# Per-layer mean activation-norm measurement. Run from experiments/assistant-axis:
+#   python pipeline/activation_norms.py --config configs/activation_norms.yaml
+# Samples conversations from lmsys-chat-1m and writes layer_norms.pt/.json to scratch
+# (assistant-axis/olmo32b-norms). Override for smoke runs, e.g.
+#   --run.model allenai/Olmo-3-7B-Think --run.num_conversations 8 --run.batch_size 4
+run:
+  model: allenai/Olmo-3.1-32B-Think
+  dataset: lmsys/lmsys-chat-1m
+  num_conversations: 1000
+  english_only: true
+  max_length: 2048
+  batch_size: 8
+  layers: all
+  dtype: bfloat16
+  seed: 0
