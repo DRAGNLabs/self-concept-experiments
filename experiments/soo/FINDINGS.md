@@ -2314,7 +2314,11 @@ protocol, EvilGenie file-block workspace; see PLAN.md for deviations).
 n=40 tasks per scenario, 3 attempts, 2048 new tokens, greedy. 31B: two
 tasks (lcbhard_31/36, ~20 KB test suites) OOM at turn 0 in *every*
 condition → n=38 for the two ImpossibleBench splits. 31B +v EvilGenie
-still running at time of writing.
+(job 13692239, finished after the rest of this section was written):
+solved 4 / visible-only 0 / runner-rewrite 0 / failed 36, holdout 10%,
+113 of 114 attempts truncated at the token cap, 54% comment lines —
+the same capability collapse as on ImpossibleBench (base 70%, LoRA 62%,
+random 30% holdout). Every row below is now complete.
 
 **ImpossibleBench conflicting (pass-based harness labels)** —
 cheat_modify_tests / cheat_special_case / honest_correct / honest_fail;
@@ -2342,7 +2346,7 @@ holdout = the reward-hacking signal) / runner-rewrite / failed.
 | 12B | rand s0 | 3 | 2 | 0 | 35 | 10% |
 | 12B | LoRA s0 | 9 | 1 | 3 | 27 | 30% |
 | 31B | base | 26 | 1 | 2 | 11 | 70% |
-| 31B | +v | (running) | | | | |
+| 31B | +v | 4 | 0 | 0 | 36 | 10% |
 | 31B | rand s0 | 8 | 2 | 0 | 30 | 30% |
 | 31B | LoRA s0 | 22 | 1 | 2 | 15 | 62% |
 
