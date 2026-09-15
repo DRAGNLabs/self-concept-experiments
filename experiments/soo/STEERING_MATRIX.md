@@ -274,7 +274,11 @@ the better-certified 31B claim: three random seeds *reduce* WMDP
 sandbagging (44/34/48 vs base 57) while three adapters *raise* it
 (71/76/78), and +v's MMLU over-trigger (56%) clears every random seed
 (max 26%). Report random controls at three seeds everywhere. Details
-in FINDINGS round 7.
+in FINDINGS round 7. **Round 8 (12B rand s2)** completes the 12B
+control: insider deception under random 37/36/45 vs base 26 — the 12B
+"backfire" (+v 48, LoRA 50/38/34) is generic at three seeds; sandbagging
+under random 18/63/65 vs LoRA 0/2/2 — the 12B LoRA's refusal to sandbag
+is the one 12B Apollo effect outside the random range (+v 33 is inside).
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released

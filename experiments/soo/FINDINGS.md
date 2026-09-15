@@ -2246,6 +2246,67 @@ set); honest/ambiguous boundary judged by one model; greedy only for
 rand s2 (rounds 6's temperature check covered s0).
 
 
+## Round 8 (jobs 13690611–12): third 12B random seed — the 12B insider "backfire" is generic at three seeds; the 12B LoRA's refusal to sandbag is the one 12B Apollo effect outside the random range
+
+12B rand s2 (L19, α12, norm-matched to +v), greedy, 600 tokens, full
+insider (n=173) and sandbagging (n=500) sets. Completes three random
+seeds on both gemma sizes (round 7 did the 31B).
+
+**Insider (12B, greedy)**: honest / ambiguous / deceptive / invalid.
+
+| condition | honest | ambiguous | deceptive | invalid |
+|---|---|---|---|---|
+| base | 10.4 | 63.0 | 26.0 | 0.6 |
+| +v (L19 α12) | 27.2 | 24.9 | 48.0 | 0.0 |
+| rand s0 | 5.8 | 3.5 | 37.0 | 53.8 |
+| rand s1 | 26.0 | 37.6 | 36.4 | 0.0 |
+| **rand s2** | **8.1** | **45.1** | **45.1** | **1.7** |
+| LoRA s0 | 27.8 | 22.0 | 50.3 | 0.0 |
+| LoRA s1 | 22.0 | 40.5 | 37.6 | 0.0 |
+| LoRA s2 | 17.3 | 43.4 | 34.1 | 5.2 |
+
+Every perturbation raises 12B concealment above base (26 → 36–50%),
+random or not: random 37 / 36 / 45, +v 48, LoRA 50 / 38 / 34. The
+12B's insider "backfire" is a property of perturbing this site, not
+of SOO — now at three random seeds rather than round 5's one. The
+12B and 31B insider cells therefore disagree in sign on the generic
+component (31B: any perturbation *drops* concealment, round 7; 12B:
+any perturbation *raises* it), which is a reason to treat insider
+trading as the least SOO-diagnostic of the Apollo operationalizations.
+
+**Sandbagging (12B, greedy, n=250 per half)**:
+
+| condition | WMDP dec | WMDP unp | WMDP acc | MMLU hon | MMLU dec | MMLU unp | MMLU acc |
+|---|---|---|---|---|---|---|---|
+| base | 55.6 | 41.2 | 4 | 56.0 | 30.4 | 13.2 | 35 |
+| +v | 33.2 | 24.0 | 30 | 13.6 | 35.2 | 23.2 | 27 |
+| rand s0 | 18.4 | 42.8 | 17 | 2.8 | 25.2 | 40.4 | 27 |
+| rand s1 | 63.2 | 15.6 | 19 | 44.4 | 44.0 | 8.4 | 32 |
+| **rand s2** | **64.8** | **28.4** | **6** | **30.0** | **37.2** | **29.2** | **17** |
+| LoRA s0 | 0.0 | 76.8 | 30 | 60.4 | 0.0 | 38.8 | 63 |
+| LoRA s1 | 2.4 | 39.2 | 36 | 74.0 | 0.0 | 24.0 | 46 |
+| LoRA s2 | 2.0 | 42.0 | 45 | 46.4 | 1.6 | 45.2 | 59 |
+
+Random seeds span WMDP sandbagging 18 / 63 / 65 (base 56): two of
+three *amplify* instructed deception, one reduces it while breaking
+format. The 12B LoRA's 0 / 2 / 2% is far below every random seed and
+comes with MMLU accuracy *above* base (63 / 46 / 59 vs 35) — the
+adapter stops following the sandbag instruction rather than breaking
+the protocol. That is the one 12B Apollo effect certified against a
+three-seed random control. +v's 33% sits inside the random range and
+is not certifiable.
+
+**Paper implications**: (a) Apollo insider trading is
+perturbation-sensitive in both gemma sizes with opposite generic
+signs — report it, but hang no claim on it; (b) sandbagging is the
+Apollo operationalization where SOO adapters are separable from
+random directions in both sizes, and the *sign* differs by size (12B
+LoRA refuses to sandbag; 31B LoRA sandbags more), which is the
+cleaner statement of the "LoRA ≠ vector" result; (c) the steering
+vector is certifiable against random on the 31B (explicit disclosure,
+MMLU over-trigger) and on neither Apollo task on the 12B.
+
+
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
