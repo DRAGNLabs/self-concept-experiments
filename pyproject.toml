@@ -2,8 +2,33 @@
 name = "selfconcept"
 version = "0.1.0"
 requires-python = ">=3.13"
-# Runtime deps (torch, transformers, ...) are managed by environment.yaml (mamba), not here.
-dependencies = []
+dependencies = [
+    "byutils",
+    # torch/vllm pinned to the versions the cluster mamba env used: uv (stricter
+    # than pip) otherwise backtracks past a working vllm to an unbuildable sdist
+    # when the newest vllm's torch/transformers pins can't be met from the cu126
+    # index. transformers/ray are left for vllm to constrain.
+    "torch==2.13.0",
+    # torchvision/torchaudio/torchcodec arrive transitively but must be declared
+    # directly so the cu126 [tool.uv.sources] pins below apply (uv only honours
+    # sources for direct deps); otherwise PyPI's cu13 builds clash with cu126
+    # torch. Versions match the cluster mamba env.
+    "torchvision==0.28.0",
+    "torchaudio==2.11.0",
+    "torchcodec==0.16.0",
+    "transformers>=4.48",
+    "vllm==0.28.0",
+    "ray",
+    "peft>=0.14",
+    "accelerate>=1.2",
+    "datasets>=3.2",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "pyyaml",
+    "jsonargparse",
+    "tqdm",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -11,3 +36,31 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# torch must come from the cu126 wheels for compatibility with all supercomputer
+# nodes (the default PyPI wheels break on some BYU ORC GPUs).
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+# torchvision/torchaudio/torchcodec come in transitively (via vllm/transformers)
+# but must match torch's CUDA build, or their C extensions abort on load (PyPI
+# ships them as cu13, clashing with cu126 torch). Each is declared as a direct
+# dep above because uv only honours these source pins for direct dependencies.
+torch = { index = "pytorch-cu126" }
+torchvision = { index = "pytorch-cu126" }
+torchaudio = { index = "pytorch-cu126" }
+torchcodec = { index = "pytorch-cu126" }
+byutils = { git = "https://github.com/Plyb/byutils.git" }
+
+[tool.uv]
+# vllm pulls in opencv-python-headless (only for its optional video-input path,
+# which we never use); its bundled OpenSSL fails a FIPS self-test on this cluster
+# and SIGABRTs on `import cv2` -- and therefore on `from vllm import LLM`. vllm
+# degrades cleanly when cv2 is *absent* (it catches the ImportError), so exclude
+# it entirely. An always-false environment marker drops the package from
+# resolution: uv replaces every requirement on this name with the override, and
+# the override's marker never evaluates true, so nothing depends on it.
+override-dependencies = ["opencv-python-headless; sys_platform == 'nonexistent'"]

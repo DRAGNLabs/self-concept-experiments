@@ -10,6 +10,6 @@
 #SBATCH --output=slurm-logs/%x-%j.out
 #SBATCH --chdir=experiments/persona_drift  # relative to the submission dir -- run sbatch from the repo root
 
-mamba activate ../../.env
+source ../../activate.sh
 
 python scripts/probe_sweep.py --config "${1:-configs/self_harm.yaml}" --samples "${2:-8}"

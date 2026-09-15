@@ -2,10 +2,17 @@
 
 ## Environment
 
-Mamba-managed (see `environment.yaml`), not uv.
+uv-managed (see `pyproject.toml`).
 
-- First time: `./setup_env.sh` — creates `./.env` and applies cluster-specific fixes.
-- After adding/changing deps in `environment.yaml`: `./update_env.sh` — updates `./.env` in place (faster than a full rebuild).
-- `./fix_env.sh` — the fix logic shared by both above; only run directly if the env's activation hooks need reapplying for some other reason.
+- Create/sync the env: `uv sync` — creates `./.venv` from `pyproject.toml` + `uv.lock`.
+- Add/change deps: edit `pyproject.toml`, then `uv sync` (commit the updated `uv.lock`).
 
-Then `mamba activate ./.env`.
+To run anything that needs the cluster-specific runtime fixes (vLLM's nvcc/cu13
+workarounds), source `activate.sh` instead of the bare venv activate — it activates
+`./.venv` and exports those fixes:
+
+```bash
+source ./activate.sh
+```
+
+The slurm scripts already do this (`source ../../activate.sh`).
