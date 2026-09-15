@@ -264,3 +264,18 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       vs random, not vector vs LoRA). Caveats: Qwen2.5-72B is also the judge, so its cells lean
       on the judge-free measures (pass labels, rule spec-case, regex call-out) or a second judge;
       72B cells run one scenario per 3-GPU job.
+    - *Qwen3.8-27B onboarding (2026-09-15, jobs 13705498–501)*: the requested frontier test — a
+      2026 ~30B-class model from a third lineage (next to gemma-4-31B and Muse-30B in the matrix's
+      2026 row), fully open (apache-2.0), 64-layer hybrid stack (48 Gated DeltaNet + 16 full
+      attention). Full protocol, not just the code benchmarks: (1) extraction + 5-example
+      generation smoke (thinking disabled via `SOO_CHAT_KWARGS`, so prompts end in a closed empty
+      think block like gemma-4); (2) steering pilot, depth 25–75% at both layer kinds × α8/α32,
+      plus α4/16/64 at mid-depth; (3) LoRA layer sweep L19/27/31/32/35 at the Gemma-2 recipe
+      (config `qwen38-27b.yaml`; adapters on q/v of the attention layers and the fused
+      `in_proj_qkv` of the DeltaNet layers — a documented deviation, since the paper recipe
+      assumes a homogeneous stack). Then hardening (mirrored, random, −v, seeds) at whatever
+      works, Apollo/sandbagging/insider OOD, and the code benchmarks. Pipeline changes: steering
+      and capture sites resolve `self_attn.o_proj` or `linear_attn.out_proj` per layer (both
+      6144→5120, so vectors are hidden-size at every layer); loader routes `text_config` models
+      to the image-text class and refuses loads that would leave decoder weights random
+      (AutoModelForCausalLM maps qwen3_5 to a text-only class whose names miss the checkpoint).
