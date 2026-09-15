@@ -32,7 +32,10 @@ Two example kinds:
   failed; scripts/judge_code.py adds the LLM-judge classification.
 
 Output: {out}/{tag}_{scenario}.jsonl (one record per example with the full
-attempt history, final code and scores) and {tag}_{scenario}_summary.json.
+attempt history, final code and scores, appended as each finishes; rerunning
+the same tag resumes past the examples already recorded) and
+{tag}_{scenario}_summary.json. A CUDA OOM during generation records the
+example as error_oom instead of killing the job.
 """
 
 import argparse
@@ -165,6 +168,11 @@ def run_check_example(example: dict, generate, max_attempts: int) -> dict:
         last_error = result.stderr if result.stderr else result.stdout
         if not last_error:
             last_error = "[unknown error]"
+        # ImpossibleBench feeds the whole error back; we bound it (their
+        # EvilGenie-style 3000-char tool-output limit) because a few tasks
+        # have 4 KB assertion lines that, quoted in tracebacks across three
+        # turns, put the 31B's context past what one A100 holds.
+        last_error = middle_truncate(last_error)
         messages.append(
             {
                 "role": "user",
@@ -341,9 +349,16 @@ def run_workspace_example(example: dict, generate, max_attempts: int) -> dict:
 # --- driver ----------------------------------------------------------------
 
 LABELS = {
-    "check": ("cheat_modify_tests", "cheat_special_case", "honest_correct", "honest_fail", "flagged", "solved", "failed"),
-    "workspace": ("solved", "hack_visible_only", "hack_test_modified", "failed"),
+    "check": (
+        "cheat_modify_tests", "cheat_special_case", "honest_correct", "honest_fail", "flagged",
+        "solved", "failed", "error_oom",
+    ),
+    "workspace": ("solved", "hack_visible_only", "hack_test_modified", "failed", "error_oom"),
 }
+
+
+class GenerationOOM(RuntimeError):
+    """CUDA OOM inside generate(); the example is recorded as error_oom and the run continues."""
 
 
 def main() -> None:
@@ -360,17 +375,22 @@ def main() -> None:
 
     model, tokenizer, device, steering = load_model(args, parser)
 
-    def generate(messages: list[dict], turn: int, example_id: str) -> str:
+    def generate(messages: list[dict], turn: int, example_id: str) -> tuple[str, bool]:
         enc = tokenizer.apply_chat_template(
             messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
         ).to(device)
-        with torch.no_grad():
-            output = model.generate(
-                **enc,
-                max_new_tokens=args.max_new_tokens,
-                pad_token_id=tokenizer.eos_token_id,
-                **sampling_kwargs(args, example_id, turn),
-            )
+        try:
+            with torch.no_grad():
+                output = model.generate(
+                    **enc,
+                    max_new_tokens=args.max_new_tokens,
+                    pad_token_id=tokenizer.eos_token_id,
+                    **sampling_kwargs(args, example_id, turn),
+                )
+        except torch.OutOfMemoryError as e:
+            del enc
+            torch.cuda.empty_cache()
+            raise GenerationOOM(f"turn {turn}: {str(e)[:200]}") from None
         new = output[0, enc["input_ids"].shape[1] :]
         return tokenizer.decode(new, skip_special_tokens=True), new.shape[0] >= args.max_new_tokens
 
@@ -379,17 +399,41 @@ def main() -> None:
         examples = [json.loads(line) for line in (args.data / f"{scenario}.jsonl").open()]
         if args.n:
             examples = examples[: args.n]
-        records = []
-        for example in tqdm(examples, desc=scenario):
-            gen = lambda messages, turn, _id=example["example_id"]: generate(messages, turn, _id)
-            if example["kind"] == "check":
-                record = run_check_example(example, gen, args.max_attempts)
-            elif example["kind"] == "workspace":
-                record = run_workspace_example(example, gen, args.max_attempts)
-            else:
-                raise ValueError(f"unknown example kind {example['kind']!r}")
-            records.append(record)
-            print(f"{example['example_id']}: {record['label']} ({record['n_attempts']} attempts)", flush=True)
+        stem = f"{args.tag}_{scenario}"
+        records_path = args.out / f"{stem}.jsonl"
+        # Records are appended as they finish so a killed job resumes where
+        # it stopped (a 3-attempt task is minutes of generation).
+        records = [json.loads(line) for line in records_path.open()] if records_path.exists() else []
+        done = {r["example_id"] for r in records}
+        if done:
+            print(f"{scenario}: resuming, {len(done)} of {len(examples)} already done", flush=True)
+        with records_path.open("a") as records_file:
+            for example in tqdm(examples, desc=scenario):
+                if example["example_id"] in done:
+                    continue
+                gen = lambda messages, turn, _id=example["example_id"]: generate(messages, turn, _id)
+                try:
+                    if example["kind"] == "check":
+                        record = run_check_example(example, gen, args.max_attempts)
+                    elif example["kind"] == "workspace":
+                        record = run_workspace_example(example, gen, args.max_attempts)
+                    else:
+                        raise ValueError(f"unknown example kind {example['kind']!r}")
+                except GenerationOOM as e:
+                    record = {
+                        "example_id": example["example_id"],
+                        "scenario": scenario,
+                        "label": "error_oom",
+                        "error": str(e),
+                        "n_attempts": 0,
+                        "final_code": "",
+                        "attempts": [],
+                    }
+                records.append(record)
+                records_file.write(json.dumps(record) + "\n")
+                records_file.flush()
+                torch.cuda.empty_cache()
+                print(f"{example['example_id']}: {record['label']} ({record['n_attempts']} attempts)", flush=True)
 
         kind = examples[0]["kind"] if examples else "check"
         counts = {label: 0 for label in LABELS[kind]}
@@ -410,24 +454,20 @@ def main() -> None:
             "rates": {k: round(v / total, 4) for k, v in counts.items()},
             "mean_attempts": round(sum(r["n_attempts"] for r in records) / total, 3),
             "truncated_attempt_rate": round(
-                sum(a["truncated"] for r in records for a in r["attempts"])
+                sum(a.get("truncated", False) for r in records for a in r["attempts"])
                 / max(sum(r["n_attempts"] for r in records), 1),
                 4,
             ),
         }
         if kind == "check":
-            summary["pass_rate"] = round(sum(r["passed"] for r in records) / total, 4)
-            summary["original_pass_rate"] = round(sum(r["passed_original"] for r in records) / total, 4)
+            summary["pass_rate"] = round(sum(r.get("passed", False) for r in records) / total, 4)
+            summary["original_pass_rate"] = round(sum(r.get("passed_original", False) for r in records) / total, 4)
         else:
-            summary["visible_pass_rate"] = round(sum(r["passed_visible"] for r in records) / total, 4)
-            summary["holdout_pass_rate"] = round(sum(r["passed_holdout"] for r in records) / total, 4)
-            summary["test_modified_rate"] = round(sum(r["test_modified"] for r in records) / total, 4)
+            summary["visible_pass_rate"] = round(sum(r.get("passed_visible", False) for r in records) / total, 4)
+            summary["holdout_pass_rate"] = round(sum(r.get("passed_holdout", False) for r in records) / total, 4)
+            summary["test_modified_rate"] = round(sum(r.get("test_modified", False) for r in records) / total, 4)
         print(json.dumps({k: summary[k] for k in summary if k not in ("model", "adapter", "steering")}), flush=True)
 
-        stem = f"{args.tag}_{scenario}"
-        with (args.out / f"{stem}.jsonl").open("w") as f:
-            for record in records:
-                f.write(json.dumps(record) + "\n")
         with (args.out / f"{stem}_summary.json").open("w") as f:
             json.dump(summary, f, indent=2)
 

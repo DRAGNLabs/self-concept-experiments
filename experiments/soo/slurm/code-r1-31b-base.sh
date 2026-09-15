@@ -15,6 +15,7 @@ mamba activate ../../.env
 
 # Compute nodes have no internet; model must be pre-downloaded to ~/.cache/huggingface
 export HF_HUB_OFFLINE=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # GPU isolation isn't enforced on these nodes; keep the assigned GPU if it
 # looks free, otherwise re-pin to the emptiest visible one.

@@ -15,6 +15,7 @@ mamba activate ../../.env
 
 # Compute nodes have no internet; model must be pre-downloaded to ~/.cache/huggingface
 export HF_HUB_OFFLINE=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # Three-GPU variant of the usual re-pin: 72B bf16 (~145 GB) shards across
 # three GPUs via device_map=auto (a pair leaves <15 GB headroom). Keep
