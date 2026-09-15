@@ -21,6 +21,7 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
+from .chat import chat_template_kwargs
 from .loading import load_causal_lm
 from .scenarios import HONESTY_PROMPT_PREFIX, SUFFIX_I_WOULD, SUFFIX_ROOM_ONLY
 
@@ -186,7 +187,7 @@ def main() -> None:
             prefill = example.get("answer_prefix")
             if args.force_user_channel or prefill:
                 text = tokenizer.apply_chat_template(
-                    messages, add_generation_prompt=True, tokenize=False
+                    messages, add_generation_prompt=True, **chat_template_kwargs(), tokenize=False
                 )
                 if args.force_user_channel:
                     text += " to=user<|message|>"
@@ -197,7 +198,7 @@ def main() -> None:
                 ).to(device)
             else:
                 enc = tokenizer.apply_chat_template(
-                    messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+                    messages, add_generation_prompt=True, **chat_template_kwargs(), return_tensors="pt", return_dict=True
                 ).to(device)
             if args.temperature > 0:
                 # Per-example seed: same (seed, example_id) pair always gets the

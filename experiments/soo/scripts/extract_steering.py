@@ -24,9 +24,9 @@ import torch
 from transformers import AutoTokenizer
 
 from selfconcept.common.paths import experiment_dir
-from selfconcept.soo.activations import get_decoder_layers
+from selfconcept.soo.activations import attn_out_proj, get_decoder_layers
 from selfconcept.soo.loading import load_causal_lm
-from selfconcept.soo.train import chat_text, encode_batch
+from selfconcept.soo.train import chat_text, encode_batch  # chat_text honours $SOO_CHAT_KWARGS
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("model_id")
@@ -67,7 +67,7 @@ n_layers = len(layers)
 store = {}
 handles = []
 for li in range(n_layers):
-    mod = layers[li].get_submodule("self_attn.o_proj")
+    mod = attn_out_proj(layers[li])
     handles.append(mod.register_forward_hook(
         lambda _m, _i, out, li=li: store.__setitem__(li, out.float())
     ))

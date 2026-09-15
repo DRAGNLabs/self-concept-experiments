@@ -48,6 +48,7 @@ from pathlib import Path
 import torch
 from tqdm import tqdm
 
+from .chat import chat_template_kwargs
 from .code_sandbox import ExecResult, run_python
 from .model_setup import add_model_args, load_model, sampling_kwargs
 
@@ -383,11 +384,11 @@ def main() -> None:
 
     def generate(messages: list[dict], turn: int, example_id: str) -> tuple[str, bool]:
         if args.force_user_channel:
-            text = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            text = tokenizer.apply_chat_template(messages, add_generation_prompt=True, **chat_template_kwargs(), tokenize=False)
             enc = tokenizer(text + " to=user<|message|>", return_tensors="pt", add_special_tokens=False).to(device)
         else:
             enc = tokenizer.apply_chat_template(
-                messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+                messages, add_generation_prompt=True, **chat_template_kwargs(), return_tensors="pt", return_dict=True
             ).to(device)
         try:
             with torch.no_grad():

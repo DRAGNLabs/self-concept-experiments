@@ -22,7 +22,8 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from .activations import get_decoder_layers
+from .chat import chat_template_kwargs
+from .activations import attn_out_proj, get_decoder_layers
 from .loading import load_causal_lm
 from .evaluate import pick_device
 
@@ -50,10 +51,10 @@ def main() -> None:
     model.to(device).eval()
 
     layers = get_decoder_layers(model)
-    sites = {"attn": "self_attn.o_proj", "mlp": "mlp"}
+    sites = {"attn": attn_out_proj, "mlp": lambda layer: layer.get_submodule("mlp")}
     stores: dict[tuple[str, int], list] = {(s, i): [] for s in sites for i in range(len(layers))}
     handles = [
-        layer.get_submodule(path).register_forward_hook(
+        path(layer).register_forward_hook(
             lambda _m, _i, out, key=(site, i): stores[key].append(out.detach().float())
         )
         for i, layer in enumerate(layers)
@@ -72,7 +73,7 @@ def main() -> None:
             counts[split] += 1
             texts = [
                 tokenizer.apply_chat_template(
-                    [{"role": "user", "content": p}], tokenize=False, add_generation_prompt=True
+                    [{"role": "user", "content": p}], tokenize=False, add_generation_prompt=True, **chat_template_kwargs()
                 )
                 for p in (probe["self_prompt"], probe["other_prompt"])
             ]
