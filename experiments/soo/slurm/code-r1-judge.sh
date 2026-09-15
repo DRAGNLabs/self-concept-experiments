@@ -40,8 +40,9 @@ set -e
 # needs no judge (pass = solved). Optional $1 = 12b|31b restricts to one model
 # size (the rerun after job 13692242 OOMed at batch 8 runs the two sizes as
 # separate jobs; --skip-existing keeps the file it had finished).
-size=${1:-{12b,31b}}
-files=$(eval ls results/code_eval/gemma4_$size/{base,steer,rand_s0,lora_s0}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null)
+sizes=${1:-"12b 31b"}
+files=$(for sz in $sizes; do ls results/code_eval/gemma4_$sz/{base,steer,rand_s0,lora_s0}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null; done || true)
+[ -n "$files" ] || { echo "no result files for sizes '$sizes'"; exit 1; }
 echo "judging: $files"
 python scripts/judge_code.py --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
 
