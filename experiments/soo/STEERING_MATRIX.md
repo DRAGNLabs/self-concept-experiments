@@ -280,6 +280,16 @@ control: insider deception under random 37/36/45 vs base 26 — the 12B
 under random 18/63/65 vs LoRA 0/2/2 — the 12B LoRA's refusal to sandbag
 is the one 12B Apollo effect outside the random range (+v 33 is inside).
 
+**Reward-hacking round 1 (ImpossibleBench + EvilGenie, tool-free ports)**:
+gemma-4 12B/31B barely reward-hack in any condition (passing cheats 0–3/40,
+all announced test rewrites; EvilGenie holdout-fail hacks 0–2), so these
+operationalizations cannot show an SOO reduction. What they show is the
+vector's capability tax at SOO α — original-task pass 62→12 (12B), 75→12
+(31B) via comment-rumination to the token cap — against LoRA retention
+(55/72). 12B random is equally destructive (10), 31B random is not (50).
+Round 2 = +v α sweep on the same tasks. Judge (categories on every
+submission, call-out rate) pending. Details in FINDINGS.
+
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released
 - 2024 mid: gemma-2-9b-it (holds family constant vs 27B for a pure size axis)

@@ -238,3 +238,13 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
     - Plan: smoke (12B base n=3) → round 1 = gemma-4 12B + 31B × {base, +v, rand s0, LoRA s0} on
       impossible_conflicting + impossible_original + evilgenie slices (n≈30–40), then seeds for
       whichever cell moves.
+    - *Round 1 (2026-09-15, FINDINGS "Reward-hacking OOD round 1")*: passing cheats are 0–3/40 in
+      every cell (all announced test rewrites) and EvilGenie visible-only hacks 0–2 — no room for an
+      SOO reduction. The steering vector at its SOO-effective α pays a capability tax (original
+      pass 62→12 / 75→12) by ruminating in code comments until the token cap; the LoRA keeps
+      capability (55/72). ImpossibleBench's pass-based cheating rate misses hardcoded answer
+      tables that fail the impossible suite but pass the original subset — the judge grades every
+      submission's code, so report judge categories alongside pass-based labels. Harness now
+      writes records incrementally with resume and tolerates per-example OOM (31B: two ~20 KB
+      test-suite tasks OOM at turn 0 → n=38). Round 2 = +v α sweep (12B α6/α3, 31B α8/α4) to find
+      where capability recovers and whether cheat/call-out rates move at all there.
