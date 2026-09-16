@@ -15,7 +15,7 @@ of models to see how each intervention trends with each variable.
 | OLMo-2-1124-7B-Instruct | 2024-11 | 7B | 32 | 4096 | L19 | 0.11 |
 | Muse-Glimmer-30B | 2026-08 | 30B | 52 | 6656 | L26 | 0.15 |
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
-| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | pilot pending (13707587) | 0.41 @L31 (0.2–0.6 across L15–48) |
+| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | steer: pilot pending (13707587); LoRA: L32 (validation 13710713) | 0.41 @L31 (0.2–0.6 across L15–48) |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
 | Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
 | Qwen2.5-72B-Instruct | 2024-09 | 72B | 80 | 8192 | L40 (pilot) | — |
@@ -122,6 +122,7 @@ position-confounded on that model, rate not meaningful.
 | Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
 | gemma-4-31B | L32 Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/92 | 0 → 96/100/82 | 100 | — | n250 seed0: 100.0 orig / 100.0 mir; band razor-sharp: L30 0–50 seed-fragile, L34 refusal wall |
 | gemma-4-12B | L24 Gemma-2 recipe, 3 seeds | 0 → 92/98/74 | 0 → 86/90/58 | 0 → 100 | 0 → 98–100 (s2: 74) | 76–96 | — | model intact; validated both orientations; n250 seed0: 94.4 orig / 92.0 mir; L19 near-inert (main 8) |
+| Qwen3.8-27B | L32 (DeltaNet, 50% depth) Gemma-2 recipe, seed 0 only | 0 → 100 | pending (13710713) | → 100 (base pending) | pending | 100 | — | single room names, per-example truth tracking; L31 48/38, L19 22/0 — same 50%-depth band as gemma-4; seeds/mirrored/n250 pending |
 
 31B L26 is a genuine TH-only band (TH orig 94 / mir 96, main 0 both).
 31B sweep, main orig: L18 0, L26 0, L28 2, L30 50 (s1/s2: 0), L32 100,

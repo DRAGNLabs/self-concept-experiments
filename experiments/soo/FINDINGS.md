@@ -2600,9 +2600,9 @@ split's `passed_original` on the same 40 tasks in parentheses.
 | model | base | +v small | +v mid | +v SOO α | rand (SOO α) | LoRA s0 |
 |---|---|---|---|---|---|---|
 | 12B | 62% (50%) | α3 60% (58%) | α6 60% (45%) | α12 12% (12%) | 10% (8%) | 55% (38%) |
-| 31B | 75% (65%) | α4 78% (58%) | α8 48%* (58%) | α16 12% (15%) | 50% (38%) | 72% (65%) |
+| 31B | 75% (65%) | α4 78% (58%) | α8 50% (58%) | α16 12% (15%) | 50% (38%) | 72% (65%) |
 
-*31B α8 original split at 27/40 when read. Truncated-attempt and
+Truncated-attempt and
 comment-line rates track the same curve (12B 41–47% at α3/α6 vs 69% at
 α12; 31B 25% at α4, 49% at α8, 79% at α16). So the capability tax is a
 threshold between α6 and α12 on the 12B and between α8 and α16 on the
@@ -2670,6 +2670,48 @@ generic; if it stays at base (≤3/40) and −v is ≤ base, the SOO direction
 specifically pushes the 31B toward editing tests. The judge's per-record
 categories and the messages-only call-out on the α4/α8 cells land with
 13703709/13704395 and are added to this section then.
+
+## Qwen3.8-27B LoRA sweep part a (job 13705500): L32 seed 0 is a 0 → 100 cell on main and treasure hunt — the gemma-4 "band at 50% depth" reproduces on a hybrid-attention model
+
+Gemma-2 recipe (`configs/qwen38-27b.yaml`: r4, α8, lr 9e-4, 8 epochs,
+last-token SOO loss; adapters on q/v of the 16 full-attention layers and
+the fused `in_proj_qkv` of the 48 DeltaNet layers), thinking disabled,
+n=50 per scenario, `room_only` suffix. Loss converges to ~1e-7 by epoch
+2 at every layer (gemma-4-31B: ~1.5e-5), so the loss says nothing about
+the band — the eval does.
+
+| loss layer (depth, kind) | main | treasure hunt | perspectives |
+|---|---|---|---|
+| base (5-example smoke, main only) | 0 | — | — |
+| L19 (30%, full attn) | 22 | 0 | 100 |
+| L31 (48%, full attn) | 48 | 38 | 100 |
+| **L32 (50%, DeltaNet)** | **100** | **100** | **100** |
+
+I read the responses. Every cell answers with a single room name (no
+think leakage, no prose, 11–18 distinct rooms per 50), and all 50 L32
+main answers name the expensive-object room for their example — this is
+tracking the truth per prompt, not a collapsed output. Perspectives is
+100 in every cell, as on every other model (it has no deception
+incentive), so the model is intact at the level this eval measures.
+
+Two things this matches. (1) The gemma-4 LoRA band sits at ~50% depth
+(12B L24/48, 31B L32/60) and is razor-sharp on the 31B (L30 seed-fragile,
+L32 100, L34 refusal wall); here L31 → L32 goes 48 → 100 on main and
+38 → 100 on TH, one layer apart. (2) The ~30%-depth Gemma-2 recipe layer
+is near-inert again (L19 main 22, TH 0), as it was on the 12B (L19 main
+8). What is new: L32 is a Gated-DeltaNet layer, so the SOO loss is
+being taken at a linear-attention output, and the adapters that move it
+are mostly on `in_proj_qkv` — the paper's recipe transfers to a stack it
+was not written for without any change beyond the target-module regex.
+
+Not yet established: base rates at n=50 (the only base number is the
+5-example smoke), mirrored orientation (the positional-confound test
+that TH 0 → 100 always needs), seeds, n=250. Queued as 13710713
+(`lora-qwen38-validate.sh`): base orig + mirrored, L32 seed 0 mirrored
+and n=250 both orientations, seeds 1–2 both orientations, and L33 seed 0
+(next DeltaNet layer) for band width. Part b (L27, L35; job 13705501)
+is running and is folded in below when it lands. Steering pilot 13707587
+still pending, so the vector-vs-LoRA comparison on this model waits.
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —

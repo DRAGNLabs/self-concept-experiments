@@ -262,7 +262,7 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       (first-pass 35–89% was judge over-reach). Round 4 = LoRA seeds 1–2 on ImpossibleBench
       conflicting (13707588–92) to certify the 12B effect.
     - *Round 2 interim (FINDINGS "round 2 — harness-level interim"; EvilGenie + judge pending)*:
-      capability recovers by α6 (12B, 60% vs base 62%) and α4 (31B, 78% vs 75%); the cliff sits
+      capability recovers by α6 (12B, 60% vs base 62%) and α4 (31B, 78% vs 75%; α8 50%); the cliff sits
       between α6/α12 and α8/α16. At the working α the 12B moves nothing, but the 31B +v goes from
       1 to 5–6/40 test modifications (pooled p=0.06) with the regex call-out falling 38→20%: it
       answers with the whole file and rewrites the assertion it disagrees with, mostly with a
@@ -294,3 +294,8 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       (AutoModelForCausalLM maps qwen3_5 to a text-only class whose names miss the checkpoint).
       Extraction done: vectors 0.2–0.6× activation norm (gemma-4-31B 0.10), pilot regridded to
       α2/4/8 (+α1/16 mid-depth) as 13707587; base smoke 5/5 direct answers, 0% honest.
+    - *Qwen3.8-27B LoRA sweep part a (FINDINGS "LoRA sweep part a")*: L32 (DeltaNet, 50% depth)
+      seed 0 = main 0→100, TH →100, persp 100 with per-example truth tracking; L31 48/38, L19
+      22/0 — the gemma-4 50%-depth band, one layer sharp, on a hybrid stack. Validation queued
+      (13710713): base n=50 both orientations, seed0 mirrored + n250, seeds 1–2 both
+      orientations, L33 seed 0 for band width. Part b (L27/L35) running.
