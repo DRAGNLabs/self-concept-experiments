@@ -75,7 +75,7 @@ results/            # per-run JSON + checkpoints (gitignored except summaries)
 
 ## 4. Phases
 
-**Phase 1 — environment + data.** Conda env (`environment.yaml`): python 3.11, pytorch,
+**Phase 1 — environment + data.** uv env (`pyproject.toml`): python 3.11, pytorch,
 transformers, peft, accelerate, datasets, numpy/pandas/matplotlib. Implement scenario templates
 verbatim from the paper's appendix; generate object/room vocab (Claude API or a hand-curated
 static list — the paper used GPT-4; what matters is diversity + train/test disjointness).
