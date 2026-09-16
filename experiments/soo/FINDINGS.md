@@ -2971,8 +2971,15 @@ mirrored — so the mirrored control at α10 is 10/6/50 rather than
 "at floor", the Kimi-style wide random spread. At α8 seeds 0/1 were
 4/2 orig and 0/0 mirrored with real 80/92, so 13721592 completes α8 the same
 way (random s2, TH/perspectives, n=250, both orientations) and adds
-random s3 at α10; the headline is picked between α8 (cleaner control)
-and α10 (stronger effect) when it lands. Capabilities on the same code
+random s3 at α10. Result: α8's third random seed leaks too (s2: 56
+orig / 16 mirrored; s0/s1 0/0), its real effect is weaker (n=250 78.8
+orig / 90.8 mirrored; TH 0 orig / 30 mirrored; perspectives 100/100),
+and α10's fourth random seed is back at floor (s3: 32 orig / 8
+mirrored). So the random spread at L31 is a property of the layer, not
+of α10: mirrored random {0, 0, 16} at α8 and {10, 6, 50, 8} at α10
+against real 90.8 and 100.0. **L31 α10 stays the headline** — 0 → 100.0
+/ 100.0 at n=250, mirrored random mean 19 (max 50) over four seeds,
+−v 100 — reported with that spread, as for Kimi-Dev's orig orientation. Capabilities on the same code
 path (13716553): base ARC-C 58.7 / HellaSwag 82.8 / MMLU 83.5; L23 α8
 54.5 / 77.3 / 73.6 (−4.2 / −5.5 / −9.9); L31 α16 57.2 / 74.3 / 71.8
 (−1.5 / −8.5 / −11.7); L31 α10 58.5 / 78.6 / 78.5 (−0.2 / −4.2 / −5.0).
