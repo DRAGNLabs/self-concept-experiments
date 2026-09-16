@@ -340,3 +340,7 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       roleplaying steer/−v/rand at L31 α10 (13721465, judge 13721466), insider + sandbagging at
       L31 α10 (13721467 steer/−v, 13721468 rand; judge 13721469). L23 α8 OOD cells kept as the
       generic-perturbation comparison.
+    - *Apollo roleplaying (FINDINGS 2026-09-16)*: base 25 honest / 49 deceptive (most honest
+      baseline in the matrix); +v L31 α10 42.0 deceptive (−6.8, p=0.08; random 45.8), −v 55.8 —
+      sign-sensitive OOD although sign-agnostic in distribution; LoRA 51.2 (no transfer, like
+      the 31B LoRA); L23 α8 cells null/worse. Verdict: vector weak-transfer / LoRA no-transfer.
