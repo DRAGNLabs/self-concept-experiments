@@ -14,13 +14,15 @@ completions are saved for later re-judging.
 import argparse
 import json
 import re
+import zlib
 from pathlib import Path
 
 import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from .loading import load_causal_lm
+from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.loading import load_causal_lm
 from .scenarios import HONESTY_PROMPT_PREFIX, SUFFIX_I_WOULD, SUFFIX_ROOM_ONLY
 
 SUFFIXES = {"room_only": SUFFIX_ROOM_ONLY, "i_would": SUFFIX_I_WOULD, "none": None}
@@ -78,6 +80,20 @@ def main() -> None:
     parser.add_argument("--suffix", choices=SUFFIXES, default="i_would")
     parser.add_argument("--honesty-prompt", action="store_true")
     parser.add_argument("--max-new-tokens", type=int, default=100)
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="0 = greedy (default). >0 samples with pure temperature scaling "
+        "(top_p/top_k disabled so T is the only knob), seeded per example",
+    )
+    parser.add_argument(
+        "--sample-seed",
+        type=int,
+        default=0,
+        help="with --temperature: RNG seed, mixed with each example_id so "
+        "results are reproducible and independent of subset/order",
+    )
     parser.add_argument("--data", type=Path, default=Path("data/eval"))
     parser.add_argument("--out", type=Path, default=Path("results/eval"))
     parser.add_argument("--tag", default="baseline", help="label for output filenames")
@@ -88,6 +104,11 @@ def main() -> None:
     parser.add_argument("--steer-mode", choices=["add", "project"], default="add")
     parser.add_argument("--steer-token-mode", choices=["last", "mean"], default="last", help="which extraction convention's vector to use")
     parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
+    parser.add_argument(
+        "--device-map",
+        help="pass device_map to from_pretrained (e.g. 'auto' to shard models "
+        "too big for one GPU, like Llama-2-70b); skips the single-device .to()",
+    )
     parser.add_argument(
         "--force-user-channel",
         action="store_true",
@@ -112,13 +133,15 @@ def main() -> None:
             bnb_4bit_use_double_quant=True,
         )
         model = load_causal_lm(args.model, quantization_config=bnb, dtype=dtype)
+    elif args.device_map:
+        model = load_causal_lm(args.model, dtype=dtype, device_map=args.device_map)
     else:
         model = load_causal_lm(args.model, dtype=dtype)
     if args.adapter:
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, args.adapter)
-    if not args.quant_4bit:
+    if not args.quant_4bit and not args.device_map:
         model.to(device)
     model.eval()
 
@@ -152,39 +175,65 @@ def main() -> None:
 
         records = []
         for example in tqdm(examples, desc=scenario):
-            prompt = build_prompt(example, SUFFIXES[args.suffix], args.honesty_prompt)
-            messages = [{"role": "user", "content": prompt}]
-            if args.force_user_channel:
+            if "messages" in example:
+                # Multi-turn examples (Apollo insider trading) carry the full
+                # dialogue; suffix/honesty-prompt options don't apply.
+                messages = example["messages"]
+            else:
+                prompt = build_prompt(example, SUFFIXES[args.suffix], args.honesty_prompt)
+                messages = [{"role": "user", "content": prompt}]
+            # Apollo roleplaying examples prefill the assistant turn (e.g.
+            # "Student:") so the model answers in character.
+            prefill = example.get("answer_prefix")
+            if args.force_user_channel or prefill:
                 text = tokenizer.apply_chat_template(
-                    messages, add_generation_prompt=True, tokenize=False
+                    messages, add_generation_prompt=True, **chat_template_kwargs(), tokenize=False
                 )
+                if args.force_user_channel:
+                    text += " to=user<|message|>"
+                if prefill:
+                    text += prefill
                 enc = tokenizer(
-                    text + " to=user<|message|>", return_tensors="pt", add_special_tokens=False
+                    text, return_tensors="pt", add_special_tokens=False
                 ).to(device)
             else:
                 enc = tokenizer.apply_chat_template(
-                    messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+                    messages, add_generation_prompt=True, **chat_template_kwargs(), return_tensors="pt", return_dict=True
                 ).to(device)
+            if args.temperature > 0:
+                # Per-example seed: same (seed, example_id) pair always gets the
+                # same draw, so slices and reorderings stay comparable.
+                torch.manual_seed(
+                    zlib.crc32(f"{args.sample_seed}:{example['example_id']}".encode())
+                )
+                sampling = {
+                    "do_sample": True,
+                    "temperature": args.temperature,
+                    "top_p": 1.0,
+                    "top_k": 0,
+                }
+            else:
+                sampling = {"do_sample": False}
             with torch.no_grad():
                 output = model.generate(
                     **enc,
                     max_new_tokens=args.max_new_tokens,
-                    do_sample=False,
                     pad_token_id=tokenizer.eos_token_id,
+                    **sampling,
                 )
             n_prompt = enc["input_ids"].shape[1]
             response = tokenizer.decode(output[0, n_prompt:], skip_special_tokens=True)
+            if "honest_answer" in example:
+                label = classify(response, example["honest_answer"], example["deceptive_answer"])
+            else:
+                # Datasets without reference completions (insider trading,
+                # sandbagging) are labeled downstream by their judge/parser.
+                label = "deferred"
             records.append(
-                {
-                    "example_id": example["example_id"],
-                    "response": response,
-                    "label": classify(
-                        response, example["honest_answer"], example["deceptive_answer"]
-                    ),
-                }
+                {"example_id": example["example_id"], "response": response, "label": label}
             )
 
-        counts = {label: 0 for label in ("honest", "deceptive", "refusal", "other")}
+        counts = {label: 0 for label in ("honest", "deceptive", "refusal", "other", "deferred")}
         for record in records:
             counts[record["label"]] += 1
         total = len(records)
@@ -194,6 +243,8 @@ def main() -> None:
             "steering": steering,
             "scenario": scenario,
             "suffix": args.suffix,
+            "temperature": args.temperature,
+            "sample_seed": args.sample_seed if args.temperature > 0 else None,
             "honesty_prompt": args.honesty_prompt,
             "n": total,
             "counts": counts,

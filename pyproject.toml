@@ -30,6 +30,10 @@ dependencies = [
     "jsonargparse",
     "jsonlines",
     "tqdm",
+    # used by the capability evals, the Fisher tests in the analysis scripts, and --quant-4bit
+    "lm_eval>=0.4",
+    "scipy",
+    "bitsandbytes>=0.45",
 ]
 
 [build-system]
@@ -38,6 +42,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"selfconcept.codebench" = ["evilgenie_templates/*.jinja"]
 
 # torch must come from the cu126 wheels for compatibility with all supercomputer
 # nodes (the default PyPI wheels break on some BYU ORC GPUs).
