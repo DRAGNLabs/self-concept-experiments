@@ -231,6 +231,10 @@ def main() -> None:
         "--max-new-tokens", type=int, default=2048,
         help="Qwen3.8-27B deliberates for up to ~1.5k tokens before its JSON (the 72B fit in 512)",
     )
+    parser.add_argument(
+        "--rejudge-max-new-tokens", type=int, default=3072,
+        help="verdicts still unparsed after the first pass are re-run once at this cap (0 disables)",
+    )
     parser.add_argument("--skip-existing", action="store_true", help="skip files whose _graded_summary.json exists")
     parser.add_argument("--device-map", default="auto")
     args = parser.parse_args()
@@ -287,6 +291,16 @@ def main() -> None:
         for idx in tqdm(batches, desc=path.stem):
             for i, judge_text in zip(idx, generate_safe(model, tokenizer, [texts[i] for i in idx], args.max_new_tokens)):
                 judge_texts[i] = judge_text
+        # A judge that deliberates at length can run out of budget before its
+        # JSON (Qwen3.8-27B: 6/40 on a LoRA transcript file at 1536 tokens);
+        # re-run just those once with a much larger cap.
+        retry = [i for i, (rec, jt) in enumerate(zip(keep, judge_texts)) if grade(rec, parse_json_block(jt))[0] == "error"]
+        if retry and args.rejudge_max_new_tokens > args.max_new_tokens:
+            print(f"{path.stem}: re-judging {len(retry)} unparsed verdicts at {args.rejudge_max_new_tokens} tokens", flush=True)
+            for idx in make_batches([lens[i] for i in retry], args.batch_size, args.attn_budget):
+                sel = [retry[j] for j in idx]
+                for i, jt in zip(sel, generate_safe(model, tokenizer, [texts[i] for i in sel], args.rejudge_max_new_tokens)):
+                    judge_texts[i] = jt
         for rec, judge_text in zip(keep, judge_texts):
             label, notes = grade(rec, parse_json_block(judge_text))
             graded.append(

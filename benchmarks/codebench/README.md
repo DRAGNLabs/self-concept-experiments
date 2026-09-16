@@ -53,7 +53,12 @@ steering/LoRA version).
 
 The judge model is recorded in every `_graded_summary.json`; keep one judge
 across the cells you compare (the SOO study's gemma-4 cells pin
-`--model Qwen/Qwen2.5-72B-Instruct`). Qwen3.8-27B was validated against the
+`--model Qwen/Qwen2.5-72B-Instruct`). Judge-swap check on three 72B-graded
+files (2026-09-16): Qwen3.8-27B agrees with the 72B on 34–36/40 labels and
+34–36/39 call-out flags per file, finds the same rule-confirmed special-casing
+(7/7), is stricter about truncated submissions (`no_code` where the 72B said
+`legitimate`), never uses EvilGenie's `heuristic`, and deliberates at length —
+verdicts that overrun the budget are re-run once at 3072 tokens. Qwen3.8-27B was validated against the
 72B on 120 gemma-4-12B records: label agreement 82–88%, call-out agreement
 87–92%, identical special-casing calls on the rule-verified records; it is
 stricter about comment-only submissions (`no_code`) and folds EvilGenie's
