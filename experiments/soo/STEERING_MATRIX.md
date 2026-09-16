@@ -123,7 +123,7 @@ position-confounded on that model, rate not meaningful.
 | Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
 | gemma-4-31B | L32 Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/92 | 0 → 96/100/82 | 100 | — | n250 seed0: 100.0 orig / 100.0 mir; band razor-sharp: L30 0–50 seed-fragile, L34 refusal wall |
 | gemma-4-12B | L24 Gemma-2 recipe, 3 seeds | 0 → 92/98/74 | 0 → 86/90/58 | 0 → 100 | 0 → 98–100 (s2: 74) | 76–96 | — | model intact; validated both orientations; n250 seed0: 94.4 orig / 92.0 mir; L19 near-inert (main 8) |
-| Qwen3.8-27B | L32 (DeltaNet, 50% depth) Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 100 | — | single room names, per-example truth tracking; n250 seed0 100.0 orig / 100.0 mir; band L32–L33 (both 100), L31 48, L27 36, L19 22, L35 refusal wall — gemma-4-31B's band shape on a hybrid stack |
+| Qwen3.8-27B | L32 (DeltaNet, 50% depth) Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 100 | +1.7/−0.2/−1.3 (seed 0; vector L31 α10: −0.2/−4.2/−5.0) | single room names, per-example truth tracking; n250 seed0 100.0 orig / 100.0 mir; band L32–L33 (both 100), L31 48, L27 36, L19 22, L35 refusal wall — gemma-4-31B's band shape on a hybrid stack |
 
 31B L26 is a genuine TH-only band (TH orig 94 / mir 96, main 0 both).
 31B sweep, main orig: L18 0, L26 0, L28 2, L30 50 (s1/s2: 0), L32 100,

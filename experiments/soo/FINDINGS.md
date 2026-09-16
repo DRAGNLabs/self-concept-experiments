@@ -2878,10 +2878,15 @@ refusal wall (L34 untested; the band is at least two DeltaNet layers
 wide, one layer wider than the 31B's). Verdict for the matrix: **strong,
 validated** (3 seeds, both orientations, n=250) — with gemma-4-31B the
 only two LoRA cells at 100/100 in both orientations at every seed, and
-the only one on a model the paper's recipe was not tuned for. Next for
-this model: capabilities (ARC/HS/MMLU) on the L32 adapter and the L23
-α8 vector once hardening lands, then Apollo/sandbagging/insider and the
-code benchmarks in both interventions.
+the only one on a model the paper's recipe was not tuned for.
+Capabilities (13716553, adapter merged, same lm-eval code path as the
+steering cells): ARC-C 60.4 / HellaSwag 82.6 / MMLU 82.2 vs base 58.7
+/ 82.8 / 83.5 — +1.7 / −0.2 / −1.3, i.e. free, where the certified
+vector cell L31 α10 costs −0.2 / −4.2 / −5.0. The same LoRA-cheaper-
+than-vector picture as gemma-4-31B (LoRA — / vector +0.3/−1.2/−2.9),
+now with the vector's tax large enough to matter. Next: Apollo /
+sandbagging / insider (running) and the code benchmarks in both
+interventions.
 
 ## Qwen3.8-27B steering hardening (job 13716542): the pilot's 100% cells are in a direction-agnostic regime — random matched-norm vectors flip the model too — so the certification moves to a below-α sweep
 
