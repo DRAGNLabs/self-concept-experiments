@@ -39,8 +39,9 @@ set -e
 # already-72B-graded gemma-4-12B files with the new default into a separate
 # --out-dir so the two judges can be compared record by record (agreement on
 # categories, call-out, EvilGenie labels) before the new default is trusted.
-# First attempt at 512 output tokens truncated 23/40 analyses before the
-# JSON; rerun at the package default (now 1024).
+# 512 output tokens truncated 23/40 analyses before the JSON, 1024/1536
+# still left 6/40 on the LoRA file (the judge deliberates ~1.5k tokens);
+# rerun at the package default (now 2048, rejudge 3072).
 export SOO_CHAT_KWARGS='{"enable_thinking": false}'
 files="results/code_eval/gemma4_12b/base_impossible_conflicting.jsonl results/code_eval/gemma4_12b/lora_s0_impossible_conflicting.jsonl results/code_eval/gemma4_12b/base_evilgenie.jsonl"
 python -m selfconcept.codebench.judge --responses $files --out-dir results/code_eval/judge_qwen38 --batch-size 4

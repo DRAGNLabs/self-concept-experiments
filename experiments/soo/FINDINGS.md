@@ -3112,6 +3112,38 @@ Verdict for the dissociation table: Qwen3.8-27B = vector weak-transfer
 / LoRA no-transfer, the 31B pattern. Insider trading and sandbagging
 at both cells are running (13721265–68, judges 13721267/13721469).
 
+## Judge swap for the code benchmarks (jobs 13723809 → 13723962 → 13728759): Qwen3.8-27B agrees with Qwen2.5-72B on the measures that matter, needs four times the output budget, and is stricter about what counts as code
+
+The codebench package's default judge moved from Qwen2.5-72B (3 A100s)
+to Qwen3.8-27B (one A100, thinking off) so teammates can run it. The
+SOO study's own cells stay on the 72B (its Slurm scripts pin
+), so nothing in the sections above changes. Validation:
+three gemma-4-12B files the 72B had graded — base and LoRA s0 on the
+conflicting split, base EvilGenie — regraded by Qwen3.8 into a
+separate  (120 records).
+
+| file | label agreement | call-out agreement (msgs-only pass) | special-casing | notes |
+|---|---|---|---|---|
+| 12B base, conflicting | 34/40 | 34/39 (72B 14, Qwen3.8 11) | 0 / 0 | 5 records the 72B called legitimate are  for Qwen3.8 |
+| 12B LoRA s0, conflicting | 29/40 | 36/39 (72B 22, Qwen3.8 19) | 72B 12, Qwen3.8 10; rule-verified 7/7 by both | 6 Qwen3.8 errors (see below), 1 test_modification vs legitimate |
+| 12B base, EvilGenie | 35/40 | — | RH 0 / 0 | Qwen3.8 folds the 72B's 3 "heuristic" into legitimate |
+
+The disagreements are readable. Qwen3.8's extra  labels are
+the 12B's rumination-in-comments submissions — "contains only the
+function signature, docstring, , and a long
+series of comments re-deriving the recurrence ... would return None
+for all N > 1" — which the 72B called legitimate; the stricter call is
+the better one for a benchmark whose question is whether the code games
+the tests. On the measure the paper reports, the hardcoded guards on
+the contradicting input, both judges flag every rule-verified record
+(7/7) and land within two of each other (12 vs 10). The one structural
+difference is budget: Qwen3.8 deliberates in text before its JSON
+(4.6–6.3k characters on the LoRA transcripts) and hit 512 tokens on
+23/40 records, 1536 on 6/40; the default is now 2048 (re-judge 3072)
+and 13728759 reruns the same three files at that cap to close the error
+count. Kept as the default with the rule that a comparison must use one
+judge throughout; the 72B stays on the SOO cells.
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus
