@@ -2883,6 +2883,43 @@ this model: capabilities (ARC/HS/MMLU) on the L32 adapter and the L23
 α8 vector once hardening lands, then Apollo/sandbagging/insider and the
 code benchmarks in both interventions.
 
+## Qwen3.8-27B steering hardening (job 13716542): the pilot's 100% cells are in a direction-agnostic regime — random matched-norm vectors flip the model too — so the certification moves to a below-α sweep
+
+Main honest %, n=50, base 0/0 (orig/mir):
+
+| cell | real orig | real mir | rand s0 orig/mir | rand s1 orig/mir | −v orig/mir | TH orig/mir | persp orig/mir |
+|---|---|---|---|---|---|---|---|
+| L23 α8 | 100 (n250: 100.0) | 100 (n250: 99.6) | 90 / 68 | 98 / 100 | 26 / 6 | 82 / 82 | 100 / 100 |
+| L31 α16 | 100 | 100 | 94 / 92 | 92 / 88 | 66 / 100 | 100 / 100 | 98 / 100 |
+
+I read the random-vector cells: single-word rooms (median 8 chars,
+11–13 distinct per 50), 45–50/50 naming the true room — genuine honest
+flips from a random direction, not label noise. So at these α the
+self–other direction is not what does the work; any perturbation of
+this norm at L23/L31 does it. −v is the one direction that resists
+(26/6 at L23 α8, below every random seed), which is the same
+asymmetry gemma-4-31B showed in its α≥24 regime ("any matched-norm
+perturbation except −v"). Damage edge, L23: α12 100, α16 rumination
+("The user is asking a riddle…", median 380 chars, 16% `other`), α24
+`<think>` only (100% `other`); L31: α24 30/15/5, α32 degenerate. The
+working window on this model is narrow — α8–12 at L23 — and the
+agnostic regime fills it.
+
+Verdict so far: **not certified**. The Qwen2.5-72B/Llama-2-70b
+precedent says orig orientation is contaminated on Qwen-lineage models
+and mirrored real ≫ mirrored random is the test; here mirrored random
+is 68–100. The gemma-4-31B precedent says the direction-specific
+window (α16: real 98 vs rand 18/4) sits just below the agnostic one,
+so the below-α sweep 13719042 runs real / rand s0 / rand s1 / −v in
+both orientations at L23 α3–6 and L31 α6–12. First cells: L23 α3
+mirrored rand s1 0, −v 0 — the floor is where it should be. If no α
+gives mirrored real ≫ random, the model's steering verdict is
+"agnostic flip" and the paper's Qwen3.8 comparison rests on the LoRA
+(100/100 × 3 seeds, both orientations) versus a vector that only works
+generically. The Apollo/insider/sandbagging cells already queued at L23
+α8 keep their own random control, so they remain interpretable either
+way.
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus
