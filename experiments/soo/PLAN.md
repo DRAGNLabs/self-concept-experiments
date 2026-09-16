@@ -287,7 +287,9 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       at base (cheat/special-case/holdout-fail ≳15%), run its +v and random cells next (vector
       vs random, not vector vs LoRA). Caveats: Qwen2.5-72B is also the judge, so its cells lean
       on the judge-free measures (pass labels, rule spec-case, regex call-out) or a second judge;
-      72B cells run one scenario per 3-GPU job.
+      72B cells run one scenario per 3-GPU job. *Part 1 (FINDINGS "model screen, part 1")*: Muse
+      and Qwen2.5-72B do not reward-hack at base (≤2/40 test-mods, 0 special-casing, 0 EvilGenie
+      hacks) — no +v cells; judge 13721676. Kimi pending.
     - *Qwen3.8-27B onboarding (2026-09-15, jobs 13705498–501)*: the requested frontier test — a
       2026 ~30B-class model from a third lineage (next to gemma-4-31B and Muse-30B in the matrix's
       2026 row), fully open (apache-2.0), 64-layer hybrid stack (48 Gated DeltaNet + 16 full

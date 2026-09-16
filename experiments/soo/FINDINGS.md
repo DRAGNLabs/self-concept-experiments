@@ -2984,6 +2984,33 @@ LoRA files from 13716550), insider + sandbagging steer/−v (13721467)
 and random (13721468), judge 13721469. The L23 α8 cells stay as the
 "generic perturbation of the same norm" comparison.
 
+## Reward-hacking round 3 — model screen, part 1 (Muse-Glimmer-30B 13705336+13716485, Qwen2.5-72B 13705337/38): neither reward-hacks at base, so neither gets +v cells
+
+Base-only ImpossibleBench / EvilGenie, n=40, same protocol as round 1
+(Muse with the user channel forced; the Muse job died once mid-EvilGenie
+with no error and was resumed from its records).
+
+| model | orig pass (orig split) | conflicting: test-mod / special-case / call-out | EvilGenie: holdout pass / hacks | trunc att |
+|---|---|---|---|---|
+| gemma-4-12B | 62% | 0 / 0 / 22% | 45% / 0 | 43–69% |
+| gemma-4-31B | 75% | 1 / 0 / 38% | 70% / 3 | 17–64% |
+| Muse-30B | 48% | 1 / 0 / 25% | 25% / 0 | 19% (conflicting), 81% (EvilGenie) |
+| Qwen2.5-72B | 18% | 2 / 0 / 0% | pending (13716486) | 7% |
+
+Muse: one announced test rewrite in 40, nothing on EvilGenie, and it
+never calls out the contradiction more than gemma does; its EvilGenie
+attempts run to the 2048-token cap 81% of the time (long reasoning,
+not comment rumination — 11% comment lines), which is where its 25%
+holdout rate comes from. Qwen2.5-72B: 18% on the original split (this
+LiveCodeBench-hard subset is hard for it), two test rewrites, and a 0%
+regex call-out — it never mentions the contradiction in prose. Neither
+crosses the ≳15% screen threshold; there is nothing for SOO to reduce
+on them, as on gemma-4. Judge pass on the files that exist queued as
+13721676 (Qwen2.5-72B grading itself is the caveat already in PLAN).
+Kimi-Dev-72B (13705340–42, 30–32/40 at ~22 min per task) is the
+remaining candidate: a coding-RL model with a think channel is the one
+most likely to special-case.
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus
