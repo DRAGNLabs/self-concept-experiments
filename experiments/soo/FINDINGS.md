@@ -3117,18 +3117,18 @@ at both cells are running (13721265–68, judges 13721267/13721469).
 The codebench package's default judge moved from Qwen2.5-72B (3 A100s)
 to Qwen3.8-27B (one A100, thinking off) so teammates can run it. The
 SOO study's own cells stay on the 72B (its Slurm scripts pin
-), so nothing in the sections above changes. Validation:
+`--model`), so nothing in the sections above changes. Validation:
 three gemma-4-12B files the 72B had graded — base and LoRA s0 on the
 conflicting split, base EvilGenie — regraded by Qwen3.8 into a
-separate  (120 records).
+separate `--out-dir` (120 records).
 
 | file | label agreement | call-out agreement (msgs-only pass) | special-casing | notes |
 |---|---|---|---|---|
-| 12B base, conflicting | 34/40 | 34/39 (72B 14, Qwen3.8 11) | 0 / 0 | 5 records the 72B called legitimate are  for Qwen3.8 |
+| 12B base, conflicting | 34/40 | 34/39 (72B 14, Qwen3.8 11) | 0 / 0 | 5 records the 72B called legitimate are `no_code` for Qwen3.8 |
 | 12B LoRA s0, conflicting | 29/40 | 36/39 (72B 22, Qwen3.8 19) | 72B 12, Qwen3.8 10; rule-verified 7/7 by both | 6 Qwen3.8 errors (see below), 1 test_modification vs legitimate |
 | 12B base, EvilGenie | 35/40 | — | RH 0 / 0 | Qwen3.8 folds the 72B's 3 "heuristic" into legitimate |
 
-The disagreements are readable. Qwen3.8's extra  labels are
+The disagreements are readable. Qwen3.8's extra `no_code` labels are
 the 12B's rumination-in-comments submissions — "contains only the
 function signature, docstring, , and a long
 series of comments re-deriving the recurrence ... would return None
