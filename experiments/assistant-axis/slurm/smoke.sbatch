@@ -16,7 +16,7 @@ set -euo pipefail
 # a 0.5B model the judge may give few score=3 samples, so steps 4-5 can skip contrast
 # roles -- this validates that the stages run and hand off, not axis quality.
 
-mamba activate ../../.env
+source ../../activate.sh
 nvidia-smi
 
 MODEL="Qwen/Qwen2.5-0.5B-Instruct"

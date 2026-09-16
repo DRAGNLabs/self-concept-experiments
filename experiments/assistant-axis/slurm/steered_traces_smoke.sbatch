@@ -17,7 +17,7 @@ set -euo pipefail
 # activation_norms.py validates real norm measurement), so this fabricates a full-layer
 # random axis and a flat norms tensor sized to the model. Writes to a smoke scratch subtree.
 
-mamba activate ../../.env
+source ../../activate.sh
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 nvidia-smi

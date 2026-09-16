@@ -16,7 +16,7 @@ set -euo pipefail
 # re-run after a timeout resumes where it left off. Prefetch models first with
 # slurm/prefetch.sh on a login node (compute nodes run offline).
 
-mamba activate ../../.env
+source ../../activate.sh
 nvidia-smi
 
 python pipeline/1_generate.py    --config configs/1_generate.yaml

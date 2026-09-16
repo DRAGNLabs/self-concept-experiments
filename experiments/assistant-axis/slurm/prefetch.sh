@@ -7,7 +7,7 @@
 # or export HF_TOKEN) first, or their downloads fail with 401/403.
 set -euo pipefail
 
-mamba activate "$HOME/experiments/self-concept-experiments/.env"
+source "$HOME/experiments/self-concept-experiments/activate.sh"
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"  # shared cache (matches byutils/CLAUDE.md)
 mkdir -p "$HF_HOME"
 

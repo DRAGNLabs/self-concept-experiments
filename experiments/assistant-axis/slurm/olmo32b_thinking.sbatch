@@ -43,7 +43,7 @@ ROLES_BRACKET="[$(echo $ROLES | tr ' ' ',')]"
 
 ROOT="$HOME/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking"
 
-mamba activate ../../.env
+source ../../activate.sh
 
 echo "########## Generate WITH thinking ##########"
 python pipeline/1_generate.py --config configs/1_generate.yaml \

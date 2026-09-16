@@ -18,7 +18,7 @@ set -euo pipefail
 # Qwen judge scores adherence (a Think model would spend its token budget reasoning
 # instead of emitting a 0-3 score). Writes to its own scratch subtree.
 
-mamba activate ../../.env
+source ../../activate.sh
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1  # compute nodes run offline; weights are prefetched
 # vLLM's ZMQ IPC socket defaults to tempfile.gettempdir(), which on dw nodes resolves

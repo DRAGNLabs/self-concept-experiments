@@ -10,7 +10,7 @@
 #SBATCH --output=slurm-logs/%x-%j.out
 #SBATCH --chdir=experiments/persona_drift  # relative to the submission dir -- run sbatch from the repo root
 
-mamba activate ../../.env
+source ../../activate.sh
 
 nvidia-smi
 

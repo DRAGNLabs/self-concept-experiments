@@ -24,7 +24,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 nvidia-smi
 
-mamba activate ../../.env
+source ../../activate.sh
 
 python pipeline/activation_norms.py --config configs/activation_norms.yaml \
     --run.model "allenai/Olmo-3.1-32B-Think" --run.num_conversations 1000

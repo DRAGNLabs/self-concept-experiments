@@ -18,7 +18,7 @@ set -euo pipefail
 #   Lane B  gemma-2-2b-it  non-Qwen family    -> full 5 stages (regression)
 #   Lane C  Qwen3-1.7B     thinking + CoT ON  -> stages 1-2 (the new paths)
 
-mamba activate ../../.env
+source ../../activate.sh
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"  # shared cache (offline on compute nodes)
 nvidia-smi
 

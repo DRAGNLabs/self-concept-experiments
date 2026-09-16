@@ -37,7 +37,7 @@ THINK="$ROOT/think"
 NOTHINK="$ROOT/nothink"
 rm -rf "$ROOT"
 
-mamba activate ../../.env
+source ../../activate.sh
 
 echo "########## Generate WITH thinking ##########"
 python pipeline/1_generate.py --config configs/1_generate.yaml \

@@ -33,7 +33,7 @@ MAXLEN=40960
 PILOT="$HOME/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-pilot"
 rm -rf "$PILOT"
 
-mamba activate ../../.env
+source ../../activate.sh
 
 echo "########## Generate WITH thinking, max_tokens=$MAXTOK ##########"
 start=$SECONDS

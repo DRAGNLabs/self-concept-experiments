@@ -17,7 +17,7 @@ set -euo pipefail
 # through HF forward hooks, so this is a single-GPU HF job (no vLLM). Prefetch weights on
 # a login node first (slurm/prefetch.sh); compute nodes run offline.
 
-mamba activate ../../.env
+source ../../activate.sh
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1  # compute nodes run offline; weights are prefetched
 nvidia-smi
