@@ -317,7 +317,7 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       hardening queued 13716542 (mirrored, random s0/s1 both orientations, −v, dose edge, n250).
       Also queued 2026-09-16: capabilities base / L23 α8 / L31 α16 / LoRA L32 (13716553), Apollo
       roleplaying base/+v/−v/rand/LoRA (13716550, judge 13716551), insider + sandbagging same
-      cells (13716555, insider judge 13716556; sandbagging parsed on the login node). Steering
+      cells (resubmitted as parts a/b 13721265/13721266 after sandbagging measured ~50 s/example — five cells exceed 24 h; insider judge 13721267; sandbagging parsed on the login node). Steering
       cells use L23 α8 ahead of hardening — rerun at L31 α16 if the mirrored random control
       fails. Code benchmarks last.
     - *Hardening interim (13716542, 2026-09-16)*: both pilot cells are in the direction-agnostic

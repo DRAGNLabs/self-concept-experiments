@@ -49,9 +49,17 @@ run() {  # run <tag> [eval args...]
         --data data/eval_apollo --scenarios insider_trading sandbagging \
         --suffix none --max-new-tokens 600 --out "$OUT" --tag "$tag" "$@"
 }
-run ap_base
-run ap_steer --steer-vectors $VEC --steer-layer 23 --steer-alpha 8
-run ap_neg --steer-vectors $VEC --steer-layer 23 --steer-alpha -8
-run ap_rand_s0 --steer-vectors $VEC --steer-layer 23 --steer-alpha 8 --steer-random-seed 0
-run ap_lora --adapter results/checkpoints/qwen38-27b-L32/seed0
-echo "=== apollo qwen38 ood complete ==="
+# Sandbagging runs at ~50 s/example on this model (500 examples, long
+# many-shot prompts), so five cells do not fit one 24 h job: $1 = a|b
+# splits them (a: base, +v, -v; b: random, LoRA), as for the gemma-4
+# round-4 jobs. Records append incrementally, so a resubmission resumes.
+part=${1:?usage: apollo-qwen38-ood.sh a|b}
+if [ "$part" = a ]; then
+    run ap_base
+    run ap_steer --steer-vectors $VEC --steer-layer 23 --steer-alpha 8
+    run ap_neg --steer-vectors $VEC --steer-layer 23 --steer-alpha -8
+else
+    run ap_rand_s0 --steer-vectors $VEC --steer-layer 23 --steer-alpha 8 --steer-random-seed 0
+    run ap_lora --adapter results/checkpoints/qwen38-27b-L32/seed0
+fi
+echo "=== apollo qwen38 ood part $part complete ==="
