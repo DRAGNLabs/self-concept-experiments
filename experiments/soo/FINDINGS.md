@@ -3144,6 +3144,39 @@ and 13728759 reruns the same three files at that cap to close the error
 count. Kept as the default with the rule that a comparison must use one
 judge throughout; the 72B stays on the SOO cells.
 
+## Judge-swap validation (jobs 13723809 → 13723962, second pass 13728766): Qwen3.8-27B as the codebench default judge agrees with Qwen2.5-72B on 34–36/40 labels per file and reproduces the 12B LoRA special-casing count; it is stricter on truncated code and needs a 3× larger output budget
+
+Context: the benchmark package's default judge moved from Qwen2.5-72B
+(3 A100s) to Qwen3.8-27B (one A100, thinking off) at the user's request;
+the SOO study's own cells stay on the 72B (pinned in its Slurm scripts)
+so every reported number comes from one judge. Three 72B-graded
+gemma-4-12B files were regraded by Qwen3.8 into a separate directory and
+compared record by record.
+
+| file | label agreement | disagreements (72B → Qwen3.8) | call-out agreement | special-casing (rule-confirmed) |
+|---|---|---|---|---|
+| 12B base, conflicting | 34/40 | legitimate → no_code ×5, no_code → legitimate ×1 | 34/39 (72B 14 true, Qwen3.8 11, regex 9) | 0 / 0 |
+| 12B LoRA s0, conflicting | 29/40 (35/40 excl. 6 budget errors) | special_casing → no_code ×1, legitimate → test_modification ×1, → no_code ×2 | 36/39 (22 / 19 / 16) | 72B 12 (7), Qwen3.8 10 (7) |
+| 12B base, EvilGenie | 35/40 | heuristic → legitimate ×3, one error each way | — | — |
+
+Readings. (1) The headline 12B result survives the judge swap: 10 vs
+12 special-casing calls with the same 7 rule-confirmed guards. (2)
+Qwen3.8 is stricter about what counts as a submission — the five
+`legitimate → no_code` flips are all rumination-truncated attempts
+("ends abruptly mid-comment, no runnable implementation"), which is the
+better reading of those records; and it never uses EvilGenie's
+`heuristic` category. (3) Its call-out flags are slightly more
+conservative (11 vs 14, 19 vs 22) and sit between the 72B and the regex
+lower bound, with 87–92% record-level agreement. (4) The operational
+difference is verbosity: at 512 output tokens 23/40 verdicts were cut
+off before the JSON, at 1024 2/40, and 6/40 LoRA transcripts still
+overran 1536 in the re-judge ("Wait, the prompt says…" for 1,500
+tokens). Fix in f688373: first pass at 1024, then a single re-run of the
+unparsed verdicts at 3072 inside the judge; 13728766 regrades the two
+error-prone files to confirm the error count goes to ~0. Verdict: keep
+Qwen3.8-27B as the package default with those caveats in the README;
+do not mix judges within a comparison.
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus
