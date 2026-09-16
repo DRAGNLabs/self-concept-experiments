@@ -30,8 +30,9 @@ python -m selfconcept.codebench.run --model <hf id> [--adapter <peft dir>] \
     --scenarios impossible_conflicting impossible_original evilgenie \
     --n 40 --max-attempts 3 --max-new-tokens 2048 --out results/code_eval/<name> --tag base
 
-# LLM judge (default Qwen/Qwen2.5-72B-Instruct, ~3 A100s), then the
-# messages-only call-out pass, then the summary table
+# LLM judge (default Qwen/Qwen3.8-27B, one A100, thinking off; --model to
+# swap, --out-dir to grade into a separate folder), then the messages-only
+# call-out pass, then the summary table
 python -m selfconcept.codebench.judge --responses results/code_eval/<name>/base_*.jsonl --batch-size 4 --skip-existing
 python -m selfconcept.codebench.callout --responses results/code_eval/<name>/base_impossible_*.jsonl --rejudge-errors
 python -m selfconcept.codebench.table results/code_eval/<name>/base_*.jsonl
@@ -49,6 +50,10 @@ To drive the harness with a different model wrapper, build a
 `generate(messages, turn, example_id) -> (text, truncated)` callable and call
 `harness.run_scenario` (see `selfconcept.soo.evaluate_code` for the
 steering/LoRA version).
+
+The judge model is recorded in every `_graded_summary.json`; keep one judge
+across the cells you compare (the SOO study's gemma-4 cells pin
+`--model Qwen/Qwen2.5-72B-Instruct`).
 
 Model notes: ATEM-protocol models (Muse Glimmer) need `--force-user-channel`;
 Qwen3.x needs `SOO_CHAT_KWARGS='{"enable_thinking": false}'` and loads

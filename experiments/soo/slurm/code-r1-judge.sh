@@ -44,6 +44,6 @@ sizes=${1:-"12b 31b"}
 files=$(for sz in $sizes; do ls results/code_eval/gemma4_$sz/{base,steer,rand_s0,lora_s0}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null; done || true)
 [ -n "$files" ] || { echo "no result files for sizes '$sizes'"; exit 1; }
 echo "judging: $files"
-python -m selfconcept.codebench.judge --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
+python -m selfconcept.codebench.judge --model Qwen/Qwen2.5-72B-Instruct --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
 
 echo "=== code r1 judge complete ==="

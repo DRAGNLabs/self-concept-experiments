@@ -46,6 +46,6 @@ case $round in
 esac
 [ -n "$files" ] || { echo "no result files for round $round"; exit 1; }
 echo "judging: $files"
-python -m selfconcept.codebench.callout --responses $files --rejudge-errors
+python -m selfconcept.codebench.callout --model Qwen/Qwen2.5-72B-Instruct --responses $files --rejudge-errors
 
 echo "=== code callout judge $round complete ==="

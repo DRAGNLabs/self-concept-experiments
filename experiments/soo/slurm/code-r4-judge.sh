@@ -40,6 +40,6 @@ set -e
 files=$(ls results/code_eval/gemma4_{12b,31b}/lora_s{1,2}_impossible_conflicting.jsonl 2>/dev/null || true)
 [ -n "$files" ] || { echo "no result files"; exit 1; }
 echo "judging: $files"
-python -m selfconcept.codebench.judge --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
-python -m selfconcept.codebench.callout --responses $files --rejudge-errors
+python -m selfconcept.codebench.judge --model Qwen/Qwen2.5-72B-Instruct --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
+python -m selfconcept.codebench.callout --model Qwen/Qwen2.5-72B-Instruct --responses $files --rejudge-errors
 echo "=== code r4 judge complete ==="

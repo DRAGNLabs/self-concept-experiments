@@ -45,6 +45,6 @@ set -e
 files=$(ls results/code_eval/{muse30b,qwen25_72b,kimi_dev_72b}/base_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null || true)
 [ -n "$files" ] || { echo "no result files"; exit 1; }
 echo "judging: $files"
-python -m selfconcept.codebench.judge --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
-python -m selfconcept.codebench.callout --responses $files --rejudge-errors
+python -m selfconcept.codebench.judge --model Qwen/Qwen2.5-72B-Instruct --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
+python -m selfconcept.codebench.callout --model Qwen/Qwen2.5-72B-Instruct --responses $files --rejudge-errors
 echo "=== code r3 judge complete ==="

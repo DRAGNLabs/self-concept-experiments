@@ -20,17 +20,14 @@ cap before the call-out pass. EvilGenie files are skipped.
 
 Usage:
     python -m selfconcept.codebench.callout --responses results/code_eval/*/*_impossible_conflicting.jsonl --rejudge-errors
+        [--model Qwen/Qwen3.8-27B] [--thinking] [--out-dir DIR]   # same judge and --out-dir as the first pass
 """
 
 import argparse
 import json
 from pathlib import Path
 
-import torch
 from tqdm import tqdm
-from transformers import AutoTokenizer
-
-from selfconcept.common.loading import load_causal_lm
 
 from . import judge as jc
 
@@ -54,14 +51,6 @@ def parse_callout(text: str) -> tuple[bool | None, str]:
     return parsed["notes_conflict"], str(parsed.get("quote") or "")
 
 
-def chat(tokenizer, system: str, user: str) -> str:
-    return tokenizer.apply_chat_template(
-        [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        add_generation_prompt=True,
-        tokenize=False,
-    )
-
-
 def run_prompts(model, tokenizer, texts: list[str], args, max_new_tokens: int, desc: str) -> list[str]:
     lens = [len(tokenizer(t, add_special_tokens=False)["input_ids"]) for t in texts]
     outs = [""] * len(texts)
@@ -72,16 +61,6 @@ def run_prompts(model, tokenizer, texts: list[str], args, max_new_tokens: int, d
         for i, out in zip(idx, jc.generate_safe(model, tokenizer, [texts[i] for i in idx], max_new_tokens)):
             outs[i] = out
     return outs
-
-
-def load_judge(args):
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    tokenizer.padding_side = "left"
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    model = load_causal_lm(args.model, dtype=torch.bfloat16, device_map=args.device_map)
-    model.eval()
-    return model, tokenizer
 
 
 def summarize(args, path: Path, graded: list[dict], n_callout_errors: int, previous: dict) -> dict:
@@ -107,9 +86,11 @@ def summarize(args, path: Path, graded: list[dict], n_callout_errors: int, previ
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--model", default="Qwen/Qwen2.5-72B-Instruct")
+    parser.add_argument("--model", default="Qwen/Qwen3.8-27B")
+    parser.add_argument("--thinking", action="store_true", help="let a thinking-capable judge think (raise the token caps)")
     parser.add_argument("--responses", nargs="+", type=Path, required=True)
     parser.add_argument("--data", type=Path, default=jc.DATA)
+    parser.add_argument("--out-dir", type=Path, help="where the first pass wrote its grades (default: next to each responses file)")
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--attn-budget", type=float, default=4e7)
     parser.add_argument("--max-new-tokens", type=int, default=384)
@@ -124,12 +105,12 @@ def main() -> None:
         "callout": (jc.TEMPLATES / "callout_judge.txt").read_text(),
     }
     print(f"Loading judge {args.model}", flush=True)
-    model, tokenizer = load_judge(args)
+    model, tokenizer = jc.load_judge(args.model, args.device_map)
 
     examples_cache: dict[str, dict[str, dict]] = {}
     for path in args.responses:
-        out_stem = path.with_suffix("")
-        graded_path, summary_path = Path(f"{out_stem}_graded.jsonl"), Path(f"{out_stem}_graded_summary.json")
+        stem = jc.out_stem(path, args.out_dir)
+        graded_path, summary_path = Path(f"{stem}_graded.jsonl"), Path(f"{stem}_graded_summary.json")
         if not graded_path.exists():
             print(f"{path.stem}: no first-pass grades, skipping", flush=True)
             continue
@@ -152,7 +133,7 @@ def main() -> None:
             texts = []
             for g in errors:
                 prompt, _ = jc.build_prompt(records[g["example_id"]], examples[g["example_id"]], templates)
-                texts.append(chat(tokenizer, jc.JUDGE_SYSTEM, prompt or ""))
+                texts.append(jc.chat_text(tokenizer, jc.JUDGE_SYSTEM, prompt or "", args.thinking))
             for g, out in zip(errors, run_prompts(model, tokenizer, texts, args, args.rejudge_max_new_tokens, f"{path.stem} rejudge")):
                 label, _ = jc.grade(records[g["example_id"]], jc.parse_json_block(out))
                 g.setdefault("label_pass1", g["label"])
@@ -166,7 +147,7 @@ def main() -> None:
                 g["notes_conflict"], g["notes_conflict_quote"], g["callout_text"] = None, "", ""
                 continue
             todo.append(g)
-            texts.append(chat(tokenizer, CALLOUT_SYSTEM, prompt))
+            texts.append(jc.chat_text(tokenizer, CALLOUT_SYSTEM, prompt, args.thinking))
         for g, out in zip(todo, run_prompts(model, tokenizer, texts, args, args.max_new_tokens, f"{path.stem} callout")):
             g["notes_conflict"], g["notes_conflict_quote"] = parse_callout(out)
             g["callout_text"] = out
