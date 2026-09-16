@@ -296,6 +296,6 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       α2/4/8 (+α1/16 mid-depth) as 13707587; base smoke 5/5 direct answers, 0% honest.
     - *Qwen3.8-27B LoRA sweep part a (FINDINGS "LoRA sweep part a")*: L32 (DeltaNet, 50% depth)
       seed 0 = main 0→100, TH →100, persp 100 with per-example truth tracking; L31 48/38, L19
-      22/0 — the gemma-4 50%-depth band, one layer sharp, on a hybrid stack. Validation queued
-      (13710713): base n=50 both orientations, seed0 mirrored + n250, seeds 1–2 both
-      orientations, L33 seed 0 for band width. Part b (L27/L35) running.
+      22/0, L27 36/36, L35 refusal wall (100%) — gemma-4-31B's band shape (L30 50 / L32 100 /
+      L34 refusal) on a hybrid stack. Validation queued (13710713): base n=50 both orientations,
+      seed0 mirrored + n250, seeds 1–2 both orientations, L33 seed 0 for band width.

@@ -2684,8 +2684,12 @@ the band — the eval does.
 |---|---|---|---|
 | base (5-example smoke, main only) | 0 | — | — |
 | L19 (30%, full attn) | 22 | 0 | 100 |
+| L27 (42%, full attn) | 36 | 36 | 100 |
 | L31 (48%, full attn) | 48 | 38 | 100 |
 | **L32 (50%, DeltaNet)** | **100** | **100** | **100** |
+| L35 (55%, full attn) | 0 (100 refusal) | 0 (88 dec., 12 refusal) | 4 (66 dec., 28 other) |
+
+(L27/L35 from part b, job 13705501, folded in.)
 
 I read the responses. Every cell answers with a single room name (no
 think leakage, no prose, 11–18 distinct rooms per 50), and all 50 L32
@@ -2696,8 +2700,14 @@ incentive), so the model is intact at the level this eval measures.
 
 Two things this matches. (1) The gemma-4 LoRA band sits at ~50% depth
 (12B L24/48, 31B L32/60) and is razor-sharp on the 31B (L30 seed-fragile,
-L32 100, L34 refusal wall); here L31 → L32 goes 48 → 100 on main and
-38 → 100 on TH, one layer apart. (2) The ~30%-depth Gemma-2 recipe layer
+L32 100, L34 refusal wall); here the approach is monotone (L19 22 → L27
+36 → L31 48 → L32 100 on main; TH 0 → 36 → 38 → 100), and L35 is the
+same refusal wall the 31B has at L34: 50/50 main responses are a
+340-char "I cannot assist with that request ... theft or burglary"
+refusal, and TH/perspectives degrade to 400–500-char text (perspectives
+falls from 100 to 4, the only cell where it moves). The 31B sweep read
+L28 2 / L30 50 / L32 100 / L34 refusal; this one reads L27 36 / L31 48 /
+L32 100 / L35 refusal. (2) The ~30%-depth Gemma-2 recipe layer
 is near-inert again (L19 main 22, TH 0), as it was on the 12B (L19 main
 8). What is new: L32 is a Gated-DeltaNet layer, so the SOO loss is
 being taken at a linear-attention output, and the adapters that move it
@@ -2709,9 +2719,10 @@ Not yet established: base rates at n=50 (the only base number is the
 that TH 0 → 100 always needs), seeds, n=250. Queued as 13710713
 (`lora-qwen38-validate.sh`): base orig + mirrored, L32 seed 0 mirrored
 and n=250 both orientations, seeds 1–2 both orientations, and L33 seed 0
-(next DeltaNet layer) for band width. Part b (L27, L35; job 13705501)
-is running and is folded in below when it lands. Steering pilot 13707587
-still pending, so the vector-vs-LoRA comparison on this model waits.
+(next DeltaNet layer) for band width — L33/L34 are the remaining
+DeltaNet layers between the working cell and the wall. Steering pilot
+13707587 started as part b finished; the vector-vs-LoRA comparison on
+this model waits on it.
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
