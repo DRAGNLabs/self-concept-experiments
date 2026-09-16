@@ -2964,9 +2964,19 @@ do. A sign-specific window with a leaky random control is a weaker
 certification than L31's; L23 stays as the secondary cell.
 
 **Headline cell: L31 α10** — 0 → 100 in both orientations, mirrored
-random 10/6, −v 100. Queued to complete it (13721464): TH and
-perspectives both orientations, random seed 2 both orientations,
-n=250 both orientations, capabilities at α10. The OOD cells already
+random 10/6, −v 100. Completion (13721464): n=250 100.0 orig / 100.0
+mir; perspectives 100/100; TH 48 orig / 100 mir; capabilities at α10
+pending. But the third random seed leaks — s2 gives 94 orig / 50
+mirrored — so the mirrored control at α10 is 10/6/50 rather than
+"at floor", the Kimi-style wide random spread. At α8 seeds 0/1 were
+4/2 orig and 0/0 mirrored with real 80/92, so 13721592 completes α8 the same
+way (random s2, TH/perspectives, n=250, both orientations) and adds
+random s3 at α10; the headline is picked between α8 (cleaner control)
+and α10 (stronger effect) when it lands. Capabilities on the same code
+path (13716553): base ARC-C 58.7 / HellaSwag 82.8 / MMLU 83.5; L23 α8
+54.5 / 77.3 / 73.6 (−4.2 / −5.5 / −9.9) — the agnostic-regime cell
+pays a real tax, three to four times gemma-4-31B's at its working α
+(+0.3 / −1.2 / −2.9); L31 α16 and α10 pending. The OOD cells already
 running at L23 α8 (13716550, 13721265/6) are in the agnostic regime,
 so the certified cell is queued alongside them — Apollo roleplaying
 steer/−v/random at L31 α10 (13721465, judge 13721466 with the base and
