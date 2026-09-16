@@ -186,8 +186,8 @@ def main(run: RunConfig = RunConfig()) -> None:
     num_layers = len(probing_model.get_layers())
     target_layer = run.target_layer if run.target_layer is not None else get_config(run.model)["target_layer"]
 
-    axis = load_axis(run.axis_path).to(probing_model.device)
-    layer_norms = load_layer_norms(run.norms_path)
+    axis = load_axis(run.axis_path.expanduser()).to(probing_model.device)
+    layer_norms = load_layer_norms(run.norms_path.expanduser())
     assert axis.shape[0] == num_layers, f"axis has {axis.shape[0]} rows but model has {num_layers} layers"
     assert layer_norms.shape[0] == num_layers, (
         f"layer_norms has {layer_norms.shape[0]} entries but model has {num_layers} layers"

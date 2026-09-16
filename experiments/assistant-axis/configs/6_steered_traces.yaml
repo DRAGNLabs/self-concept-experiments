@@ -5,13 +5,14 @@
 # writes one {role_id}_p{prompt_index}.jsonl per role to scratch (assistant-axis/steered).
 # target_layer defaults to get_config(model)'s middle layer when null.
 run:
-  model: google/gemma-2-27b-it
-  axis_path: results/axis.pt
-  norms_path: results/layer_norms.pt
+  model: allenai/Olmo-3.1-32B-Think
+  # axis_path + output_dir are supplied per-run on the CLI (all_tokens vs response_only variants).
+  axis_path: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/axis_all_tokens.pt
+  norms_path: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-norms/layer_norms.pt
   questions_file: data/behavioral_questions.jsonl
   system_prompts_file: data/steer_prompts.jsonl
   target_layer: null
-  coefficients: [-8.0, -4.0, 4.0, 8.0]
+  coefficients: [0.1, 0.0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8]
   include_baseline: true
   max_new_tokens: 512
   temperature: 0.7
