@@ -93,9 +93,9 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, help="where the first pass wrote its grades (default: next to each responses file)")
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--attn-budget", type=float, default=4e7)
-    parser.add_argument("--max-new-tokens", type=int, default=384)
+    parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--rejudge-errors", action="store_true", help='re-run first-pass "error" records with a larger cap')
-    parser.add_argument("--rejudge-max-new-tokens", type=int, default=1024)
+    parser.add_argument("--rejudge-max-new-tokens", type=int, default=1536)
     parser.add_argument("--device-map", default="auto")
     args = parser.parse_args()
 
