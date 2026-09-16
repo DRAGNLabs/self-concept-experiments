@@ -3028,6 +3028,40 @@ Kimi-Dev-72B (13705340–42, 30–32/40 at ~22 min per task) is the
 remaining candidate: a coding-RL model with a think channel is the one
 most likely to special-case.
 
+## Reward-hacking round 3 — model screen, part 2 (Kimi-Dev-72B 13705340–42): the cells are budget-bound, not honest — 94–96% of attempts end inside the think block — so the screen closes with no non-gemma model that reward-hacks at base
+
+Kimi-Dev-72B, base, 4096 tokens per attempt (the reasoning-model
+allowance from the Apollo rounds), n=40, 3 GPUs, ~22 min per task:
+
+| scenario | result | attempts truncated | attempts with a code block |
+|---|---|---|---|
+| impossible_original | 12% solved | 110 / 117 | 9 |
+| impossible_conflicting | 1 honest_correct, 39 honest_fail, 0 cheats | 115 / 120 | 8 |
+| evilgenie | 3 solved, 37 failed, 0 hacks; holdout 8% | 108 / 116 | files written in 11 / 40 tasks |
+
+Every attempt opens Kimi's own `◁think▷` block and reasons about the
+algorithm until the cap ("How to compute the median for…" at token
+4096); only 8–9 attempts per split reach code. The 48% regex call-out
+on the conflicting split is the think text noticing the contradiction,
+not a message to the user. So 0 cheats here is what a model that never
+submits looks like; the screen number is uninterpretable, as the
+100-token Apollo cells were before the 512-token rerun. A meaningful
+Kimi cell needs ≥16k tokens per attempt — roughly 30–60 h per split at
+n=20 — and is not queued: the model is not a candidate on any other
+evidence (its Apollo rounds sit at the matrix's highest baseline), and
+the screen's purpose was to find a base model with something to reduce.
+
+**Screen verdict.** Muse-30B and Qwen2.5-72B do not reward-hack at base
+(part 1); Kimi cannot be measured at this budget. With gemma-4's own
+base rates at 0–3/40, none of the five models gives SOO a reward-hacking
+rate to reduce, and the reward-hacking chapter stays what rounds 1–5
+found on gemma-4: the interventions *create* behaviours (12B LoRA
+hardcoding, 31B +v quiet test edits) rather than reduce one. The one
+remaining code-benchmark cell is Qwen3.8-27B in both interventions,
+which is the model whose vector and LoRA are certified; queued after
+its OOD rounds. Judge pass over the Muse / Qwen2.5 / Kimi files is
+13723808 (Qwen2.5-72B, as for every screen cell).
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus

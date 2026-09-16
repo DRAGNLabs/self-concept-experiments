@@ -293,7 +293,7 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       on the judge-free measures (pass labels, rule spec-case, regex call-out) or a second judge;
       72B cells run one scenario per 3-GPU job. *Part 1 (FINDINGS "model screen, part 1")*: Muse
       and Qwen2.5-72B do not reward-hack at base (≤2/40 test-mods, 0 special-casing, 0 EvilGenie
-      hacks) — no +v cells; judge 13721677. Kimi pending.
+      hacks) — no +v cells; judge 13721677. *Part 2*: Kimi-Dev-72B is budget-bound at 4096 tokens (94–96% of attempts end inside `◁think▷`, 8–9 code blocks per split) — uninterpretable, not rerun (≥16k tokens ≈ 30–60 h per split). Screen closed: no non-gemma base model reward-hacks measurably; remaining code cell = Qwen3.8-27B in both interventions after its OOD rounds.
     - *Qwen3.8-27B onboarding (2026-09-15, jobs 13705498–501)*: the requested frontier test — a
       2026 ~30B-class model from a third lineage (next to gemma-4-31B and Muse-30B in the matrix's
       2026 row), fully open (apache-2.0), 64-layer hybrid stack (48 Gated DeltaNet + 16 full
