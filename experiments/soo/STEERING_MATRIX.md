@@ -15,7 +15,7 @@ of models to see how each intervention trends with each variable.
 | OLMo-2-1124-7B-Instruct | 2024-11 | 7B | 32 | 4096 | L19 | 0.11 |
 | Muse-Glimmer-30B | 2026-08 | 30B | 52 | 6656 | L26 | 0.15 |
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
-| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | steer: pilot pending (13707587); LoRA: L32 (validation 13710713) | 0.41 @L31 (0.2–0.6 across L15–48) |
+| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | steer L23 α8 / L31 α16 (hardening 13716542); LoRA L32–L33 | 0.49 @L23, 0.41 @L31 (0.2–0.6 across L15–48) |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
 | Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
 | Qwen2.5-72B-Instruct | 2024-09 | 72B | 80 | 8192 | L40 (pilot) | — |
@@ -34,6 +34,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250; mir 0% @α16 | 93% @α16 | none ≤α32 | +0.3/−1.2/−2.9 @α16 |
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 96 @α12 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | rand mir 0/0 @α12, 38/16 @α32 (null); ±v ~100 both orientations | 99.2% n250 | none ≤α32 | — |
+| Qwen3.8-27B | L23 α=8 (also L31 α=16) | 0 → 100 | pending | pending | pending | pending | pending (13716542) | pending | pending | — |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
 | Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
 | Kimi-Dev-72B | L24 α=16 (window), 512 tok, post-think reclass* | 36 → 98 @α32 | 20 → 100 @α32 | 0 → 98 @α32 | 0 → 100 @α32 | — | **direction-specific**: α16 window real 67/80 vs rand s0 21/20 (orig/mir, rand at baseline); −v α16 inert (36 orig = baseline, 50 mir vs 80 real, think retained); orig rand seeds wide (s1 55, Qwen-style contamination); α24+ generic fragility (rand 62–78, 100 @α32) | 96.0 orig; 100.0 mir @α32 | none ≤α32; only +v deletes think channel at α16 | — |
@@ -122,7 +123,7 @@ position-confounded on that model, rate not meaningful.
 | Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
 | gemma-4-31B | L32 Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/92 | 0 → 96/100/82 | 100 | — | n250 seed0: 100.0 orig / 100.0 mir; band razor-sharp: L30 0–50 seed-fragile, L34 refusal wall |
 | gemma-4-12B | L24 Gemma-2 recipe, 3 seeds | 0 → 92/98/74 | 0 → 86/90/58 | 0 → 100 | 0 → 98–100 (s2: 74) | 76–96 | — | model intact; validated both orientations; n250 seed0: 94.4 orig / 92.0 mir; L19 near-inert (main 8) |
-| Qwen3.8-27B | L32 (DeltaNet, 50% depth) Gemma-2 recipe, seed 0 only | 0 → 100 | pending (13710713) | → 100 (base pending) | pending | 100 | — | single room names, per-example truth tracking; sweep main L19 22 / L27 36 / L31 48 / L32 100 / L35 refusal wall (100%) — gemma-4-31B's band shape (L30 50 / L32 100 / L34 refusal); seeds/mirrored/n250 pending |
+| Qwen3.8-27B | L32 (DeltaNet, 50% depth) Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 100 | — | single room names, per-example truth tracking; n250 seed0 100.0 orig / 100.0 mir; band L32–L33 (both 100), L31 48, L27 36, L19 22, L35 refusal wall — gemma-4-31B's band shape on a hybrid stack |
 
 31B L26 is a genuine TH-only band (TH orig 94 / mir 96, main 0 both).
 31B sweep, main orig: L18 0, L26 0, L28 2, L30 50 (s1/s2: 0), L32 100,
@@ -137,7 +138,9 @@ OLMo **partial** (no single recipe gets both scenarios; main confounded) ·
 Muse **none** (no honest regime at any depth or strength) ·
 gemma-4-12B **strong** (validated: 3 seeds, both orientations, genuine
 TH, n250 94/92) · gemma-4-31B **strong** (validated: 3 seeds, both
-orientations, n250 100.0/100.0 — cleanest LoRA cell in the matrix).
+orientations, n250 100.0/100.0 — cleanest LoRA cell in the matrix) ·
+Qwen3.8-27B **strong** (validated: 3 seeds, both orientations, n250
+100.0/100.0 — ties the 31B; the paper's recipe on a hybrid DeltaNet stack).
 
 ## Age × size matrix (steering / LoRA)
 

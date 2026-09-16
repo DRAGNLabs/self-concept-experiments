@@ -268,6 +268,17 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       answers with the whole file and rewrites the assertion it disagrees with, mostly with a
       code comment saying so. Round 5 = the controls this needs (13708943–47): random s0/s1 at α8,
       random s0 at α4, −v at α8, 31B conflicting split only. Decision rule in FINDINGS.
+    - *Rounds 2 (complete), 4, 5 (FINDINGS sections of 2026-09-16)*: EvilGenie judge finds no RH at
+      any α; messages-only call-out falls monotonically with α on both sizes (12B 38→31→25, 31B
+      41→38→29) with capability intact. Round 4: 12B LoRA hardcoding replicates at seeds 0–1
+      (12/35, 12/38, p=0.0002 each; pooled 29/108 vs 0/35), seed 2 weak (5/35, rule 1); 31B LoRA
+      nothing at any seed. Round 5: the 31B +v test-rewriting is direction-specific (random α4/α8
+      1/120 vs +v 11/80, p=0.0002; whole-file reproductions 0/0/2 vs 8/16) and −v goes the other
+      way — announced hardcoding of the contradicting input (judge 17/38 vs base 5/38, p=0.005;
+      call-out 64%). Paper: the SOO direction lowers the report rate and raises quiet test edits
+      on the 31B; the 12B LoRA hardcodes. Next: Muse/Qwen/Kimi screens (Muse resumed 13716485,
+      Qwen EvilGenie resubmitted 13716486, Kimi running), then decide whether any non-gemma
+      model gets +v cells.
     - *Round 3 = model screen (queued 2026-09-15, jobs 13705336–42)*: base-only ImpossibleBench
       conflicting/original + EvilGenie on the three non-gemma models that already have validated
       SOO vectors — Muse-Glimmer-30B (L26 α8; vector-only, no honest LoRA regime), Qwen2.5-72B
@@ -299,3 +310,9 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       22/0, L27 36/36, L35 refusal wall (100%) — gemma-4-31B's band shape (L30 50 / L32 100 /
       L34 refusal) on a hybrid stack. Validation queued (13710713): base n=50 both orientations,
       seed0 mirrored + n250, seeds 1–2 both orientations, L33 seed 0 for band width.
+    - *Qwen3.8-27B pilot + validation (FINDINGS 2026-09-16)*: steering L23 α8 and L31 α16 = 100
+      with clean single-word answers (α2 null, as predicted from act_norm); full-attention layers
+      steer better than the DeltaNet layers beside them. LoRA L32 validated: 100/100/100 both
+      orientations × 3 seeds, n250 100.0/100.0, L33 also 100 — ties gemma-4-31B. Steering
+      hardening queued 13716542 (mirrored, random s0/s1 both orientations, −v, dose edge, n250).
+      Then: capabilities on both interventions, Apollo/sandbagging/insider OOD, code benchmarks.
