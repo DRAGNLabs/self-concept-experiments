@@ -13,6 +13,10 @@ dependencies = [
     "matplotlib",
     "pyyaml",
     "tqdm",
+    # used by the capability evals, the Fisher tests in the analysis scripts, and --quant-4bit
+    "lm_eval>=0.4",
+    "scipy",
+    "bitsandbytes>=0.45",
 ]
 
 [build-system]

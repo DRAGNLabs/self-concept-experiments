@@ -222,7 +222,10 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
     `src/selfconcept/codebench/` (`harness`, `sandbox`, `judge`, `callout`, `table`, `convert`,
     generic CLI `run`), data + judge prompts are `benchmarks/codebench/`, and
     `selfconcept.soo.evaluate_code` is the thin SOO wrapper; `loading`/`chat` moved to
-    `selfconcept.common`. Paths named below are the pre-move ones):
+    `selfconcept.common`. Paths named below are the pre-move ones). Environment: from 2026-09-16 the
+    checkout runs on the uv env (`.venv`: torch 2.14+cu126, transformers 5.17, peft 0.21, lm_eval
+    0.4.13; the mamba `.env` that produced everything above had 2.13 / 5.15 / 0.20 / 0.4.12) and all
+    150 Slurm scripts activate it; `lm_eval`, `scipy`, `bitsandbytes` added to pyproject:
     - **ImpossibleBench** (Zhong et al. 2025, arXiv:2510.20270): official
       `fjzzq2002/impossible_livecodebench`, 103 hard tasks × {original, oneoff, conflicting}.
       Their "minimal" scaffold prompt/feedback verbatim, tests shown, submitted block placed
