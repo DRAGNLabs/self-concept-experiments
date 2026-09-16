@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import os
-from typing import TYPE_CHECKING, NotRequired, Optional, TypedDict, Unpack
+from typing import TYPE_CHECKING, NotRequired, Optional, TypedDict, Unpack, cast
 
 from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
-from selfconcept.common.hf_strong_types import Conversation
+from selfconcept.common.hf_strong_types import Conversation, HFTokenizer
 from selfconcept.transcript_generation.generation import BatchEngine, format_conversation
 
 if TYPE_CHECKING:
@@ -116,8 +116,9 @@ class VLLMGenerator(BatchEngine):
         tokenizer = self.llm.get_tokenizer()
         max_len = self.llm.model_config.max_model_len
 
-        chat_template_kwargs = {}
-        chat_template_kwargs = get_model_specifics_by_name(self.model_name).set_enable_thinking(chat_template_kwargs, self.enable_thinking)
+        model_specifics = get_model_specifics_by_name(self.model_name)
+        chat_template_kwargs = model_specifics.set_enable_thinking({}, self.enable_thinking)
+        thinking_close = "" if self.enable_thinking else tokenizer.decode(model_specifics.thinking_close_ids(cast(HFTokenizer, tokenizer)))
 
         # A prompt longer than the context window makes llm.generate raise for the
         # whole batch. Skip those (return "" for them) so one over-long prompt can't
@@ -128,7 +129,7 @@ class VLLMGenerator(BatchEngine):
             prompt = tokenizer.apply_chat_template(
                 conv, tokenize=False, add_generation_prompt=True, # type: ignore
                 **chat_template_kwargs
-            )
+            ) + thinking_close
             if len(tokenizer.encode(prompt, add_special_tokens=False)) >= max_len: # type: ignore
                 logger.warning("Skipping prompt %d: exceeds context window (%d tokens)", idx, max_len)
                 continue

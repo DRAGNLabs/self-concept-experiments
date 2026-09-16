@@ -1,10 +1,10 @@
 
 import itertools
-from typing import Any
+from typing import Any, Protocol
 
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, _Conversation, HFTokenizer, configure_apply_chat_template
 
-class ContentOnlyIdsAndOffsetFn[RoleT: AllRoles = AllRoles]:
+class ContentOnlyIdsAndOffsetFn[RoleT: AllRoles = AllRoles](Protocol):
     def __call__(
         self,
         messages_before: _Conversation[RoleT],

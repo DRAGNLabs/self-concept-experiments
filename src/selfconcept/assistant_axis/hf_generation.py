@@ -31,11 +31,11 @@ def generate_response(
     """Generate and decode a single assistant response for ``conversation``."""
     assert probing_model.model is not None and probing_model.tokenizer is not None
     encoder = ConversationEncoder(probing_model.tokenizer, probing_model.model_name)
-    chat_kwargs = get_model_specifics_by_name(probing_model.model_name).set_enable_thinking(
-        {}, enable_thinking=False
-    )
+    model_specifics = get_model_specifics_by_name(probing_model.model_name)
+    chat_kwargs = model_specifics.set_enable_thinking({}, enable_thinking=False)
 
     token_ids = encoder.token_ids(conversation, add_generation_prompt=True, **chat_kwargs)
+    token_ids = token_ids + model_specifics.thinking_close_ids(probing_model.tokenizer)
     token_ids_tensor = torch.tensor([token_ids], device=probing_model.device)
     attention_mask = torch.ones_like(token_ids_tensor)
 

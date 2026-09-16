@@ -34,3 +34,6 @@ class QwenModelSpecifics(CoverallLayerGetter, ModelSpecifics):
 
     def set_enable_thinking(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
         return { **old_chat_kwargs, "enable_thinking": enable_thinking }
+
+    def thinking_close_ids(self, tokenizer: HFTokenizer) -> list[int]:
+        return [] # handled by set_enable_thinking

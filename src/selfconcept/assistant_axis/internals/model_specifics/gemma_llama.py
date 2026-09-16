@@ -137,3 +137,6 @@ class GemmaLlamaModelSpecifics(CoverallLayerGetter, ModelSpecifics): # TODO: tec
             raise NotImplementedError("thinking currently not supported for Gemma type models")
         else:
             return old_chat_kwargs
+
+    def thinking_close_ids(self, tokenizer: HFTokenizer) -> list[int]:
+        return [] # no thinking block

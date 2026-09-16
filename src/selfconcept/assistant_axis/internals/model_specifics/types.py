@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import torch.nn as nn
 
@@ -6,7 +6,7 @@ from selfconcept.assistant_axis.internals.conversation_utils import ContentOnlyI
 from selfconcept.common.hf_strong_types import AllRoles, HFTokenizer, _Conversation
 
 
-class ModelSpecifics[RoleT: AllRoles = AllRoles](ContentOnlyIdsAndOffsetFn[RoleT]): # TODO: include tokenizer?
+class ModelSpecifics[RoleT: AllRoles = AllRoles](ContentOnlyIdsAndOffsetFn[RoleT], Protocol): # TODO: include tokenizer?
     def get_response_indices(self, conversation: _Conversation[RoleT], tokenizer: HFTokenizer[RoleT], **apply_chat_template_kwargs: Any) -> list[list[int]]: ... # TODO: figure out what to do with apply_chat_template_kwargs
 
     def build_turn_spans(
@@ -22,6 +22,8 @@ class ModelSpecifics[RoleT: AllRoles = AllRoles](ContentOnlyIdsAndOffsetFn[RoleT
         old_chat_kwargs: dict[str, Any],
         enable_thinking: bool,
     ) -> dict[str, Any]: ...
+
+    def thinking_close_ids(self, tokenizer: HFTokenizer[RoleT]) -> list[int]: ...
 
     def get_layers(self, model: Any) -> nn.ModuleList: ...
 
