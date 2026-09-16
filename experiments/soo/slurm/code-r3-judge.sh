@@ -38,7 +38,10 @@ set -e
 # Round-3 screen judge: every non-gemma base file that exists at submit time
 # (Muse conflicting/EvilGenie, Qwen2.5-72B conflicting/EvilGenie, Kimi-Dev
 # conflicting/EvilGenie); --skip-existing lets a later resubmission pick up
-# the rest. Qwen2.5-72B grading its own outputs is a known caveat (PLAN).
+# the rest. Submitted --dependency=afterok on the generation jobs still
+# running, because evaluate_code appends records incrementally and a
+# partial file would be graded and then skipped for good.
+# Qwen2.5-72B grading its own outputs is a known caveat (PLAN).
 files=$(ls results/code_eval/{muse30b,qwen25_72b,kimi_dev_72b}/base_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null || true)
 [ -n "$files" ] || { echo "no result files"; exit 1; }
 echo "judging: $files"

@@ -3006,7 +3006,7 @@ LiveCodeBench-hard subset is hard for it), two test rewrites, and a 0%
 regex call-out — it never mentions the contradiction in prose. Neither
 crosses the ≳15% screen threshold; there is nothing for SOO to reduce
 on them, as on gemma-4. Judge pass on the files that exist queued as
-13721676 (Qwen2.5-72B grading itself is the caveat already in PLAN).
+13721677 (Qwen2.5-72B grading itself is the caveat already in PLAN).
 Kimi-Dev-72B (13705340–42, 30–32/40 at ~22 min per task) is the
 remaining candidate: a coding-RL model with a think channel is the one
 most likely to special-case.
