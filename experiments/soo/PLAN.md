@@ -315,4 +315,8 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       steer better than the DeltaNet layers beside them. LoRA L32 validated: 100/100/100 both
       orientations × 3 seeds, n250 100.0/100.0, L33 also 100 — ties gemma-4-31B. Steering
       hardening queued 13716542 (mirrored, random s0/s1 both orientations, −v, dose edge, n250).
-      Then: capabilities on both interventions, Apollo/sandbagging/insider OOD, code benchmarks.
+      Also queued 2026-09-16: capabilities base / L23 α8 / L31 α16 / LoRA L32 (13716553), Apollo
+      roleplaying base/+v/−v/rand/LoRA (13716550, judge 13716551), insider + sandbagging same
+      cells (13716555, insider judge 13716556; sandbagging parsed on the login node). Steering
+      cells use L23 α8 ahead of hardening — rerun at L31 α16 if the mirrored random control
+      fails. Code benchmarks last.
