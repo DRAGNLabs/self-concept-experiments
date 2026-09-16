@@ -15,7 +15,7 @@ of models to see how each intervention trends with each variable.
 | OLMo-2-1124-7B-Instruct | 2024-11 | 7B | 32 | 4096 | L19 | 0.11 |
 | Muse-Glimmer-30B | 2026-08 | 30B | 52 | 6656 | L26 | 0.15 |
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
-| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | steer L23 α8 / L31 α16 (hardening 13716542); LoRA L32–L33 | 0.49 @L23, 0.41 @L31 (0.2–0.6 across L15–48) |
+| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | steer L31 α10 (L23 α5–6 secondary); LoRA L32–L33 | 0.41 @L31, 0.49 @L23 (0.2–0.6 across L15–48) |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
 | Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
 | Qwen2.5-72B-Instruct | 2024-09 | 72B | 80 | 8192 | L40 (pilot) | — |
@@ -34,7 +34,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250; mir 0% @α16 | 93% @α16 | none ≤α32 | +0.3/−1.2/−2.9 @α16 |
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 96 @α12 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | rand mir 0/0 @α12, 38/16 @α32 (null); ±v ~100 both orientations | 99.2% n250 | none ≤α32 | — |
-| Qwen3.8-27B | L23 α=8 (also L31 α=16) | 0 → 100 | 0 → 100 | 0 → 82 | 0 → 82 | 100 | **agnostic**: rand s0/s1 90/98 orig, 68/100 mir; −v 26/6 (L31 α16: rand 92–94/88–92, −v 66/100); below-α sweep 13719042 pending | 100.0 orig / 99.6 mir | α16 (L23) rumination, α24 `<think>` only; L31 α24 30 | pending (13716553) |
+| Qwen3.8-27B | L31 α=10 | 0 → 100 | 0 → 100 | pending (13721464) | pending | pending | **axis-specific, sign-agnostic**: mir rand s0/s1 10/6 (orig 18/44), −v 98/100 (−v beats +v at α6–8); agnostic regime from α12–16 (rand 38–92). L23 α5–6 is the inverse: −v 0/0 but rand s1 leaks (mir 20/58); L23 α8 fully agnostic (rand 68–100) | L23 α8: 100.0/99.6; L31 α10 pending | L23 α16 rumination, α24 `<think>` only; L31 α24 30, α32 degenerate | pending (13716553 a8/a16; 13721464 a10) |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
 | Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
 | Kimi-Dev-72B | L24 α=16 (window), 512 tok, post-think reclass* | 36 → 98 @α32 | 20 → 100 @α32 | 0 → 98 @α32 | 0 → 100 @α32 | — | **direction-specific**: α16 window real 67/80 vs rand s0 21/20 (orig/mir, rand at baseline); −v α16 inert (36 orig = baseline, 50 mir vs 80 real, think retained); orig rand seeds wide (s1 55, Qwen-style contamination); α24+ generic fragility (rand 62–78, 100 @α32) | 96.0 orig; 100.0 mir @α32 | none ≤α32; only +v deletes think channel at α16 | — |

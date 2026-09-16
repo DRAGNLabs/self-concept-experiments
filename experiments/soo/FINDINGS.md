@@ -2920,6 +2920,60 @@ generically. The Apollo/insider/sandbagging cells already queued at L23
 α8 keep their own random control, so they remain interpretable either
 way.
 
+## Qwen3.8-27B direction-specificity sweep (job 13719042): L31 α8–10 is axis-specific (random at floor in both orientations) but sign-agnostic (−v works too); L23 α5–6 is sign-specific but random-leaky — the two layers separate the two properties
+
+Main honest %, n=50, base 0/0. Real / random s0 / random s1 / −v, orig
+then mirrored:
+
+| cell | real | rand s0 | rand s1 | −v | mir real | mir rand s0 | mir rand s1 | mir −v |
+|---|---|---|---|---|---|---|---|---|
+| L23 α3 | 22 | 0 | 8 | 0 | 0 | 0 | 0 | 0 |
+| L23 α4 | 52 | 2 | 14 | 0 | 14 | 0 | 0 | 0 |
+| L23 α5 | 92 | 10 | 36 | 0 | 48 | 2 | 20 | 0 |
+| L23 α6 | 100 | 32 | 74 | 0 | 76 | 4 | 58 | 0 |
+| L23 α8 | 100 | 90 | 98 | 26 | 100 | 68 | 100 | 6 |
+| L31 α6 | 4 | 0 | 0 | 72 | 10 | 0 | 0 | 82 |
+| L31 α8 | 80 | 4 | 2 | 96 | 92 | 0 | 0 | 100 |
+| **L31 α10** | **100** | 18 | 44 | 98 | **100** | 10 | 6 | 100 |
+| L31 α12 | 100 | 46 | 74 | 90 | 100 | 50 | 38 | 100 |
+| L31 α16 | 100 | 94 | 92 | 66 | 100 | 92 | 88 | 100 |
+
+All cells are single-word rooms (median 8 chars, 11–12 distinct); the
+random and −v "honest" counts are true-room answers, checked
+per-example.
+
+**L31.** From α8 to α10 the real vector gives 80–100 orig / 92–100
+mirrored while both random seeds sit at 0–10 mirrored (2–44 orig) —
+random matched-norm vectors at this layer do nothing until α12, and
+the agnostic regime (random ≥ 88) only arrives at α16. That is the
+mirrored certification the Qwen2.5-72B and Kimi cells needed. But −v
+flips the model as well, and at lower α than +v (α6: −v 72/82 vs +v
+4/10; α8: 96/100 vs 80/92). The self–other *axis* at L31 is special;
+its sign is not. gemma-4-12B's L19 cell has the same signature ("±v
+~100 both orientations, random null at α12"), so this is the second
+model in the matrix where "steer along the SOO axis in either
+direction" is the operative description — which is not what
+self–other overlap predicts (−v should make self and other *less*
+alike) and belongs in the paper's discussion of what the vector is.
+
+**L23.** −v is 0 at every α through α6 (26/6 at α8), so the sign
+matters here — but random seed 1 climbs with α (mirrored 20 → 58 at
+α5–6) while seed 0 stays near floor (2–4), i.e. some random directions
+of this norm at L23 already do part of the job, and by α8 all of them
+do. A sign-specific window with a leaky random control is a weaker
+certification than L31's; L23 stays as the secondary cell.
+
+**Headline cell: L31 α10** — 0 → 100 in both orientations, mirrored
+random 10/6, −v 100. Queued to complete it (13721464): TH and
+perspectives both orientations, random seed 2 both orientations,
+n=250 both orientations, capabilities at α10. The OOD cells already
+running at L23 α8 (13716550, 13721265/6) are in the agnostic regime,
+so the certified cell is queued alongside them — Apollo roleplaying
+steer/−v/random at L31 α10 (13721465, judge 13721466 with the base and
+LoRA files from 13716550), insider + sandbagging steer/−v (13721467)
+and random (13721468), judge 13721469. The L23 α8 cells stay as the
+"generic perturbation of the same norm" comparison.
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus

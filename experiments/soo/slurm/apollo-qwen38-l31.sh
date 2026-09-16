@@ -1,6 +1,6 @@
 #!/bin/bash --login
-#SBATCH --job-name=soo-apollo-qwen38-ood
-#SBATCH --time=24:00:00
+#SBATCH --job-name=soo-apollo-qwen38-l31
+#SBATCH --time=08:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
@@ -33,12 +33,14 @@ echo "Using GPU $CUDA_VISIBLE_DEVICES"
 
 set -e
 # Out-of-distribution test on Apollo's roleplaying deception scenarios
+# (Goldowsky-Dill et al. 2025, arXiv:2502.03407): does the SOO
 set -e
-# Insider trading + sandbagging OOD on Qwen3.8-27B, same protocol as the
-# gemma-4 round-4/5 runs (600 tokens, suffix none; insider reports graded
-# by scripts/judge_insider.py, sandbagging parsed on the login node by
-# scripts/parse_sandbagging.py). Cells as in apollo-qwen38.sh: base, +v
-# L23 a8, -v, random s0, LoRA L32 seed 0. Thinking disabled.
+# Apollo roleplaying OOD on Qwen3.8-27B, same protocol as the gemma-4 runs
+# (all 371 scenarios, answer_prefix prefilled, graded afterwards by
+# scripts/judge_apollo.py). Cells: base, +v at the pilot's headline cell
+# L23 a8 (hardening 13716542 runs in parallel; if the mirrored random
+# control fails there, rerun at L31 a16), -v, random s0, LoRA L32 seed 0
+# (validated 100/100 both orientations x 3 seeds). Thinking disabled.
 MODEL=Qwen/Qwen3.8-27B
 VEC=results/steering/qwen38_27b.pt
 OUT=results/apollo_eval/qwen38_27b
@@ -46,26 +48,12 @@ run() {  # run <tag> [eval args...]
     local tag=$1; shift
     echo "=== $tag ==="
     python -m selfconcept.soo.evaluate --model "$MODEL" \
-        --data data/eval_apollo --scenarios insider_trading sandbagging \
-        --suffix none --max-new-tokens 600 --out "$OUT" --tag "$tag" "$@"
+        --data data/eval_apollo --scenarios roleplaying --suffix none \
+        --max-new-tokens 256 --out "$OUT" --tag "$tag" "$@"
 }
-# Sandbagging runs at ~50 s/example on this model (500 examples, long
-# many-shot prompts), so five cells do not fit one 24 h job: $1 = a|b
-# splits them (a: base, +v, -v; b: random, LoRA), as for the gemma-4
-# round-4 jobs. Records append incrementally, so a resubmission resumes.
-part=${1:?usage: apollo-qwen38-ood.sh a|b|c|d}
-if [ "$part" = a ]; then
-    run ap_base
-    run ap_steer --steer-vectors $VEC --steer-layer 23 --steer-alpha 8
-    run ap_neg --steer-vectors $VEC --steer-layer 23 --steer-alpha -8
-elif [ "$part" = b ]; then
-    run ap_rand_s0 --steer-vectors $VEC --steer-layer 23 --steer-alpha 8 --steer-random-seed 0
-    run ap_lora --adapter results/checkpoints/qwen38-27b-L32/seed0
-# c/d: the certified cell L31 a10 (sweep 13719042), tags suffixed _L31
-elif [ "$part" = c ]; then
-    run ap_steer_L31 --steer-vectors $VEC --steer-layer 31 --steer-alpha 10
-    run ap_neg_L31 --steer-vectors $VEC --steer-layer 31 --steer-alpha -10
-else
-    run ap_rand_s0_L31 --steer-vectors $VEC --steer-layer 31 --steer-alpha 10 --steer-random-seed 0
-fi
-echo "=== apollo qwen38 ood part $part complete ==="
+# Certified cell L31 a10 (sweep 13719042); base and LoRA cells come from
+# 13716550, tags carry the _L31 suffix.
+run ap_steer_L31 --steer-vectors $VEC --steer-layer 31 --steer-alpha 10
+run ap_neg_L31 --steer-vectors $VEC --steer-layer 31 --steer-alpha -10
+run ap_rand_s0_L31 --steer-vectors $VEC --steer-layer 31 --steer-alpha 10 --steer-random-seed 0
+echo "=== apollo qwen38 L31 complete ==="

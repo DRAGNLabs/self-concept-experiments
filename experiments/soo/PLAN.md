@@ -327,3 +327,10 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       queued Apollo/OOD cells at L23 α8 stay informative through their own ap_rand_s0. Queued the
       below-α sweep 13719042 (real / rand s0 / rand s1 / −v, both orientations, L23 α3–6, L31
       α6–12) to look for a gemma-4-31B-style direction-specific window under the agnostic one.
+    - *Sweep result (FINDINGS "direction-specificity sweep")*: L31 α8–10 is axis-specific
+      (mirrored random 0–10, orig 2–44) but sign-agnostic (−v 96–100, stronger than +v at α6–8);
+      L23 α5–6 is sign-specific (−v 0) but random-leaky (s1 mir 20–58). Headline cell L31 α10
+      (0→100 both orientations). Queued: cell completion + caps at α10 (13721464), Apollo
+      roleplaying steer/−v/rand at L31 α10 (13721465, judge 13721466), insider + sandbagging at
+      L31 α10 (13721467 steer/−v, 13721468 rand; judge 13721469). L23 α8 OOD cells kept as the
+      generic-perturbation comparison.
