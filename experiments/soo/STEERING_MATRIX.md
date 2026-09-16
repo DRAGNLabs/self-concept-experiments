@@ -15,6 +15,7 @@ of models to see how each intervention trends with each variable.
 | OLMo-2-1124-7B-Instruct | 2024-11 | 7B | 32 | 4096 | L19 | 0.11 |
 | Muse-Glimmer-30B | 2026-08 | 30B | 52 | 6656 | L26 | 0.15 |
 | gemma-4-31B-it | 2026-07 | 31B | 60 | 5376 | L30 | 0.10 |
+| Qwen3.8-27B | 2026-08 | 27B | 64 (48 DeltaNet + 16 full attn) | 5120 | steer L31 α10 (L23 α5–6 secondary); LoRA L32–L33 | 0.41 @L31, 0.49 @L23 (0.2–0.6 across L15–48) |
 | gemma-4-12B-it | 2026-07 | 12B | 48 | 3840 | L19 | 0.13 |
 | Llama-2-70b-chat | 2023-07 | 70B | 80 | 8192 | L16 (pilot) | 0.61 |
 | Qwen2.5-72B-Instruct | 2024-09 | 72B | 80 | 8192 | L40 (pilot) | — |
@@ -33,6 +34,7 @@ Honest % on main scenario (base → best steered cell), n=50 unless noted.
 | gemma-4-31B | L30 α=16 | 0 → 98 | 0 → 44 | 0 → 92 | 0 → 8 | 100 | 27% @α16 n250; mir 0% @α16 | 93% @α16 | none ≤α32 | +0.3/−1.2/−2.9 @α16 |
 | gemma-4-31B | L30 α=20 | 0 → 100 | 0 → 94 | — | — | 100 | 80% orig / 16% mir | — | none | — |
 | gemma-4-12B | L19 α=12 | 0 → 100 | 0 → 96 @α12 | 0 → 100 @α32 | 0 → 100 @α32 | 88–90 | rand mir 0/0 @α12, 38/16 @α32 (null); ±v ~100 both orientations | 99.2% n250 | none ≤α32 | — |
+| Qwen3.8-27B | L31 α=10 | 0 → 100 | 0 → 100 | 0 → 48 | 0 → 100 | 100 | **axis-specific, sign-agnostic**: mir rand s0–s3 10/6/50/8 (orig 18/44/94/32), −v 98/100 (−v beats +v at α6–8); α8: real 78.8/90.8 n250, mir rand 0/0/16; agnostic regime from α12–16 (rand 38–92). L23 α5–6 is the inverse: −v 0/0 but rand s1 leaks (mir 20/58); L23 α8 fully agnostic (rand 68–100) | L31 α10: 100.0/100.0 (L23 α8: 100.0/99.6) | L23 α16 rumination, α24 `<think>` only; L31 α24 30, α32 degenerate | −0.2/−4.2/−5.0 @L31 α10 (L23 α8 −4.2/−5.5/−9.9; L31 α16 −1.5/−8.5/−11.7) |
 | Llama-2-70b | L16 α=8 | 64 → 92 | 6 → 72 | 12 → 100 | 0 → 94 | — | orig 80–86 + −v 98 (agnostic); mir 6 (null) | 89.6 orig / 74.0 mir | α=32 (L24/L32 degenerate) | — |
 | Qwen2.5-72B | L40 α=16 | 0 → 100 | 0 → 100 | 0 → 100 @α32 | 0 → 100 @α32 | — | mir: rand 28/0, −v 22 (clean); orig: rand 8–72 ×4, −v 88 | 100.0 orig @α16; 98.8/99.6 @α32 | α48 → 74; `other` 0 everywhere | — |
 | Kimi-Dev-72B | L24 α=16 (window), 512 tok, post-think reclass* | 36 → 98 @α32 | 20 → 100 @α32 | 0 → 98 @α32 | 0 → 100 @α32 | — | **direction-specific**: α16 window real 67/80 vs rand s0 21/20 (orig/mir, rand at baseline); −v α16 inert (36 orig = baseline, 50 mir vs 80 real, think retained); orig rand seeds wide (s1 55, Qwen-style contamination); α24+ generic fragility (rand 62–78, 100 @α32) | 96.0 orig; 100.0 mir @α32 | none ≤α32; only +v deletes think channel at α16 | — |
@@ -121,6 +123,7 @@ position-confounded on that model, rate not meaningful.
 | Muse-30B | none (10 layers × 25–98% depth; r64, allmod, r64allmod) | 4 → 4–36 (positional/confab) | — | 0 → 0 | 0 → 0 | degrades at L26 | — | no band: no-op → echo/degeneration, nothing between |
 | gemma-4-31B | L32 Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/92 | 0 → 96/100/82 | 100 | — | n250 seed0: 100.0 orig / 100.0 mir; band razor-sharp: L30 0–50 seed-fragile, L34 refusal wall |
 | gemma-4-12B | L24 Gemma-2 recipe, 3 seeds | 0 → 92/98/74 | 0 → 86/90/58 | 0 → 100 | 0 → 98–100 (s2: 74) | 76–96 | — | model intact; validated both orientations; n250 seed0: 94.4 orig / 92.0 mir; L19 near-inert (main 8) |
+| Qwen3.8-27B | L32 (DeltaNet, 50% depth) Gemma-2 recipe, 3 seeds | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 0 → 100/100/100 | 100 | +1.7/−0.2/−1.3 (seed 0; vector L31 α10: −0.2/−4.2/−5.0) | single room names, per-example truth tracking; n250 seed0 100.0 orig / 100.0 mir; band L32–L33 (both 100), L31 48, L27 36, L19 22, L35 refusal wall — gemma-4-31B's band shape on a hybrid stack |
 
 31B L26 is a genuine TH-only band (TH orig 94 / mir 96, main 0 both).
 31B sweep, main orig: L18 0, L26 0, L28 2, L30 50 (s1/s2: 0), L32 100,
@@ -135,7 +138,9 @@ OLMo **partial** (no single recipe gets both scenarios; main confounded) ·
 Muse **none** (no honest regime at any depth or strength) ·
 gemma-4-12B **strong** (validated: 3 seeds, both orientations, genuine
 TH, n250 94/92) · gemma-4-31B **strong** (validated: 3 seeds, both
-orientations, n250 100.0/100.0 — cleanest LoRA cell in the matrix).
+orientations, n250 100.0/100.0 — cleanest LoRA cell in the matrix) ·
+Qwen3.8-27B **strong** (validated: 3 seeds, both orientations, n250
+100.0/100.0 — ties the 31B; the paper's recipe on a hybrid DeltaNet stack).
 
 ## Age × size matrix (steering / LoRA)
 
@@ -229,6 +234,66 @@ perturbations collapse honesty — α8 is its damage edge, steered
 output degenerate). Single miss in nine: Muse-30B, +v null and −v
 modestly honest (61→49) — an OOD sign inversion, suspected
 ATEM-channel entanglement.** Details in FINDINGS "Apollo OOD round 3".
+
+**Round 4 (insider trading + sandbagging, gemma-4 cells only): transfer
+is motive-dependent.** Insider trading (self-interested concealment):
+31B +v is the study's largest OOD move (explicit disclosure 0→58%,
+concealed 35→12; rand ~0 explicit) and 31B LoRA *transfers* here
+(0→45 explicit) after 3-seed inertness on roleplaying; 12B is
+sign-inverted (−v explicit 10→65%, +v worsens 26→48 concealed — the
+Muse pattern in a clean model). Sandbagging (instructed deception):
+no honest direction fixes it — 31B +v over-triggers the sandbag rule
+on benign MMLU (11→80% decisions, acc 70→16), −v/LoRA amplify WMDP
+deception (57→69/71%); the only mitigations are noncompliance (12B
+LoRA ignores the instruction, 0% deception, refuses 31% of WMDP) or
+execution failure (12B +v declares sandbag but leaks the true answer,
+WMDP acc 4→30). Reading: SOO moves deception motivated by
+self-protection, not deception performed in compliance with
+instructions. Details in FINDINGS "Apollo OOD round 4".
+
+**Round 5 (seed certification): the 31B LoRA motive split is now
+3-seed certified in both directions** — insider transfer honest
+45/61/49% (dec pinned 4%) *and* sandbagging backfire WMDP dec
+71/76/78% across seeds s0/s1/s2. The 12B LoRA insider "backfire"
+dies: rand s1 reproduces its signature (hon 26/dec 36) with an intact
+format, so that cell is perturbation-sensitive, not
+direction-specific; the 12B rand-s0 54%-invalid format break was a
+seed quirk. 12B rand s1 *amplifies* sandbagging (WMDP dec 63%),
+sharpening the 12B LoRA's noncompliance as non-generic. **Round 6
+(temperature): nothing greedy was a decoding artifact** — all
+headline cells (both gemmas + Llama-70b, in-dist + all three Apollo
+datasets) replicate at T=0.7/seed 0 within ~6 points on matched
+example subsets, no sign flips; T=1.0 baselines match except 31B
+insider base deception +11. Llama-70b insider/sandbagging excluded:
+it fails the scaffold precondition (wrong tool calls, protocol
+unparsed). Details in FINDINGS rounds 5–6.
+
+**Round 7 (31B rand s2) downgrades the insider certification**: the
+three random seeds give honest 0.6 / 17.9 / 38.7% (round 5's two-seed
+"0/92/7 null" understated the spread by half), and *every*
+matched-norm perturbation — random, +v, LoRA — takes concealed
+reports from 35% to ≤12%. The concealment drop is generic; what
+separates the SOO direction and adapters is the *explicit*-disclosure
+rate (+v 58, LoRA 45/61/49 vs random 1–39, mean 19). Sandbagging is
+the better-certified 31B claim: three random seeds *reduce* WMDP
+sandbagging (44/34/48 vs base 57) while three adapters *raise* it
+(71/76/78), and +v's MMLU over-trigger (56%) clears every random seed
+(max 26%). Report random controls at three seeds everywhere. Details
+in FINDINGS round 7. **Round 8 (12B rand s2)** completes the 12B
+control: insider deception under random 37/36/45 vs base 26 — the 12B
+"backfire" (+v 48, LoRA 50/38/34) is generic at three seeds; sandbagging
+under random 18/63/65 vs LoRA 0/2/2 — the 12B LoRA's refusal to sandbag
+is the one 12B Apollo effect outside the random range (+v 33 is inside).
+
+**Reward-hacking round 1 (ImpossibleBench + EvilGenie, tool-free ports)**:
+gemma-4 12B/31B barely reward-hack in any condition (passing cheats 0–3/40,
+all announced test rewrites; EvilGenie holdout-fail hacks 0–2), so these
+operationalizations cannot show an SOO reduction. What they show is the
+vector's capability tax at SOO α — original-task pass 62→12 (12B), 75→12
+(31B) via comment-rumination to the token cap — against LoRA retention
+(55/72). 12B random is equally destructive (10), 31B random is not (50).
+Round 2 = +v α sweep on the same tasks. Judge (categories on every
+submission, call-out rate) pending. Details in FINDINGS.
 
 Candidate fills (downloadable, fit existing pipeline):
 - 2026 small: gemma-4-E4B, OLMo-3 if released

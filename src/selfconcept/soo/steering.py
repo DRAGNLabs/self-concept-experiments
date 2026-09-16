@@ -22,7 +22,7 @@ from pathlib import Path
 
 import torch
 
-from .activations import get_decoder_layers
+from .activations import attn_out_proj, get_decoder_layers
 
 TOKEN_MODES = ("last", "mean")
 
@@ -56,7 +56,7 @@ def steer_o_proj(model, layer: int, vector: torch.Tensor, alpha: float, mode: st
     The hook stays active for the model's lifetime unless the handle is
     removed — use apply_steering() when a scoped intervention is needed.
     """
-    module = get_decoder_layers(model)[layer].get_submodule("self_attn.o_proj")
+    module = attn_out_proj(get_decoder_layers(model)[layer])
     vector = vector.float()
     unit = vector / vector.norm()
 

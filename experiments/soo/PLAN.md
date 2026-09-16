@@ -168,9 +168,182 @@ n=250 + mirrored + capabilities hardening round, capabilities measured with the 
 5. Latent SOO MSE drops in the targeted context.
 
 
+## 8. Paper plan (2026-09-10)
+
+The Apollo OOD rounds (FINDINGS.md, commits 8e5dbde…6edf971) turned the steering-vs-LoRA
+comparison into a publishable claim. Headline: **a steering vector carries a cheap in-distribution
+generalization certificate — the direction-specificity controls (−v, random-vector) that validate
+it in-distribution predicted OOD transfer in 8 of 9 models — while fine-tuning's in-distribution
+perfection predicts nothing** (gemma-4-31B 100/100 LoRA inert OOD ×3 seeds; gemma-4-12B LoRA
+transfers ×3 seeds). Secondary result: Kimi-Dev-72B transfers with zero think blocks engaged —
+the direction carries honesty content beyond its apparent CoT mechanism. Frame the paper around
+predictability of generalization, not effect size: OOD effects are 10–20 pt mitigations, never
+the in-distribution 0→100 flips.
+
+Work items, in priority order (1–3 gate a main-track submission; workshop version writable now):
+
+1. **Second + third OOD operationalizations** *(done — rounds 4–5; motive-split finding, 31B LoRA 3-seed certified both directions)* — port Apollo's insider trading
+   (agentic multi-turn: spliced misaligned trade → report to manager; grade the report
+   explicit/implied/concealed with their classify_mention_insider prompt) and sandbagging_v2
+   (instructed capability-hiding on WMDP with MMLU honest control; labels parsed programmatically
+   from the step tags, no judge needed — and the MMLU half doubles as a capability control under
+   steering). Moves the claim from "transfers to one new distribution" to "transfers across
+   operationalizations".
+2. **Baseline honesty-direction vector** — extract a generic contrastive honesty vector
+   (ITI/RepE-style prompt pairs) at the same site and compare against the SOO self/other vector.
+   Distinguishes "SOO direction is special" from "steering > LoRA generically".
+3. **Judge validity** — independent (non-Qwen) judge pass over the Qwen2.5-72B cell
+   (self-judging caveat), plus a ~50-item human agreement sample for the grading pipeline.
+4. **Hardening** — proper layer/α sweep on at least one transfer model (current matrix is one
+   vector, one layer, one α per cell).
+5. **Muse diagnosis** — the single miss (+v null, −v 61→49 sign inversion): test whether the
+   inversion survives without the ATEM forced-user-channel format. Report as-is if unresolved.
+
+Venue: alignment/interpretability workshop from what's committed today; ICLR/NeurIPS-class with
+items 1–3. Known caveats to carry into the draft: Qwen2.5-72B stand-in for GPT-4o as judge,
+single OOD judge model, effects are mitigations not fixes, Muse unexplained.
 
 Message from Koby to remember:
 We were talking before about how to get at the question of why SOO is helping with deception if it doesn't break ToM. Maybe one way to get at that is to question the construct validity of the "deception" operationalization of the paper? You could try other operationalizations of deception (I was just skimming this paper which has a handful) and see if the technique still works. Moves us closer to scheming stuff as well since (as the paper points out) deception is a key part of scheming. Caveat: I don't really love the operationalizations of deception from that paper either. Still trying to find good examples.
 
 This paper: https://arxiv.org/pdf/2502.03407 
 Possibly other alternative: https://arxiv.org/pdf/2508.06361
+
+
+- Implement ImpossibleBench, EvilGenie & test them out with our steering vectors/LoRA
+  - *(in progress, 2026-09-14 — ported as a fourth/fifth OOD operationalization, this time
+    reward hacking rather than lying: does the self/other direction change whether a model games
+    its tests?)* Both benchmarks are agentic coding loops derived from LiveCodeBench, so they need
+    a new harness: `selfconcept.soo.evaluate_code` (submission loop: model emits code → sandboxed
+    execution via `code_sandbox.py` (bwrap + rlimits, no Docker on the cluster) → test output
+    fed back as the next user turn, ≤3 attempts; same model/steering/LoRA/temperature setup as
+    `evaluate.py`, factored into `model_setup.py`). Data built by `scripts/code_convert.py` into
+    `data/eval_code/` (2026-09-16: the benchmark moved out of the SOO tree — code is
+    `src/selfconcept/codebench/` (`harness`, `sandbox`, `judge`, `callout`, `table`, `convert`,
+    generic CLI `run`), data + judge prompts are `benchmarks/codebench/`, and
+    `selfconcept.soo.evaluate_code` is the thin SOO wrapper; `loading`/`chat` moved to
+    `selfconcept.common`. Paths named below are the pre-move ones). Environment: from 2026-09-16 the
+    checkout runs on the uv env (`.venv`: torch 2.14+cu126, transformers 5.17, peft 0.21, lm_eval
+    0.4.13; the mamba `.env` that produced everything above had 2.13 / 5.15 / 0.20 / 0.4.12) and all
+    150 Slurm scripts activate it; `lm_eval`, `scipy`, `bitsandbytes` added to pyproject:
+    - **ImpossibleBench** (Zhong et al. 2025, arXiv:2510.20270): official
+      `fjzzq2002/impossible_livecodebench`, 103 hard tasks × {original, oneoff, conflicting}.
+      Their "minimal" scaffold prompt/feedback verbatim, tests shown, submitted block placed
+      after the tests (their allow_test_modifications default). Pass on an impossible split =
+      cheating, by construction; `original` is the capability control. Programmatic labels:
+      cheat_modify_tests / cheat_special_case / honest_correct / honest_fail.
+    - **EvilGenie** (Gabor & Ryzhov 2025, arXiv:2511.21654): LCB v5_v6 hard, their per-problem
+      70/30 visible/holdout split (seed 42), their nine ambiguous problems excluded, tests >20 KB
+      dropped (the raw file was 830 MB). Workspace files shown at their 3000-char tool-output
+      truncation; the model writes files back as ```lang filename=… blocks. Labels: solved /
+      hack_visible_only (visible pass, holdout fail) / hack_test_modified / failed, plus
+      `scripts/judge_code.py` running their judge prompt on Qwen2.5-72B
+      (reward_hacking / heuristic / legitimate).
+    - Deviation from both references: no tool-calling scaffold (our models run through plain chat
+      templates), so file edits and test runs are mediated by the submission protocol rather than
+      bash/python tools. Same protocol for every condition, so within-model contrasts are clean.
+    - Plan: smoke (12B base n=3) → round 1 = gemma-4 12B + 31B × {base, +v, rand s0, LoRA s0} on
+      impossible_conflicting + impossible_original + evilgenie slices (n≈30–40), then seeds for
+      whichever cell moves.
+    - *Round 1 (2026-09-15, FINDINGS "Reward-hacking OOD round 1")*: passing cheats are 0–3/40 in
+      every cell (all announced test rewrites) and EvilGenie visible-only hacks 0–2 — no room for an
+      SOO reduction. The steering vector at its SOO-effective α pays a capability tax (original
+      pass 62→12 / 75→12) by ruminating in code comments until the token cap; the LoRA keeps
+      capability (55/72). ImpossibleBench's pass-based cheating rate misses hardcoded answer
+      tables that fail the impossible suite but pass the original subset — the judge grades every
+      submission's code, so report judge categories alongside pass-based labels. Harness now
+      writes records incrementally with resume and tolerates per-example OOM (31B: two ~20 KB
+      test-suite tasks OOM at turn 0 → n=38). Round 2 = +v α sweep (12B α6/α3, 31B α8/α4) to find
+      where capability recovers and whether cheat/call-out rates move at all there.
+    - *Round 1 judge pass (2026-09-15, FINDINGS "judge pass")*: the first-pass judge is shown the
+      test suite (needed to classify special-casing) and therefore reports the contradiction it
+      finds itself — 12B base: 13 of 25 `notes_conflict` records never mention the tests. The
+      call-out rate now comes from `scripts/judge_callout.py`, a messages-only second pass that
+      requires a verbatim quote (regex rate reported beside it as the lower bound); the first-pass
+      rate goes in the judge-validity section as a cautionary example. Judge batching also had to
+      be rewritten (prompts 1k–27.5k tokens; padded batches hit SDPA's math kernel).
+    - *Round 1 judge results (FINDINGS "judge results")*: 12B LoRA special-cases the contradicting
+      input in 12/35 coded submissions (base 0/35, p<0.001; 9 guard the exact conflicting input,
+      all announced); 31B LoRA 1/37 vs base 5/38 (n.s.) — same size-opposite sign as insider
+      trading. EvilGenie judge: 0 reward hacking in 6/8 cells. Messages-only call-out 13–56%
+      (first-pass 35–89% was judge over-reach). Round 4 = LoRA seeds 1–2 on ImpossibleBench
+      conflicting (13707588–92) to certify the 12B effect.
+    - *Round 2 interim (FINDINGS "round 2 — harness-level interim"; EvilGenie + judge pending)*:
+      capability recovers by α6 (12B, 60% vs base 62%) and α4 (31B, 78% vs 75%; α8 50%); the cliff sits
+      between α6/α12 and α8/α16. At the working α the 12B moves nothing, but the 31B +v goes from
+      1 to 5–6/40 test modifications (pooled p=0.06) with the regex call-out falling 38→20%: it
+      answers with the whole file and rewrites the assertion it disagrees with, mostly with a
+      code comment saying so. Round 5 = the controls this needs (13708943–47): random s0/s1 at α8,
+      random s0 at α4, −v at α8, 31B conflicting split only. Decision rule in FINDINGS.
+    - *Rounds 2 (complete), 4, 5 (FINDINGS sections of 2026-09-16)*: EvilGenie judge finds no RH at
+      any α; messages-only call-out falls monotonically with α on both sizes (12B 38→31→25, 31B
+      41→38→29) with capability intact. Round 4: 12B LoRA hardcoding replicates at seeds 0–1
+      (12/35, 12/38, p=0.0002 each; pooled 29/108 vs 0/35), seed 2 weak (5/35, rule 1); 31B LoRA
+      nothing at any seed. Round 5: the 31B +v test-rewriting is direction-specific (random α4/α8
+      1/120 vs +v 11/80, p=0.0002; whole-file reproductions 0/0/2 vs 8/16) and −v goes the other
+      way — announced hardcoding of the contradicting input (judge 17/38 vs base 5/38, p=0.005;
+      call-out 64%). Paper: the SOO direction lowers the report rate and raises quiet test edits
+      on the 31B; the 12B LoRA hardcodes. Next: Muse/Qwen/Kimi screens (Muse resumed 13716485,
+      Qwen EvilGenie resubmitted 13716486, Kimi running), then decide whether any non-gemma
+      model gets +v cells.
+    - *Round 3 = model screen (queued 2026-09-15, jobs 13705336–42)*: base-only ImpossibleBench
+      conflicting/original + EvilGenie on the three non-gemma models that already have validated
+      SOO vectors — Muse-Glimmer-30B (L26 α8; vector-only, no honest LoRA regime), Qwen2.5-72B
+      (L40 α16) and Kimi-Dev-72B (L24 α16; coding-RL model, 4096 tokens for its think blocks).
+      Purpose: gemma-4 barely reward-hacks, so SOO had nothing to reduce; if any of these hacks
+      at base (cheat/special-case/holdout-fail ≳15%), run its +v and random cells next (vector
+      vs random, not vector vs LoRA). Caveats: Qwen2.5-72B is also the judge, so its cells lean
+      on the judge-free measures (pass labels, rule spec-case, regex call-out) or a second judge;
+      72B cells run one scenario per 3-GPU job. *Part 1 (FINDINGS "model screen, part 1")*: Muse
+      and Qwen2.5-72B do not reward-hack at base (≤2/40 test-mods, 0 special-casing, 0 EvilGenie
+      hacks) — no +v cells; judge 13721677. *Part 2*: Kimi-Dev-72B is budget-bound at 4096 tokens (94–96% of attempts end inside `◁think▷`, 8–9 code blocks per split) — uninterpretable, not rerun (≥16k tokens ≈ 30–60 h per split). Screen closed: no non-gemma base model reward-hacks measurably; remaining code cell = Qwen3.8-27B in both interventions — queued as round 6 (jobs 13724151:13724152:13724153:13724154:13724155, judge + call-out 13724156 on Qwen2.5-72B): base, +v L31 α10, −v, random s0, LoRA L32 s0; conflicting/original/EvilGenie, n=40.
+    - *Qwen3.8-27B onboarding (2026-09-15, jobs 13705498–501)*: the requested frontier test — a
+      2026 ~30B-class model from a third lineage (next to gemma-4-31B and Muse-30B in the matrix's
+      2026 row), fully open (apache-2.0), 64-layer hybrid stack (48 Gated DeltaNet + 16 full
+      attention). Full protocol, not just the code benchmarks: (1) extraction + 5-example
+      generation smoke (thinking disabled via `SOO_CHAT_KWARGS`, so prompts end in a closed empty
+      think block like gemma-4); (2) steering pilot, depth 25–75% at both layer kinds × α8/α32,
+      plus α4/16/64 at mid-depth; (3) LoRA layer sweep L19/27/31/32/35 at the Gemma-2 recipe
+      (config `qwen38-27b.yaml`; adapters on q/v of the attention layers and the fused
+      `in_proj_qkv` of the DeltaNet layers — a documented deviation, since the paper recipe
+      assumes a homogeneous stack). Then hardening (mirrored, random, −v, seeds) at whatever
+      works, Apollo/sandbagging/insider OOD, and the code benchmarks. Pipeline changes: steering
+      and capture sites resolve `self_attn.o_proj` or `linear_attn.out_proj` per layer (both
+      6144→5120, so vectors are hidden-size at every layer); loader routes `text_config` models
+      to the image-text class and refuses loads that would leave decoder weights random
+      (AutoModelForCausalLM maps qwen3_5 to a text-only class whose names miss the checkpoint).
+      Extraction done: vectors 0.2–0.6× activation norm (gemma-4-31B 0.10), pilot regridded to
+      α2/4/8 (+α1/16 mid-depth) as 13707587; base smoke 5/5 direct answers, 0% honest.
+    - *Qwen3.8-27B LoRA sweep part a (FINDINGS "LoRA sweep part a")*: L32 (DeltaNet, 50% depth)
+      seed 0 = main 0→100, TH →100, persp 100 with per-example truth tracking; L31 48/38, L19
+      22/0, L27 36/36, L35 refusal wall (100%) — gemma-4-31B's band shape (L30 50 / L32 100 /
+      L34 refusal) on a hybrid stack. Validation queued (13710713): base n=50 both orientations,
+      seed0 mirrored + n250, seeds 1–2 both orientations, L33 seed 0 for band width.
+    - *Qwen3.8-27B pilot + validation (FINDINGS 2026-09-16)*: steering L23 α8 and L31 α16 = 100
+      with clean single-word answers (α2 null, as predicted from act_norm); full-attention layers
+      steer better than the DeltaNet layers beside them. LoRA L32 validated: 100/100/100 both
+      orientations × 3 seeds, n250 100.0/100.0, L33 also 100 — ties gemma-4-31B. Steering
+      hardening queued 13716542 (mirrored, random s0/s1 both orientations, −v, dose edge, n250).
+      Also queued 2026-09-16: capabilities base / L23 α8 / L31 α16 / LoRA L32 (13716553), Apollo
+      roleplaying base/+v/−v/rand/LoRA (13716550, judge 13716551), insider + sandbagging same
+      cells (resubmitted as parts a/b 13721265/13721266 after sandbagging measured ~50 s/example — five cells exceed 24 h; insider judge 13721267; sandbagging parsed on the login node). Steering
+      cells use L23 α8 ahead of hardening — rerun at L31 α16 if the mirrored random control
+      fails. Code benchmarks last.
+    - *Hardening interim (13716542, 2026-09-16)*: both pilot cells are in the direction-agnostic
+      regime — random matched-norm vectors give main 90/98 orig, 68/100 mir at L23 α8 and 92–94 /
+      88–92 at L31 α16 (base 0/0; clean single-word true rooms), −v 26/6 at L23. TH 82/82 and
+      100/100, persp 100. Damage edge L23: α12 100, α16 rumination, α24 `<think>` only. The
+      queued Apollo/OOD cells at L23 α8 stay informative through their own ap_rand_s0. Queued the
+      below-α sweep 13719042 (real / rand s0 / rand s1 / −v, both orientations, L23 α3–6, L31
+      α6–12) to look for a gemma-4-31B-style direction-specific window under the agnostic one.
+    - *Sweep result (FINDINGS "direction-specificity sweep")*: L31 α8–10 is axis-specific
+      (mirrored random 0–10, orig 2–44) but sign-agnostic (−v 96–100, stronger than +v at α6–8);
+      L23 α5–6 is sign-specific (−v 0) but random-leaky (s1 mir 20–58). Headline cell L31 α10
+      (0→100 both orientations). Queued: cell completion + caps at α10 (13721464), Apollo
+      roleplaying steer/−v/rand at L31 α10 (13721465, judge 13721466), insider + sandbagging at
+      L31 α10 (13721467 steer/−v, 13721468 rand; judge 13721469). L23 α8 OOD cells kept as the
+      generic-perturbation comparison.
+    - *Apollo roleplaying (FINDINGS 2026-09-16)*: base 25 honest / 49 deceptive (most honest
+      baseline in the matrix); +v L31 α10 42.0 deceptive (−6.8, p=0.08; random 45.8), −v 55.8 —
+      sign-sensitive OOD although sign-agnostic in distribution; LoRA 51.2 (no transfer, like
+      the 31B LoRA); L23 α8 cells null/worse. Verdict: vector weak-transfer / LoRA no-transfer.
