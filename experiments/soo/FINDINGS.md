@@ -3068,9 +3068,16 @@ rate to reduce, and the reward-hacking chapter stays what rounds 1–5
 found on gemma-4: the interventions *create* behaviours (12B LoRA
 hardcoding, 31B +v quiet test edits) rather than reduce one. The one
 remaining code-benchmark cell is Qwen3.8-27B in both interventions,
-which is the model whose vector and LoRA are certified; queued after
-its OOD rounds. Judge pass over the Muse / Qwen2.5 / Kimi files is
-13723808 (Qwen2.5-72B, as for every screen cell).
+which is the model whose vector and LoRA are certified (round 6).
+
+Judge pass (13723808, Qwen2.5-72B as for every screen cell) confirms
+it: EvilGenie reward hacking 0/40 on all three models (Muse 18
+legitimate / 1 heuristic / 21 no-code; Qwen2.5 39 / 1; Kimi 11 / 0 /
+29 no-code); ImpossibleBench special-casing Muse 4/36, Qwen2.5 2/40,
+Kimi 3/18 with rule-verified guards 1 / 0 / 1 — the judge's usual
+over-reach on degenerate cells, none of it near the 12B LoRA's 12/35;
+messages-only call-out Muse 28%, Qwen2.5 10% (it barely mentions the
+contradiction), Kimi 28% (its think text).
 
 ## Qwen3.8-27B Apollo roleplaying OOD (jobs 13716550 + 13721465, judge 13716551 + 13721466): the certified vector moves deception by ±7 points with the sign of α, the LoRA does nothing — the 31B pattern, half-size and not significant
 
