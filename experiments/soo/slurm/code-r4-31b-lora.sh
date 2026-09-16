@@ -39,7 +39,7 @@ MODEL=google/gemma-4-31B-it
 OUT=results/code_eval/gemma4_31b
 N=${N:-40}
 python -m selfconcept.soo.evaluate_code --model "$MODEL" \
-    --data data/eval_code --scenarios impossible_conflicting \
+    --scenarios impossible_conflicting \
     --n "$N" --max-attempts 3 --max-new-tokens 2048 --out "$OUT" --tag lora_s$seed \
     --adapter results/checkpoints/gemma4-31b-L32/seed$seed
 echo "=== code r4 31b lora s$seed complete ==="

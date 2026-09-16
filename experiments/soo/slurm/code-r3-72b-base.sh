@@ -52,6 +52,6 @@ case $which in
 esac
 N=${N:-40}
 python -m selfconcept.soo.evaluate_code --model "$MODEL" --device-map auto \
-    --data data/eval_code --scenarios "$scenario" \
+    --scenarios "$scenario" \
     --n "$N" --max-attempts 3 --max-new-tokens "$MAXTOK" --out "$OUT" --tag base
 echo "=== code r3 $which base $scenario complete ==="

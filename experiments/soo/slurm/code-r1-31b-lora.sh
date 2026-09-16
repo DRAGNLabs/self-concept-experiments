@@ -41,7 +41,7 @@ OUT=results/code_eval/gemma4_31b
 N=${N:-40}
 
 python -m selfconcept.soo.evaluate_code --model "$MODEL" \
-    --data data/eval_code --scenarios impossible_conflicting impossible_original evilgenie \
+    --scenarios impossible_conflicting impossible_original evilgenie \
     --n "$N" --max-attempts 3 --max-new-tokens 2048 --out "$OUT" --tag lora_s0 --adapter results/checkpoints/gemma4-31b-L32/seed0
 
 echo "=== code r1 31b lora complete ==="

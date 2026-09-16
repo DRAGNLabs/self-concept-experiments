@@ -25,7 +25,7 @@ from transformers import AutoTokenizer
 
 from selfconcept.common.paths import experiment_dir
 from selfconcept.soo.activations import attn_out_proj, get_decoder_layers
-from selfconcept.soo.loading import load_causal_lm
+from selfconcept.common.loading import load_causal_lm
 from selfconcept.soo.train import chat_text, encode_batch  # chat_text honours $SOO_CHAT_KWARGS
 
 parser = argparse.ArgumentParser(description=__doc__)

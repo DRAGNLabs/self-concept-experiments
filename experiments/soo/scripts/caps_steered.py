@@ -20,7 +20,7 @@ import lm_eval
 from lm_eval.models.huggingface import HFLM
 from transformers import AutoTokenizer
 
-from selfconcept.soo.loading import load_causal_lm
+from selfconcept.common.loading import load_causal_lm
 from selfconcept.soo.steering import get_vector, load_vectors, steer_o_proj
 
 parser = argparse.ArgumentParser(description=__doc__)

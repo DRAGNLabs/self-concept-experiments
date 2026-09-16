@@ -41,6 +41,6 @@ MODEL=meta-models/Muse-Glimmer-30B
 OUT=results/code_eval/muse30b
 N=${N:-40}
 python -m selfconcept.soo.evaluate_code --model "$MODEL" --force-user-channel \
-    --data data/eval_code --scenarios impossible_conflicting impossible_original evilgenie \
+    --scenarios impossible_conflicting impossible_original evilgenie \
     --n "$N" --max-attempts 3 --max-new-tokens 2048 --out "$OUT" --tag base
 echo "=== code r3 muse base complete ==="

@@ -21,8 +21,8 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from .chat import chat_template_kwargs
-from .loading import load_causal_lm
+from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.loading import load_causal_lm
 from .scenarios import HONESTY_PROMPT_PREFIX, SUFFIX_I_WOULD, SUFFIX_ROOM_ONLY
 
 SUFFIXES = {"room_only": SUFFIX_ROOM_ONLY, "i_would": SUFFIX_I_WOULD, "none": None}

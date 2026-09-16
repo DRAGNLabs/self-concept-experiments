@@ -28,8 +28,8 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from .activations import capture_o_proj
-from .chat import chat_template_kwargs
-from .loading import load_causal_lm
+from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.loading import load_causal_lm
 from .evaluate import pick_device
 
 

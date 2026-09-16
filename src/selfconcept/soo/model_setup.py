@@ -13,7 +13,7 @@ from pathlib import Path
 
 import torch
 
-from .loading import load_causal_lm
+from selfconcept.common.loading import load_causal_lm
 
 
 def pick_device() -> str:

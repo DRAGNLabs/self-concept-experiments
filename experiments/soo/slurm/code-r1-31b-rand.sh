@@ -41,7 +41,7 @@ OUT=results/code_eval/gemma4_31b
 N=${N:-40}
 
 python -m selfconcept.soo.evaluate_code --model "$MODEL" \
-    --data data/eval_code --scenarios impossible_conflicting impossible_original evilgenie \
+    --scenarios impossible_conflicting impossible_original evilgenie \
     --n "$N" --max-attempts 3 --max-new-tokens 2048 --out "$OUT" --tag rand_s0 --steer-vectors $VEC --steer-layer 30 --steer-alpha 16 --steer-random-seed 0
 
 echo "=== code r1 31b rand complete ==="

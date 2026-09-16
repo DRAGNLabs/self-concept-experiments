@@ -218,7 +218,11 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
     execution via `code_sandbox.py` (bwrap + rlimits, no Docker on the cluster) → test output
     fed back as the next user turn, ≤3 attempts; same model/steering/LoRA/temperature setup as
     `evaluate.py`, factored into `model_setup.py`). Data built by `scripts/code_convert.py` into
-    `data/eval_code/`:
+    `data/eval_code/` (2026-09-16: the benchmark moved out of the SOO tree — code is
+    `src/selfconcept/codebench/` (`harness`, `sandbox`, `judge`, `callout`, `table`, `convert`,
+    generic CLI `run`), data + judge prompts are `benchmarks/codebench/`, and
+    `selfconcept.soo.evaluate_code` is the thin SOO wrapper; `loading`/`chat` moved to
+    `selfconcept.common`. Paths named below are the pre-move ones):
     - **ImpossibleBench** (Zhong et al. 2025, arXiv:2510.20270): official
       `fjzzq2002/impossible_livecodebench`, 103 hard tasks × {original, oneoff, conflicting}.
       Their "minimal" scaffold prompt/feedback verbatim, tests shown, submitted block placed

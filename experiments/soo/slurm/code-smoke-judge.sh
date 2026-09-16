@@ -35,7 +35,7 @@ echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 
 set -e
 # Judge the smoke-test outputs (submitted --dependency=afterok on the smoke job).
-python scripts/judge_code.py \
+python -m selfconcept.codebench.judge \
     --responses results/code_eval/gemma4_12b/smoke_base_impossible_conflicting.jsonl \
                 results/code_eval/gemma4_12b/smoke_base_evilgenie.jsonl \
     --batch-size 8 --max-new-tokens 512

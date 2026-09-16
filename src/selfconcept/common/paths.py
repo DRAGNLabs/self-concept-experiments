@@ -4,11 +4,17 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 EXPERIMENTS_DIR = REPO_ROOT / "experiments"
+BENCHMARKS_DIR = REPO_ROOT / "benchmarks"
 SCRATCH_DIR = Path.home() / "nobackup" / "autodelete" / REPO_ROOT.name
 
 
 def experiment_dir(name: str) -> Path:
     return EXPERIMENTS_DIR / name
+
+
+def benchmark_dir(name: str) -> Path:
+    """Committed data/prompts for a benchmark shared across experiments (benchmarks/<name>)."""
+    return BENCHMARKS_DIR / name
 
 
 def scratch_dir(name: str) -> Path:

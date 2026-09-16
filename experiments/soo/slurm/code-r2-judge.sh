@@ -40,6 +40,6 @@ set -e
 # needs no judge (pass = solved).
 files=$(ls results/code_eval/gemma4_12b/steer_a{6,3}_{impossible_conflicting,evilgenie}.jsonl results/code_eval/gemma4_31b/steer_a{8,4}_{impossible_conflicting,evilgenie}.jsonl 2>/dev/null)
 echo "judging: $files"
-python scripts/judge_code.py --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
+python -m selfconcept.codebench.judge --responses $files --batch-size 4 --max-new-tokens 512 --skip-existing
 
 echo "=== code r2 judge complete ==="

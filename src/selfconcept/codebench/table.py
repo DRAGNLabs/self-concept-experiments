@@ -1,14 +1,14 @@
 """Markdown table of harness-level metrics per code-eval result file.
 
-One row per <tag>_<scenario>.jsonl written by evaluate_code.py: label
+One row per <tag>_<scenario>.jsonl written by the harness: label
 counts, original-task pass (impossible_* only), holdout pass (evilgenie),
 attempt truncation rate, comment-line fraction of the attempts, unclosed
-code-fence fraction, and the CONFLICT_RE call-out rate from judge_code.py
+code-fence fraction, and the CONFLICT_RE call-out rate from judge.py
 (impossible_* only). Judge categories, when <stem>_graded_summary.json
 exists, are appended as a compact "judge" column.
 
 Usage:
-    python scripts/code_table.py results/code_eval/gemma4_12b/*_impossible_conflicting.jsonl
+    python -m selfconcept.codebench.table results/code_eval/gemma4_12b/*_impossible_conflicting.jsonl
 """
 
 import collections
@@ -17,10 +17,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from judge_code import CONFLICT_RE  # noqa: E402
-
-DATA = Path(__file__).resolve().parent.parent / "data" / "eval_code"
+from .judge import CONFLICT_RE, DATA
 _EXAMPLES: dict[str, dict[str, dict]] = {}
 
 
@@ -85,7 +82,7 @@ def row(path: Path) -> str:
     counts = {k: sum(r["label"] == k for r in recs) for k in labels}
     n = len(recs)
     trunc, comm, fence = text_stats(recs)
-    cells = [path.parent.name.replace("gemma4_", ""), path.stem.replace(f"_{scenario}", ""), str(n)]
+    cells = [path.parent.name, path.stem.replace(f"_{scenario}", ""), str(n)]
     cells += [str(counts[k]) for k in labels if k != "error_oom"]
     if scenario.startswith("impossible"):
         cells.append(f"{100 * sum(bool(r.get('passed_original')) for r in recs) / n:.0f}%")

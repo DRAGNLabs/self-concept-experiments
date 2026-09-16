@@ -35,7 +35,7 @@ export CUDA_VISIBLE_DEVICES
 echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 
 set -e
-# Messages-only call-out pass (scripts/judge_callout.py) over the ImpossibleBench
+# Messages-only call-out pass (selfconcept.codebench.callout) over the ImpossibleBench
 # conflicting files of one round, chained afterok on that round's first-pass
 # judge. $1 = r1 (base/steer/rand_s0/lora_s0, both sizes) | r2 (alpha sweep).
 round=${1:?usage: sbatch code-callout-judge.sh r1|r2}
@@ -46,6 +46,6 @@ case $round in
 esac
 [ -n "$files" ] || { echo "no result files for round $round"; exit 1; }
 echo "judging: $files"
-python scripts/judge_callout.py --responses $files --rejudge-errors
+python -m selfconcept.codebench.callout --responses $files --rejudge-errors
 
 echo "=== code callout judge $round complete ==="

@@ -22,9 +22,9 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from .chat import chat_template_kwargs
+from selfconcept.common.chat import chat_template_kwargs
 from .activations import attn_out_proj, get_decoder_layers
-from .loading import load_causal_lm
+from selfconcept.common.loading import load_causal_lm
 from .evaluate import pick_device
 
 

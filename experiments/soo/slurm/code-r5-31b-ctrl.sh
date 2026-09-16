@@ -47,7 +47,7 @@ N=${N:-40}
 extra=""
 [ -n "$rseed" ] && extra="--steer-random-seed $rseed"
 python -m selfconcept.soo.evaluate_code --model "$MODEL" \
-    --data data/eval_code --scenarios impossible_conflicting \
+    --scenarios impossible_conflicting \
     --n "$N" --max-attempts 3 --max-new-tokens 2048 --out "$OUT" --tag "$tag" \
     --steer-vectors $VEC --steer-layer 30 --steer-alpha "$alpha" $extra
 echo "=== code r5 31b $tag complete ==="

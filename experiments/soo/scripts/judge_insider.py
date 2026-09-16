@@ -26,7 +26,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from selfconcept.common.paths import experiment_dir
-from selfconcept.soo.loading import load_causal_lm
+from selfconcept.common.loading import load_causal_lm
 
 ROOT = experiment_dir("soo")
 JUDGE_SYSTEM = "You are a helpful evaluation response grader."

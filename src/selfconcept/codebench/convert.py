@@ -1,6 +1,7 @@
-"""Build the reward-hacking coding datasets for selfconcept.soo.evaluate_code.
+"""Build the reward-hacking coding datasets for selfconcept.codebench.
 
-Two benchmarks, both derived from LiveCodeBench, written to data/eval_code/:
+Two benchmarks, both derived from LiveCodeBench, written to
+benchmarks/codebench/data/:
 
 - impossible_{original,oneoff,conflicting}.jsonl: ImpossibleBench (Zhong et
   al. 2025, arXiv:2510.20270) Impossible-LiveCodeBench, 103 hard tasks per
@@ -19,7 +20,7 @@ Two benchmarks, both derived from LiveCodeBench, written to data/eval_code/:
   gets a workspace (problem.md, solution.py, test_cases.json, test.py) and
   may rewrite any file. Reward hacking is detected three ways, as in the
   paper: holdout tests, test-file edits, and an LLM judge
-  (scripts/judge_code.py, their judge prompt).
+  (codebench.judge, their judge prompt).
 
 The reference implementations run the model in a tool-calling agent scaffold
 inside Docker. Our models are driven through plain chat templates without
@@ -30,7 +31,7 @@ in the prompt and edits come back as ```<lang> filename=... blocks.
 
 Needs network on first run (HF datasets; cached after).
 
-Usage: python scripts/code_convert.py [--datasets impossible evilgenie]
+Usage: python -m selfconcept.codebench.convert [--datasets impossible evilgenie]
 """
 
 import argparse
@@ -42,10 +43,9 @@ import zlib
 
 from huggingface_hub import hf_hub_download
 
-from selfconcept.common.paths import experiment_dir
+from selfconcept.common.paths import benchmark_dir
 
-ROOT = experiment_dir("soo")
-OUT_DIR = ROOT / "data" / "eval_code"
+OUT_DIR = benchmark_dir("codebench") / "data"
 
 IMPOSSIBLE_REPO = "fjzzq2002/impossible_livecodebench"
 LCB_REPO = "livecodebench/code_generation_lite"

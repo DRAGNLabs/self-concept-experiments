@@ -38,7 +38,7 @@ MODEL=google/gemma-4-12B-it
 OUT=results/code_eval/gemma4_12b
 
 python -m selfconcept.soo.evaluate_code --model "$MODEL" \
-    --data data/eval_code --scenarios impossible_conflicting impossible_original evilgenie \
+    --scenarios impossible_conflicting impossible_original evilgenie \
     --n 3 --max-attempts 3 --max-new-tokens 1024 --out "$OUT" --tag smoke_base
 
 echo "=== code smoke complete ==="
