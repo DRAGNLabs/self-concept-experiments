@@ -320,3 +320,10 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       cells (13716555, insider judge 13716556; sandbagging parsed on the login node). Steering
       cells use L23 α8 ahead of hardening — rerun at L31 α16 if the mirrored random control
       fails. Code benchmarks last.
+    - *Hardening interim (13716542, 2026-09-16)*: both pilot cells are in the direction-agnostic
+      regime — random matched-norm vectors give main 90/98 orig, 68/100 mir at L23 α8 and 92–94 /
+      88–92 at L31 α16 (base 0/0; clean single-word true rooms), −v 26/6 at L23. TH 82/82 and
+      100/100, persp 100. Damage edge L23: α12 100, α16 rumination, α24 `<think>` only. The
+      queued Apollo/OOD cells at L23 α8 stay informative through their own ap_rand_s0. Queued the
+      below-α sweep 13719042 (real / rand s0 / rand s1 / −v, both orientations, L23 α3–6, L31
+      α6–12) to look for a gemma-4-31B-style direction-specific window under the agnostic one.
