@@ -5,7 +5,10 @@ so this drives lm-eval through its Python API with the hooked model object.
 alpha=0 gives the unsteered baseline on the identical code path.
 
 Usage: python scripts/caps_steered.py <model_id> <vectors.pt> <layer> <alpha> <out_json>
-           [--tasks arc_challenge,hellaswag,mmlu] [--token-mode last]
+           [--tasks arc_challenge,hellaswag,mmlu] [--token-mode last] [--adapter <peft dir>]
+The lm_eval CLI's peft= path would also load Qwen3.x checkpoints through
+AutoModelForCausalLM (silent decoder mismatch), so LoRA capabilities go
+through here too, via load_causal_lm + --adapter with alpha=0.
 """
 
 import argparse
@@ -28,10 +31,16 @@ parser.add_argument("alpha", type=float)
 parser.add_argument("out_json", type=Path)
 parser.add_argument("--tasks", default="arc_challenge,hellaswag,mmlu")
 parser.add_argument("--token-mode", default="last")
+parser.add_argument("--adapter", type=Path, help="PEFT adapter to load (use alpha=0 for LoRA-only capabilities)")
 args = parser.parse_args()
 
 tokenizer = AutoTokenizer.from_pretrained(args.model_id)
 model = load_causal_lm(args.model_id, dtype=torch.bfloat16).to("cuda")
+if args.adapter:
+    from peft import PeftModel
+
+    model = PeftModel.from_pretrained(model, str(args.adapter)).merge_and_unload()
+    print(f"Adapter merged: {args.adapter}")
 model.eval()
 if args.alpha != 0:
     vector = get_vector(load_vectors(args.vectors), args.layer, args.token_mode)
@@ -44,6 +53,7 @@ results = lm_eval.simple_evaluate(model=lm, tasks=args.tasks.split(","))
 out = {
     "model": args.model_id,
     "steering": {"layer": args.layer, "alpha": args.alpha, "token_mode": args.token_mode},
+    "adapter": str(args.adapter) if args.adapter else None,
     "results": results["results"],
 }
 args.out_json.parent.mkdir(parents=True, exist_ok=True)
