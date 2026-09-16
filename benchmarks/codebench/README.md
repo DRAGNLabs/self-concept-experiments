@@ -53,7 +53,12 @@ steering/LoRA version).
 
 The judge model is recorded in every `_graded_summary.json`; keep one judge
 across the cells you compare (the SOO study's gemma-4 cells pin
-`--model Qwen/Qwen2.5-72B-Instruct`).
+`--model Qwen/Qwen2.5-72B-Instruct`). Qwen3.8-27B was validated against the
+72B on 120 gemma-4-12B records: label agreement 82–88%, call-out agreement
+87–92%, identical special-casing calls on the rule-verified records; it is
+stricter about comment-only submissions (`no_code`) and folds EvilGenie's
+"heuristic" into legitimate. It deliberates before answering, so leave
+`--max-new-tokens` at the 2048 default.
 
 Model notes: ATEM-protocol models (Muse Glimmer) need `--force-user-channel`;
 Qwen3.x needs `SOO_CHAT_KWARGS='{"enable_thinking": false}'` and loads
