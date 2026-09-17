@@ -105,6 +105,14 @@ def main() -> None:
     parser.add_argument("--steer-token-mode", choices=["last", "mean"], default="last", help="which extraction convention's vector to use")
     parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
     parser.add_argument(
+        "--steer-positions",
+        choices=["all", "response", "prompt"],
+        default="all",
+        help="which token positions receive the offset: all (default), response = the "
+        "current assistant turn (chat-template generation prompt + generated tokens), "
+        "prompt = the context only (diagnostic)",
+    )
+    parser.add_argument(
         "--device-map",
         help="pass device_map to from_pretrained (e.g. 'auto' to shard models "
         "too big for one GPU, like Llama-2-70b); skips the single-device .to()",
@@ -154,7 +162,12 @@ def main() -> None:
         vector = get_vector(load_vectors(args.steer_vectors), args.steer_layer, args.steer_token_mode)
         if args.steer_random_seed is not None:
             vector = random_matched_vector(vector, args.steer_random_seed)
-        steer_o_proj(model, args.steer_layer, vector, args.steer_alpha, args.steer_mode)
+        positions = None
+        if args.steer_positions != "all":
+            from .steering import PositionalSteering, response_marker
+
+            positions = PositionalSteering(response_marker(tokenizer, chat_template_kwargs()), args.steer_positions)
+        steer_o_proj(model, args.steer_layer, vector, args.steer_alpha, args.steer_mode, positions)
         steering = {
             "vectors": str(args.steer_vectors),
             "layer": args.steer_layer,
@@ -162,6 +175,7 @@ def main() -> None:
             "mode": args.steer_mode,
             "token_mode": args.steer_token_mode,
             "random_seed": args.steer_random_seed,
+            "positions": args.steer_positions,
             "vector_norm": round(vector.norm().item(), 6),
         }
         print(f"Steering: {steering}")
