@@ -1,0 +1,22 @@
+# Mean-intervention binding-ID test on Llama-3.2-1B (base). Submit from the repo root:
+#   python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/llama3.2-1b.yaml
+model:
+  class_path: MirrorLlamaModel
+  init_args:
+    initialization: 3.2-1B
+
+metrics:
+  mean_interventions:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/capitals.jsonl
+      n_estimate: 100
+      output_path: experiments/binding_ids/results/llama3.2-1b/mean_interventions.json
+
+slurm:
+  job_type: compute
+  time: "00:30:00"
+  gpus_per_node: a100:1
+  qos: dw87
+  mem_per_cpu: 16G
+  output: experiments/binding_ids/slurm-logs/%j.out

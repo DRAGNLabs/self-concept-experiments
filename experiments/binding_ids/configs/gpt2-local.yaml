@@ -1,0 +1,17 @@
+# Local CPU smoke test of the whole pipeline on GPT-2 (small, ungated). Not a real result.
+#   MIRROR_DATA_PATH=~/mirror_data python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/gpt2-local.yaml
+model:
+  class_path: MirrorGPTModel
+
+metrics:
+  mean_interventions:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/capitals.jsonl
+      n_estimate: 100
+      output_path: experiments/binding_ids/results/gpt2-local/mean_interventions.json
+
+slurm:
+  job_type: local
+
+device: cpu

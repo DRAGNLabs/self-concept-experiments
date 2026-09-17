@@ -1,0 +1,10 @@
+name: binding_ids
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12 # MIRROR requires >=3.12
+  - pip
+  - pip:
+      # MIRROR selects its CUDA torch through a uv-only setting that pip ignores
+      - --extra-index-url https://download.pytorch.org/whl/cu126
+      - mirror_pipeline @ git+https://github.com/DRAGNLabs/MIRROR-Pipeline.git@a7300ac2bf806db4d1d3835782cf8eabc05ab72f
