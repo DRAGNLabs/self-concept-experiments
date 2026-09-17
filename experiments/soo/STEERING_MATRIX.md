@@ -141,6 +141,11 @@ TH, n250 94/92) · gemma-4-31B **strong** (validated: 3 seeds, both
 orientations, n250 100.0/100.0 — cleanest LoRA cell in the matrix) ·
 Qwen3.8-27B **strong** (validated: 3 seeds, both orientations, n250
 100.0/100.0 — ties the 31B; the paper's recipe on a hybrid DeltaNet stack).
+Qwen3.8 OOD (2026-09-17): LoRA transfers to insider trading (concealed 54 → 24,
+explicit 2 → 32) and nothing to roleplaying (51 vs 49 deceptive) or code (inert);
+vector L31 α10 roleplaying 49 → 42 (n.s., −v 56), insider polarized (implied 43 → 1,
+explicit 2 → 28 direction-specific vs random 1, concealed 54 → 72), code collapses at
+α≥8 with call-out 0/40 at α8 vs random 7/40; sandbagging budget-bound (94% unparsed).
 
 ## Age × size matrix (steering / LoRA)
 

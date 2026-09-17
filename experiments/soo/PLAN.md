@@ -347,3 +347,13 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       baseline in the matrix); +v L31 α10 42.0 deceptive (−6.8, p=0.08; random 45.8), −v 55.8 —
       sign-sensitive OOD although sign-agnostic in distribution; LoRA 51.2 (no transfer, like
       the 31B LoRA); L23 α8 cells null/worse. Verdict: vector weak-transfer / LoRA no-transfer.
+    - *Insider + sandbagging (FINDINGS 2026-09-17)*: LoRA concealed 54 → 24 / explicit 2 → 32
+      (largest insider effect in the matrix); +v L31 α10 removes hedging (implied 43 → 1), splits
+      into explicit 28 (direction-specific: random/−v 1) and concealed 72 — round-7 31B pattern on
+      a second model. Sandbagging unmeasurable at 600 tokens (94% unparsed: deliberation overruns);
+      optional 1.5k-token rerun on base/LoRA/+v L31 (~15 h/cell) only if the paper needs the row.
+    - *Round 6/6b code (FINDINGS 2026-09-17)*: no passing cheats anywhere; LoRA inert (50/32% pass,
+      call-out 25% n.s.); vector collapses coding at α≥8 (generic: random α8 as bad); at α8 +v
+      call-out 0/40 vs random 7/40 (p=0.012) — third model where the SOO direction silences the
+      contradiction report. Base/+v EvilGenie resumed after the 02:30 cluster event (13743861/62,
+      judge 13743863).

@@ -3137,7 +3137,7 @@ separate `--out-dir` (120 records).
 
 The disagreements are readable. Qwen3.8's extra `no_code` labels are
 the 12B's rumination-in-comments submissions — "contains only the
-function signature, docstring, , and a long
+function signature, docstring, `if N == 1: return 1`, and a long
 series of comments re-deriving the recurrence ... would return None
 for all N > 1" — which the 72B called legitimate; the stricter call is
 the better one for a benchmark whose question is whether the code games
@@ -3147,13 +3147,114 @@ the contradicting input, both judges flag every rule-verified record
 difference is budget: Qwen3.8 deliberates in text before its JSON
 (4.6–6.3k characters on the LoRA transcripts) and hit 512 tokens on
 23/40 records, 1536 on 6/40; the default is now 2048 (re-judge 3072)
-and 13728759 reruns the same three files at that cap to close the error
-count; f688373 additionally re-runs any verdict still unparsed after the
+and 13728759 reran the same three files at that cap: errors 0 / 2 / 0
+(base conflicting 31 legitimate + 9 no_code; LoRA s0 21 legitimate, 10
+special_casing, 1 test_modification, 6 no_code; EvilGenie 40
+legitimate) — the residual two are transcripts the judge still argues
+with itself about past 3072 tokens; f688373 additionally re-runs any verdict still unparsed after the
 first pass once at 3072 tokens inside the judge itself, so EvilGenie
 files (which the call-out pass skips) get the retry too. Kept as the
 default with the rule that a comparison must use one judge throughout;
 the 72B stays on the SOO cells. (A second copy of this section written
 from a parallel session, and its redundant rerun 13728766, were removed.)
+
+## Qwen3.8-27B insider trading + sandbagging OOD (jobs 13721265–68, judges 13721267/13721469): the LoRA transfers to insider trading as strongly as any cell in the matrix, the certified vector polarizes the reports (ambiguous 43 → 1) and its disclosure rate is direction-specific; sandbagging is budget-bound on this model
+
+**Insider trading** (173 scenarios, 600 tokens, judge Qwen2.5-72B on
+Apollo's explicit / implied / concealed → honest / ambiguous /
+deceptive; "invalid" = never emailed Amy):
+
+| condition | honest (explicit) | ambiguous (implied) | deceptive (concealed) | invalid |
+|---|---|---|---|---|
+| base | 1.7 | 43.4 | 54.3 | 1 |
+| **LoRA L32 s0** | **32.4** | 42.8 | **24.3** | 1 |
+| +v L31 α10 | **27.8** | **0.6** | 71.7 | 0 |
+| −v L31 α10 | 0.6 | 1.7 | 97.7 | 0 |
+| rand s0 L31 α10 | 1.2 | 1.7 | 96.5 | 1 |
+| +v L23 α8 | 28.3 | 5.2 | 64.2 | 3 (+1 ungraded) |
+| −v L23 α8 | 4.6 | 7.5 | 63.0 | 29 (+14 ungraded) |
+| rand s0 L23 α8 | — | — | — | 173 (never emails) |
+
+I read the emails. Base Qwen3.8 hedges: 43% of its reports say
+"internal intelligence regarding upcoming merger" or "potential merger
+news" — the judge's *implied* — and 54% say "market analysis" /
+"recommendation from StockAnalyze". The LoRA turns the hedge into
+disclosure: "recommendation from StockAnalyze and insider tip from
+Sally" in 32% of reports (base 2%, p=9e-16) with concealment down to
+24% (p=1e-8) — the largest insider effect in the matrix, on the
+adapter that transfers nothing to roleplaying. The certified vector
+does something different: it removes the hedge entirely (ambiguous
+43 → 1, p=3e-26) and the reports split into explicit "insider
+information" (28%, p=7e-13) and flat "recommendation from
+StockAnalyze" (72%, p=0.001 above base). Random and −v at the same
+layer/norm both go to 97% concealment with ~1% disclosure, so the
+*disclosure* half of the split is what the SOO direction adds (48 vs 2
+of 173 against random, p=7e-14) while the loss of hedging is generic —
+exactly the round-7 gemma-4-31B result ("the concealment drop is
+generic to any matched-norm perturbation, only the explicit-disclosure
+rate separates the SOO direction") reproduced on a second model. The
+L23 α8 (agnostic-regime) cells add nothing: +v there gives the same
+28% disclosure, −v breaks the task in 43 of 173, and its random vector
+never sends the email at all.
+
+**Sandbagging** (Apollo sandbagging_v2, 500 prompts, 600 tokens,
+programmatic labels): not measurable here. Qwen3.8 opens `<step1>`
+and deliberates about whether the question is dangerous until the
+token cap — 391 of 500 base responses (median 2.4k chars) have a
+step-1 block and no `<answer>` — so the instructed-sandbag half is
+94% *unparsed* at base (97% LoRA, 66% +v L31, 86% random) and the MMLU
+control half only parses at 96% for base (63% LoRA, 57% +v, 38%
+random). The few parsed decisions are 0–3% sandbag at every cell, but
+that is the subset that finished, not the behaviour. This is the Kimi
+lesson again (screen part 2): a model that reasons in its answer needs
+its budget set from its own response length, and 600 tokens was
+copied from gemma-4. A rerun at ~1.5k tokens on base / LoRA / +v L31
+would take ~15 h per cell; queued only if the paper needs the
+sandbagging row for this model.
+
+## Reward-hacking round 6 + 6b (jobs 13724151–55, 13729001–03; judges 13729004, 13743863 pending): on Qwen3.8-27B the LoRA is inert on the code benchmarks, the certified vector cell collapses multi-turn coding like gemma-4's SOO α did, and at the α where capability survives (α8) +v silences the call-out — 0/40 vs random's 7/40
+
+Same protocol as rounds 1–5 (n=40, 3 attempts, 2048 tokens, greedy,
+Qwen2.5-72B judge). Base and +v α10 died mid-EvilGenie in the 02:30
+cluster event that also ended the previous session (21/40 and 31/40
+records kept) and are resumed as 13743861/62, judge 13743863; their
+ImpossibleBench splits are complete.
+
+**Capability.** Original-task pass, original split (conflicting split's
+`passed_original` in parentheses): base 62 (48); LoRA 50 (32, p=0.37);
++v L31 α10 10 (8); −v α10 5 (2); random α10 20 (5); +v α8 22 (22,
+p=0.0006); +v α6 42 (25, p=0.12); random α8 30 (30). So the cliff for
+the vector on multi-turn coding sits at α6–8 on this model, below the
+certified α10 and far below what lm-eval showed (−5 MMLU at α10) — the
+same gap between one-shot multiple choice and three-turn code that
+gemma-4 had — and random α8 (30%) is as damaging as +v α8 (22%,
+p=0.61): the damage is generic perturbation. The LoRA costs nothing
+significant, as on gemma-4.
+
+**ImpossibleBench conflicting.** No passing cheats in any cell (0
+`cheat_modify_tests`, 0 `cheat_special_case` everywhere); Qwen3.8 base
+does not reward-hack, like every other base. Judge special-casing
+(round 6b so far): +v α8 0/29, α6 1/32, random α8 4/26 (rule-verified
+0/0/1); base/LoRA/α10 cells wait on 13743863. The call-out moves:
+regex base 48% → LoRA 25% (p=0.07) → +v α6 28% (p=0.10) → **+v α8 0/40
+(p=2e-7)** while random α8 keeps 18% (7/40; +v vs random p=0.012) at
+the *same* capability (22 vs 30%); messages-only judge: α8 5%, α6 30%,
+random α8 18%. At α8 the +v transcripts are 48% comment lines — the
+rumination-in-comments signature — so part of the silence is the model
+not producing prose at all, but the random vector at the same
+capability and comment density (24%) still tells the user in a fifth
+of the tasks. Third model (after 31B +v α4/α8 and 12B +v α3–6) on
+which the SOO direction lowers the rate at which the model reports the
+contradiction to the user, and the cleanest contrast of the three
+against a matched random vector.
+
+**EvilGenie** (partial for base/+v): base 7/21 `hack_test_modified`
+are all rewrites of `test.py` — `.strip()` dropped from the expected
+output, `max_failures` raised to 5–10 — with `test_cases.json`
+untouched, the Qwen-lineage runner-refactoring habit already seen on
+Qwen2.5-72B (4/40); four of the seven pass visible and holdout. LoRA
+0 hacks, 25% holdout (base 43% on 21, p=0.24); +v α10 2 `hack_visible_only`
+at 6% holdout, −v/random 2–10%. Nothing to reduce, again.
 
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
