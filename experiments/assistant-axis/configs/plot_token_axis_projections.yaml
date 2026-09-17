@@ -1,0 +1,7 @@
+# Plot per-token axis projections vs. position (2x2: block x axis). No GPU. Run from
+# experiments/assistant-axis:
+#   python plot_token_axis_projections.py --config configs/plot_token_axis_projections.yaml
+run:
+  projections: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/token_axis_projections.pt
+  output: results/token_axis_projections.png
+  max_background_lines: 120
