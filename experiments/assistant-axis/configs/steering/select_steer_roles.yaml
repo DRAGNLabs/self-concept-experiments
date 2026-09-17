@@ -1,6 +1,6 @@
 # Select held-out steering roles for the role-susceptibility experiment. Run from
 # experiments/assistant-axis:
-#   python pipeline/select_steer_roles.py --config configs/select_steer_roles.yaml
+#   python scripts/steering/select_steer_roles.py --config configs/steering/select_steer_roles.yaml
 # Downloads published per-role vectors for three models, ranks roles most Assistant-like
 # by cross-model mean rank (excluding the OLMo axis training roles), and writes the top_k
 # roles' system-prompt variants to data/steer_prompts.jsonl.

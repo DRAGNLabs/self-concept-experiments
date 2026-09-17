@@ -7,7 +7,7 @@ LayerNormResult) plus a readable ``layer_norms.json`` sidecar. Re-running skips 
 on disk.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/activation_norms.py --config configs/activation_norms.yaml
+    python scripts/steering/activation_norms.py --config configs/steering/activation_norms.yaml
 """
 
 from __future__ import annotations

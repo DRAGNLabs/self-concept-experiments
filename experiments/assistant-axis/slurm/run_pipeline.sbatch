@@ -19,10 +19,10 @@ set -euo pipefail
 source ../../activate.sh
 nvidia-smi
 
-python pipeline/1_generate.py    --config configs/1_generate.yaml
-python pipeline/2_activations.py --config configs/2_activations.yaml
-python pipeline/3_judge.py       --config configs/3_judge.yaml
-python pipeline/4_vectors.py     --config configs/4_vectors.yaml
-python pipeline/5_axis.py        --config configs/5_axis.yaml
+python scripts/pipeline/1_generate.py    --config configs/pipeline/1_generate.yaml
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml
+python scripts/pipeline/3_judge.py       --config configs/pipeline/3_judge.yaml
+python scripts/pipeline/4_vectors.py     --config configs/pipeline/4_vectors.yaml
+python scripts/pipeline/5_axis.py        --config configs/pipeline/5_axis.yaml
 
 echo "=== Done: results/axis.pt ==="

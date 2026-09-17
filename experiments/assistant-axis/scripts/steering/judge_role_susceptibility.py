@@ -7,7 +7,7 @@ response) with a local vLLM judge, and appends one labelled record per trace to 
 JSONL. Restartable: traces whose input already appears in the output are skipped.
 
 Usage (from experiments/assistant-axis):
-    python judge_role_susceptibility.py --traces_path <dir-or-file.jsonl> --output_path judgements.jsonl
+    python scripts/steering/judge_role_susceptibility.py --traces_path <dir-or-file.jsonl> --output_path judgements.jsonl
 """
 
 from __future__ import annotations

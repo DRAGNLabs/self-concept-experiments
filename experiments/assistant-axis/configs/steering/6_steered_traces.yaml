@@ -1,6 +1,6 @@
 # Step 6: generate role-susceptibility steering traces (Section 3.2.1). Run from
 # experiments/assistant-axis:
-#   python pipeline/6_steered_traces.py --config configs/6_steered_traces.yaml
+#   python scripts/steering/6_steered_traces.py --config configs/steering/6_steered_traces.yaml
 # Reads axis.pt + layer_norms.pt from results/, questions + system prompts from data/;
 # writes one {role_id}_p{prompt_index}.jsonl per role to scratch (assistant-axis/steered).
 # target_layer defaults to get_config(model)'s middle layer when null.

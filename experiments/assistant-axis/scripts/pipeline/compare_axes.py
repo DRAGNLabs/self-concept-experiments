@@ -6,7 +6,7 @@ whole-axis cosine and the per-layer cosine distribution for every pair, and
 writes the summary to JSON.
 
 Usage (from experiments/assistant-axis):
-    python compare_axes.py --axis ported=a.pt --axis original=b.pt --output cmp.json
+    python scripts/pipeline/compare_axes.py --axis ported=a.pt --axis original=b.pt --output cmp.json
 """
 
 from __future__ import annotations

@@ -7,7 +7,7 @@ Scores how well each response adheres to its assigned role, on a 0-3 scale (0=re
 role maps response keys to scores. Re-running only scores responses not already scored.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/3_judge.py --config configs/3_judge.yaml
+    python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml
 """
 
 from __future__ import annotations

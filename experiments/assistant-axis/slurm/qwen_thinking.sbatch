@@ -40,54 +40,54 @@ rm -rf "$ROOT"
 source ../../activate.sh
 
 echo "########## Generate WITH thinking ##########"
-python pipeline/1_generate.py --config configs/1_generate.yaml \
+python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
     --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
     --run.question_count "$QUESTIONS" --run.temperature 0 --run.thinking true \
     --run.max_tokens 2048 --run.max_model_len "$MAXLEN" \
     --run.roles "$ROLES_BRACKET" --run.output_dir "$THINK/responses"
-python pipeline/3_judge.py --config configs/3_judge.yaml \
+python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
     --run.judge_model "$JUDGE" --run.tensor_parallel_size 1 --run.roles "$ROLES_BRACKET" \
     --run.max_model_len "$MAXLEN" \
     --run.responses_dir "$THINK/responses" --run.output_dir "$THINK/scores"
 
 echo "########## Config a: extract WITH cot ##########"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "$MODEL" --run.include_cot true --run.max_length "$MAXLEN" --run.roles "$ROLES_BRACKET" \
     --run.responses_dir "$THINK/responses" --run.output_dir "$THINK/act_cot"
-python pipeline/4_vectors.py --config configs/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
     --run.activations_dir "$THINK/act_cot" --run.scores_dir "$THINK/scores" --run.output_dir "$THINK/vectors_cot"
-python pipeline/5_axis.py --config configs/5_axis.yaml \
+python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
     --run.vectors_dir "$THINK/vectors_cot" --run.output "$THINK/axis_cot.pt"
 
 echo "########## Config b: extract WITHOUT cot (response tokens only) ##########"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "$MODEL" --run.include_cot false --run.max_length "$MAXLEN" --run.roles "$ROLES_BRACKET" \
     --run.responses_dir "$THINK/responses" --run.output_dir "$THINK/act_nocot"
-python pipeline/4_vectors.py --config configs/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
     --run.activations_dir "$THINK/act_nocot" --run.scores_dir "$THINK/scores" --run.output_dir "$THINK/vectors_nocot"
-python pipeline/5_axis.py --config configs/5_axis.yaml \
+python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
     --run.vectors_dir "$THINK/vectors_nocot" --run.output "$THINK/axis_nocot.pt"
 
 echo "########## Generate WITHOUT thinking (config c) ##########"
-python pipeline/1_generate.py --config configs/1_generate.yaml \
+python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
     --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
     --run.question_count "$QUESTIONS" --run.temperature 0 --run.thinking false \
     --run.max_tokens 512 --run.max_model_len "$MAXLEN" \
     --run.roles "$ROLES_BRACKET" --run.output_dir "$NOTHINK/responses"
-python pipeline/3_judge.py --config configs/3_judge.yaml \
+python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
     --run.judge_model "$JUDGE" --run.tensor_parallel_size 1 --run.roles "$ROLES_BRACKET" \
     --run.max_model_len "$MAXLEN" \
     --run.responses_dir "$NOTHINK/responses" --run.output_dir "$NOTHINK/scores"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "$MODEL" --run.include_cot false --run.max_length "$MAXLEN" --run.roles "$ROLES_BRACKET" \
     --run.responses_dir "$NOTHINK/responses" --run.output_dir "$NOTHINK/activations"
-python pipeline/4_vectors.py --config configs/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
     --run.activations_dir "$NOTHINK/activations" --run.scores_dir "$NOTHINK/scores" --run.output_dir "$NOTHINK/vectors"
-python pipeline/5_axis.py --config configs/5_axis.yaml \
+python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
     --run.vectors_dir "$NOTHINK/vectors" --run.output "$NOTHINK/axis.pt"
 
 echo "########## Compare the three axes ##########"
-python compare_axes.py \
+python scripts/pipeline/compare_axes.py \
     --axis "think_gen_cot_ext=$THINK/axis_cot.pt" \
     --axis "think_gen_nocot_ext=$THINK/axis_nocot.pt" \
     --axis "nothink=$NOTHINK/axis.pt" \

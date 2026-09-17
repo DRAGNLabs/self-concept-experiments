@@ -26,7 +26,7 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1  # judge weights are prefetched
 nvidia-smi
 
-python judge_role_susceptibility.py --run.traces_path "$TRACES" --run.output_path "$JUDGE"
-python plot_role_susceptibility.py --run.judgements_path "$JUDGE" --run.output_path "$PLOT"
+python scripts/steering/judge_role_susceptibility.py --run.traces_path "$TRACES" --run.output_path "$JUDGE"
+python scripts/steering/plot_role_susceptibility.py --run.judgements_path "$JUDGE" --run.output_path "$PLOT"
 
 echo "=== Done: judged $TRACES -> $JUDGE ; plot -> $PLOT ==="

@@ -18,7 +18,7 @@ set -euo pipefail
 # Usage (from repo root):
 #   sbatch slurm/token_axis_projections.sbatch
 # Then plot on a login node (no GPU):
-#   python plot_token_axis_projections.py --config configs/plot_token_axis_projections.yaml
+#   python scripts/projection/plot_token_axis_projections.py --config configs/projection/plot_token_axis_projections.yaml
 
 source ../../activate.sh  # uv venv + cluster fixes; --chdir puts us in experiments/assistant-axis
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -26,6 +26,6 @@ export HF_HUB_OFFLINE=1  # compute nodes run offline; weights are prefetched
 export TRANSFORMERS_OFFLINE=1
 nvidia-smi
 
-python token_axis_projections.py --config configs/token_axis_projections.yaml
+python scripts/projection/token_axis_projections.py --config configs/projection/token_axis_projections.yaml
 
 echo "=== Done: token axis projections ==="

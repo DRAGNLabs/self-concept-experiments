@@ -11,7 +11,7 @@ whose ``label`` is null (judge output couldn't be parsed) are dropped and report
 category lines sum to ~100% at every coefficient.
 
 Usage (from experiments/assistant-axis):
-    python plot_role_susceptibility.py --judgements_path judgements.jsonl --output_path results/role_susceptibility.png
+    python scripts/steering/plot_role_susceptibility.py --judgements_path judgements.jsonl --output_path results/steering/role_susceptibility.png
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ class RunConfig:
     """Input judgements, output image, and figure title for one plot."""
 
     judgements_path: Path = scratch_dir("assistant-axis") / "role_susceptibility" / "judgements.jsonl"
-    output_path: Path = Path("results/role_susceptibility.png")
+    output_path: Path = Path("results/steering/role_susceptibility.png")
     title: str = "Role adoption vs. steering strength (§3.2.1)"
 
 

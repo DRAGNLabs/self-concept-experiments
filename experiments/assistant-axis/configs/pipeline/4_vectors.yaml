@@ -1,5 +1,5 @@
 # Step 4: reduce per-response activations to one vector per role. Run from experiments/assistant-axis:
-#   python pipeline/4_vectors.py --config configs/4_vectors.yaml
+#   python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml
 # Reads activations + scores from scratch; writes {role}.pt vectors to scratch/vectors.
 run:
   min_count: 50

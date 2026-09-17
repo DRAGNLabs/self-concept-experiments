@@ -13,7 +13,7 @@ set -euo pipefail
 
 # Generate role-susceptibility steering traces (step 6, Section 3.2.1). Requires
 # results/axis.pt (from run_pipeline.sbatch) and a per-layer norms tensor at
-# results/layer_norms.pt (from pipeline/activation_norms.py, or supplied). Steering runs
+# results/layer_norms.pt (from scripts/steering/activation_norms.py, or supplied). Steering runs
 # through HF forward hooks, so this is a single-GPU HF job (no vLLM). Prefetch weights on
 # a login node first (slurm/prefetch.sh); compute nodes run offline.
 
@@ -22,6 +22,6 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1  # compute nodes run offline; weights are prefetched
 nvidia-smi
 
-python pipeline/6_steered_traces.py --config configs/6_steered_traces.yaml
+python scripts/steering/6_steered_traces.py --config configs/steering/6_steered_traces.yaml
 
 echo "=== Done: steered traces in scratch (assistant-axis/steered) ==="

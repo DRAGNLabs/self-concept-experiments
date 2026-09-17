@@ -26,7 +26,7 @@ nvidia-smi
 
 source ../../activate.sh
 
-python pipeline/activation_norms.py --config configs/activation_norms.yaml \
+python scripts/steering/activation_norms.py --config configs/steering/activation_norms.yaml \
     --run.model "allenai/Olmo-3.1-32B-Think" --run.num_conversations 1000
 
 echo "=== olmo32b_norms done ==="

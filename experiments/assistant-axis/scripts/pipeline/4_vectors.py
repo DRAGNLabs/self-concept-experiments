@@ -9,7 +9,7 @@ For each role, reduces its per-response activations (from step 2) to a single ve
 Writes one ``{role}.pt`` file per role holding {"vector", "type", "role"}.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/4_vectors.py --config configs/4_vectors.yaml
+    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml
 """
 
 from __future__ import annotations

@@ -9,7 +9,7 @@ processed sequentially.
 
 Usage (from experiments/assistant-axis):
     python -m selfconcept.assistant_axis  # (library only)
-    python pipeline/1_generate.py --config configs/1_generate.yaml
+    python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml
 """
 
 import logging

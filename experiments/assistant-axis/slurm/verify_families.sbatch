@@ -28,32 +28,32 @@ rm -rf "$ROOT"
 
 echo "########## Lane B: gemma-2-2b-it (non-Qwen), full 5 stages ##########"
 BSM="$ROOT/gemma"
-python pipeline/1_generate.py --config configs/1_generate.yaml \
+python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
     --run.model "google/gemma-2-2b-it" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
     --run.question_count 8 --run.roles "$ROLES" --run.output_dir "$BSM/responses"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "google/gemma-2-2b-it" --run.layers 0,1 --run.roles "$ROLES" \
     --run.responses_dir "$BSM/responses" --run.output_dir "$BSM/activations"
-python pipeline/3_judge.py --config configs/3_judge.yaml \
+python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
     --run.judge_model "google/gemma-2-2b-it" --run.tensor_parallel_size 1 --run.roles "$ROLES" \
     --run.responses_dir "$BSM/responses" --run.output_dir "$BSM/scores"
-python pipeline/4_vectors.py --config configs/4_vectors.yaml --run.min_count 1 \
+python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count 1 \
     --run.activations_dir "$BSM/activations" --run.scores_dir "$BSM/scores" \
     --run.output_dir "$BSM/vectors"
 # A tiny 2b judge often gives 0 score=3 for the contrast roles, leaving no contrast
 # vectors -> step 5 exits 1 by design. Don't let that expected data-shortfall abort Lane C
 # (step 5's happy path already passed in the Qwen lane).
-python pipeline/5_axis.py --config configs/5_axis.yaml \
+python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
     --run.vectors_dir "$BSM/vectors" --run.output "$BSM/axis.pt" \
     || echo "Lane B: step 5 produced no axis (expected — weak 2b judge, no contrast vectors)"
 
 echo "########## Lane C: Qwen3-1.7B (thinking + include_cot ON) ##########"
 CSM="$ROOT/qwen3"
-python pipeline/1_generate.py --config configs/1_generate.yaml \
+python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
     --run.model "Qwen/Qwen3-1.7B" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
     --run.question_count 8 --run.max_tokens 1024 --run.thinking true \
     --run.roles "$ROLES" --run.output_dir "$CSM/responses"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "Qwen/Qwen3-1.7B" --run.layers 0,1 --run.include_cot true --run.roles "$ROLES" \
     --run.responses_dir "$CSM/responses" --run.output_dir "$CSM/activations"
 

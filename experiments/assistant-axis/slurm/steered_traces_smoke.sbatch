@@ -39,7 +39,7 @@ torch.save(torch.full((config.num_hidden_layers,), 20.0), f"{smoke}/layer_norms.
 print(f"fabricated axis ({config.num_hidden_layers}, {config.hidden_size}) and norms for {model}")
 PY
 
-python pipeline/6_steered_traces.py --config configs/6_steered_traces.yaml \
+python scripts/steering/6_steered_traces.py --config configs/steering/6_steered_traces.yaml \
     --run.model "$MODEL" \
     --run.axis_path "$SMOKE/axis.pt" --run.norms_path "$SMOKE/layer_norms.pt" \
     --run.system_prompts_file data/steer_prompts.jsonl \

@@ -14,7 +14,7 @@ schema; ``steering_coefficient`` 0 is the unsteered baseline. Re-running skips r
 already have an output file.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/6_steered_traces.py --config configs/6_steered_traces.yaml
+    python scripts/steering/6_steered_traces.py --config configs/steering/6_steered_traces.yaml
 """
 
 from __future__ import annotations
@@ -53,8 +53,8 @@ class RunConfig:
     """Model, axis, data, sampling, and steering-strength parameters for one trace run."""
 
     model: str = "google/gemma-2-27b-it"
-    axis_path: Path = Path("results/axis.pt")
-    norms_path: Path = Path("results/layer_norms.pt")
+    axis_path: Path = Path("results/pipeline/axis.pt")
+    norms_path: Path = Path("results/pipeline/layer_norms.pt")
     questions_file: Path = Path("data/behavioral_questions.jsonl")
     system_prompts_file: Path = Path("data/steer_prompts.jsonl")
     output_dir: Path = scratch_dir("assistant-axis") / "steered"

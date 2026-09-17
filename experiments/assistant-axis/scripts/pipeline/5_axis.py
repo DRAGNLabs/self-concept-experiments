@@ -7,7 +7,7 @@ TOWARD the anchor persona. With the default anchor ("default") this is the Assis
 pass a different ``anchor`` to build another persona's axis.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/5_axis.py --config configs/5_axis.yaml
+    python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class RunConfig:
     """Vectors location, output path, and which role anchors the axis."""
 
     vectors_dir: Path = scratch_dir("assistant-axis") / "vectors"
-    output: Path = Path("results/axis.pt")
+    output: Path = Path("results/pipeline/axis.pt")
     anchor: str = "default"
 
 

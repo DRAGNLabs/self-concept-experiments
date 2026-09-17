@@ -46,40 +46,40 @@ ROOT="$HOME/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-
 source ../../activate.sh
 
 echo "########## Generate WITH thinking ##########"
-python pipeline/1_generate.py --config configs/1_generate.yaml \
+python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
     --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
     --run.question_count "$QUESTIONS" --run.temperature 0.6 --run.top_p 0.95 --run.thinking true \
     --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
     --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
 
 echo "########## Judge (shared by both extraction configs) ##########"
-python pipeline/3_judge.py --config configs/3_judge.yaml \
+python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
     --run.judge_model "$JUDGE" --run.tensor_parallel_size 1 --run.roles "$ROLES_BRACKET" \
     --run.max_model_len "$JUDGE_MAXLEN" \
     --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/scores"
 
 echo "########## Config a: extract from ALL assistant tokens (include_cot=true) ##########"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "$MODEL" --run.include_cot true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
     --run.roles "$ROLES_BRACKET" \
     --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_all_tokens"
-python pipeline/4_vectors.py --config configs/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
     --run.activations_dir "$ROOT/act_all_tokens" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_all_tokens"
-python pipeline/5_axis.py --config configs/5_axis.yaml \
+python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
     --run.vectors_dir "$ROOT/vectors_all_tokens" --run.output "$ROOT/axis_all_tokens.pt"
 
 echo "########## Config b: extract from RESPONSE tokens only (include_cot=false) ##########"
-python pipeline/2_activations.py --config configs/2_activations.yaml \
+python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
     --run.model "$MODEL" --run.include_cot false --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
     --run.roles "$ROLES_BRACKET" \
     --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_response_only"
-python pipeline/4_vectors.py --config configs/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
     --run.activations_dir "$ROOT/act_response_only" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_response_only"
-python pipeline/5_axis.py --config configs/5_axis.yaml \
+python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
     --run.vectors_dir "$ROOT/vectors_response_only" --run.output "$ROOT/axis_response_only.pt"
 
 echo "########## Compare the two axes ##########"
-python compare_axes.py \
+python scripts/pipeline/compare_axes.py \
     --axis "all_tokens=$ROOT/axis_all_tokens.pt" \
     --axis "response_only=$ROOT/axis_response_only.pt" \
     --output results/olmo32b_thinking_compare.json

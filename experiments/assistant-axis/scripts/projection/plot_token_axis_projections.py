@@ -7,7 +7,7 @@ percentile envelope, the individual conversations faint in the background, and a
 bottom marking where each conversation's block ended. No GPU needed.
 
 Usage (from experiments/assistant-axis):
-    python plot_token_axis_projections.py --config configs/plot_token_axis_projections.yaml
+    python scripts/projection/plot_token_axis_projections.py --config configs/projection/plot_token_axis_projections.yaml
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ class RunConfig:
     """Projections input, figure output, and how many faint background lines to draw per group."""
 
     projections: Path = scratch_dir("assistant-axis") / "olmo32b-thinking" / "token_axis_projections.pt"
-    output: Path = Path("results/token_axis_projections.png")
+    output: Path = Path("results/projection/token_axis_projections.png")
     max_background_lines: int = 120
 
 

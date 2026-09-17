@@ -8,7 +8,7 @@ mean-pooled activation tensors of shape (num_layers, hidden_size). A single mode
 visible GPUs via device_map="auto"; roles are processed sequentially.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/2_activations.py --config configs/2_activations.yaml
+    python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml
 """
 
 from __future__ import annotations

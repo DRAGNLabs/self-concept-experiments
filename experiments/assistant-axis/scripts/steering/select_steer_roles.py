@@ -15,7 +15,7 @@ For each selected role we emit every ``pos`` system-prompt variant from its inst
 file, one JSONL line per variant, in the ``6_steered_traces`` ``SystemPrompt`` schema.
 
 Usage (from experiments/assistant-axis):
-    python pipeline/select_steer_roles.py --config configs/select_steer_roles.yaml
+    python scripts/steering/select_steer_roles.py --config configs/steering/select_steer_roles.yaml
 """
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
 # Step 1: generate role responses. Run from experiments/assistant-axis:
-#   python pipeline/1_generate.py --config configs/1_generate.yaml
+#   python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml
 # Override on the CLI for smoke runs, e.g.
 #   --run.model Qwen/Qwen2.5-0.5B-Instruct --run.question_count 4 --run.roles [default,accountant]
 run:

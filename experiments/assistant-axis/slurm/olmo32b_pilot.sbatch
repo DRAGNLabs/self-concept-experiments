@@ -37,7 +37,7 @@ source ../../activate.sh
 
 echo "########## Generate WITH thinking, max_tokens=$MAXTOK ##########"
 start=$SECONDS
-python pipeline/1_generate.py --config configs/1_generate.yaml \
+python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
     --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
     --run.question_count "$QUESTIONS" --run.roles "$ROLES" \
     --run.thinking true --run.temperature 0.6 --run.top_p 0.95 \

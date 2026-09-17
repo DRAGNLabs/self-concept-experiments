@@ -8,7 +8,7 @@ hidden states never leave the batch -- so the output is a small per-conversation
 companion plotting script turns into projection-vs-position traces.
 
 Usage (from experiments/assistant-axis):
-    python token_axis_projections.py --config configs/token_axis_projections.yaml
+    python scripts/projection/token_axis_projections.py --config configs/projection/token_axis_projections.yaml
 """
 
 from __future__ import annotations
