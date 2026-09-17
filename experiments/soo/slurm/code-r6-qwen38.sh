@@ -55,6 +55,9 @@ case "$cell" in
     neg)     extra="--steer-vectors $VEC --steer-layer 31 --steer-alpha -10" ;;
     rand_s0) extra="--steer-vectors $VEC --steer-layer 31 --steer-alpha 10 --steer-random-seed 0" ;;
     lora)    extra="--adapter results/checkpoints/qwen38-27b-L32/seed0" ;;
+    # round 8: the agentic-data and mixed-data adapters (same LoRA cell, seed 0)
+    lora_agentic) extra="--adapter results/checkpoints/qwen38-27b-agentic-L32/seed0" ;;
+    lora_mixed)   extra="--adapter results/checkpoints/qwen38-27b-mixed-L32/seed0" ;;
     steer_a*)   A=${cell#steer_a};   extra="--steer-vectors $VEC --steer-layer 31 --steer-alpha $A"; SCEN="impossible_conflicting impossible_original" ;;
     rand_s0_a*) A=${cell#rand_s0_a}; extra="--steer-vectors $VEC --steer-layer 31 --steer-alpha $A --steer-random-seed 0"; SCEN="impossible_conflicting impossible_original" ;;
     *) echo "unknown cell $cell"; exit 1 ;;

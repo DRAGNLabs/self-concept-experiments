@@ -402,6 +402,15 @@ Alternatives held in reserve: (2) context-targeted SOO loss (weight the overlap 
 context tokens, motivated by round 7), (3) probe-gated adapters (detect-then-intervene), only
 interesting if (1) produces adapters that cost capability.
 
+**Round 8 status (2026-09-17, interim, seed 0, roleplaying only — FINDINGS "Round 8 interim").**
+Both agentic-data adapters cut Apollo roleplaying deception 48.8 → 26.4 (agentic-only) / 28.6
+(mixed), p ≤ 2e-8, present on the role-disjoint subset (→ 28.5 / 30.9) and after excluding
+AI-disclaimer responses; in-distribution still 100/0. Queued: code cells + caps for both
+variants (13747100/01/02 agentic, 13747125/26/27 mixed); seeds 1–2 and insider trading pending
+(13744234/35 → judge 13744236). Open: agentic-only doubles response length; a few wrong-way
+flips on Student/Patient/Applicant scenarios; alternatives (2)–(3) stay in reserve unless the
+code/caps cells show a cost.
+
 Positioning: "Self-other overlap generalizes to agentic deception, and closing its
 instructed-deception gap with agentic self/other data", with the vector analysis as mechanism
 and the reward-hacking benchmarks as the null-result boundary. §8's work items 2–3 (honesty

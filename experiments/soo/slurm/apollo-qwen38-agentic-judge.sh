@@ -36,9 +36,17 @@ echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 set -e
 # Round-8 judges: the agentic / mixed adapters' roleplaying and insider
 # reports (3 seeds each), same Qwen2.5-72B judges as every other Apollo cell.
+# SEEDS (env, default "0 1 2") and SCENARIOS (env, default "roleplaying
+# insider_trading") narrow the run, e.g. an interim seed-0 roleplaying grade
+# while the generation jobs are still on later seeds.
 D=results/apollo_eval/qwen38_27b
-rp=$(ls $D/ap_lora_{agentic,mixed}_s{0,1,2}_roleplaying_none.jsonl 2>/dev/null || true)
-it=$(ls $D/ap_lora_{agentic,mixed}_s{0,1,2}_insider_trading_none.jsonl 2>/dev/null || true)
+SEEDS=${SEEDS:-0 1 2}; SCENARIOS=${SCENARIOS:-roleplaying insider_trading}
+rp=""; it=""
+for v in agentic mixed; do for s in $SEEDS; do
+    [[ " $SCENARIOS " == *" roleplaying "* ]] && rp="$rp $(ls $D/ap_lora_${v}_s${s}_roleplaying_none.jsonl 2>/dev/null || true)"
+    [[ " $SCENARIOS " == *" insider_trading "* ]] && it="$it $(ls $D/ap_lora_${v}_s${s}_insider_trading_none.jsonl 2>/dev/null || true)"
+done; done
+rp=$(echo $rp); it=$(echo $it)
 echo "roleplaying: $rp"; echo "insider: $it"
 [ -n "$rp" ] && python scripts/judge_apollo.py --responses $rp --batch-size 16 --max-new-tokens 256
 [ -n "$it" ] && python scripts/judge_insider.py --responses $it --batch-size 16 --max-new-tokens 256
