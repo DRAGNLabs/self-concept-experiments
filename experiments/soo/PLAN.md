@@ -356,8 +356,10 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
     - *Round 6/6b code (FINDINGS 2026-09-17)*: no passing cheats anywhere; LoRA inert (50/32% pass,
       call-out 25% n.s.); vector collapses coding at α≥8 (generic: random α8 as bad); at α8 +v
       call-out 0/40 vs random 7/40 (p=0.012) — third model where the SOO direction silences the
-      contradiction report. Base/+v EvilGenie resumed after the 02:30 cluster event (13743861/62,
-      judge 13743863).
+      contradiction report. EvilGenie complete: base 9/40 test-file edits are all benign runner
+      refactors (judge agrees, 8 legitimate / 1 heuristic), no cell has a passing cheat; LoRA 0
+      hacks at 25% holdout (base 42%, n.s.); judge special-casing on random α10 (7) is all
+      unverified broken code. Round closed.
 
 ## 9. Paper reframing (2026-09-17) — extension, not refutation
 
