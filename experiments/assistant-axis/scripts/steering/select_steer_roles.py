@@ -1,5 +1,3 @@
-# Derived from safety-research/assistant-axis (https://github.com/safety-research/assistant-axis),
-# MIT licensed. See the NOTICE file at the repository root for the full license text.
 """Select the held-out steering roles for the role-susceptibility experiment (Section 3.2.1).
 
 Computing per-role vectors for OLMo would require the full generate->activations->vectors

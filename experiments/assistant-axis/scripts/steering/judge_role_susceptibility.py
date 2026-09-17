@@ -1,5 +1,3 @@
-# Derived from safety-research/assistant-axis (https://github.com/safety-research/assistant-axis),
-# MIT licensed. See the NOTICE file at the repository root for the full license text.
 """Apply the role-susceptibility judge (§3.2.1) to generated trace files.
 
 Reads trace JSONL (schema: role_susceptibility_traces.md), scores each (role, request,

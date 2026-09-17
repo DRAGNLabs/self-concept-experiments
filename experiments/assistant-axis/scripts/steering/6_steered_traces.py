@@ -1,5 +1,3 @@
-# Derived from safety-research/assistant-axis (https://github.com/safety-research/assistant-axis),
-# MIT licensed. See the NOTICE file at the repository root for the full license text.
 """Generate role-susceptibility steering traces (Section 3.2.1).
 
 For each system prompt (a role description) and each introspective behavioral question

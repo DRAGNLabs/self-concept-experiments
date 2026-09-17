@@ -3,9 +3,11 @@ This project includes third-party code.
 ================================================================================
 assistant-axis
 --------------------------------------------------------------------------------
-The packages `src/selfconcept/transcript_generation/`, `src/selfconcept/assistant_axis` contains code derived from
-the assistant-axis project (https://github.com/safety-research/assistant-axis),
-which is distributed under the MIT License.
+The packages `src/selfconcept/transcript_generation/`, `src/selfconcept/assistant_axis`,
+and the pipeline scripts under `experiments/assistant-axis/scripts/pipeline/` contain
+code derived from the assistant-axis project
+(https://github.com/safety-research/assistant-axis), which is distributed under the
+MIT License.
 
 The upstream project does not ship a LICENSE file with a copyright line; it
 states "License: MIT" in its README. The MIT License text is reproduced below,

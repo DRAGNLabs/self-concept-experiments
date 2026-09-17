@@ -1,5 +1,3 @@
-# Derived from safety-research/assistant-axis (https://github.com/safety-research/assistant-axis),
-# MIT licensed. See the NOTICE file at the repository root for the full license text.
 """Plot role-adoption fractions vs. steering strength (paper §3.2.1, Figure 4).
 
 Reads the judged JSONL produced by ``judge_role_susceptibility.py`` (each line carries a
