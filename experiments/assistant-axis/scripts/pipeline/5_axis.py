@@ -31,7 +31,7 @@ class RunConfig:
     """Vectors location, output path, and which role anchors the axis."""
 
     vectors_dir: Path = scratch_dir("assistant-axis") / "vectors"
-    output: Path = Path("results/pipeline/axis.pt")
+    output: Path = scratch_dir("assistant-axis") / "axis.pt"
     anchor: str = "default"
 
 

@@ -52,7 +52,7 @@ class RunConfig:
     layers: str = "all"  # "all" or comma-separated layer indices
     dtype: str = "bfloat16"  # one of DTYPE_MAP
     seed: int = 0
-    output: Path = scratch_dir("assistant-axis") / "olmo32b-norms" / "layer_norms.pt"
+    output: Path = scratch_dir("assistant-axis") / "layer_norms.pt"
 
 
 def load_sampled_conversations(

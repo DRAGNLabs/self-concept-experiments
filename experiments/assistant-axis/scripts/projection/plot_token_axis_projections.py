@@ -40,7 +40,7 @@ GROUP_COLOR_BY_LABEL: dict[str, str] = {"default role": "#0072B2", "non-default 
 class RunConfig:
     """Projections input, figure output, and how many faint background lines to draw per group."""
 
-    projections: Path = scratch_dir("assistant-axis") / "olmo32b-thinking" / "token_axis_projections.pt"
+    subdir: str = "olmo32b-thinking"  # scratch subtree holding this run's projections
     output: Path = Path("results/projection/token_axis_projections.png")
     max_background_lines: int = 120
 
@@ -130,7 +130,8 @@ def main(run: RunConfig = RunConfig()) -> None:
     output_path = run.output.expanduser()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    saved = torch.load(run.projections.expanduser(), map_location="cpu", weights_only=False)
+    projections_path = scratch_dir("assistant-axis") / run.subdir / "token_axis_projections.pt"
+    saved = torch.load(projections_path, map_location="cpu", weights_only=False)
     records = saved["records"]
     logger.info(f"Loaded {len(records)} conversation projections (layer {saved['target_layer']})")
 

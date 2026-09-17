@@ -55,10 +55,7 @@ class RunConfig:
     """Model, data, axes, and the layer at which to project."""
 
     model: str = "allenai/Olmo-3.1-32B-Think"
-    responses_dir: Path = scratch_dir("assistant-axis") / "olmo32b-thinking" / "responses"
-    axis_all_tokens: Path = scratch_dir("assistant-axis") / "olmo32b-thinking" / "axis_all_tokens.pt"
-    axis_response_only: Path = scratch_dir("assistant-axis") / "olmo32b-thinking" / "axis_response_only.pt"
-    output: Path = scratch_dir("assistant-axis") / "olmo32b-thinking" / "token_axis_projections.pt"
+    subdir: str = "olmo32b-thinking"  # scratch subtree holding this run's responses + axes
     target_layer: int | None = None  # None -> get_config(model)'s middle layer
     batch_size: int = 8
     max_length: int = 40960
@@ -149,7 +146,8 @@ def project_batch(
 
 def main(run: RunConfig = RunConfig()) -> None:
     """Project every role's assistant tokens onto both axes and save per-conversation records."""
-    output_path = run.output.expanduser()
+    run_dir = scratch_dir("assistant-axis") / run.subdir
+    output_path = run_dir / "token_axis_projections.pt"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Loading model: {run.model}")
@@ -162,11 +160,11 @@ def main(run: RunConfig = RunConfig()) -> None:
     logger.info(f"Projecting at layer {target_layer} of {len(probing_model.get_layers())}")
 
     unit_axis_by_name: dict[AxisName, Float[Tensor, " hidden"]] = {
-        "all_tokens": load_unit_axis(run.axis_all_tokens.expanduser(), target_layer),
-        "response_only": load_unit_axis(run.axis_response_only.expanduser(), target_layer),
+        "all_tokens": load_unit_axis(run_dir / "axis_all_tokens.pt", target_layer),
+        "response_only": load_unit_axis(run_dir / "axis_response_only.pt", target_layer),
     }
 
-    response_files = sorted(run.responses_dir.expanduser().glob("*.jsonl"))
+    response_files = sorted((run_dir / "responses").glob("*.jsonl"))
     if run.roles:
         response_files = [file for file in response_files if file.stem in run.roles]
 

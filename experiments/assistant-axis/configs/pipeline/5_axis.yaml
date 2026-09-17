@@ -1,7 +1,7 @@
 # Step 5: compute the persona axis from per-role vectors. Run from experiments/assistant-axis:
 #   python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml
-# Reads vectors from scratch; writes the axis to results/pipeline/axis.pt.
+# Reads vectors from scratch; writes the axis to scratch (assistant-axis/axis.pt).
+# Override --run.output for per-run axis locations.
 # anchor="default" gives the Assistant Axis; set anchor=<role> for another persona's axis.
 run:
   anchor: default
-  output: results/pipeline/axis.pt

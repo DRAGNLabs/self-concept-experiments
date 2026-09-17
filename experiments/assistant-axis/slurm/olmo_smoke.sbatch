@@ -49,6 +49,6 @@ python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --
     --run.output_dir "$SMOKE/vectors"
 
 python scripts/pipeline/5_axis.py --config configs/pipeline/5_axis.yaml \
-    --run.vectors_dir "$SMOKE/vectors" --run.output results/axis_olmo_smoke.pt
+    --run.vectors_dir "$SMOKE/vectors" --run.output "$SMOKE/axis.pt"
 
-echo "=== OLMo smoke done: results/axis_olmo_smoke.pt ==="
+echo "=== OLMo smoke done: $SMOKE/axis.pt ==="

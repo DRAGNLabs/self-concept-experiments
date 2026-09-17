@@ -1,14 +1,12 @@
 # Project per-token assistant activations onto both persona axes, split by thinking/response.
 # Run from experiments/assistant-axis:
 #   python scripts/projection/token_axis_projections.py --config configs/projection/token_axis_projections.yaml
-# Reads the olmo32b-thinking responses + axes from scratch; writes one compact projections .pt.
+# Reads {responses,axis_all_tokens.pt,axis_response_only.pt} from the scratch subtree
+# assistant-axis/<subdir>; writes token_axis_projections.pt into the same subtree.
 # target_layer defaults to get_config(model)'s middle layer when null.
 run:
   model: allenai/Olmo-3.1-32B-Think
-  responses_dir: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/responses
-  axis_all_tokens: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/axis_all_tokens.pt
-  axis_response_only: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/axis_response_only.pt
-  output: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/token_axis_projections.pt
+  subdir: olmo32b-thinking
   target_layer: null
   batch_size: 8
   max_length: 40960

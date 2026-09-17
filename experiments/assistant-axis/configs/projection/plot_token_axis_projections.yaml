@@ -2,6 +2,6 @@
 # experiments/assistant-axis:
 #   python scripts/projection/plot_token_axis_projections.py --config configs/projection/plot_token_axis_projections.yaml
 run:
-  projections: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/token_axis_projections.pt
+  subdir: olmo32b-thinking  # reads token_axis_projections.pt from scratch assistant-axis/<subdir>
   output: results/projection/token_axis_projections.png
   max_background_lines: 120

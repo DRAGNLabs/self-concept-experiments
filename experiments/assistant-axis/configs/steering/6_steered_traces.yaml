@@ -1,14 +1,13 @@
 # Step 6: generate role-susceptibility steering traces (Section 3.2.1). Run from
 # experiments/assistant-axis:
 #   python scripts/steering/6_steered_traces.py --config configs/steering/6_steered_traces.yaml
-# Reads axis.pt + layer_norms.pt from results/, questions + system prompts from data/;
-# writes one {role_id}_p{prompt_index}.jsonl per role to scratch (assistant-axis/steered).
+# Reads axis.pt + layer_norms.pt from scratch (assistant-axis/), questions + system
+# prompts from data/; writes one {role_id}_p{prompt_index}.jsonl per role to scratch
+# (assistant-axis/steered). axis_path + output_dir are supplied per-run on the CLI
+# (all_tokens vs response_only variants); axis_path/norms_path default to scratch.
 # target_layer defaults to get_config(model)'s middle layer when null.
 run:
   model: allenai/Olmo-3.1-32B-Think
-  # axis_path + output_dir are supplied per-run on the CLI (all_tokens vs response_only variants).
-  axis_path: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-thinking/axis_all_tokens.pt
-  norms_path: ~/nobackup/autodelete/self-concept-experiments/assistant-axis/olmo32b-norms/layer_norms.pt
   questions_file: data/behavioral_questions.jsonl
   system_prompts_file: data/steer_prompts.jsonl
   target_layer: null

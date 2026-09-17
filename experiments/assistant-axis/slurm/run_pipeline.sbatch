@@ -25,4 +25,4 @@ python scripts/pipeline/3_judge.py       --config configs/pipeline/3_judge.yaml
 python scripts/pipeline/4_vectors.py     --config configs/pipeline/4_vectors.yaml
 python scripts/pipeline/5_axis.py        --config configs/pipeline/5_axis.yaml
 
-echo "=== Done: results/axis.pt ==="
+echo "=== Done: axis at scratch (assistant-axis/axis.pt) ==="

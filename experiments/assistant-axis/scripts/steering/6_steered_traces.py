@@ -51,8 +51,8 @@ class RunConfig:
     """Model, axis, data, sampling, and steering-strength parameters for one trace run."""
 
     model: str = "google/gemma-2-27b-it"
-    axis_path: Path = Path("results/pipeline/axis.pt")
-    norms_path: Path = Path("results/pipeline/layer_norms.pt")
+    axis_path: Path = scratch_dir("assistant-axis") / "axis.pt"
+    norms_path: Path = scratch_dir("assistant-axis") / "layer_norms.pt"
     questions_file: Path = Path("data/behavioral_questions.jsonl")
     system_prompts_file: Path = Path("data/steer_prompts.jsonl")
     output_dir: Path = scratch_dir("assistant-axis") / "steered"
