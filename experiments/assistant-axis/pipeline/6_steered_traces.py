@@ -30,7 +30,7 @@ from jaxtyping import Float
 from torch import Tensor
 from tqdm import tqdm
 
-from selfconcept.assistant_axis.hf_generation import generate_response
+from selfconcept.assistant_axis.hf_generation import generate_response, serialize_response
 from selfconcept.assistant_axis.internals.model import ProbingModel
 from selfconcept.assistant_axis.models import get_config
 from selfconcept.assistant_axis.steering import apply_steering
@@ -62,6 +62,7 @@ class RunConfig:
     coefficients: list[float] = field(default_factory=lambda: [-8.0, -4.0, 4.0, 8.0])
     include_baseline: bool = True
     max_new_tokens: int = 512
+    enable_thinking: bool = False
     temperature: float = 0.7
     top_p: float = 0.9
     do_sample: bool = True
@@ -142,31 +143,33 @@ def generate_role_traces(
         conversation = build_conversation(question.text, system_prompt.role, probing_model.tokenizer)
         for coefficient in coefficients:
             if coefficient == 0.0:
-                response = generate_response(
+                result = generate_response(
                     probing_model,
                     conversation,
                     max_new_tokens=run.max_new_tokens,
                     temperature=run.temperature,
                     top_p=run.top_p,
                     do_sample=run.do_sample,
+                    enable_thinking=run.enable_thinking,
                 )
             else:
                 with apply_steering(
                     probing_model, target_layer, unit_direction, coefficient=coefficient * layer_norm
                 ):
-                    response = generate_response(
+                    result = generate_response(
                         probing_model,
                         conversation,
                         max_new_tokens=run.max_new_tokens,
                         temperature=run.temperature,
                         top_p=run.top_p,
                         do_sample=run.do_sample,
+                        enable_thinking=run.enable_thinking,
                     )
             records.append(
                 TraceRecord(
                     role=system_prompt.role,
                     request=question.text,
-                    response=response,
+                    response=serialize_response(result),
                     steering_coefficient=coefficient,
                     target_model=run.model,
                     role_id=system_prompt.role_id,

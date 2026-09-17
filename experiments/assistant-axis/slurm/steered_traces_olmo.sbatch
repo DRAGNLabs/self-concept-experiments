@@ -22,6 +22,7 @@ set -euo pipefail
 VARIANT="${1:?pass axis variant: all_tokens or response_only}"
 PROMPTS="${2:-data/steer_prompts.jsonl}"
 TAG="${3:-}"  # e.g. _pilot -> separate output dir
+CONFIG="${4:-configs/6_steered_traces.yaml}"
 SCRATCH="$HOME/nobackup/autodelete/self-concept-experiments/assistant-axis"
 AXIS="$SCRATCH/olmo32b-thinking/axis_${VARIANT}.pt"
 OUT="$SCRATCH/steered${TAG}_${VARIANT}"
@@ -31,7 +32,7 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1  # compute nodes run offline; weights are prefetched
 nvidia-smi
 
-python pipeline/6_steered_traces.py --config configs/6_steered_traces.yaml \
+python pipeline/6_steered_traces.py --config "$CONFIG" \
   --run.axis_path "$AXIS" \
   --run.system_prompts_file "$PROMPTS" \
   --run.output_dir "$OUT"

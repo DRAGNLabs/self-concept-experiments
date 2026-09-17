@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, cast
 import jsonlines
 from tqdm import tqdm
 
+from selfconcept.assistant_axis.hf_generation import Answer, UnclosedReasoning, parse_response
 from selfconcept.assistant_axis.role_susceptibility_judge import (
     RoleResponse,
     build_role_judge_messages,
@@ -36,6 +37,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 _REQUIRED_FIELDS = ("role", "request", "response")
+DEGENERATE_LABEL = "degenerate_cot"
+DEGENERATE_NOTE = "[auto] response never closed </think>"
 
 
 @dataclass(frozen=True)
@@ -95,11 +98,16 @@ def main(run: RunConfig = RunConfig()) -> None:
     traces = load_traces(files)
     judged_keys = already_judged_keys(run.output_path)
     pending = [t for t in traces if input_key(t) not in judged_keys]
-    logger.info("%d traces, %d already judged, %d pending", len(traces), len(traces) - len(pending), len(pending))
+    
+    parsed = [(t, parse_response(t["response"])) for t in pending]
+    degenerate = [t for t, result in parsed if isinstance(result, UnclosedReasoning)]
+    judgeable = [t for t, result in parsed if isinstance(result, Answer)]
+    logger.info("%d traces, %d already judged, %d pending (%d degenerate, %d to judge)",
+                len(traces), len(traces) - len(pending), len(pending), len(degenerate), len(judgeable))
 
     if run.dry_run:
-        if pending:
-            sample = pending[0]
+        if judgeable:
+            sample = judgeable[0]
             messages = build_role_judge_messages(sample["role"], sample["request"], sample["response"])
             logger.info("\n%s\nSAMPLE JUDGE PROMPT (%s):\n%s\n%s\n%s",
                         "=" * 60, run.judge_model, "-" * 60, messages[1]["content"], "=" * 60)
@@ -109,29 +117,31 @@ def main(run: RunConfig = RunConfig()) -> None:
         logger.info("Nothing to judge.")
         return
 
-    responses = [RoleResponse(role=t["role"], request=t["request"], response=t["response"]) for t in pending]
-
-    # Greedy, deterministic judging (temperature=0).
-    judge = VLLMGenerator(
-        model_name=run.judge_model,
-        max_model_len=run.max_model_len,
-        tensor_parallel_size=run.tensor_parallel_size,
-        gpu_memory_utilization=run.gpu_memory_utilization,
-        temperature=0.0,
-        max_tokens=run.max_tokens,
-        top_p=1.0,
-        dtype=cast("ModelDType", run.dtype),
-    )
-    judgements = judge_role_responses(responses, judge)
+    judged: list[tuple[dict, str | None, str]] = [(t, DEGENERATE_LABEL, DEGENERATE_NOTE) for t in degenerate]
+    if judgeable:
+        responses = [RoleResponse(role=t["role"], request=t["request"], response=t["response"]) for t in judgeable]
+        # Greedy, deterministic judging (temperature=0).
+        judge = VLLMGenerator(
+            model_name=run.judge_model,
+            max_model_len=run.max_model_len,
+            tensor_parallel_size=run.tensor_parallel_size,
+            gpu_memory_utilization=run.gpu_memory_utilization,
+            temperature=0.0,
+            max_tokens=run.max_tokens,
+            top_p=1.0,
+            dtype=cast("ModelDType", run.dtype),
+        )
+        judgements = judge_role_responses(responses, judge)
+        judged += [(t, j.label, j.judge_raw) for t, j in zip(judgeable, judgements)]
 
     run.output_path.parent.mkdir(parents=True, exist_ok=True)
     with jsonlines.open(run.output_path, "a") as writer:
-        for trace, judgement in tqdm(zip(pending, judgements), total=len(pending), desc="Writing judgements"):
-            writer.write({**trace, "label": judgement.label, "judge_raw": judgement.judge_raw})
+        for trace, label, judge_raw in tqdm(judged, desc="Writing judgements"):
+            writer.write({**trace, "label": label, "judge_raw": judge_raw})
 
-    labelled = sum(1 for j in judgements if j.label is not None)
-    logger.info("Wrote %d judgements (%d parsed, %d unparseable) to %s",
-                len(judgements), labelled, len(judgements) - labelled, run.output_path)
+    labelled = sum(1 for _, label, _ in judged if label is not None)
+    logger.info("Wrote %d judgements (%d labelled incl. %d degenerate, %d unparseable) to %s",
+                len(judged), labelled, len(degenerate), len(judged) - labelled, run.output_path)
 
 
 if __name__ == "__main__":

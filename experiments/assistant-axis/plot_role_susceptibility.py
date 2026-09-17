@@ -41,6 +41,8 @@ LABEL_ORDER: list[RoleLabel] = [
     "ambiguous",
     "other",
     "nonsensical",
+    "cot_leak",
+    "degenerate_cot",
 ]
 LABEL_COLORS: dict[str, str] = {
     "assistant": "#0072B2",
@@ -50,6 +52,8 @@ LABEL_COLORS: dict[str, str] = {
     "ambiguous": "#E69F00",
     "other": "#56B4E9",
     "nonsensical": "#999999",
+    "cot_leak": "#F0E442",
+    "degenerate_cot": "#000000",
 }
 
 
