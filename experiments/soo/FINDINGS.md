@@ -3348,6 +3348,34 @@ prompts on the hybrid DeltaNet/attention cache — transformers 5.17 passes
 hook reads the cache's `get_seq_length()`, the same call the Qwen3.5-family
 model uses for `past_seen_tokens`).
 
+## Reframing note (2026-09-17): the evidence supports an extension paper, not a correction — round 8 (agentic SOO data) queued
+
+State of the matrix after rounds 6–7 and the Qwen3.8-27B onboarding, read against
+the advisor's guidance that a "this works less well than claimed" paper is not
+worth publishing:
+
+- The **positive** results are SOO's, not the vector's. The adapter trained on 78
+  toy fragments transfers to agentic deception (insider trading: concealed 54 → 24,
+  explicit 2 → 32 on Qwen3.8-27B; 3-seed robust on gemma-4-31B) at no capability
+  cost — a generalization the original paper never tested. The direction-specific
+  controls hold on those measures.
+- The **negative** results are the vector's, and they are mechanistic rather than a
+  refutation: it pays a 2–4× capability tax, collapses multi-turn coding at every α
+  that flips the SOO task, and (round 7) acts entirely through the prompt
+  positions, so it cannot be a deployable alternative to the adapter. That is a
+  section on *why* fine-tuning is needed, not a headline.
+- The **gap** is instructed deception (Apollo roleplaying: LoRA inert on 31B and
+  Qwen3.8) and, by construction, anything far from the burglar fragments.
+
+Decision (PLAN §9): frame the paper around SOO's OOD transfer plus a method that
+closes the gap, and build the method first — **agentic SOO data** (`selfconcept.soo.agentic`):
+the Table-1 self/other construction rewritten in the roleplaying / agentic-report
+setting (20 situations × 3 templates; referent swap on "who wants to know" and
+"who is told"; fragments end on the referent token). Round 8 trains the unchanged
+L32 recipe on the agentic pairs and on agentic + original (mixed), 3 seeds each,
+and reads out the toy scenarios, Apollo roleplaying and insider trading; judges
+chained. Results go in a "Round 8" section when they land.
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus

@@ -358,3 +358,51 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       call-out 0/40 vs random 7/40 (p=0.012) — third model where the SOO direction silences the
       contradiction report. Base/+v EvilGenie resumed after the 02:30 cluster event (13743861/62,
       judge 13743863).
+
+## 9. Paper reframing (2026-09-17) — extension, not refutation
+
+Advisor guidance: a paper whose contribution is "the published method works less well than
+claimed" does not advance the field and invites bad sentiment; propose something that works
+better instead. The 2026-09-10 headline in §8 (steering vector as a cheap generalization
+certificate, fine-tuning predicts nothing) is also no longer supported: on Qwen3.8-27B the LoRA
+transfers to insider trading as strongly as any cell in the matrix at zero capability cost,
+while the vector pays a 2–4× capability tax, collapses multi-turn coding at every α that flips
+the SOO task, and (round 7) acts entirely through the prompt positions, so no position mask
+separates its effect from its cost.
+
+**What the matrix supports as positive contributions**
+1. *SOO generalizes to agentic deception.* The adapter trained on 78 toy burglar fragments cuts
+   insider-trading concealment 54 → 24 and raises explicit disclosure 2 → 32 on Qwen3.8-27B,
+   3-seed robust on gemma-4-31B, at no measurable capability cost. Carauleanu et al. only
+   tested in-distribution generalization.
+2. *A characterization of what it moves.* Self-interested concealment yes; instructed deception
+   (Apollo roleplaying) no on 31B and Qwen3.8 (12B is the exception); sandbagging backfires on
+   31B; reward hacking on code has nothing to reduce. Direction-specificity controls hold on the
+   measures that matter.
+3. *A mechanism.* The self/other direction acts on how the model reads the context, not on
+   generation (round 7): prompt-only steering reproduces the certified cells, response-only
+   steering is null. Explains why fine-tuning is needed and why a constant offset cannot
+   substitute. The steering-vs-LoRA work becomes the mechanistic section, not the headline.
+
+**The gap the data exposes → the method to build (option 1, chosen 2026-09-17):**
+*agentic SOO data.* SOO fails exactly where the training pairs are furthest from the task
+(a person or an assistant with a self-interested reason to mislead a counterpart). Round 8
+transplants the Table-1 self/other construction into that setting (`selfconcept.soo.agentic`:
+20 training situations × 3 templates = 60 pairs, 8 held-out situations for latent probes; the
+referent swap is applied to "who wants to know" and "who is told", fragments end on the
+referent token so `last_token` alignment is unchanged) and trains the unchanged L32 recipe on
+(a) the agentic pairs alone and (b) agentic + original (mixed), 3 seeds each
+(`lora-qwen38-agentic.sh`, judges `apollo-qwen38-agentic-judge.sh`). Read-outs: in-distribution
+toy scenarios (does the toy task still flip?), Apollo roleplaying (the target: base 48.8,
+original LoRA 51.2), insider trading (must not regress from 24% concealed), then code and caps
+for whichever variant moves. Caveat to carry: training situations overlap thematically with
+some roleplaying scenarios (student/teacher, employee/manager); the analysis will report the
+roleplaying effect on the subset whose role/counterpart pair matches no training situation.
+Alternatives held in reserve: (2) context-targeted SOO loss (weight the overlap loss on
+context tokens, motivated by round 7), (3) probe-gated adapters (detect-then-intervene), only
+interesting if (1) produces adapters that cost capability.
+
+Positioning: "Self-other overlap generalizes to agentic deception, and closing its
+instructed-deception gap with agentic self/other data", with the vector analysis as mechanism
+and the reward-hacking benchmarks as the null-result boundary. §8's work items 2–3 (honesty
+baseline vector, judge validity) stay relevant as supporting analyses.
