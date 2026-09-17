@@ -3256,6 +3256,98 @@ Qwen2.5-72B (4/40); four of the seven pass visible and holdout. LoRA
 0 hacks, 25% holdout (base 43% on 21, p=0.24); +v α10 2 `hack_visible_only`
 at 6% holdout, −v/random 2–10%. Nothing to reduce, again.
 
+## Positional ("conditional") steering, round 7 part 1 (jobs 13743987 L31, 13744010 L23; code cells 13743988/89 + judge 13744009 pending): the vector's in-distribution effect is carried entirely by the prompt positions — steering the context alone reproduces the certified cells, steering the model's own turn does nothing at any usable dose, so the SOO effect and the coding collapse cannot be separated by masking
+
+The question from rounds 6/6b was whether the vector fails on Qwen3.8-27B
+because a constant offset at *every* token also corrupts the model's
+reading of the prompt (the coding collapse at α≥8 is generic to any
+matched-norm offset), and whether adding it only on the model's own turn
+would keep the SOO effect and drop the capability cost. `--steer-positions`
+(`steering.PositionalSteering`, commit df0799a) masks the o_proj offset by
+token position: `response` = from the current assistant turn's header (the
+chat template's generation prompt, `<|im_start|>assistant\n<think>\n\n</think>\n\n`,
+7 tokens, which is where the `last` vectors were read) through every
+generated token; `prompt` = the complement, i.e. the context only. Earlier
+assistant turns in a multi-turn prompt count as context. Both certified
+layers, main scenario, both orientations, n=50, honest / deceptive / other %
+(other = empty output, refusal or rumination):
+
+| L31 cell | orig | mirrored |
+|---|---|---|
+| every position, +v α10 (certified reference) | 100/0/0 | 100/0/0 |
+| **prompt only, +v α10** | **100/0/0** | **100/0/0** |
+| response only, +v α8 / α10 / α12 | 0/100/0 ×3 | 0/100/0 ×3 |
+| response only, +v α16 | 8/90/2 | 0/98/2 |
+| response only, +v α24 / α32 | 0/0/100 (empty) | 0/0/100 (empty) |
+| response only, random s0 α10 / α16 / α32 | 0/100/0 · 14/80/6 · 0/0/100 | 0/100/0 · 2/94/4 · 0/0/100 |
+| response only, −v α10 | 28/72/0 | **64/36/0** |
+| response only, −v α16 | 12/88/0 | **70/30/0** |
+
+| L23 cell | orig | mirrored |
+|---|---|---|
+| every position, +v α8 (reference) | 100/0/0 | 100/0/0 |
+| **prompt only, +v α8** | **100/0/0** | **100/0/0** |
+| response only, +v α4 / α6 / α8 | 0/100/0 ×3 | 0/100/0 ×3 |
+| response only, +v α12 | 20/80/0 | 14/86/0 |
+| response only, +v α16 | 14/38/48 (rumination) | 48/16/36 (rumination) |
+| response only, random s0 α8 / α16 | 0/100/0 · 46/0/54 (rumination) | 0/100/0 · 34/4/62 (rumination) |
+| response only, −v α8 | 0/100/0 | 0/100/0 |
+
+**Prompt-only equals full-position.** At both layers, adding the vector to
+the context and leaving the model's own turn untouched gives exactly the
+certified result (100/100, clean single room names, mean 8.4 chars, same
+answers as the full-position cell). The header and generated positions
+contribute nothing the context positions do not already supply.
+
+**Response-only is null until the generation breaks.** +v on the assistant
+turn only is indistinguishable from base at α8–12 (L31) and α4–8 (L23),
+reaches 8% (L31 α16) / 20% (L23 α12) with clean answers, and then the
+dose window closes: L31 α24–32 emit nothing (50/50 empty responses, EOS
+as the first token), L23 α16 falls into `<think>` rumination in 36–48% of
+examples (the 14–48% "honest" labels at that dose are all >30-char
+rumination texts that happen to contain the true room — the same holds
+for random s0 α16, 46/34, so that regime is a labeling artifact, not an
+effect). No response-only +v cell reaches the direction-specific window the
+full-position cells have at α8–10.
+
+**Consequence for the round-6 question.** The positions that carry the SOO
+effect are the prompt positions, i.e. exactly the positions whose
+perturbation destroys the model's reading of a coding task (rounds 6/6b:
+original-task pass 62 → 30 at α8, generic across random vectors). Masking
+cannot separate the two: the offset must act on the context to flip the
+task, and acting on the context is what costs capability. The remaining
+code cells (13743988 response-only α10, 13743989 prompt-only α10; judge
+13744009) will show the corollary — response-only should leave coding at
+base *and* have no in-distribution effect to trade, prompt-only should
+collapse coding like the full-position cell — but the in-distribution
+result already settles the design question: on this model there is no
+position mask under which the steering vector is an alternative to the
+adapter.
+
+**An unexplained lead: −v on the response positions.** The one
+response-only cell that moves is the *negative* vector at L31: 28/64 at
+α10 and 12/70 at α16 (orig/mirrored), all clean single-word true-room
+answers (32/32 and 35/35 short), with random s0 at the same α at 0/0 and
+14/2 — mirrored −v vs random p = 2.5e-13 (α10) and 1.1e-13 (α16), orig
+p = 4e-5 at α10 and n.s. at α16. This is direction-specific, mostly
+orientation-asymmetric (mirrored ≫ orig), and the opposite sign from the
+certified full-position +v cell (where −v also worked, 98/100 — L31 was
+"sign-agnostic" at full positions). Pushing the assistant-turn state
+*toward* self (h ← h + |α|·v) partially produces honesty, pushing it toward
+other does nothing. At L23 −v response-only is 0/0. Not pursued further
+for the paper's question (a 64–70% mirrored-only effect is not a
+replacement for the adapter's 100/100 at +1.7/−0.2/−1.3 caps), but it is
+the only evidence so far that the header/generation positions encode
+anything the vector can act on, and it is logged in PLAN as an open lead.
+
+Hook validation on the real model: marker found in 50/50 prompts of every
+in-distribution run and 40/40 of the code runs (start = prompt length − 7),
+sequence counts equal example counts (decode steps are not mis-read as new
+prompts on the hybrid DeltaNet/attention cache — transformers 5.17 passes
+`past_key_values` but not `cache_position` to the top-level forward, so the
+hook reads the cache's `get_seq_length()`, the same call the Qwen3.5-family
+model uses for `past_seen_tokens`).
+
 Study: recreate the LLM experiments of "Towards Safe and Honest AI Agents
 with Neural Self-Other Overlap" (Carauleanu et al. 2024) on four models —
 the paper's own Mistral-7B-Instruct-v0.2 and Gemma-2-27b-it, plus

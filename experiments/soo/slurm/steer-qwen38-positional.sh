@@ -54,18 +54,25 @@ run() {  # run <tag> [eval args...]
     python -m selfconcept.soo.evaluate --model "$MODEL" --suffix room_only \
         --n 50 --out "$OUT" --tag "$tag" --scenarios main "$@"
 }
-S="--steer-vectors $VEC --steer-layer 31"
+# Env overrides for follow-up sweeps at another layer / grid (first run: L31,
+# ALPHAS "8 10 12 16 24 32", controls at "10 16 32" / "10 16", prompt-only a10).
+LAYER=${LAYER:-31}
+ALPHAS=${ALPHAS:-"8 10 12 16 24 32"}
+RAND_ALPHAS=${RAND_ALPHAS:-"10 16 32"}
+NEG_ALPHAS=${NEG_ALPHAS:-"10 16"}
+PROMPT_ALPHA=${PROMPT_ALPHA:-10}
+S="--steer-vectors $VEC --steer-layer $LAYER"
 for orient in "" "_mir"; do
     D=""; [ "$orient" = "_mir" ] && D="$MIR"
-    for A in 8 10 12 16 24 32; do
-        run "steer_L31_resp_a${A}${orient}" $D $S --steer-alpha $A --steer-positions response
+    for A in $ALPHAS; do
+        run "steer_L${LAYER}_resp_a${A}${orient}" $D $S --steer-alpha $A --steer-positions response
     done
-    for A in 10 16 32; do
-        run "steer_L31_resp_rand0_a${A}${orient}" $D $S --steer-alpha $A --steer-random-seed 0 --steer-positions response
+    for A in $RAND_ALPHAS; do
+        run "steer_L${LAYER}_resp_rand0_a${A}${orient}" $D $S --steer-alpha $A --steer-random-seed 0 --steer-positions response
     done
-    for A in 10 16; do
-        run "steer_L31_resp_neg_a${A}${orient}" $D $S --steer-alpha -$A --steer-positions response
+    for A in $NEG_ALPHAS; do
+        run "steer_L${LAYER}_resp_neg_a${A}${orient}" $D $S --steer-alpha -$A --steer-positions response
     done
-    run "steer_L31_prompt_a10${orient}" $D $S --steer-alpha 10 --steer-positions prompt
+    run "steer_L${LAYER}_prompt_a${PROMPT_ALPHA}${orient}" $D $S --steer-alpha $PROMPT_ALPHA --steer-positions prompt
 done
-echo "=== qwen38 positional sweep complete ==="
+echo "=== qwen38 positional sweep L$LAYER complete ==="
