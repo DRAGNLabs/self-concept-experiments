@@ -409,7 +409,9 @@ Both agentic-data adapters cut Apollo roleplaying deception 48.8 → 26.4 (agent
 (mixed), p ≤ 2e-8, present on the role-disjoint subset (→ 28.5 / 30.9) and after excluding
 AI-disclaimer responses; in-distribution still 100/0. Queued: code cells + caps for both
 variants (13747100/01/02 agentic, 13747125/26/27 mixed); seeds 1–2 and insider trading pending
-(13744234/35 → judge 13744236). Open: agentic-only doubles response length; a few wrong-way
+(13744234/35 → judge 13744236). Seed 1 replicates (30.5 / 31.0, p ≤ 1e-6) with no length or disclaimer excess. Caps: −1
+HellaSwag, −2.0/−2.4 MMLU vs base (original LoRA −1.3), far below the vector's −9 to −12.
+Open: seed-0 agentic doubles response length (seed 1 does not); a few wrong-way
 flips on Student/Patient/Applicant scenarios; alternatives (2)–(3) stay in reserve unless the
 code/caps cells show a cost.
 

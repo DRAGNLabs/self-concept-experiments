@@ -3469,6 +3469,31 @@ the same 4-rank adapter suffice. Whether this costs anything is the next questio
 original pairs the adapter was free (caps flat, code inert); these adapters change behaviour
 far more, and the agentic one is verbose.
 
+**Seed 1 (interim judge 13747277) and capabilities (13747101/27), added later the same day.**
+Seed 1 replicates seed 0 for both variants, and the two confounds flagged above are absent in
+this seed: agentic seed 1 has a near-base median length (266 chars) and 9 disclaimer responses.
+
+| adapter | seed 0 dec | seed 1 dec | seed-1 role-disjoint | seed-1 excl. AI-disclaimer | seed-1 p vs base |
+|---|---|---|---|---|---|
+| agentic | 26.4% | 30.5% | 31.3% | 30.7% | 4.5e-7 |
+| mixed | 28.6% | 31.0% | 32.9% | 31.0% | 1.0e-6 |
+
+Capabilities (lm-eval, same code path as `caps-qwen38.sh`, merged adapter, α=0):
+
+| cell | ARC-C | HellaSwag | MMLU |
+|---|---|---|---|
+| base | 58.7 ±1.4 | 82.8 ±0.4 | 83.5 ±0.3 |
+| original LoRA seed 0 | 60.4 | 82.6 | 82.2 |
+| agentic LoRA seed 0 | 58.9 | 81.7 | 81.5 |
+| mixed LoRA seed 0 | 59.3 | 81.4 | 81.1 |
+| +v L31 α16 (for scale) | 57.2 | 74.3 | 71.8 |
+
+So the agentic adapters are not free the way the original was: about −1 HellaSwag and −2 to
+−2.4 MMLU (6–8 standard errors), against −1.3 MMLU for the original adapter and −9 to −12 for
+the vector cells. A one-to-two-point multiple-choice tax for a 20-point deception drop is a
+trade the paper can state; whether the multi-turn coding cells show more is the open cost
+question (13747100/13747125, judges 13747102/13747126).
+
 **Queued.** Code cells (3 scenarios, n=40, 2048 tokens) for the agentic (13747100 → judge
 13747102) and mixed (13747125 → 13747126) seed-0 adapters via `code-r6-qwen38.sh
 lora_agentic|lora_mixed`; capabilities via `caps-qwen38-agentic.sh` (13747101 agentic,
