@@ -142,11 +142,22 @@ orientations, n250 100.0/100.0 — cleanest LoRA cell in the matrix) ·
 Qwen3.8-27B **strong** (validated: 3 seeds, both orientations, n250
 100.0/100.0 — ties the 31B; the paper's recipe on a hybrid DeltaNet stack).
 Qwen3.8 round 8 (2026-09-18): agentic-data LoRAs (same L32 recipe, 60 / 138 pairs) move roleplaying 48.8 → 27 / 32 (3 seeds) but regress insider trading to 64–89% concealed (template copy, no deliberation) and the agentic one costs coding (62 → 38); see FINDINGS "Round 8".
+Audit + repairs (2026-09-18, FINDINGS "External audit"): sandbagging labels re-parsed into
+separated evidence fields — the old parser scored "declared sandbag, no private answer" as
+deceptive, so every sandbagging deception rate in this file is an upper bound and the 31B +v
+mitigation reverses; all Qwen3.8 comparisons re-run paired (scripts/paired_tests.py --batch
+qwen38) — round-8 training effects strengthen (agentic s0 Δ −22.4 pts, p=1.9e-16), capability
+claims weaken (original LoRA EvilGenie p=0.039, prompt-only conflicting p=0.039), +v L31
+roleplaying is significant vs base (p=0.0073) but not vs random (p=0.18). Prospective transfer
+tally is 5/7, not 8/9. Dose-vs-content control queued (round 10: 13756196/97, judge 13756198).
 Qwen3.8 OOD (2026-09-17): LoRA transfers to insider trading (concealed 54 → 24,
-explicit 2 → 32) and nothing to roleplaying (51 vs 49 deceptive) or code (inert);
-vector L31 α10 roleplaying 49 → 42 (n.s., −v 56), insider polarized (implied 43 → 1,
+explicit 2 → 32) and nothing to roleplaying (51 vs 49 deceptive) or code (**not inert:
+paired EvilGenie holdout 17 → 10/40, p=0.039**);
+vector L31 α10 roleplaying 49 → 42 (**paired p=0.0073 vs base, but p=0.18 vs random s0**, −v 56),
+insider polarized (implied 43 → 1,
 explicit 2 → 28 direction-specific vs random 1, concealed 54 → 72), code collapses at
-α≥8 with call-out 0/40 at α8 vs random 7/40; sandbagging budget-bound (94% unparsed).
+α≥8 with call-out 0/40 at α8 vs random 7/40; sandbagging budget-bound (94% unparsed, re-parse
+confirms: 1–3% completion).
 
 ## Age × size matrix (steering / LoRA)
 
@@ -222,7 +233,12 @@ in-distribution — is inert.** In-distribution direction-specificity
 predicts the vector's OOD transfer (31B direction-specific → carries;
 12B axis-specific → nothing); in-distribution LoRA 100s are no
 generalization certificate. Both OOD effects are mitigations (~10–20
-points), nowhere near the in-distribution 0→100 flips. Round 2
+points), nowhere near the in-distribution 0→100 flips. **Audit
+correction 2026-09-18: the prospective tally over the preregistered
+round-3 cells is 5 of 7 (gemma-2 was predicted inert and transferred;
+Muse inverted). "8 of 9" is a post-hoc graded description, and the
+certificate framing is retired — the Qwen3.8 LoRA transfers where its
+vector is ambiguous.** Round 2
 (13611534–36) certified both halves: 31B vector dose-monotone (dec
 58→58→47→44, hon 8→11→22→26 at α0/8/16/24), rand null and LoRA
 inertness seed-robust (LoRA s0–s2 all 57–60% dec); 12B LoRA transfers
@@ -253,7 +269,15 @@ on benign MMLU (11→80% decisions, acc 70→16), −v/LoRA amplify WMDP
 deception (57→69/71%); the only mitigations are noncompliance (12B
 LoRA ignores the instruction, 0% deception, refuses 31% of WMDP) or
 execution failure (12B +v declares sandbag but leaks the true answer,
-WMDP acc 4→30). Reading: SOO moves deception motivated by
+WMDP acc 4→30). **Audit correction 2026-09-18 (scripts/reparse_sandbagging.py):
+every WMDP *deception rate* on this line is contaminated by missing
+evidence — the old parser scored "declared sandbag, no private answer"
+as deceptive, and the 31B baseline's 57% is 105/143 such records.
+Re-parsed on established private+public answers the 31B +v cell moves
+the wrong way (38 → 101 disagreements /250, n.s. on matched records),
+so "31B +v mitigates sandbagging" is withdrawn; the decision-rate and
+over-trigger numbers stand (they need no answer), and the 12B results
+strengthen (+v 139 → 83 disagreements, p=1e-22; 12B LoRA → 0).** Reading: SOO moves deception motivated by
 self-protection, not deception performed in compliance with
 instructions. Details in FINDINGS "Apollo OOD round 4".
 
@@ -265,7 +289,9 @@ dies: rand s1 reproduces its signature (hon 26/dec 36) with an intact
 format, so that cell is perturbation-sensitive, not
 direction-specific; the 12B rand-s0 54%-invalid format break was a
 seed quirk. 12B rand s1 *amplifies* sandbagging (WMDP dec 63%),
-sharpening the 12B LoRA's noncompliance as non-generic. **Round 6
+sharpening the 12B LoRA's noncompliance as non-generic. (Sandbagging
+rates in this paragraph and the next predate the 2026-09-18 re-parse;
+read them as decision/emission rates, not completed deception.) **Round 6
 (temperature): nothing greedy was a decoding artifact** — all
 headline cells (both gemmas + Llama-70b, in-dist + all three Apollo
 datasets) replicate at T=0.7/seed 0 within ~6 points on matched

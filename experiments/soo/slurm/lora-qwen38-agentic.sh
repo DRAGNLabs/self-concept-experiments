@@ -42,7 +42,11 @@ set -e
 # the in-distribution scenarios (does the toy task still flip?), Apollo
 # roleplaying (the target gap) and insider trading (must not regress).
 # $1 = agentic | mixed. Judges chained separately (apollo-qwen38-agentic-judge.sh).
-variant=${1:?agentic|mixed|agentic-noinsider|agentic-persons}
+# Round 10 (2026-09-18, audit item 6): agentic-long / mixed-short hold the
+# optimizer-step count fixed across the two datasets (agentic 60 pairs x 19
+# epochs = 285 steps ~ mixed's 280; mixed 138 pairs x 3 epochs = 105 ~
+# agentic's 120), separating training dose from pair content.
+variant=${1:?agentic|mixed|agentic-noinsider|agentic-persons|agentic-long|mixed-short}
 # SEEDS (env, default "0 1 2") and STAGES (env, default "indist roleplaying
 # insider") narrow a run, e.g. the round-8b single-seed diagnostics.
 SEEDS=${SEEDS:-0 1 2}; STAGES=${STAGES:-indist roleplaying insider}

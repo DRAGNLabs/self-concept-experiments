@@ -174,7 +174,11 @@ The Apollo OOD rounds (FINDINGS.md, commits 8e5dbde…6edf971) turned the steeri
 comparison into a publishable claim. Headline: **a steering vector carries a cheap in-distribution
 generalization certificate — the direction-specificity controls (−v, random-vector) that validate
 it in-distribution predicted OOD transfer in 8 of 9 models — while fine-tuning's in-distribution
-perfection predicts nothing** (gemma-4-31B 100/100 LoRA inert OOD ×3 seeds; gemma-4-12B LoRA
+perfection predicts nothing** — **RETIRED 2026-09-18 (see §9 and the audit section in FINDINGS):
+the prospective tally is 5 of 7, not 8 of 9 (the round-3 preregistration in 26c3c7c predicted no
+transfer for gemma-2, which transferred; the two gemma-4 pilots informed the predictor and are
+not unseen tests), and the Qwen3.8 LoRA transfers at lower cost than its vector, so
+"fine-tuning predicts nothing" is false. "8 of 9" holds only as a post-hoc graded description.** (gemma-4-31B 100/100 LoRA inert OOD ×3 seeds; gemma-4-12B LoRA
 transfers ×3 seeds). Secondary result: Kimi-Dev-72B transfers with zero think blocks engaged —
 the direction carries honesty content beyond its apparent CoT mechanism. Frame the paper around
 predictability of generalization, not effect size: OOD effects are 10–20 pt mitigations, never
@@ -440,3 +444,56 @@ Positioning: "Self-other overlap generalizes to agentic deception, and closing i
 instructed-deception gap with agentic self/other data", with the vector analysis as mechanism
 and the reward-hacking benchmarks as the null-result boundary. §8's work items 2–3 (honesty
 baseline vector, judge validity) stay relevant as supporting analyses.
+
+## 10. External audit response (2026-09-18)
+
+Codex audited the checkout at 32559dd (`AUDIT.md`, data `AUDIT_DATA.json`, read-only script
+`scripts/audit_sanity.py`). Every quantitative claim it makes reproduces. Four items changed
+the record; details and tables in FINDINGS "External audit".
+
+Done:
+
+1. **Sandbagging measurement repaired.** `scripts/reparse_sandbagging.py` re-reads all 26 saved
+   response files into separated fields (decision, parse validity, private answer, final answer,
+   completion, correctness), recovers malformed-but-intelligible tags, preserves the old label
+   as `legacy_label`, and reports three denominators. Result: the old parser scored "declared
+   sandbag, no private answer" as deceptive, and the gemma-4-31B baseline's 57% is 105/143 such
+   records. **"31B +v mitigates sandbagging" is withdrawn** (established disagreements go
+   38 → 101 /250 the wrong way; n.s. on matched records). The over-trigger result (a decision
+   rate) stands, and the 12B results strengthen (+v 139 → 83, p=1e-22; 12B LoRA → 0).
+2. **Paired tests everywhere.** `scripts/paired_tests.py` (exact McNemar + paired item
+   bootstrap); `--batch qwen38` regenerates the Qwen3.8-27B tables. Round-8 effects strengthen
+   (agentic s0 Δ −22.4 pts, p=1.9e-16); "original LoRA is code-inert" and "prompt-only masking
+   costs nothing" are withdrawn (EvilGenie p=0.039, conflicting p=0.039); +v L31 roleplaying is
+   significant vs base (p=0.0073) but **not** vs a random direction (p=0.18).
+3. **Overstated claims corrected in place.** §8's "predicted 8 of 9" retired (prospective tally
+   is 5/7 against the 26c3c7c preregistration); "code inert"/"costs nothing" qualified in
+   FINDINGS and STEERING_MATRIX; the trailing four-model synthesis now carries a SUPERSEDED
+   banner naming its three wrong conclusions; mechanism claims ("projection null refutes SOO",
+   "high-LR effects are optimization drift", "not a decision to conceal") demoted to hypotheses.
+4. **Dose-vs-content control queued (round 10).** Variants differ in optimizer steps (original
+   160, agentic 120, mixed 280, noinsider 120, persons 88). Existing data already rule dose out
+   as the sole driver of the insider regression (it appears at 88/120/280 steps while the
+   original adapter at 160 does not regress), but the agentic-vs-mixed gap could be dose.
+   Jobs **13756196** (`agentic-long`: 60 pairs × 19 epochs = 285 steps ≈ mixed's 280) and
+   **13756197** (`mixed-short`: 138 pairs × 3 epochs = 105 ≈ agentic's 120), seed 0,
+   roleplaying + insider, judge **13756198**.
+
+Not done, ranked for later:
+
+- **Judge validity (audit item 7).** Blinded human + independent-family check of the Apollo
+  roleplaying and insider judges, stratified by model, intervention, verbosity and format. The
+  room-classifier and code-judge checks do not transfer to these judges. This is the largest
+  remaining single-point-of-failure in the headline result.
+- **Frozen selection protocol (items 2, 9).** Before the next model family: fix the predictor,
+  threshold, condition set and OOD success criterion in advance; keep the n=50 pilots as
+  development data and confirm on untouched scenario families (the n=250 files contain the
+  n=50 prefixes).
+- **Mechanism experiment (items 4, 5).** Fixed update budget; self/other vs shuffled-pair,
+  self/self-with-independent-dropout, and non-social paraphrase contrasts; deterministic
+  eval-mode held-out pair loss, activation norm/variance and normalized separation; behaviour
+  on held-out scenarios. More diagnostic than another layer/dose sweep.
+- **Provenance manifest (item 10).** Save `SOO_CHAT_KWARGS`, data hash, model/code revision,
+  generation budget and completion status alongside every summary; stop reusing output tags.
+- **Sandbagging follow-ups (item 8).** Stratified MMLU subjects and a matched no-sabotage prompt
+  before any benign-over-trigger claim; 3-seed random controls are already the standard.
