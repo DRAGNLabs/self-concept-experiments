@@ -42,30 +42,33 @@ set -e
 # the in-distribution scenarios (does the toy task still flip?), Apollo
 # roleplaying (the target gap) and insider trading (must not regress).
 # $1 = agentic | mixed. Judges chained separately (apollo-qwen38-agentic-judge.sh).
-variant=${1:?agentic|mixed}
+variant=${1:?agentic|mixed|agentic-noinsider|agentic-persons}
+# SEEDS (env, default "0 1 2") and STAGES (env, default "indist roleplaying
+# insider") narrow a run, e.g. the round-8b single-seed diagnostics.
+SEEDS=${SEEDS:-0 1 2}; STAGES=${STAGES:-indist roleplaying insider}
 MODEL=Qwen/Qwen3.8-27B
 SCENS="main treasure_hunt perspectives"
 OUT=results/steering_eval/qwen38_27b
 APOLLO=results/apollo_eval/qwen38_27b
 CK=results/checkpoints/qwen38-27b-${variant}-L32
-for seed in 0 1 2; do
+for seed in $SEEDS; do
     if [ ! -f "$CK/seed${seed}/adapter_config.json" ]; then
         echo "=== train $variant L32 seed $seed ==="
         python -m selfconcept.soo.train --config configs/qwen38-27b-${variant}.yaml --layer 32 --seeds $seed
     fi
 done
-for seed in 0 1 2; do
+[[ " $STAGES " == *" indist "* ]] && for seed in $SEEDS; do
     A="--adapter $CK/seed${seed}"
     echo "=== in-distribution $variant seed $seed ==="
     python -m selfconcept.soo.evaluate --model "$MODEL" $A --scenarios $SCENS --n 50 --suffix room_only --out "$OUT" --tag "lora_${variant}_L32_seed${seed}"
     python -m selfconcept.soo.evaluate --model "$MODEL" $A --data data/eval_mirrored --scenarios $SCENS --n 50 --suffix room_only --out "$OUT" --tag "lora_${variant}_L32_seed${seed}_mir"
 done
-for seed in 0 1 2; do
+[[ " $STAGES " == *" roleplaying "* ]] && for seed in $SEEDS; do
     A="--adapter $CK/seed${seed}"
     echo "=== roleplaying $variant seed $seed ==="
     python -m selfconcept.soo.evaluate --model "$MODEL" $A --data data/eval_apollo --scenarios roleplaying --suffix none --max-new-tokens 256 --out "$APOLLO" --tag "ap_lora_${variant}_s${seed}"
 done
-for seed in 0 1 2; do
+[[ " $STAGES " == *" insider "* ]] && for seed in $SEEDS; do
     A="--adapter $CK/seed${seed}"
     echo "=== insider $variant seed $seed ==="
     python -m selfconcept.soo.evaluate --model "$MODEL" $A --data data/eval_apollo --scenarios insider_trading --suffix none --max-new-tokens 600 --out "$APOLLO" --tag "ap_lora_${variant}_s${seed}"

@@ -40,9 +40,9 @@ set -e
 # insider_trading") narrow the run, e.g. an interim seed-0 roleplaying grade
 # while the generation jobs are still on later seeds.
 D=results/apollo_eval/qwen38_27b
-SEEDS=${SEEDS:-0 1 2}; SCENARIOS=${SCENARIOS:-roleplaying insider_trading}
+SEEDS=${SEEDS:-0 1 2}; SCENARIOS=${SCENARIOS:-roleplaying insider_trading}; VARIANTS=${VARIANTS:-agentic mixed}
 rp=""; it=""
-for v in agentic mixed; do for s in $SEEDS; do
+for v in $VARIANTS; do for s in $SEEDS; do
     [[ " $SCENARIOS " == *" roleplaying "* ]] && rp="$rp $(ls $D/ap_lora_${v}_s${s}_roleplaying_none.jsonl 2>/dev/null || true)"
     [[ " $SCENARIOS " == *" insider_trading "* ]] && it="$it $(ls $D/ap_lora_${v}_s${s}_insider_trading_none.jsonl 2>/dev/null || true)"
 done; done

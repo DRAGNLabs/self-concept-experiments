@@ -416,7 +416,10 @@ LoRA 24 — the adapters copy the scenario's report template ("recommendation fr
 and stop deliberating (reasoning 80–86 chars vs 144); profile matches the vector cell, not the
 original adapter. The two pair sets are not additive (mixed is worse). Next: (a) budget /
 reasoning-preserving rerun of the insider cell, (b) drop `trader_insider` from training to
-test in-situation pairs, (c) alternative 2 (context-targeted loss).
+test in-situation pairs, (c) alternative 2 (context-targeted loss). **Queued 2026-09-17 (round
+8b)**: `agentic-noinsider` (57 pairs, trader_insider dropped; 13748869) and `agentic-persons`
+(42 pairs, kind=person only; 13748870), seed 0, insider + roleplaying, judge 13748871
+(`lora-qwen38-agentic.sh` now takes SEEDS/STAGES, the judge VARIANTS).
 Open: seed-0 agentic doubles response length (seed 1 does not); a few wrong-way
 flips on Student/Patient/Applicant scenarios; alternatives (2)–(3) stay in reserve unless the
 code/caps cells show a cost.
