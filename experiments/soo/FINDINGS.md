@@ -3525,6 +3525,9 @@ model that stopped deliberating and filled the template. The `trader_insider` tr
 situation is this exact scenario (an AI trading assistant explaining to manager Amy what
 information the trade was based on), so the in-situation pair did not help either.
 
+Seed 1 (raw, judge pending in 13744236): template-only reports 135/173 (agentic) and 109/173
+(mixed), mean reasoning 101 / 89 chars — the regression is not a seed-0 accident.
+
 **Reading, revised.** Agentic self/other pairs move instructed deception (roleplaying:
 −20 points, two seeds) and lose self-interested concealment (insider: +21 / +35 points,
 one seed each), while the original pairs do the reverse. The two data sets are not additive
