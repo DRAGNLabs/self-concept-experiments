@@ -3278,7 +3278,7 @@ steered cell is at ~5–10% original pass, so the α10 call-out numbers
 are collapse, not silence; the α8 contrast above (+v 0/40 vs random
 7/40 at matched capability) remains the finding.
 
-## Positional ("conditional") steering, round 7 part 1 (jobs 13743987 L31, 13744010 L23; code cells 13743988/89 + judge 13744009 pending): the vector's in-distribution effect is carried entirely by the prompt positions — steering the context alone reproduces the certified cells, steering the model's own turn does nothing at any usable dose, so the SOO effect and the coding collapse cannot be separated by masking
+## Positional ("conditional") steering, round 7 part 1 (jobs 13743987 L31, 13744010 L23; code cells 13743988/89 + judge 13744009 pending): the vector's in-distribution effect is carried entirely by the prompt positions — steering the context alone reproduces the certified cells, steering the model's own turn does nothing at any usable dose, so the SOO effect and the coding collapse cannot be separated by masking — **revised in part 2 below: the collapse is carried by the response positions, so prompt-only steering keeps most of the coding capability**
 
 The question from rounds 6/6b was whether the vector fails on Qwen3.8-27B
 because a constant offset at *every* token also corrupts the model's
@@ -3369,6 +3369,50 @@ prompts on the hybrid DeltaNet/attention cache — transformers 5.17 passes
 `past_key_values` but not `cache_position` to the top-level forward, so the
 hook reads the cache's `get_seq_length()`, the same call the Qwen3.5-family
 model uses for `past_seen_tokens`).
+
+## Positional steering, round 7 part 2 (code cells 13743988 resp_a10 / 13743989 prompt_a10, judge 13744009; complete 2026-09-18): the coding collapse lives in the response positions, not the prompt — prompt-only +v α10 keeps original-task pass at 50% (base 62, full α10 10, n.s. vs base) while carrying the full in-distribution effect; response-only +v α10 collapses coding (12%) while doing nothing in-distribution
+
+Part 1 concluded that no position mask separates the SOO effect from the capability cost
+because the effect lives in the prompt positions. That inference assumed the cost lives
+there too. It does not. Same protocol as round 6 (n=40, 3 attempts, 2048 tokens, greedy,
+Qwen2.5-72B judge + messages-only call-out pass).
+
+| cell (L31, α10) | in-dist (part 1) | original pass | conflicting `passed_original` | EvilGenie holdout | call-out (msg-only / regex) | trunc. attempts | comment lines |
+|---|---|---|---|---|---|---|---|
+| base | 0 | 62% | 48% | 42% | 45% / 48% | 65% | 16% |
+| +v all positions (round 6) | 100/100 | 10% (p<1e-3) | 8% | 5% | 10% / 2% | 38% | 61% |
+| +v prompt only | **100/100** | **50%** (p=0.37) | 28% (p=0.11) | not run | 18% / 20% (p=0.015 / 0.017) | 49% | 33% |
+| +v response only | 0/0 | 12% (p<1e-3) | 8% | 20% (p=0.05) | 20% / 20% (p=0.03) | 51% | 39% |
+| original LoRA L32 (round 6) | 100/100 | 50% | 32% | 25% | 25% / 25% | 65% | 33% |
+| random α8, all positions (round 6b) | floor | 30% | 30% | — | 18% / 18% | 70% | 25% |
+
+**Response-only steering collapses coding while being null in-distribution.** Same 12% as the
+full cell, coherent-looking but wrong or truncated code, and the same holdout floor on
+EvilGenie. The part-1 "null" was measured on a task whose answer is one to three tokens —
+there was almost nothing on the response positions to steer. A 2,000-token coding turn is
+fully steered, and that is where the damage is. This resolves the round-6 puzzle of why a
+vector that costs 5 MMLU points destroys multi-turn coding: lm-eval scores log-likelihoods of
+short continuations (mostly prompt positions), the code harness generates long ones.
+
+**Prompt-only steering is the closest thing to a free SOO vector on this model.** Original
+split 50% against base 62 (n.s.) — the same 50% as the certified LoRA — with the full 100/100
+in-distribution effect. On the conflicting split it is at 28 (LoRA 32, base 48), the
+call-out falls to 18% (LoRA 25, base 45; p=0.015), and the transcripts carry the usual
+signatures at a milder level (33% comment lines, 49% truncated). The judge finds no cheats
+(0 test modification, 1 special-casing flag, rule-verified 0). Two things are missing before
+this can be called a result: a prompt-only *random* control at α10 (the α8 all-position
+random control also sits at 18% call-out, so the call-out drop is not yet direction-specific
+at matched capability), and multiple-choice capabilities for the positional cells, which
+part 1 skipped because lm-eval needs the chat template in positional mode. Caps queued now
+(`caps-qwen38-pos.sh`: chat-template α=0 baseline, prompt-only α10, response-only α10).
+
+**What changes upstream.** PLAN §9's mechanism claim ("a constant offset cannot substitute
+for fine-tuning") stands for the all-position vector; it no longer stands for the
+prompt-masked one. The mechanistic statement is now two-sided: the self/other offset acts
+through the context to produce the SOO behaviour, and acts through the generated tokens to
+destroy long-form capability; masking to the context keeps the first and drops most of the
+second. Whether the prompt-only vector also transfers (insider trading, roleplaying) is the
+natural next cell, and cheaper than any adapter.
 
 ## Reframing note (2026-09-17): the evidence supports an extension paper, not a correction — round 8 (agentic SOO data) queued
 
