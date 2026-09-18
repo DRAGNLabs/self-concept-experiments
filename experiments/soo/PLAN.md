@@ -422,6 +422,16 @@ test in-situation pairs, (c) alternative 2 (context-targeted loss). **Queued 202
 8b)**: `agentic-noinsider` (57 pairs, trader_insider dropped; 13748869) and `agentic-persons`
 (42 pairs, kind=person only; 13748870), seed 0, insider + roleplaying, judge 13748871
 (`lora-qwen38-agentic.sh` now takes SEEDS/STAGES, the judge VARIANTS).
+**Final (2026-09-18, FINDINGS "Round 8" final block).** Roleplaying: agentic 27.0 ± 3.1, mixed
+32.3 ± 4.4 (3 seeds, all p ≤ 2e-3, role-disjoint holds). Insider: all six seeds regress
+(agentic 76–87, mixed 64–89 concealed; template copy 109–150/173; reasoning 76–108 chars);
+8b: dropping trader_insider → 70%, person-only pairs → 87% — the construction itself does it,
+not a situation or the agent-kind pairs. Code: agentic 62 → 38 original pass (p=0.04), 18%
+conflicting; mixed 48 / 25 (= original LoRA); no call-out suppression; one announced test
+rewrite (agentic). Caps −1 HS / −2 MMLU. Verdict: pair content sets what SOO moves; the two
+contrasts are not additive; the method needs a deliberation-preserving ingredient before it
+is a contribution. Next: prompt-only vector (round 7 part 2) on the same read-outs, then
+alternative 2.
 Open: seed-0 agentic doubles response length (seed 1 does not); a few wrong-way
 flips on Student/Patient/Applicant scenarios; alternatives (2)–(3) stay in reserve unless the
 code/caps cells show a cost.
