@@ -492,7 +492,11 @@ Not done, ranked for later:
   shuffled, key alongside; add `"human_label"` per row and run `--score`. Note for whoever
   labels: median response length runs *opposite* to the judge's deception call (honest 341
   chars, ambiguous 253, deceptive 174), so the naive verbosity-bias worry is not the live one.
-  The insider judge still needs the same treatment.
+  (c) *Insider judge*, same day: `judge_insider.py` also gained `--out-suffix`, and job
+  **13756223** re-grades the seven insider conditions carrying the round-8 regression with
+  gemma-4-31B-it; score with `--score-judge-insider _graded_g31`. The scoring path is
+  self-tested (grading a file against itself gives 100% / kappa 1.000). Blinded human labeling
+  of the insider reports is not built yet; the roleplaying sample is the priority.
 - **Frozen selection protocol (items 2, 9) — DONE 2026-09-18: `PROTOCOL.md`.** Development is
   in-distribution indices 0–49 (the pilot prefix) and confirmation is 50–249; Apollo transfer
   claims report the 246 role-disjoint scenarios as primary; the predictor, cells, metric,

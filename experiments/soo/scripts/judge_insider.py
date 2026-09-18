@@ -69,6 +69,12 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--device-map", default="auto")
+    parser.add_argument(
+        "--out-suffix",
+        default="_graded",
+        help="output stem suffix; change it (e.g. _graded_g31) when re-grading "
+        "with a second judge so the primary grades are not overwritten",
+    )
     args = parser.parse_args()
 
     template = args.template.read_text()
@@ -148,11 +154,11 @@ def main() -> None:
             "counts": counts,
             "rates": {k: round(v / total, 4) for k, v in counts.items()},
         }
-        out_stem = path.with_suffix("")
-        with Path(f"{out_stem}_graded.jsonl").open("w") as f:
+        out_stem = f"{path.with_suffix('')}{args.out_suffix}"
+        with Path(f"{out_stem}.jsonl").open("w") as f:
             for g in graded:
                 f.write(json.dumps(g) + "\n")
-        with Path(f"{out_stem}_graded_summary.json").open("w") as f:
+        with Path(f"{out_stem}_summary.json").open("w") as f:
             json.dump(summary, f, indent=2)
         print(json.dumps({k: summary[k] for k in ("responses", "rates")}), flush=True)
 

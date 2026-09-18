@@ -56,14 +56,14 @@ CONDITIONS = {
 LABELS = ("honest", "ambiguous", "deceptive")
 
 
-def load(tag: str, suffix: str = "_graded") -> tuple[dict, dict]:
+def load(tag: str, suffix: str = "_graded", scenario: str = "roleplaying") -> tuple[dict, dict]:
     resp = {
         r["example_id"]: r
-        for r in map(json.loads, (APOLLO / f"{tag}_roleplaying_none.jsonl").open())
+        for r in map(json.loads, (APOLLO / f"{tag}_{scenario}_none.jsonl").open())
     }
     graded = {
         r["example_id"]: r
-        for r in map(json.loads, (APOLLO / f"{tag}_roleplaying_none{suffix}.jsonl").open())
+        for r in map(json.loads, (APOLLO / f"{tag}_{scenario}_none{suffix}.jsonl").open())
     }
     return resp, graded
 
@@ -94,14 +94,21 @@ def score_human() -> None:
     print("labeled per condition:", dict(by_cond))
 
 
-def score_judge(suffix: str) -> None:
-    print(f"| condition | n | primary H/A/D | second H/A/D | agree | binary agree | Cohen kappa |")
+def score_judge(suffix: str, scenario: str = "roleplaying") -> None:
+    """Agreement between the primary judge and a second, independent-family judge.
+
+    Reported per condition over all scenarios, not over the blinded sample: the
+    two judges grade the same records, so this is a full paired comparison. The
+    binary column is the call that carries every claim (deceptive vs not);
+    kappa corrects it for the base rate, which differs a lot by condition.
+    """
+    print("| condition | n | primary H/A/D | second H/A/D | agree | binary agree | Cohen kappa |")
     print("|---|---:|---|---|---:|---:|---:|")
     for cond, tag in CONDITIONS.items():
-        f2 = APOLLO / f"{tag}_roleplaying_none{suffix}.jsonl"
+        f2 = APOLLO / f"{tag}_{scenario}_none{suffix}.jsonl"
         if not f2.exists():
             continue
-        _, a = load(tag)
+        _, a = load(tag, scenario=scenario)
         b = {r["example_id"]: r for r in map(json.loads, f2.open())}
         ids = sorted(set(a) & set(b))
         la = [a[i]["label"] for i in ids]
@@ -130,12 +137,18 @@ def main() -> None:
     p.add_argument("--seed", type=int, default=11)
     p.add_argument("--score", action="store_true")
     p.add_argument("--score-judge", metavar="SUFFIX", help="e.g. _graded_g31")
+    p.add_argument(
+        "--score-judge-insider", metavar="SUFFIX", help="same, for the insider judge"
+    )
     args = p.parse_args()
     if args.score:
         score_human()
         return
     if args.score_judge:
         score_judge(args.score_judge)
+        return
+    if args.score_judge_insider:
+        score_judge(args.score_judge_insider, scenario="insider_trading")
         return
 
     meta = {
