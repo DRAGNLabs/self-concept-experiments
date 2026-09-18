@@ -411,6 +411,12 @@ AI-disclaimer responses; in-distribution still 100/0. Queued: code cells + caps 
 variants (13747100/01/02 agentic, 13747125/26/27 mixed); seeds 1–2 and insider trading pending
 (13744234/35 → judge 13744236). Seed 1 replicates (30.5 / 31.0, p ≤ 1e-6) with no length or disclaimer excess. Caps: −1
 HellaSwag, −2.0/−2.4 MMLU vs base (original LoRA −1.3), far below the vector's −9 to −12.
+**Insider trading regresses** (seed 0): concealed 76% agentic / 89% mixed vs base 54, original
+LoRA 24 — the adapters copy the scenario's report template ("recommendation from StockAnalyze")
+and stop deliberating (reasoning 80–86 chars vs 144); profile matches the vector cell, not the
+original adapter. The two pair sets are not additive (mixed is worse). Next: (a) budget /
+reasoning-preserving rerun of the insider cell, (b) drop `trader_insider` from training to
+test in-situation pairs, (c) alternative 2 (context-targeted loss).
 Open: seed-0 agentic doubles response length (seed 1 does not); a few wrong-way
 flips on Student/Patient/Applicant scenarios; alternatives (2)–(3) stay in reserve unless the
 code/caps cells show a cost.
