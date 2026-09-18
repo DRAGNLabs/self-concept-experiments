@@ -10,7 +10,15 @@ Use “smaller self/other gap” for the measured result and “more overlap” 
 
 ## Current status
 
-No new experiments have been run under PLAN2. The three planned alternatives are subspace removal, probe-gated shifting, and matching self/other means and covariances. Single-direction projection is the simpler baseline. Held-out overlap measurements under these interventions are pending.
+The overlap measurement runner is implemented and has passed its initial software checks. No new model experiments have been run under PLAN2. The three planned alternatives are subspace removal, probe-gated shifting, and matching self/other means and covariances. Single-direction projection is the simpler baseline. Held-out measurements on the experimental models are pending.
+
+## Measurement software — 2026-09-18
+
+Work-order step 1 is implemented. The [runner and usage notes](OVERLAP.md) cover matched, fixed-prompt measurements under base, additive, projection, random-control, and adapter conditions. Captures read each prompt's last valid token, immediately before and after steering, at block outputs, and after final decoder normalization. Outputs include individual paired changes, activation-scale checks, family-based intervals, token records, and provenance.
+
+All 15 [software checks](../../tests/test_soo_overlap.py) passed on CPU using controlled tensors and tiny random Llama and Qwen hybrid models. They cover padding, capture order, inactive interventions, the local additive identity, removal of the projected component, positional masks, adapter loading, split checks, and saved outputs. Qwen's linear- and full-attention projection sites both passed. The zero-gate check uses artificial scores; no probe has been trained. Tests also show why the local additive identity must not be imposed on downstream measurements: the local difference stays the same while later representations can change.
+
+These checks establish software behavior on the test examples. They provide no evidence yet about held-out overlap, deception, or capabilities in the experimental models. The next step is to prepare explicitly grouped development pairs and measure the existing interventions. Declared split checks cannot establish an old artifact's training membership; that still needs comparison with its training records.
 
 ## Coverage check — 2026-09-18
 

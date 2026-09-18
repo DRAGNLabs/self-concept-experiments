@@ -1,6 +1,6 @@
 # SOO, second study: measure overlap before explaining behavior
 
-Started 2026-09-18. Status: planning; no new experiments have been run for this study.
+Started 2026-09-18. Status: overlap measurement implemented; model experiments are still pending.
 
 ## Writing conventions
 
@@ -40,7 +40,7 @@ The available result summaries contain projection runs for Mistral, Gemma-2, OLM
 
 ## Three alternatives
 
-These are Claude's proposed alternatives, made into testable comparisons. All fitted quantities come from the fit split. Each method must earn its interpretation through the held-out measurements below.
+These are the proposed alternatives, made into testable comparisons. All fitted quantities come from the fit split. Each method must earn its interpretation through the held-out measurements below.
 
 ### 1. Remove a self/other subspace
 
@@ -177,8 +177,8 @@ A dose-response relationship across gap and behavior would strengthen the eviden
 
 ## Work order
 
-1. Add held-out overlap measurement to the existing intervention setup. Check inactive hooks, padding, capture order, and the fixed-translation identity on small examples. Check that full projection removes its selected component and that an inactive gate leaves activations unchanged.
-2. Measure the base, existing additive steering, and existing original/agentic adapters on development pairs. This asks what the old interventions actually changed. The old `latent_soo.py` needs intervention support and an aligned, padding-free endpoint; its current full-tensor MSE is not this measurement.
+1. **Implemented:** add held-out overlap measurement to the existing intervention setup. Check inactive hooks, padding, capture order, and the fixed-translation identity on small examples. Check that full projection removes its selected component and that an inactive gate leaves activations unchanged. See [OVERLAP.md](OVERLAP.md) for the runner, input format, and software checks. The gate check uses an artificial gate; a trained probe remains future work.
+2. Measure the base, existing additive steering, and existing original/agentic adapters on development pairs. This asks what the old interventions actually changed. Use the new runner described in [OVERLAP.md](OVERLAP.md); the old `latent_soo.py` full-tensor MSE is not this measurement.
 3. Fill the single-direction projection gap, then test subspace removal, gated shifting, and covariance matching in that order. Use the same development pairs and behavioral examples. Report every tested cell. Stop a branch if its measured benefit is only collapse or cannot be separated from its controls; do not build a more elaborate version merely to rescue the hypothesis.
 4. Choose a candidate using a rule written before viewing its final test results. Freeze its settings, primary site, behavioral endpoint, meaningful-effect thresholds, capability margin, and comparisons in a dated entry. This document is a study design, not a claim that those numerical choices have already been preregistered.
 5. Run the untouched final test, repeat trained candidates across at least three seeds, and report successes and failures together. A vector fitted deterministically to fixed data has no training-seed uncertainty; assess its fit-data sensitivity by resampling situation families. Expand to a second model, initially Gemma-4-31B, after the first study is interpretable.
