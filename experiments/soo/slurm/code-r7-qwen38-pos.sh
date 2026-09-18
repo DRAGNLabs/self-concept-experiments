@@ -54,6 +54,9 @@ case "$cell" in
                     extra="$S --steer-alpha $A --steer-random-seed $SEED --steer-positions response" ;;
     resp_a*)        A=${cell#resp_a}; extra="$S --steer-alpha $A --steer-positions response"
                     SCEN="impossible_conflicting impossible_original evilgenie" ;;
+    prompt_neg_a*)  A=${cell#prompt_neg_a}; extra="$S --steer-alpha -$A --steer-positions prompt" ;;
+    prompt_rand_s*_a*) t=${cell#prompt_rand_s}; SEED=${t%%_a*}; A=${t#*_a}
+                    extra="$S --steer-alpha $A --steer-random-seed $SEED --steer-positions prompt" ;;
     prompt_a*)      A=${cell#prompt_a}; extra="$S --steer-alpha $A --steer-positions prompt" ;;
     *) echo "unknown cell $cell"; exit 1 ;;
 esac
