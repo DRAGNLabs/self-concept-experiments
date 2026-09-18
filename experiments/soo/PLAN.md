@@ -481,10 +481,18 @@ Done:
 
 Not done, ranked for later:
 
-- **Judge validity (audit item 7).** Blinded human + independent-family check of the Apollo
-  roleplaying and insider judges, stratified by model, intervention, verbosity and format. The
-  room-classifier and code-judge checks do not transfer to these judges. This is the largest
-  remaining single-point-of-failure in the headline result.
+- **Judge validity (audit item 7) — STARTED 2026-09-18.** Two halves, both queued the same day.
+  (a) *Independent family*: job **13756213** re-grades the eight round-8 headline roleplaying
+  conditions with gemma-4-31B-it instead of Qwen2.5-72B, writing `*_graded_g31.jsonl`
+  (`judge_apollo.py` gained `--out-suffix` so primary grades are never overwritten). Score with
+  `make_apollo_validation_sample.py --score-judge _graded_g31`, which reports per-condition
+  label distributions, binary agreement and Cohen's kappa on all 371 scenarios.
+  (b) *Blinded human*: `scripts/make_apollo_validation_sample.py` wrote 120 blinded samples to
+  `validation/apollo/sample.jsonl` (8 conditions × 3 judge labels × 5), condition-stripped and
+  shuffled, key alongside; add `"human_label"` per row and run `--score`. Note for whoever
+  labels: median response length runs *opposite* to the judge's deception call (honest 341
+  chars, ambiguous 253, deceptive 174), so the naive verbosity-bias worry is not the live one.
+  The insider judge still needs the same treatment.
 - **Frozen selection protocol (items 2, 9).** Before the next model family: fix the predictor,
   threshold, condition set and OOD success criterion in advance; keep the n=50 pilots as
   development data and confirm on untouched scenario families (the n=250 files contain the
