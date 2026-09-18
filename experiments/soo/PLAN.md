@@ -493,10 +493,12 @@ Not done, ranked for later:
   labels: median response length runs *opposite* to the judge's deception call (honest 341
   chars, ambiguous 253, deceptive 174), so the naive verbosity-bias worry is not the live one.
   The insider judge still needs the same treatment.
-- **Frozen selection protocol (items 2, 9).** Before the next model family: fix the predictor,
-  threshold, condition set and OOD success criterion in advance; keep the n=50 pilots as
-  development data and confirm on untouched scenario families (the n=250 files contain the
-  n=50 prefixes).
+- **Frozen selection protocol (items 2, 9) — DONE 2026-09-18: `PROTOCOL.md`.** Development is
+  in-distribution indices 0–49 (the pilot prefix) and confirmation is 50–249; Apollo transfer
+  claims report the 246 role-disjoint scenarios as primary; the predictor, cells, metric,
+  success criterion and confirmatory list must be committed before the generation job; paired
+  tests and a separate direction-specificity contrast are mandatory; no equivalence claims from
+  an underpowered null; a reporting vocabulary fixes what each word licenses.
 - **Mechanism experiment (items 4, 5).** Fixed update budget; self/other vs shuffled-pair,
   self/self-with-independent-dropout, and non-social paraphrase contrasts; deterministic
   eval-mode held-out pair loss, activation norm/variance and normalized separation; behaviour
