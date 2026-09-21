@@ -14,7 +14,7 @@ import numpy as np
 
 from selfconcept.soo.overlap import paired_interval
 
-SITES = ("hook_after", "residual_L32", "residual_L39", "residual_L47", "residual_L55", "residual_L63", "final_norm")
+SITES = ()  # derived from the first completed run: hook_after, residual blocks in order, final_norm
 PRIMARY = ("hook_after", "final_norm")
 ADAPTER_TYPES = ("original", "agentic", "mixed")
 CONTRACTION_PCT = -10.0
@@ -55,6 +55,9 @@ def main(out_dir):
     runs = {p.name: load_run(p) for p in sorted(out_dir.iterdir()) if p.is_dir()}
     missing = [k for k, v in runs.items() if v is None]
     runs = {k: v for k, v in runs.items() if v is not None}
+    global SITES
+    first = next(iter(runs.values()))["summary"]["base"]["self_other"]
+    SITES = ("hook_after", *sorted((k for k in first if k.startswith("residual_L")), key=lambda k: int(k.removeprefix("residual_L"))), "final_norm")
     result = {"note": "Exploratory, unadjusted intervals. Percentages scale raw paired changes by the observed base gap. Seed averages are taken within each pair, not pooled as independent pairs.",
               "incomplete_runs": missing, "runs": {}, "base_consistency": {}, "adapter_types": {}, "contrasts": {}, "steering_reference": {}}
 
