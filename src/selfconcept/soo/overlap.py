@@ -23,14 +23,22 @@ def last_valid_indices(mask: torch.Tensor) -> torch.Tensor:
     return indices
 
 
-def endpoint(output, mask: torch.Tensor) -> torch.Tensor:
-    """Return a detached CPU copy, including for tuple-valued block outputs."""
+def endpoint(output, mask: torch.Tensor, offset: int = 0) -> torch.Tensor:
+    """Return a detached CPU copy, including for tuple-valued block outputs.
+
+    `offset` counts valid tokens back from the last one: 0 is the last valid
+    token, 1 the one before it. Every prompt must be long enough.
+    """
     value = output[0] if isinstance(output, tuple) else output
     if not isinstance(value, torch.Tensor) or value.ndim != 3:
         raise ValueError("capture site must return [batch, sequence, hidden]")
     if value.shape[:2] != mask.shape:
         raise ValueError("capture and attention mask shapes differ")
-    indices = last_valid_indices(mask).to(value.device)
+    if offset < 0:
+        raise ValueError("endpoint offset must be nonnegative")
+    indices = last_valid_indices(mask).to(value.device) - offset
+    if (indices < 0).any() or not mask.bool()[torch.arange(len(indices), device=mask.device), indices.to(mask.device)].all():
+        raise ValueError("endpoint offset reaches before the first valid token")
     rows = torch.arange(len(indices), device=value.device)
     result = value[rows, indices].detach().float().cpu().clone()
     if not torch.isfinite(result).all():
@@ -55,7 +63,7 @@ def decoder_final_norm(model):
 
 
 def measure_condition(model, batches, layer: int, residual_layers=None,
-                      intervention=None) -> dict[str, torch.Tensor]:
+                      intervention=None, endpoint_offset: int = 0) -> dict[str, torch.Tensor]:
     """Capture fixed, interleaved self/other inputs under one intervention.
 
     `batches` contain ordinary model keyword tensors (no cache or generation).
@@ -80,7 +88,7 @@ def measure_condition(model, batches, layer: int, residual_layers=None,
         def hook(_module, _inputs, output):
             if site in current:
                 raise ValueError(f"site {site} executed twice in one forward pass")
-            current[site] = endpoint(output, mask)
+            current[site] = endpoint(output, mask, endpoint_offset)
         return hook
 
     # eval() disables adapter dropout as well as ordinary model dropout.

@@ -70,7 +70,7 @@ def read_pairs(path, split):
     return rows, selected
 
 
-def encode_pairs(tokenizer, pairs, batch_size, device, chat_kwargs):
+def encode_pairs(tokenizer, pairs, batch_size, device, chat_kwargs, endpoint_offset=0):
     """Render once and reuse the exact token tensors in every condition."""
     batches, token_records = [], []
     for start in range(0, len(pairs), batch_size):
@@ -83,11 +83,13 @@ def encode_pairs(tokenizer, pairs, batch_size, device, chat_kwargs):
         last = last_valid_indices(enc["attention_mask"])
         for j, text in enumerate(texts):
             ids = enc["input_ids"][j][enc["attention_mask"][j].bool()].tolist()
-            token = int(enc["input_ids"][j, last[j]])
+            if endpoint_offset < 0 or endpoint_offset >= len(ids):
+                raise ValueError("endpoint offset reaches before the first valid token")
+            token = int(enc["input_ids"][j, last[j] - endpoint_offset])
             token_records.append({
                 "id": group[j // 2]["id"], "member": "self" if j % 2 == 0 else "other",
                 "rendered_prompt": text, "input_ids": ids, "n_tokens": len(ids),
-                "endpoint_token_id": token,
+                "endpoint_offset": endpoint_offset, "endpoint_token_id": token,
                 "endpoint_token": tokenizer.convert_ids_to_tokens(token),
                 "endpoint_decoded": tokenizer.decode([token]),
             })
@@ -106,6 +108,8 @@ def parser():
     p.add_argument("--residual-layers", type=int, nargs="+", help="default: intervention block and every later block")
     p.add_argument("--vectors", type=Path)
     p.add_argument("--token-mode", choices=("last", "mean"), default="last")
+    p.add_argument("--endpoint-offset", type=int, default=0,
+                   help="measure this many valid tokens before the last prompt token (0 = last token)")
     p.add_argument("--mode", choices=("add", "project"), default="add")
     p.add_argument("--alpha", type=float, default=1.)
     p.add_argument("--positions", choices=POSITION_MODES, default="all")
@@ -180,7 +184,7 @@ def main(argv=None):
         model.to(args.device)
     device = model.get_input_embeddings().weight.device
     chat_kwargs = chat_template_kwargs()
-    batches, token_records = encode_pairs(tokenizer, pairs, args.batch_size, device, chat_kwargs)
+    batches, token_records = encode_pairs(tokenizer, pairs, args.batch_size, device, chat_kwargs, args.endpoint_offset)
     marker = response_marker(tokenizer, chat_kwargs) if args.positions != "all" else None
     if marker:
         # Refuse an ambiguous positional comparison instead of silently using a fallback.
@@ -197,7 +201,8 @@ def main(argv=None):
 
     def run(name, intervention=None):
         print(f"Measuring {name}: {len(pairs)} pairs", flush=True)
-        conditions[name] = measure_condition(model, batches, args.layer, args.residual_layers, intervention)
+        conditions[name] = measure_condition(model, batches, args.layer, args.residual_layers, intervention,
+                                             endpoint_offset=args.endpoint_offset)
         if args.checkpoint_conditions:
             torch.save(conditions[name], args.out / "conditions" / f"{name}.pt")
             (args.out / "progress.json").write_text(json.dumps({"status": "running", "completed_conditions": list(conditions)}, indent=2))
@@ -222,9 +227,10 @@ def main(argv=None):
     if args.subspace_ranks:
         from .subspace import apply_subspace, fit_subspace, random_subspace
         fit_pairs = [p for p in all_pairs if p["split"] == "fit"]
-        fit_batches, fit_tokens = encode_pairs(tokenizer, fit_pairs, args.batch_size, device, chat_kwargs)
+        fit_batches, fit_tokens = encode_pairs(tokenizer, fit_pairs, args.batch_size, device, chat_kwargs, args.endpoint_offset)
         print(f"Fitting subspaces on {len(fit_pairs)} fit pairs only", flush=True)
-        fit_values = measure_condition(model, fit_batches, args.layer, [args.layer])["hook_before"]
+        fit_values = measure_condition(model, fit_batches, args.layer, [args.layer],
+                                       endpoint_offset=args.endpoint_offset)["hook_before"]
         subspace_fit = {"model": args.model, "layer": args.layer, "token_mode": "last",
                         "positions": args.positions, "pairs": fit_pairs, "tokens": fit_tokens,
                         "probes_sha256": hashes[str(args.probes)], "fits": {}}
@@ -305,6 +311,8 @@ def main(argv=None):
         "split_validation": "IDs, literal prompt overlap and declared families checked within this input only; artifact training membership is not verified",
         "chat_kwargs": chat_kwargs, "chat_template": tokenizer.chat_template,
         "padding_side": tokenizer.padding_side, "response_marker_ids": marker,
+        "endpoint_offset": args.endpoint_offset,
+        "endpoint": "last valid prompt token" if args.endpoint_offset == 0 else f"{args.endpoint_offset} valid tokens before the last prompt token; see tokens.jsonl",
         "capture_modules": {"hook": module_path(attn_out_proj(get_decoder_layers(model)[args.layer])),
                             "final_norm": module_path(decoder_final_norm(model)),
                             **{site: module_path(get_decoder_layers(model)[int(site.removeprefix("residual_L"))])

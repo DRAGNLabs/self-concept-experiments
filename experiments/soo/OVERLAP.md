@@ -40,6 +40,8 @@ SOO_CHAT_KWARGS='{"enable_thinking": false}' .venv/bin/python -m selfconcept.soo
 
 Use the same vector, strength, chat settings, and position mask as the behavioral cell being compared. Change to `--mode project --alpha 1` for single-direction projection. Omit `--vectors` for base-only measurement, or add `--adapter path/to/local/adapter` to compare an existing adapter separately against base. Adapter and steering conditions are not combined. Run each adapter in its own output directory.
 
+`--endpoint-offset N` reads the activation N valid tokens before the last prompt token at every capture site, for example the last user-content token instead of the assistant-header token. The saved token records show the actual token; check that it is matched within each pair before comparing. The intervention's position mask is unaffected.
+
 `--layer` uses zero-based indices. By default, the runner measures the intervention block and every later block. `--residual-layers 31 32 63`, for example, can select fewer blocks if those indices exist. The intervention block is always included. `--revision` selects a model/tokenizer revision. CPU and float32 are the defaults; choose the experiment's actual precision and device explicitly.
 
 Output directories must be new. Use a separate directory for each run; existing results cannot be overwritten or resumed silently.

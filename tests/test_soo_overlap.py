@@ -51,6 +51,13 @@ class MetricsTests(unittest.TestCase):
         left = torch.tensor([[0, 0, 1, 1], [0, 1, 1, 1]])
         torch.testing.assert_close(endpoint(values, right), values[[0, 1], [1, 2]].float())
         torch.testing.assert_close(endpoint((values,), left), values[:, -1].float())
+        # Offsets count valid tokens back from the endpoint on either padding side.
+        torch.testing.assert_close(endpoint(values, right, offset=1), values[[0, 1], [0, 1]].float())
+        torch.testing.assert_close(endpoint(values, left, offset=1), values[:, -2].float())
+        with self.assertRaises(ValueError):
+            endpoint(values, right, offset=2)
+        with self.assertRaises(ValueError):
+            endpoint(values, right, offset=-1)
         with self.assertRaises(ValueError):
             last_valid_indices(torch.tensor([[0, 0]]))
 
@@ -121,6 +128,16 @@ class ForwardTests(unittest.TestCase):
         expected = endpoint(hidden, self.batch["attention_mask"]).reshape(2, 2, 16)
         torch.testing.assert_close(self.base["final_norm"], expected)
         torch.testing.assert_close(self.base["hook_before"], self.base["hook_after"], rtol=0, atol=0)
+
+    def test_endpoint_offset_reads_the_earlier_token(self):
+        shifted = measure_condition(self.model, [self.batch], 1, endpoint_offset=1)
+        with torch.inference_mode():
+            hidden = self.model(**self.batch, output_hidden_states=True).hidden_states[-1]
+        expected = endpoint(hidden, self.batch["attention_mask"], offset=1).reshape(2, 2, 16)
+        torch.testing.assert_close(shifted["final_norm"], expected)
+        self.assertFalse(torch.allclose(shifted["final_norm"], self.base["final_norm"]))
+        with self.assertRaises(ValueError):
+            measure_condition(self.model, [self.batch], 1, endpoint_offset=3)
 
     def test_inactive_hooks_and_cleanup(self):
         for mode in ("add", "project"):

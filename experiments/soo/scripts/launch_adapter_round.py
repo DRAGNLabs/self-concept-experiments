@@ -1,5 +1,7 @@
 """Freeze a snapshot for the existing-adapter round and submit it (ADAPTER_ROUND.md).
 
+Step 2b: pass --endpoint-offset 9 --tag off9 to measure the last user-content token.
+
 Usage, from the repository root:
   .venv/bin/python experiments/soo/scripts/launch_adapter_round.py            # freeze, check, submit
   .venv/bin/python experiments/soo/scripts/launch_adapter_round.py --no-submit
@@ -103,6 +105,38 @@ def check_membership():
     return report
 
 
+def check_endpoint(offset):
+    """Record which token the offset reads; for offset > 0 it must be user content, identical within each pair."""
+    import os
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("SOO_CHAT_KWARGS", '{"enable_thinking": false}')
+    sys.path.insert(0, str(ROOT / "src"))
+    from transformers import AutoTokenizer
+    from selfconcept.common.chat import chat_template_kwargs
+    tok = AutoTokenizer.from_pretrained(MODEL, revision=REVISION)
+    end_id = tok.convert_tokens_to_ids("<|im_end|>")
+    rows = [json.loads(l) for l in (SOO / "data/subspace_pilot_pairs.jsonl").read_text().splitlines() if l.strip()]
+    dev = [r for r in rows if r["split"] == "development"]
+    tokens, mismatched, not_user = {}, [], []
+    for r in dev:
+        got = []
+        for key in ("self_prompt", "other_prompt"):
+            text = tok.apply_chat_template([{"role": "user", "content": r[key]}], tokenize=False, add_generation_prompt=True, **chat_template_kwargs())
+            ids = tok(text, add_special_tokens=False)["input_ids"]
+            pos = len(ids) - 1 - offset
+            if pos < 0:
+                raise SystemExit(f"offset {offset} too large for {r['id']}")
+            got.append(tok.decode([ids[pos]]))
+            if offset and pos >= ids.index(end_id):
+                not_user.append(r["id"])
+        if got[0] != got[1]:
+            mismatched.append(r["id"])
+        tokens[got[0]] = tokens.get(got[0], 0) + 1
+    if offset and (mismatched or not_user):
+        raise SystemExit(f"offset {offset} is not a matched user-content token: mismatched {mismatched[:3]}, not user {not_user[:3]}")
+    return {"offset": offset, "endpoint_token_counts": tokens, "pairs_checked": len(dev)}
+
+
 def check_adapters():
     info = {}
     for label, name in ADAPTERS.items():
@@ -117,7 +151,7 @@ def check_adapters():
     return info
 
 
-def freeze(snapshot):
+def freeze(snapshot, endpoint_offset=0):
     snapshot.mkdir(parents=True, exist_ok=False)
     shutil.copytree(ROOT / "src", snapshot / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     (snapshot / "tests").mkdir()
@@ -134,7 +168,8 @@ def freeze(snapshot):
     shutil.copy2(Path(__file__), snapshot / "launch_adapter_round.py")
     adapter_runs = "\n".join(f"run adapter-{label}-seed{seed} --adapter adapters/{label}/seed{seed}"
                              for label in ADAPTERS for seed in SEEDS)
-    (snapshot / "run.sh").write_text(RUN_SH.replace("__COMMON__", COMMON).replace("__ADAPTER_RUNS__", adapter_runs))
+    common = COMMON + (f" --endpoint-offset {endpoint_offset}" if endpoint_offset else "")
+    (snapshot / "run.sh").write_text(RUN_SH.replace("__COMMON__", common).replace("__ADAPTER_RUNS__", adapter_runs))
     (snapshot / "run.sh").chmod(0o755)
 
 
@@ -164,6 +199,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-submit", action="store_true")
     ap.add_argument("--submit-existing", type=Path)
+    ap.add_argument("--endpoint-offset", type=int, default=0, help="valid tokens before the last prompt token (ADAPTER_ROUND.md step 2b uses 9)")
+    ap.add_argument("--tag", default="", help="snapshot name suffix, e.g. off9")
     args = ap.parse_args()
     if args.submit_existing:
         snap = args.submit_existing.resolve()
@@ -172,10 +209,11 @@ def main():
         submit(snap)
         return
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    snapshot = SOO / "results/study2" / f"adapters-qwen38-L{LAYER}-{stamp}"
+    snapshot = SOO / "results/study2" / f"adapters-qwen38-L{LAYER}-{args.tag + '-' if args.tag else ''}{stamp}"
     membership = check_membership()
+    endpoint_check = check_endpoint(args.endpoint_offset)
     adapters = check_adapters()
-    freeze(snapshot)
+    freeze(snapshot, args.endpoint_offset)
     test_result = software_checks(snapshot)
     files = sorted(p for p in snapshot.rglob("*") if p.is_file())
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True).stdout.strip()
@@ -186,6 +224,7 @@ def main():
         "plan": "ADAPTER_ROUND.md", "model": MODEL, "model_revision": REVISION, "layer": LAYER,
         "expected_runs": ["steering-L32-add-a10"] + [f"adapter-{l}-seed{s}" for l in ADAPTERS for s in SEEDS],
         "development_pairs": 64, "training_membership_check": membership, "adapters": adapters,
+        "endpoint_offset": args.endpoint_offset, "endpoint_check": endpoint_check,
         "test_result": test_result,
         "files_sha256": {str(p.relative_to(snapshot)): sha256(p) for p in files},
     }

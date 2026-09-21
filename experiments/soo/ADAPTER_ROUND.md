@@ -54,3 +54,19 @@ No behavioral sweep is launched from this round. No honesty claim follows from i
 ## Records
 
 The launch freezes code, tests, pair file, vector file, adapters, and this plan under `results/study2/adapters-qwen38-L32-<timestamp>/`, with hashes in `launch.json`, software-check output in `software_checks.log`, and the Slurm job in `submission.json`. Each run writes `manifest.json` last; `output/analysis.json` and `output/analysis.md` are produced by the pre-written [analysis script](scripts/analyze_adapter_round.py).
+
+## Step 2b addendum: position specificity
+
+Written 2026-09-21 after round 2 (job `13838157`) and before launching the follow-up. Exploratory.
+
+**Question.** Round 2 found that every adapter makes the L32 attention output at the final prompt token nearly constant across prompts. Is that collapse confined to the response-start position, or does it also flatten the attention output at an earlier, content-bearing position?
+
+**Change from round 2.** The runner gains `--endpoint-offset N`, which reads the activation N valid tokens before the last prompt token, at every capture site. Offset 9 lands on the last user-content token before the end-of-turn marker, a period or question mark shared by both members of each pair; the launch script verifies this for all 64 pairs and records the token counts. Everything else is identical: same nine adapters, same steering reference, same pairs, sites, precision, and revision. The intervention itself still applies at all positions.
+
+**Readout.** The same table and flags as round 2, now at the earlier token. Comparisons fixed in advance:
+
+- If the self/other gap, name-control gap, prompt variation, and norms at L32's attention output change by only a few percent at offset 9, the collapse is specific to the final template token, and the first-study adapters act as a fixed perturbation injected at the response-start position.
+- If they collapse at offset 9 as well (variation down by tens of percent or more), the adapters flatten the attention output broadly, and the earlier-position residual and final-norm rows show how far that carries.
+- Intermediate results are reported as such. No threshold here is a success criterion.
+
+**Decision mapping.** Position-specific collapse: compare the adapters behaviorally against a constant perturbation at the response-start token before any further SOO training, and treat the first study's adapter effects as effects of that perturbation until shown otherwise. Broad collapse: the adapters damage the attention output generally; compare capability results from the first study against this measurement and stop training with the unconstrained last-token loss. Either way, work-order step 3 proceeds with fitted interventions and the name-control check at the intervention site.
