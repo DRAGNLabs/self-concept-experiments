@@ -1,10 +1,10 @@
 # SOO, second study: measure overlap before explaining behavior
 
-Started 2026-09-18. Status: the first subspace measurement pilot is complete; see [FINDINGS2.md](FINDINGS2.md).
+Started 2026-09-18. Status: two measurement rounds are complete; see [FINDINGS2.md](FINDINGS2.md).
 
-The first subspace pilot is specified in [SUBSPACE_PILOT.md](SUBSPACE_PILOT.md): original-pair fitting, new development situations, single-direction and control comparisons, and no final-test selection.
+Round 1 (2026-09-18, job `13758595`, [SUBSPACE_PILOT.md](SUBSPACE_PILOT.md), [snapshot](results/study2/subspace-original-qwen38-L31-20260918T211526Z/launch.json)): subspace removal at Qwen L31 contracts the local held-out gap by a few percent with little final-decoder effect and no established advantage over random controls. No behavioral sweep of that cell.
 
-Completed 2026-09-18 as Slurm job `13758595`, using a [frozen snapshot](results/study2/subspace-original-qwen38-L31-20260918T211526Z/launch.json). All 49 conditions ran. Local contraction did not yield a substantial final-decoder reduction, and the best observed cell was not clearly separated from random controls. Hold off on a broad behavioral sweep of this cell. The next pending comparison is overlap under the existing adapters.
+Round 2 (2026-09-21, job `13838157`, [ADAPTER_ROUND.md](ADAPTER_ROUND.md), [snapshot](results/study2/adapters-qwen38-L32-20260921T221033Z/launch.json)): every first-study adapter removes essentially the whole held-out gap at L32 for self/other and name-control pairs alike, by making the final-token attention output nearly constant. The adapters are a nonspecific collapse at the loss position, not measured overlap. Next pending: the position-specificity check in work-order step 2b, then step 3 with fitted interventions.
 
 ## Writing conventions
 
@@ -182,7 +182,8 @@ A dose-response relationship across gap and behavior would strengthen the eviden
 ## Work order
 
 1. **Implemented:** add held-out overlap measurement to the existing intervention setup. Check inactive hooks, padding, capture order, and the fixed-translation identity on small examples. Check that full projection removes its selected component and that an inactive gate leaves activations unchanged. See [OVERLAP.md](OVERLAP.md) for the runner, input format, and software checks. The gate check uses an artificial gate; a trained probe remains future work.
-2. Measure the base, existing additive steering, and existing original/agentic adapters on development pairs. This asks what the old interventions actually changed. Use the new runner described in [OVERLAP.md](OVERLAP.md); the old `latent_soo.py` full-tensor MSE is not this measurement.
+2. **Done (rounds 1 and 2).** Measure the base, existing additive steering, and existing original/agentic adapters on development pairs. Result: additive steering preserves the immediate gap and moves the final gap within the random-vector range; the adapters collapse the final-token attention output for every prompt.
+   - **2b, pending:** measure the same nine adapters with the endpoint moved to an earlier prompt position (the last user-content token before the end-of-turn marker), same pairs and sites. If the collapse is confined to the response-start token, the first study's adapters are a fixed perturbation at generation start and should be compared behaviorally with that simpler intervention before any further training. Any future trained objective must add a preservation check on name-control pairs and prompt variation at its own site, since a last-token loss has a degenerate constant solution.
 3. Fill the single-direction projection gap, then test subspace removal, gated shifting, and covariance matching in that order. Use the same development pairs and behavioral examples. Report every tested cell. Stop a branch if its measured benefit is only collapse or cannot be separated from its controls; do not build a more elaborate version merely to rescue the hypothesis.
 4. Choose a candidate using a rule written before viewing its final test results. Freeze its settings, primary site, behavioral endpoint, meaningful-effect thresholds, capability margin, and comparisons in a dated entry. This document is a study design, not a claim that those numerical choices have already been preregistered.
 5. Run the untouched final test, repeat trained candidates across at least three seeds, and report successes and failures together. A vector fitted deterministically to fixed data has no training-seed uncertainty; assess its fit-data sensitivity by resampling situation families. Expand to a second model, initially Gemma-4-31B, after the first study is interpretable.
