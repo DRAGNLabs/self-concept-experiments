@@ -152,7 +152,8 @@ def main(out_dir):
     for key, c in result["contrasts"].items():
         ci = c["ci95_pct_of_base"]
         lines.append(f"- {key}: {c['difference_pct_of_base']:+.2f}% of base, CI {'[' + ', '.join(f'{x:+.2f}' for x in ci) + ']' if ci else 'n/a'}")
-    lines += ["", "## Steering reference at L32 (self/other gap change %, primary sites)", ""]
+    layer = SITES[1].removeprefix("residual_L") if len(SITES) > 2 else "?"
+    lines += ["", f"## Steering reference at L{layer} (self/other gap change %, primary sites)", ""]
     for cond, sites in result["steering_reference"].items():
         lines.append(f"- {cond}: " + ", ".join(f"{s} {v:+.2f}%" for s, v in sites.items()))
     lines += ["", "## Base-gap agreement across runs (max relative spread)", ""]
