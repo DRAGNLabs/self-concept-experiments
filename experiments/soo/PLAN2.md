@@ -1,6 +1,10 @@
 # SOO, second study: measure overlap before explaining behavior
 
-Started 2026-09-18. Status: overlap measurement implemented; model experiments are still pending.
+Started 2026-09-18. Status: the first subspace measurement pilot is complete; see [FINDINGS2.md](FINDINGS2.md).
+
+The first subspace pilot is specified in [SUBSPACE_PILOT.md](SUBSPACE_PILOT.md): original-pair fitting, new development situations, single-direction and control comparisons, and no final-test selection.
+
+Completed 2026-09-18 as Slurm job `13758595`, using a [frozen snapshot](results/study2/subspace-original-qwen38-L31-20260918T211526Z/launch.json). All 49 conditions ran. Local contraction did not yield a substantial final-decoder reduction, and the best observed cell was not clearly separated from random controls. Hold off on a broad behavioral sweep of this cell. The next pending comparison is overlap under the existing adapters.
 
 ## Writing conventions
 

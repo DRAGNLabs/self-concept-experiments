@@ -117,6 +117,9 @@ def parser():
     p.add_argument("--dtype", choices=("float32", "bfloat16", "float16"), default="float32")
     p.add_argument("--bootstrap", type=int, default=2000)
     p.add_argument("--seed", type=int, default=0, help="bootstrap/reproducibility seed")
+    p.add_argument("--subspace-ranks", type=int, nargs="+", help="fit on declared fit pairs and measure a subspace grid")
+    p.add_argument("--subspace-strengths", type=float, nargs="+", default=[0., 0.5, 1.])
+    p.add_argument("--checkpoint-conditions", action="store_true", help="save each completed condition before the full run finishes")
     return p
 
 
@@ -126,11 +129,20 @@ def main(argv=None):
         raise ValueError(f"refusing to overwrite existing run: {args.out}")
     if args.batch_size < 1 or args.bootstrap < 1:
         raise ValueError("batch size and bootstrap count must be positive")
-    if args.random_seeds and not args.vectors:
+    if args.random_seeds and not (args.vectors or args.subspace_ranks):
         raise ValueError("random controls require --vectors")
     if not torch.isfinite(torch.tensor(args.alpha)):
         raise ValueError("alpha must be finite")
     all_pairs, pairs = read_pairs(args.probes, args.split)
+    if args.subspace_ranks:
+        if min(args.subspace_ranks) < 1 or any(not 0 <= a <= 1 for a in args.subspace_strengths):
+            raise ValueError("subspace ranks must be positive and strengths between 0 and 1")
+        if len(set(args.random_seeds)) < 3:
+            raise ValueError("subspace pilot requires at least three random seeds")
+        if args.split != "development":
+            raise ValueError("the subspace grid is for development, not final-test selection")
+        if {p["kind"] for p in all_pairs if p["split"] == "fit"} != {"self_other", "nonsocial"}:
+            raise ValueError("subspace pilot needs self_other and nonsocial fit pairs")
     vector = None
     hashes = {str(args.probes): file_hash(args.probes)}
     if args.vectors:
@@ -177,10 +189,18 @@ def main(argv=None):
                 raise ValueError("rendered prompt does not end in the expected response marker")
 
     conditions = {}
+    condition_settings = {"base": {"method": "base"}}
+    subspace_fit = None
+    if args.checkpoint_conditions:
+        args.out.mkdir(parents=True, exist_ok=False)
+        (args.out / "conditions").mkdir()
 
     def run(name, intervention=None):
         print(f"Measuring {name}: {len(pairs)} pairs", flush=True)
         conditions[name] = measure_condition(model, batches, args.layer, args.residual_layers, intervention)
+        if args.checkpoint_conditions:
+            torch.save(conditions[name], args.out / "conditions" / f"{name}.pt")
+            (args.out / "progress.json").write_text(json.dumps({"status": "running", "completed_conditions": list(conditions)}, indent=2))
 
     def steering(v, alpha):
         return lambda: apply_steering(
@@ -193,13 +213,63 @@ def main(argv=None):
         if vector.numel() != conditions["base"]["hook_before"].shape[-1]:
             raise ValueError("vector width does not match the intervention site")
         run("inactive", steering(vector, 0.))
+        condition_settings["inactive"] = {"method": args.mode, "alpha": 0.}
         run(args.mode, steering(vector, args.alpha))
+        condition_settings[args.mode] = {"method": args.mode, "alpha": args.alpha, "vector": "supplied"}
         for seed in sorted(set(args.random_seeds)):
             run(f"random_s{seed}", steering(random_matched_vector(vector, seed), args.alpha))
+            condition_settings[f"random_s{seed}"] = {"method": args.mode, "alpha": args.alpha, "random_seed": seed}
+    if args.subspace_ranks:
+        from .subspace import apply_subspace, fit_subspace, random_subspace
+        fit_pairs = [p for p in all_pairs if p["split"] == "fit"]
+        fit_batches, fit_tokens = encode_pairs(tokenizer, fit_pairs, args.batch_size, device, chat_kwargs)
+        print(f"Fitting subspaces on {len(fit_pairs)} fit pairs only", flush=True)
+        fit_values = measure_condition(model, fit_batches, args.layer, [args.layer])["hook_before"]
+        subspace_fit = {"model": args.model, "layer": args.layer, "token_mode": "last",
+                        "positions": args.positions, "pairs": fit_pairs, "tokens": fit_tokens,
+                        "probes_sha256": hashes[str(args.probes)], "fits": {}}
+        for kind in ("self_other", "nonsocial"):
+            selected = [i for i, p in enumerate(fit_pairs) if p["kind"] == kind]
+            values = fit_values[selected]
+            fitted = fit_subspace(values[:, 0] - values[:, 1], max(args.subspace_ranks))
+            subspace_fit["fits"][kind] = fitted
+        subspace_fit["fit_activations"] = fit_values
+        if args.checkpoint_conditions:
+            torch.save(subspace_fit, args.out / "subspace_fit.pt")
+
+        def project(name, basis, alpha, method, **settings):
+            condition_settings[name] = {"method": method, "strength": alpha, "rank": basis.shape[1], **settings}
+            run(name, lambda: apply_subspace(model, args.layer, basis, alpha,
+                PositionalSteering(marker, args.positions) if marker else None))
+
+        fitted = subspace_fit["fits"]["self_other"]
+        mean = fitted["mean_difference"]
+        if mean.norm() == 0:
+            raise ValueError("mean direction is zero; cannot run mean-projection baseline")
+        mean_basis = (mean / mean.norm())[:, None]
+        # Strength zero is identical for all ranks/directions; measure it once.
+        project("subspace_inactive", fitted["basis"][:, :1], 0., "subspace")
+        for alpha in sorted(set(args.subspace_strengths) - {0.}):
+            project(f"mean_project_a{alpha:g}", mean_basis, alpha, "mean_projection")
+        subspace_fit["skipped_ranks"] = []
+        subspace_fit["random_bases"] = {}
+        for rank in sorted(set(args.subspace_ranks)):
+            if any(rank > f["basis"].shape[1] for f in subspace_fit["fits"].values()):
+                subspace_fit["skipped_ranks"].append(rank)
+                print(f"Skipping rank {rank}: insufficient fit rank in at least one contrast", flush=True)
+                continue
+            bases = {"self_other": fitted["basis"][:, :rank],
+                     "nonsocial": subspace_fit["fits"]["nonsocial"]["basis"][:, :rank],
+                     **{f"random_s{s}": random_subspace(mean.numel(), rank, s) for s in sorted(set(args.random_seeds))}}
+            subspace_fit["random_bases"][rank] = {key: value for key, value in bases.items() if key.startswith("random_")}
+            for label, basis in bases.items():
+                for alpha in sorted(set(args.subspace_strengths) - {0.}):
+                    project(f"{label}_r{rank}_a{alpha:g}", basis, alpha, label)
     if args.adapter:
         from peft import PeftModel
         model = PeftModel.from_pretrained(model, str(args.adapter), torch_device=str(device))
         run("adapter")
+        condition_settings["adapter"] = {"method": "adapter", "path": str(args.adapter)}
 
     summary, records = summarize(conditions, pairs, args.bootstrap, args.seed)
     root = Path(__file__).resolve().parents[3]
@@ -210,6 +280,8 @@ def main(argv=None):
     source_files = [Path(__file__), Path(__file__).with_name("overlap.py"),
                     Path(__file__).with_name("steering.py"), Path(__file__).with_name("activations.py"),
                     root / "src/selfconcept/common/loading.py", root / "src/selfconcept/common/chat.py"]
+    if args.subspace_ranks:
+        source_files.append(Path(__file__).with_name("subspace.py"))
     modules = dict(model.named_modules())
     def module_path(target):
         return next(name for name, module in modules.items() if module is target)
@@ -238,17 +310,24 @@ def main(argv=None):
                             **{site: module_path(get_decoder_layers(model)[int(site.removeprefix("residual_L"))])
                                for site in conditions["base"] if site.startswith("residual_L")}},
         "conditions": list(conditions), "dropout": "disabled via eval", "generated_tokens": 0,
+        "condition_settings": condition_settings,
+        "subspace_fitting": "uncentered SVD, declared fit split only; controls fitted separately" if subspace_fit else None,
         "metric": "float32 mean squared paired difference over activation dimensions, then pairs",
         "ci": "95% percentile bootstrap of whole declared families; pair-weighted mean; null with fewer than 2 families",
         "adapter_hook_before": "adapter-active module output, not the unadapted base; use condition base for that comparison",
     }
     # A new directory and a manifest written last distinguish a complete run.
-    args.out.mkdir(parents=True, exist_ok=False)
+    if not args.checkpoint_conditions:
+        args.out.mkdir(parents=True, exist_ok=False)
     (args.out / "pairs.jsonl").write_text("".join(json.dumps(row) + "\n" for row in records))
     (args.out / "tokens.jsonl").write_text("".join(json.dumps(row) + "\n" for row in token_records))
     torch.save(conditions, args.out / "activations.pt")
+    if subspace_fit is not None:
+        torch.save(subspace_fit, args.out / "subspace_fit.pt")
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2, allow_nan=False) + "\n")
     (args.out / "manifest.json").write_text(json.dumps(metadata, indent=2, default=str, allow_nan=False) + "\n")
+    if args.checkpoint_conditions:
+        (args.out / "progress.json").write_text(json.dumps({"status": "complete", "completed_conditions": list(conditions)}, indent=2))
     print(f"Saved {args.out}", flush=True)
 
 

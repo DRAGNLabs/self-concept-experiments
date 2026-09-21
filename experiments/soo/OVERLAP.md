@@ -77,8 +77,10 @@ Additive steering should preserve the immediate paired difference, up to numeric
 
 ## Software checks
 
+The exploratory subspace grid is described in [SUBSPACE_PILOT.md](SUBSPACE_PILOT.md). Add `--subspace-ranks 1 2 4 8 --subspace-strengths 0 0.5 1 --random-seeds 0 1 2` with a pair file containing both self/other and nonsocial fit rows. The runner fits on those rows only and measures development rows. It adds mean-direction projection, fitted and random subspaces, and an inactive subspace hook. `--checkpoint-conditions` saves each completed condition while the run is in progress; it does not enable automatic resume. Fitted directions, fit activations, and random bases are saved in `subspace_fit.pt`.
+
 ```bash
-.venv/bin/python -m unittest discover -s tests -p 'test_soo_overlap.py' -v
+.venv/bin/python -m unittest discover -s tests -p 'test_soo*.py' -v
 ```
 
 The tests use controlled tensors and tiny randomly initialized Llama and Qwen hybrid models on CPU. They check padding, hook order, final-representation capture, inactive steering, fixed additive shifts, projection, positional masking, adapter comparison, paired reporting, split validation, and output provenance. Qwen coverage includes both linear and full attention. An artificial gate checks the capture interface and the zero-gate identity; a trained probe gate is still future work.
