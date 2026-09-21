@@ -70,3 +70,29 @@ Written 2026-09-21 after round 2 (job `13838157`) and before launching the follo
 - Intermediate results are reported as such. No threshold here is a success criterion.
 
 **Decision mapping.** Position-specific collapse: compare the adapters behaviorally against a constant perturbation at the response-start token before any further SOO training, and treat the first study's adapter effects as effects of that perturbation until shown otherwise. Broad collapse: the adapters damage the attention output generally; compare capability results from the first study against this measurement and stop training with the unconstrained last-token loss. Either way, work-order step 3 proceeds with fitted interventions and the name-control check at the intervention site.
+
+## Round 2c addendum: models where the LoRA cell changed behavior
+
+Written 2026-09-21 after rounds 2 and 2b, before launching. Exploratory.
+
+**Question.** Rounds 2 and 2b concern Qwen3.8-27B. Do the first study's validated LoRA cells on other models show the same nonspecific collapse of the attention output at their training site, or a self/other-specific gap reduction?
+
+**Cells.** All use the original 78 burglar pairs and the last-token loss.
+
+| Model | LoRA layer | Seeds | Recipe | First-study behavior |
+|---|---|---|---|---|
+| gemma-4-31B-it | L32 | 0, 1, 2 | rank 4, alpha 8, dropout 0.1, lr 9e-4, 8 epochs | room task 100/100 in both orientations at n=250 |
+| gemma-4-12B-it | L24 | 0, 1, 2 | same as above | main 74–98 original, 58–90 mirrored, three seeds |
+| Mistral-7B-Instruct-v0.2 | L16 | 0–4 | rank 8, alpha 32, dropout 0.2, lr 1e-4, 15 epochs | deceptive 90.4 → 9.9 ± 6.1 at n=250, five seeds |
+
+The Mistral adapter configs and training logs were deleted from the working tree in commit `c388630` and recovered from its parent; the weights survived under `self-other-overlap/results/checkpoints/`. The reassembled directories are used as recorded.
+
+**Fixed setup.** Same 64 development pairs, same measurement runner, bfloat16, one A100 per model. Intervention site is the LoRA layer's attention output; residual captures at that block and four later blocks, plus the final norm. Two endpoints per model: the final prompt token (offset 0) and the last user-content token, whose offset the launch script computes per chat template and verifies for all 64 pairs (Gemma-4: 9 tokens back; Mistral: 4). A same-site additive-steering reference uses each model's existing vector at the strength validated at its own steering layer (31B 16, 12B 12, Mistral 8) with three matched-norm random vectors; it is a displacement reference, not a matched control.
+
+**Readout and decision, fixed in advance.** The round 2 table and flags at both endpoints. The comparison that matters is name-control versus self/other change at the attention output, together with norm and prompt-variation changes there.
+
+- Name-control gap falls about as much as the self/other gap and prompt variation falls by tens of percent: the degenerate constant solution is a property of the last-token recipe, not of Qwen. The first study's LoRA cells are then all results about a nonspecific collapse.
+- Self/other gap falls substantially more than the name-control gap with small changes in variation and norm: that model's adapter did something self/other-specific, and the Qwen result is model-specific. Such a cell becomes the reference effect for step 3.
+- A mixture across models is reported as such, model by model.
+
+No behavioral or honesty claim follows from this round.
