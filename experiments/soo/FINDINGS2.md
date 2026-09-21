@@ -10,7 +10,36 @@ Use “smaller self/other gap” for the measured result and “more overlap” 
 
 ## Current status
 
-Two measurement rounds are complete. Round 1: fitted subspace removal shrinks the local held-out gap by a few percent with little downstream effect and no established advantage over random controls. Round 2: all nine first-study LoRA adapters remove essentially the entire held-out gap at their training site, for name-control pairs as much as for self/other pairs, by making the attention output at the final prompt token nearly constant. Their behavioral effects were therefore produced under a nonspecific collapse at one position, not under measured self/other overlap. No behavioral or capability results have been collected in the second study. Gated shifting and covariance matching remain unimplemented. Pending: whether the collapse is confined to the final prompt token (PLAN2 work order, step 2b).
+Two measurement rounds are complete. Round 1: fitted subspace removal shrinks the local held-out gap by a few percent with little downstream effect and no established advantage over random controls. Round 2: all nine first-study LoRA adapters remove essentially the entire held-out gap at their training site, for name-control pairs as much as for self/other pairs, by making the attention output at the final prompt token nearly constant. Round 2b: the collapse is not confined to that token; at the last user-content token the same adapters still remove about 90% of the attention-output gap and half of its norm for every prompt. The first-study adapters therefore flattened L32's attention output broadly, and their behavioral effects were produced under that nonspecific change, not under measured self/other overlap. No behavioral or capability results have been collected in the second study. Gated shifting and covariance matching remain unimplemented. Next: work-order step 3 with fitted interventions and a name-control check at the intervention site.
+
+## Round 2b — 2026-09-21: the adapters flatten L32's attention output at content tokens too, so the collapse is broad rather than position-specific
+
+**Question.** Round 2 measured only the final prompt token, a template token shared by every prompt. Is the adapters' collapse confined to that response-start position, or does it also affect an earlier, content-bearing token?
+
+**Setup.** Slurm job `13838627`, about 12 minutes on one A100, the same ten runs as round 2 from a new [frozen snapshot](results/study2/adapters-qwen38-L32-off9-20260921T223245Z/launch.json), following the [step 2b addendum](ADAPTER_ROUND.md). The only change is the measured position: nine valid tokens before the end of the prompt, which is the last user-content token before the end-of-turn marker. The launch script verified that this token is a period for 32 pairs and a question mark for 32, always matched within a pair. The adapters and steering still act at every position; the same 64 development pairs, sites, precision, and revision were used. 22 software checks passed, including two new checks for the offset. Exploratory.
+
+**Measurements.** Seed-averaged paired change in the self/other gap as a percentage of the base gap at the earlier token, with family-bootstrap 95% intervals, and the name-control change. Negative means a smaller gap.
+
+| Adapter | L32 attention output | End of L32 | L47 | L63 | Final decoder norm |
+|---|---:|---:|---:|---:|---:|
+| Original | −91.8 [−98.6, −85.3] | −81.6 | −57.1 | −18.8 [−24.1, −13.5] | −17.9 [−23.9, −11.9] |
+| Agentic | −88.3 [−95.5, −81.5] | −74.6 | −44.5 | −15.6 [−20.2, −11.1] | −11.0 [−15.9, −6.0] |
+| Mixed | −94.2 [−101.6, −87.3] | −86.6 | −61.9 | −22.5 [−28.1, −16.8] | −20.7 [−26.9, −14.2] |
+| Name control, original | −92.0 | −74.2 | −45.9 | +2.5 [+0.2, +4.6] | +2.6 [+0.9, +4.4] |
+| Name control, agentic | −91.8 | −79.4 | −62.8 | −2.5 [−4.9, +0.1] | +1.1 [−0.8, +3.2] |
+| Name control, mixed | −94.9 | −83.0 | −57.4 | +0.1 [−2.4, +2.5] | +2.7 [+0.6, +5.0] |
+
+Seeds agree within a few points at every site ([full table](results/study2/adapters-qwen38-L32-off9-20260921T223245Z/output/analysis.md)).
+
+At this token the base attention-output gap is 0.0158, twice the final-token value, and the adapters bring it to 0.0009–0.0017. Mean endpoint norms fall from 12.4 and 12.7 to 6.2–6.7, a drop of 41–49%, and variation across the 64 prompts falls by 84–89%. The collapse is smaller than at the final token (norm −88 to −94%, variation −99.9%) but of the same kind, and again equal for self/other and name-control pairs. Downstream, the residual stream at this token loses 50–62% of its prompt variation at the end of L32 and 26–34% at L47, recovering to −8 to −10% at L63 and −4 to −6% at the final norm, where norms are unchanged. The final self/other gap falls by 11–21% while the name-control gap moves by less than 3%. Squared displacement at the final norm is 0.28–0.35.
+
+Steering reference at this token: the additive vector leaves the immediate gap unchanged and changes the final self/other gap by −7.1% [−10.3, −3.4]; the random vectors give −5.6% [−10.0, −0.7], +5.3% [+1.8, +8.5], and −1.5% [−5.3, +1.9], with name-control changes of −4.8% (fitted) and −11.7%, +4.0%, −13.8% (random). Final-norm displacement for steering is 0.11–0.20.
+
+**Interpretation.** The adapters do not merely silence the final template token. They cut L32's attention output roughly in half and remove most of its prompt-dependence at a content token as well, for every prompt. The collapse is therefore a general change to what L32's attention contributes at these positions, and both rounds' "held-out gap reduction" at the training site is a byproduct of that. Downstream at this token, the picture is more selective than at the final token: the self/other gap falls 11–21% while name-control gaps barely move, and the fitted and random vectors move the final gap by at most 7% here. The adapters also displace the final representation about twice as much as the steering does at this token, so this comparison is not displacement-matched, and a 11–21% reduction of a paired activation distance is not itself a behavioral or honesty result.
+
+This connects to the first study's capability checks. The original adapter collapsed L32's attention output at least as strongly as the agentic adapter in both rounds, yet the first study measured it as nearly free on ARC, HellaSwag, and MMLU and on coding, while the agentic adapter cost about one HellaSwag point, two MMLU points, and a 62-to-38 drop in coding pass rate. Losing most of L32's attention output at these positions is therefore tolerated by the model, and the agentic adapter's capability cost and behavioral change come from something other than the size of its collapse at this site. The two adapters are indistinguishable at the training site and differ only downstream, where the agentic adapter reduces the self/other gap less.
+
+**Decision.** Stop training with the unconstrained last-token loss; it has a degenerate solution that every seed of every dataset found, and the first study's adapter results are results about that solution. The two rounds answer work-order step 2: neither the existing steering nor the existing adapters produced a self/other-specific held-out gap reduction that is separable from generic disturbance. Proceed to step 3 with fitted interventions, which cannot learn a shortcut, and report name-control gaps, norms, and prompt variation at the intervention site for every candidate. A behavioral comparison of the first-study adapters against a matched nonspecific perturbation is a first-study follow-up, not part of this study's path.
 
 ## Round 2 — 2026-09-21: the first-study adapters collapse the final-token attention output for every prompt, not just self/other pairs
 
@@ -104,7 +133,7 @@ The first study remains useful. Its behavioral results motivate direct measureme
 
 ## Questions still open
 
-- Answered in round 2: the existing adapters remove the gap at their training site for every prompt, including name controls, by collapsing that position's attention output. Still open: whether the collapse is confined to the final prompt token.
+- Answered in rounds 2 and 2b: the existing adapters remove the gap at their training site for every prompt, including name controls, by collapsing L32's attention output at the final prompt token and, less completely, at content tokens.
 - Answered in rounds 1 and 2 for Qwen L31 and L32: additive steering preserves the immediate gap and changes the final-norm gap by −25% to +4%, within the range produced by matched-norm random vectors.
 - Can a direct overlap intervention reduce the gap without erasing unrelated distinctions?
 - Does that reduction accompany a behavioral effect beyond the controls?
