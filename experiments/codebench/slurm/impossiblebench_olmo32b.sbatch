@@ -22,7 +22,6 @@ set -euo pipefail
 # Run from the worktree root: sbatch experiments/codebench/slurm/impossiblebench_olmo32b.sbatch
 REPO_MAIN="/home/kobyjl/experiments/self-concept-experiments"
 source "$REPO_MAIN/activate.sh"          # main checkout's uv .venv + cluster CUDA fixes
-export PYTHONPATH="$PWD/src"             # run *this worktree's* selfconcept code
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1                   # weights are prefetched; compute nodes are offline
 nvidia-smi

@@ -21,7 +21,6 @@ set -euo pipefail
 # array finishes by merging shards (see the merge/score step).
 REPO_MAIN="/home/kobyjl/experiments/self-concept-experiments"
 source "$REPO_MAIN/activate.sh"
-export PYTHONPATH="$PWD/src"
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 
