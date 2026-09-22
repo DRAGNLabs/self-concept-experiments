@@ -32,16 +32,20 @@ def add_model_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--steer-vectors", type=Path, help="steering vectors .pt from scripts/extract_steering.py")
     parser.add_argument("--steer-layer", type=int, help="decoder layer to steer at (required with --steer-vectors)")
     parser.add_argument("--steer-alpha", type=float, default=1.0, help="steering strength (1.0 = full mean self-other difference)")
-    parser.add_argument("--steer-mode", choices=["add", "project"], default="add")
+    parser.add_argument("--steer-mode", choices=["add", "project", "replace"], default="add",
+                        help="replace: h <- (1-alpha) h + alpha c with c a constant from --steer-constants (no training)")
     parser.add_argument("--steer-token-mode", choices=["last", "mean"], default="last", help="which extraction convention's vector to use")
     parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
+    parser.add_argument("--steer-constants", type=Path, help="constants .pt from scripts/make_constants.py (mode replace)")
+    parser.add_argument("--steer-constant", help="named constant in --steer-constants, e.g. adapter_seed0, base_mean, zero")
     parser.add_argument(
         "--steer-positions",
-        choices=["all", "response", "prompt"],
+        choices=["all", "response", "prompt", "from_last"],
         default="all",
         help="which token positions receive the offset: all (default), response = the "
         "current assistant turn (chat-template generation prompt + generated tokens), "
-        "prompt = the context only (diagnostic)",
+        "prompt = the context only (diagnostic), from_last = the last prompt token and "
+        "every generated token (template-independent)",
     )
     parser.add_argument(
         "--device-map",
@@ -100,22 +104,37 @@ def load_model(args: argparse.Namespace, parser: argparse.ArgumentParser | None 
     model.eval()
 
     steering = None
-    if args.steer_vectors:
+    if args.steer_vectors and args.steer_constants:
+        (parser.error if parser else _fail)("--steer-vectors and --steer-constants are exclusive")
+    if args.steer_constants and (args.steer_mode != "replace" or not args.steer_constant):
+        (parser.error if parser else _fail)("--steer-constants requires --steer-mode replace and --steer-constant NAME")
+    if args.steer_vectors or args.steer_constants:
         if args.steer_layer is None:
             (parser.error if parser else _fail)("--steer-vectors requires --steer-layer")
         from .steering import get_vector, load_vectors, random_matched_vector, steer_o_proj
 
-        vector = get_vector(load_vectors(args.steer_vectors), args.steer_layer, args.steer_token_mode)
+        if args.steer_constants:
+            from .steering import get_constant, load_constants
+
+            data = load_constants(args.steer_constants)
+            if int(data["layer"]) != args.steer_layer:
+                raise SystemExit(f"constants were measured at layer {data['layer']}, not {args.steer_layer}")
+            vector = get_constant(data, args.steer_constant)
+        else:
+            vector = get_vector(load_vectors(args.steer_vectors), args.steer_layer, args.steer_token_mode)
         if args.steer_random_seed is not None:
             vector = random_matched_vector(vector, args.steer_random_seed)
         positions = None
         if args.steer_positions != "all":
             from .steering import PositionalSteering, response_marker
 
-            positions = PositionalSteering(response_marker(tokenizer, chat_template_kwargs()), args.steer_positions)
+            marker = None if args.steer_positions == "from_last" else response_marker(tokenizer, chat_template_kwargs())
+            positions = PositionalSteering(marker, args.steer_positions)
         steer_o_proj(model, args.steer_layer, vector, args.steer_alpha, args.steer_mode, positions)
         steering = {
-            "vectors": str(args.steer_vectors),
+            "vectors": str(args.steer_vectors) if args.steer_vectors else None,
+            "constants": str(args.steer_constants) if args.steer_constants else None,
+            "constant": args.steer_constant,
             "layer": args.steer_layer,
             "alpha": args.steer_alpha,
             "mode": args.steer_mode,

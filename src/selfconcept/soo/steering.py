@@ -24,7 +24,16 @@ current assistant turn's header onward (the generation-prompt suffix of the
 chat template plus every generated token, i.e. the positions the 'last'
 extraction convention read from); `positions='prompt'` is the complementary
 diagnostic (context only, never the model's own turn). Earlier assistant
-turns inside a multi-turn prompt count as context.
+turns inside a multi-turn prompt count as context. `positions='from_last'`
+needs no template marker: it covers the last prompt token and every
+generated token, the position the overlap measurements read.
+
+Constant replacement (mode 'replace', second study): h <- (1-alpha) h + alpha c
+sets the layer's output to a fixed vector c at the masked positions, with no
+training. It is the hand-built version of the degenerate solution the
+last-token LoRA loss converges to (FINDINGS2.md rounds 2-2c); c may be an
+adapter's measured constant, the base model's mean output, zero, or a random
+vector of matched norm (scripts/make_constants.py, CONSTANT_ROUND.md).
 """
 
 import atexit
@@ -36,7 +45,8 @@ import torch
 from .activations import attn_out_proj, get_decoder_layers
 
 TOKEN_MODES = ("last", "mean")
-POSITION_MODES = ("all", "response", "prompt")
+POSITION_MODES = ("all", "response", "prompt", "from_last")
+STEER_MODES = ("add", "project", "replace")
 
 
 def load_vectors(path: str | Path) -> dict:
@@ -60,6 +70,21 @@ def random_matched_vector(vector: torch.Tensor, seed: int) -> torch.Tensor:
     gen = torch.Generator().manual_seed(seed)
     rand = torch.randn(vector.shape, generator=gen, dtype=torch.float32)
     return rand / rand.norm() * vector.norm()
+
+
+def load_constants(path: str | Path) -> dict:
+    """Load a scripts/make_constants.py output: metadata plus named constant vectors."""
+    return torch.load(path, map_location="cpu", weights_only=True)
+
+
+def get_constant(data: dict, name: str) -> torch.Tensor:
+    """One named constant (float32, [hidden_size]), e.g. 'adapter_seed0', 'base_mean', 'zero'."""
+    if name == "zero":
+        any_vec = next(iter(data["constants"].values()))
+        return torch.zeros_like(any_vec, dtype=torch.float32)
+    if name not in data["constants"]:
+        raise KeyError(f"constant {name!r} not in {sorted(data['constants'])}")
+    return data["constants"][name].float()
 
 
 def response_marker(tokenizer, chat_kwargs: dict | None = None) -> list[int]:
@@ -126,10 +151,12 @@ class PositionalSteering:
     position: 'response' steers positions >= start, 'prompt' positions < start.
     """
 
-    def __init__(self, marker: list[int], mode: str):
+    def __init__(self, marker: list[int] | None, mode: str):
         if mode not in POSITION_MODES:
             raise ValueError(f"positions must be one of {POSITION_MODES}, got {mode!r}")
-        if not marker:
+        if mode == "from_last":
+            marker = marker or []
+        elif not marker:
             raise ValueError("empty response marker")
         self.marker = marker
         self.mode = mode
@@ -152,12 +179,24 @@ class PositionalSteering:
         past = _past_length(kwargs)
         positions = past + torch.arange(seq, device=input_ids.device)
         if past == 0:
-            if seq < len(self.marker):
+            if seq < max(len(self.marker), 2):
                 # generate() always prefills a full chat prompt; a "fresh"
                 # 1-token sequence means the cache length was not readable
                 # and decode steps would be mis-steered as new prompts.
                 raise RuntimeError(f"positional steering: {seq}-token sequence with no past (cache length unreadable?)")
-            self.start = _last_marker_start(input_ids, self.marker)
+            if self.mode == "from_last":
+                # Last valid prompt token per row (either padding side), then
+                # every later position; no chat-template marker involved.
+                mask = kwargs.get("attention_mask")
+                if mask is None or mask.dim() != 2:
+                    self.start = torch.full((input_ids.shape[0],), seq - 1, device=input_ids.device, dtype=torch.long)
+                else:
+                    pos = torch.arange(seq, device=input_ids.device)
+                    self.start = pos.expand_as(mask).masked_fill(~mask.bool(), -1).max(1).values
+                    if (self.start < 0).any():
+                        raise RuntimeError("positional steering: a sequence has no valid token")
+            else:
+                self.start = _last_marker_start(input_ids, self.marker)
             self.n_sequences += 1
             missing = int((self.start >= seq).sum())
             self.n_missing += missing
@@ -183,7 +222,7 @@ class PositionalSteering:
         positions = self.positions.to(output.device)
         start = self.start.to(output.device)
         response = positions[None, :] >= start[:, None]  # [batch, seq]
-        keep = response if self.mode == "response" else ~response
+        keep = ~response if self.mode == "prompt" else response
         return keep.to(output.dtype)[..., None]
 
     def report(self) -> None:
@@ -209,9 +248,11 @@ def steer_o_proj(
     With `positions`, the offset is masked per token position (see
     PositionalSteering); its pre-hook is attached to `model` here.
     """
+    if mode not in STEER_MODES:
+        raise ValueError(f"unknown steering mode {mode!r}; expected one of {STEER_MODES}")
     module = attn_out_proj(get_decoder_layers(model)[layer])
     vector = vector.float()
-    unit = vector / vector.norm()
+    unit = vector / vector.norm() if mode == "project" else vector
     if positions is not None and positions.mode == "all":
         positions = None
     if positions is not None:
@@ -224,8 +265,8 @@ def steer_o_proj(
         elif mode == "project":
             u = unit.to(output.device, output.dtype)
             delta = alpha * (output * u).sum(-1, keepdim=True) * u
-        else:
-            raise ValueError(f"unknown steering mode {mode!r}")
+        else:  # replace: output - alpha * (output - c) == (1 - alpha) * output + alpha * c
+            delta = alpha * (output - v)
         if positions is not None:
             delta = delta * positions.mask(output)
         return output - delta
