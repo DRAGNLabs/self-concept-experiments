@@ -1,6 +1,6 @@
 from typing import Literal, TypedDict
 
-from selfconcept.common.llm_judge import GeneratedResponse, ProblemResponse
+from selfconcept.common.llm_judge import GeneratedResponse, ParseProblem, ProblemResponse
 
 from .transcript import Channel, Passage
 
@@ -49,7 +49,9 @@ class JudgedTranscriptParsed(TypedDict):
     benchmark_label: str
     status: Literal["parsed"]
     judgment: TranscriptJudgment
-    final_response: GeneratedResponse
+    judgment_round: int
+    judgment_response: GeneratedResponse
+    unrepaired_problem: ParseProblem | None
     problem_responses: list[ProblemResponse]
 
 

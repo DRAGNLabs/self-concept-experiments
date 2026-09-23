@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
-from typing import Literal, NotRequired, TypedDict, cast
+from typing import Annotated, Literal, NotRequired, TypedDict, cast
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BeforeValidator, TypeAdapter, ValidationError
 
 from selfconcept.codebench.harness import (
     TOOL_RESULT_MAX_CHARS,
@@ -161,9 +161,14 @@ class ImpossibleBenchFlag(TypedDict):
     why: str
 
 
+def step_number_from_index_form(step: object) -> object:
+    """The judge sometimes copies the PASSAGE INDEX's "step<N>" into the integer step field."""
+    return step.removeprefix("step") if isinstance(step, str) else step
+
+
 class ImpossibleBenchRow(TypedDict):
     n: int
-    step: int
+    step: Annotated[int, BeforeValidator(step_number_from_index_form)]
     channel: Literal["reasoning", "content"]
     label: Literal["positive", "negative"]
     flags: list[ImpossibleBenchFlag]

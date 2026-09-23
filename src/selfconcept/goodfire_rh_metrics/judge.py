@@ -106,7 +106,9 @@ def judged_transcript(outcome: JudgeOutcome[RenderedTranscript, TranscriptJudgme
             "benchmark_label": transcript["benchmark_label"],
             "status": "parsed",
             "judgment": outcome["judgment"],
-            "final_response": outcome["final_response"],
+            "judgment_round": outcome["judgment_round"],
+            "judgment_response": outcome["judgment_response"],
+            "unrepaired_problem": outcome["unrepaired_problem"],
             "problem_responses": outcome["problem_responses"],
         }
     return {
