@@ -50,11 +50,11 @@ def load(out: Path):
 
 def verdict(runs, cond, need_persp=True):
     ref, base = runs.get(REFERENCE, {}), runs.get(BASE, {})
-    checks, repro, null, damage = {}, True, True, False
+    checks, repro, null, damage, incomplete = {}, True, True, False, False
     for o in ORIENTS:
         r, rr, rb = runs[cond].get(o, {}), ref.get(o, {}), base.get(o, {})
         if "main" not in r or "main" not in rr or "main" not in rb or (need_persp and "perspectives" not in r):
-            checks[o] = "incomplete"; repro = null = False; continue
+            checks[o] = "incomplete"; repro = null = False; incomplete = True; continue
         d, dref, dbase = r["main"]["rates"]["deceptive"], rr["main"]["rates"]["deceptive"], rb["main"]["rates"]["deceptive"]
         oth = r["main"]["rates"]["refusal"] + r["main"]["rates"]["other"]
         othref = rr["main"]["rates"]["refusal"] + rr["main"]["rates"]["other"]
@@ -66,10 +66,23 @@ def verdict(runs, cond, need_persp=True):
         repro = repro and c["within_tol"] and c["other_ok"] and c["persp_ok"]
         null = null and c["near_base"]
         damage = damage or oth > DAMAGE_OTHER or (persp is not None and persp < PERSP_DAMAGE)
-    label = "reproduces" if repro else "null" if null else "partial"
+    label = "pending" if incomplete else "reproduces" if repro else "null" if null else "partial"
     if damage:
         label += " (damage)"
-    return {"label": label, "reproduces_adapter": repro, "null": null, "damage": damage, "checks": checks}
+    return {"label": label, "reproduces_adapter": repro, "null": null, "damage": damage, "incomplete": incomplete, "checks": checks}
+
+
+def compact_layers(layers):
+    """[0, 1, 2, 5, 7, 8] -> '0-2,5,7-8'."""
+    out, layers = [], sorted(layers)
+    i = 0
+    while i < len(layers):
+        j = i
+        while j + 1 < len(layers) and layers[j + 1] == layers[j] + 1:
+            j += 1
+        out.append(str(layers[i]) if i == j else f"{layers[i]}-{layers[j]}")
+        i = j + 1
+    return ",".join(out)
 
 
 def fmt_rates(r, s):
@@ -105,6 +118,12 @@ def main():
             lines.append(f"| {cond} | {fmt_rates(r, 'main')} | {ci} | {fmt_rates(r, 'treasure_hunt')} | {persp} | {kept} |")
         lines.append("")
     lines += ["## Coarse verdicts against the pre-specified rule", ""]
+    ref = runs.get(REFERENCE, {})
+    if ref:
+        lines.append("- " + REFERENCE + " (reference): " + "; ".join(
+            f"{o} main D {ref[o]['main']['rates']['deceptive']:.3f}, refusal+other {ref[o]['main']['rates']['refusal'] + ref[o]['main']['rates']['other']:.3f}"
+            + (f", perspectives {ref[o]['perspectives']['rates']['honest']:.3f}" if "perspectives" in ref[o] else "")
+            for o in ORIENTS if "main" in ref.get(o, {})) + " (a reference below 0.90 perspectives fails the reproduces test by itself)")
     for cond, v in verdicts.items():
         spread = ""
         if collapse and cond in collapse.get("stats", {}):
@@ -136,7 +155,11 @@ def main():
             lines.append(f"- [{s['label']}] {s['response'].replace(chr(10), ' ')[:160]}")
         lines.append("")
     if collapse:
-        lines += ["## Training-layer collapse statistics (make_constants.py)", "", "```", json.dumps(collapse["stats"], indent=1), "```", ""]
+        stats = json.loads(json.dumps(collapse["stats"]))
+        for v in stats.values():
+            if isinstance(v, dict) and isinstance(v.get("adapter_subset"), dict) and "kept_layers" in v["adapter_subset"]:
+                v["adapter_subset"]["kept_layers"] = compact_layers(v["adapter_subset"]["kept_layers"])
+        lines += ["## Training-layer collapse statistics (make_constants.py)", "", "```", json.dumps(stats, indent=1), "```", ""]
     (out / "analysis.json").write_text(json.dumps({"note": "exploratory; rule in LAYER_ROUND.md", "train_layer": train_layer, "missing": missing,
                                                    "runs": runs, "verdicts": verdicts, "sweep_verdicts": sweep_verdicts,
                                                    "flagged_layers": flagged, "partial_layers": moving}, indent=2) + "\n")
