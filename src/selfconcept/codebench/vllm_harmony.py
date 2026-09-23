@@ -8,6 +8,7 @@ analysis channel goes to a sidecar jsonl keyed by example_id and turn.
 """
 
 import json
+import re
 from pathlib import Path
 
 from transformers import AutoTokenizer
@@ -16,8 +17,11 @@ from selfconcept.common.chat import chat_template_kwargs
 
 from .harness import Generate
 
-FINAL_CHANNEL_MARKER = "<|channel|>final<|message|>"
-HARMONY_SPECIAL_TOKENS = ("<|start|>", "<|end|>", "<|return|>", "<|call|>", "<|channel|>", "<|message|>")
+# A final message that follows a response format is headed "<|channel|>final <|constrain|>json<|message|>".
+FINAL_CHANNEL_HEADER = re.compile(r"<\|channel\|>final(?: <\|constrain\|>[^<]*)?<\|message\|>")
+HARMONY_SPECIAL_TOKENS = (
+    "<|start|>", "<|end|>", "<|return|>", "<|call|>", "<|channel|>", "<|message|>", "<|constrain|>"
+)
 
 
 def strip_harmony_tokens(text: str) -> str:
@@ -28,9 +32,11 @@ def strip_harmony_tokens(text: str) -> str:
 
 def split_harmony_completion(raw_completion: str) -> tuple[str, str]:
     """-> (reasoning, final). final is "" when the model never opened the final channel."""
-    reasoning, marker, final = raw_completion.rpartition(FINAL_CHANNEL_MARKER)
-    if not marker:
+    final_headers = list(FINAL_CHANNEL_HEADER.finditer(raw_completion))
+    if not final_headers:
         return strip_harmony_tokens(raw_completion), ""
+    last_header = final_headers[-1]
+    reasoning, final = raw_completion[: last_header.start()], raw_completion[last_header.end() :]
     return strip_harmony_tokens(reasoning), strip_harmony_tokens(final).strip()
 
 

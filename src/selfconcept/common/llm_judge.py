@@ -15,12 +15,20 @@ class ParsedJudgment[JudgmentT](TypedDict):
     judgment: JudgmentT
 
 
+class RepairableJudgment[JudgmentT](TypedDict):
+    """Usable as the final judgment, but sent back for repair while rounds remain."""
+
+    status: Literal["repairable"]
+    judgment: JudgmentT
+    description: str
+
+
 class ParseProblem(TypedDict):
     status: Literal["problem"]
     description: str
 
 
-type ParseResult[JudgmentT] = ParsedJudgment[JudgmentT] | ParseProblem
+type ParseResult[JudgmentT] = ParsedJudgment[JudgmentT] | RepairableJudgment[JudgmentT] | ParseProblem
 
 type BuildJudgeMessages[ItemT] = Callable[[ItemT], Conversation]
 type GenerateBatch = Callable[[Sequence[Conversation]], list[GeneratedResponse]]
@@ -93,9 +101,10 @@ def _judge_rounds[ItemT, JudgmentT](
     responses = generate_batch([judgment["messages"] for judgment in pending])
     resolved: list[tuple[int, JudgeOutcome[ItemT, JudgmentT]]] = []
     retry: list[_PendingJudgment[ItemT]] = []
+    can_repair = repair_policy is not None and repair_rounds_left > 0
     for judgment, response in zip(pending, responses, strict=True):
         parse_result = parse_judge_response(judgment["item"], response)
-        if parse_result["status"] == "parsed":
+        if parse_result["status"] == "parsed" or (parse_result["status"] == "repairable" and not can_repair):
             parsed_outcome: JudgeParsed[ItemT, JudgmentT] = {
                 "status": "parsed",
                 "item": judgment["item"],
@@ -105,8 +114,9 @@ def _judge_rounds[ItemT, JudgmentT](
             }
             resolved.append((judgment["index"], parsed_outcome))
             continue
-        problem_responses = [*judgment["problem_responses"], ProblemResponse(response=response, problem=parse_result)]
-        if repair_policy is None or repair_rounds_left == 0:
+        problem = ParseProblem(status="problem", description=parse_result["description"])
+        problem_responses = [*judgment["problem_responses"], ProblemResponse(response=response, problem=problem)]
+        if repair_policy is None or not can_repair:
             failed_outcome: JudgeFailed[ItemT] = {
                 "status": "failed",
                 "item": judgment["item"],
@@ -115,7 +125,7 @@ def _judge_rounds[ItemT, JudgmentT](
             resolved.append((judgment["index"], failed_outcome))
             continue
         repair_messages = repair_policy["build_repair_messages"](
-            judgment["item"], judgment["messages"], response, parse_result
+            judgment["item"], judgment["messages"], response, problem
         )
         retry.append({**judgment, "messages": repair_messages, "problem_responses": problem_responses})
     return resolved + _judge_rounds(
