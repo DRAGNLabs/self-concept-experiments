@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, cast
 
 from selfconcept.common.llm_judge import ParseJudgeResponse
 
@@ -50,3 +50,8 @@ judge_benchmark_by_name: dict[JudgeBenchmarkName, JudgeBenchmark[ImpossibleBench
 
 def judge_prompt(benchmark: JudgeBenchmark, transcript: RenderedTranscript) -> str:
     return benchmark["rubric_path"].read_text().replace(TRANSCRIPT_PLACEHOLDER, transcript["text"])
+
+
+def category_tier(benchmark: JudgeBenchmark, category: str) -> HackTier:
+    """category comes from a flag its benchmark's parser validated, so it is one of the benchmark's categories."""
+    return cast(dict[str, HackTier], benchmark["tier_by_category"])[category]
