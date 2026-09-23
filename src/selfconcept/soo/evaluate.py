@@ -75,6 +75,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True)
     parser.add_argument("--adapter", help="optional PEFT adapter path (SOO fine-tuned)")
+    parser.add_argument("--adapter-layers", help="keep the adapter's LoRA modules only in these decoder layers "
+                        "(all | only:L | except:L | below:L | above:L | range:A-B | layers:3,5); others revert to the base layer")
+    parser.add_argument("--adapter-modules", help="keep only these target modules, e.g. q_proj or v_proj (default both)")
     parser.add_argument("--scenarios", nargs="+", default=["main"])
     parser.add_argument("--n", type=int, help="evaluate only the first n examples")
     parser.add_argument("--suffix", choices=SUFFIXES, default="i_would")
@@ -149,10 +152,18 @@ def main() -> None:
         model = load_causal_lm(args.model, dtype=dtype, device_map=args.device_map)
     else:
         model = load_causal_lm(args.model, dtype=dtype)
+    adapter_subset = None
     if args.adapter:
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, args.adapter)
+        from .lora_subset import apply_adapter_subset
+
+        adapter_subset = apply_adapter_subset(model, args.adapter_layers, args.adapter_modules)
+        if adapter_subset:
+            print(f"Adapter subset: {adapter_subset}")
+    elif args.adapter_layers or args.adapter_modules:
+        parser.error("--adapter-layers / --adapter-modules need --adapter")
     if not args.quant_4bit and not args.device_map:
         model.to(device)
     model.eval()
@@ -273,6 +284,7 @@ def main() -> None:
         summary = {
             "model": args.model,
             "adapter": args.adapter,
+            "adapter_subset": adapter_subset,
             "steering": steering,
             "scenario": scenario,
             "suffix": args.suffix,

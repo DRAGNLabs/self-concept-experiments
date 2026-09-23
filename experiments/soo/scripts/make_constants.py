@@ -78,7 +78,9 @@ def main():
     ap.add_argument("--revision")
     ap.add_argument("--layer", type=int, required=True)
     ap.add_argument("--pairs", type=Path, required=True, help="jsonl with self_prompt/other_prompt; both members are used")
-    ap.add_argument("--adapter", action="append", default=[], help="NAME=PATH of a PEFT adapter; repeatable")
+    ap.add_argument("--adapter", action="append", default=[],
+                    help="NAME=PATH[@LAYERS[@MODULES]] of a PEFT adapter; repeatable. LAYERS/MODULES restrict the "
+                         "adapter as in selfconcept.soo.lora_subset (e.g. adapters/seed0@except:32, adapters/seed0@all@q_proj)")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 
@@ -97,14 +99,20 @@ def main():
     constants["base_mean"] = base.mean(0)
     stats["base_mean"] = describe(base)
     for spec in args.adapter:
-        name, path = spec.split("=", 1)
+        name, target = spec.split("=", 1)
+        path, *subset = target.split("@")
         from peft import PeftModel
 
+        from selfconcept.soo.lora_subset import apply_adapter_subset
+
         peft = PeftModel.from_pretrained(model, path)
+        subset_stats = apply_adapter_subset(peft, subset[0] if subset else None, subset[1] if len(subset) > 1 else None)
         peft.eval()
         vecs = collect(peft, args.layer, batches())
         constants[name] = vecs.mean(0)
         stats[name] = describe(vecs)
+        if subset_stats:
+            stats[name]["adapter_subset"] = subset_stats
         stats[name]["distance_to_base_mean"] = float((constants[name] - constants["base_mean"]).norm())
         model = peft.unload()
         model.eval()
