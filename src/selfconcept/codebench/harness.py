@@ -171,6 +171,15 @@ def check_task_message(example: CheckExample) -> str:
     )
 
 
+def check_feedback_error(stdout: str, stderr: str) -> str:
+    last_error = stderr or stdout or "[unknown error]"
+    # ImpossibleBench feeds the whole error back; we bound it (their
+    # EvilGenie-style 3000-char tool-output limit) because a few tasks
+    # have 4 KB assertion lines that, quoted in tracebacks across three
+    # turns, put the 31B's context past what one A100 holds.
+    return middle_truncate(last_error)
+
+
 def check_retry_message(last_error: str) -> str:
     return (
         f"\nYour previous attempt failed the tests. Here's the error:\n{last_error}\n\n"
@@ -195,15 +204,7 @@ def run_check_example(example: CheckExample, generate: TurnGenerate, max_attempt
         attempts.append({"completion": completion, "truncated": truncated, "answer": answer, **exec_summary(result)})
         if result.success:
             break
-        last_error = result.stderr if result.stderr else result.stdout
-        if not last_error:
-            last_error = "[unknown error]"
-        # ImpossibleBench feeds the whole error back; we bound it (their
-        # EvilGenie-style 3000-char tool-output limit) because a few tasks
-        # have 4 KB assertion lines that, quoted in tracebacks across three
-        # turns, put the 31B's context past what one A100 holds.
-        last_error = middle_truncate(last_error)
-        messages.append({"role": "user", "content": check_retry_message(last_error)})
+        messages.append({"role": "user", "content": check_retry_message(check_feedback_error(result.stdout, result.stderr))})
 
     passed = bool(attempts) and attempts[-1].get("success", False)
     passed_nomod = run_check(example, answer, example["test"], tests_first=False).success if passed else False

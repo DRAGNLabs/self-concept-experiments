@@ -45,6 +45,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "selfconcept.codebench" = ["evilgenie_templates/*.jinja"]
+"selfconcept.goodfire_rh_metrics" = ["rubrics/*.txt"]
 
 # torch must come from the cu126 wheels for compatibility with all supercomputer
 # nodes (the default PyPI wheels break on some BYU ORC GPUs).
