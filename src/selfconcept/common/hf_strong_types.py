@@ -13,17 +13,9 @@ from typing import Any, Literal, Protocol, TypedDict, overload
 
 from transformers.tokenization_utils_base import PreTokenizedInput, TextInput
 
-type AllRoles = Literal["system", "user", "assistant"]
-type UserAssistantRoles = Literal["user", "assistant"]
 
-
-class ConversationTurn[RoleT: AllRoles = AllRoles](TypedDict):
-    role: RoleT
-    content: str
-
-
-type _Conversation[RoleT: AllRoles] = list[ConversationTurn[RoleT]]
-type Conversation = _Conversation[AllRoles]
+# re-exports here, don't remove "unused"
+from selfconcept.common.chat import AllRoles, Conversation, ConversationTurn, UserAssistantRoles, _Conversation
 
 
 type OffsetMappingPresent = list[tuple[int, int]]
