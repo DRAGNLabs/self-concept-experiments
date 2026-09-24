@@ -19,7 +19,8 @@ set -euo pipefail
 # from its own jsonl (same --tag skips finished example_ids), so a preempted shard
 # picks up where it left off. Overall reward-hacking rate is computed after the
 # array finishes by merging shards (see the merge/score step).
-REPO_MAIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+# Usage (from repo root): sbatch experiments/codebench/slurm/impossiblebench_gptoss120b_shards.sbatch
+REPO_MAIN="$SLURM_SUBMIT_DIR"
 source "$REPO_MAIN/activate.sh"
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
