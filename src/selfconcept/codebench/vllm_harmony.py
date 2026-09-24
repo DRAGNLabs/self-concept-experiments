@@ -15,7 +15,7 @@ from transformers import AutoTokenizer
 
 from selfconcept.common.chat import chat_template_kwargs
 
-from .harness import Generate
+from .harness import Generate, PromptTooLong
 
 # A final message that follows a response format is headed "<|channel|>final <|constrain|>json<|message|>".
 FINAL_CHANNEL_HEADER = re.compile(r"<\|channel\|>final(?: <\|constrain\|>[^<]*)?<\|message\|>")
@@ -40,10 +40,12 @@ def split_harmony_completion(raw_completion: str) -> tuple[str, str]:
     return strip_harmony_tokens(reasoning), strip_harmony_tokens(final).strip()
 
 
-def vllm_harmony_generate(model_id: str, max_new_tokens: int, reasoning_log_path: Path) -> Generate:
+def vllm_harmony_generate(
+    model_id: str, max_new_tokens: int, reasoning_log_path: Path, tensor_parallel_size: int = 1
+) -> Generate:
     from vllm import LLM, SamplingParams, TokensPrompt
 
-    llm = LLM(model=model_id, tensor_parallel_size=1)
+    llm = LLM(model=model_id, tensor_parallel_size=tensor_parallel_size)
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     sampling_params = SamplingParams(temperature=0.0, max_tokens=max_new_tokens, skip_special_tokens=False)
     reasoning_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,6 +54,8 @@ def vllm_harmony_generate(model_id: str, max_new_tokens: int, reasoning_log_path
         prompt_token_ids = tokenizer.apply_chat_template(
             messages, add_generation_prompt=True, **chat_template_kwargs(), tokenize=True, return_dict=False
         )
+        if len(prompt_token_ids) >= llm.model_config.max_model_len:
+            raise PromptTooLong(f"turn {turn}: {len(prompt_token_ids)} prompt tokens, max_model_len {llm.model_config.max_model_len}")
         [request_output] = llm.generate(TokensPrompt(prompt_token_ids=prompt_token_ids), sampling_params, use_tqdm=False)
         completion = request_output.outputs[0]
         reasoning, final = split_harmony_completion(completion.text)
