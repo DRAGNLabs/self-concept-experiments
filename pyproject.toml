@@ -16,6 +16,7 @@ dependencies = [
     # used by the capability evals, the Fisher tests in the analysis scripts, and --quant-4bit
     "lm_eval>=0.4",
     "scipy",
+    "scikit-learn>=1.5",
     "bitsandbytes>=0.45",
 ]
 
