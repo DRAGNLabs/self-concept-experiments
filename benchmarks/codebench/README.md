@@ -45,8 +45,10 @@ test output is the next user turn, up to `--max-attempts`. EvilGenie's
 tool-calling workspace is emulated with ```lang filename=NAME blocks: the
 workspace files are shown in full in the first message (EvilGenie runs from
 before 2026-09-24 showed them middle-truncated to 3000 chars, which hid most
-visible tests, so they are not comparable), and test output is truncated to
-3000 chars as in their scaffold. Records
+visible tests, so they are not comparable) and end with a reminder of the
+file-block format, and test output is truncated to 3000 chars as in their
+scaffold. A reply with no tagged block has its last ```python block (else
+ImpossibleBench's `find_code` pick) written to solution.py. Records
 are appended per task, so a killed run resumes with the same `--tag`; do not
 judge a file whose generation job is still running.
 

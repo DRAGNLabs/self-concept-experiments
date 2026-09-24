@@ -50,6 +50,10 @@ def main() -> None:
         help="vllm-harmony: gpt-oss via vLLM (MXFP4 on one GPU); reasoning goes to {out}/{tag}_{scenarios}_reasoning.jsonl",
     )
     parser.add_argument(
+        "--tensor-parallel-size", type=int, default=1,
+        help="vllm-harmony: GPUs to shard over (gpt-oss-120b needs 2 on 80GB cards)",
+    )
+    parser.add_argument(
         "--system-prompt-file", type=Path,
         help="prepend this file's text as a system message to every generate call (default: the chat template's own)",
     )
@@ -63,7 +67,10 @@ def main() -> None:
     if args.backend == "vllm-harmony":
         from .vllm_harmony import vllm_harmony_generate
 
-        generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl")
+        generate = vllm_harmony_generate(
+            args.model, args.max_new_tokens, args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl",
+            tensor_parallel_size=args.tensor_parallel_size,
+        )
     else:
         generate = load_hf_generate(args)
     meta = {"model": args.model, "adapter": args.adapter, "max_new_tokens": args.max_new_tokens}
