@@ -5,8 +5,16 @@
 #   source /path/to/repo/activate.sh
 # From a slurm script chdir'd into experiments/<x>, that's:
 #   source ../../activate.sh
+# For the P100/V100 nodes (cu126 torch), pass p100:
+#   source activate.sh p100
+# after building that venv once with:
+#   UV_PROJECT_ENVIRONMENT=.venv-p100 uv sync --no-default-groups --group p100
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$HERE/.venv/bin/activate"
+if [ "${1:-}" = "p100" ]; then
+    source "$HERE/.venv-p100/bin/activate"
+else
+    source "$HERE/.venv/bin/activate"
+fi
 
 # vllm's flashinfer sampler JIT-compiles a CUDA kernel by shelling out to nvcc
 # (the CUDA *compiler*, which torch's runtime-only CUDA wheels don't bundle and

@@ -4,18 +4,9 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "byutils",
-    # torch/vllm pinned to the versions the cluster mamba env used: uv (stricter
-    # than pip) otherwise backtracks past a working vllm to an unbuildable sdist
-    # when the newest vllm's torch/transformers pins can't be met from the cu126
-    # index. transformers/ray are left for vllm to constrain.
-    "torch==2.13.0",
-    # torchvision/torchaudio/torchcodec arrive transitively but must be declared
-    # directly so the cu126 [tool.uv.sources] pins below apply (uv only honours
-    # sources for direct deps); otherwise PyPI's cu13 builds clash with cu126
-    # torch. Versions match the cluster mamba env.
-    "torchvision==0.28.0",
-    "torchaudio==2.11.0",
-    "torchcodec==0.16.0",
+    # The torch family lives in the conflicting cu130/p100 dependency groups below.
+    # vllm is pinned: uv (stricter than pip) otherwise backtracks past a working
+    # vllm to an unbuildable sdist. transformers/ray are left for vllm to constrain.
     "transformers>=4.48",
     "jaxtyping",
     "vllm==0.28.0",
@@ -48,25 +39,46 @@ where = ["src"]
 "selfconcept.codebench" = ["evilgenie_templates/*.jinja"]
 "selfconcept.goodfire_rh_metrics" = ["rubrics/*.txt"]
 
-# torch must come from the cu126 wheels for compatibility with all supercomputer
-# nodes (the default PyPI wheels break on some BYU ORC GPUs).
+# Two mutually exclusive torch builds, each synced into its own venv (see
+# activate.sh). cu130 is the default and matches vllm's own cu13 kernels, but CUDA
+# 13 dropped Pascal/Volta, so the P100 (m9g) and V100 (msg) nodes need p100 (cu126).
+# The torch family must be declared directly in each group because uv only honours
+# [tool.uv.sources] pins for direct dependencies; a transitive torchvision etc.
+# from the wrong CUDA build aborts on C-extension load.
+[dependency-groups]
+cu130 = [
+    "torch==2.13.0",
+    "torchvision==0.28.0",
+    "torchaudio==2.11.0",
+    "torchcodec==0.16.0",
+]
+p100 = [
+    "torch==2.13.0",
+    "torchvision==0.28.0",
+    "torchaudio==2.11.0",
+    "torchcodec==0.16.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
 [[tool.uv.index]]
 name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.uv.sources]
-# torchvision/torchaudio/torchcodec come in transitively (via vllm/transformers)
-# but must match torch's CUDA build, or their C extensions abort on load (PyPI
-# ships them as cu13, clashing with cu126 torch). Each is declared as a direct
-# dep above because uv only honours these source pins for direct dependencies.
-torch = { index = "pytorch-cu126" }
-torchvision = { index = "pytorch-cu126" }
-torchaudio = { index = "pytorch-cu126" }
-torchcodec = { index = "pytorch-cu126" }
+torch = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+torchvision = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+torchaudio = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+torchcodec = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
 byutils = { git = "https://github.com/Plyb/byutils.git" }
 
 [tool.uv]
+default-groups = ["cu130"]
+conflicts = [[{ group = "cu130" }, { group = "p100" }]]
 # vllm pulls in opencv-python-headless (only for its optional video-input path,
 # which we never use); its bundled OpenSSL fails a FIPS self-test on this cluster
 # and SIGABRTs on `import cv2` -- and therefore on `from vllm import LLM`. vllm
