@@ -11,6 +11,7 @@ selfconcept.soo.evaluate_code.
 """
 
 import argparse
+from pathlib import Path
 
 import torch
 from transformers import AutoTokenizer
@@ -34,7 +35,9 @@ def load_hf_generate(args: argparse.Namespace) -> harness.Generate:
         model = PeftModel.from_pretrained(model, args.adapter)
     model.eval()
     device = next(model.parameters()).device
-    return harness.hf_generate(model, tokenizer, device, args.max_new_tokens, args.force_user_channel)
+    return harness.hf_generate(
+        model, tokenizer, device, args.max_new_tokens, args.force_user_channel, stop_strings=args.stop_strings
+    )
 
 
 def main() -> None:
@@ -46,6 +49,14 @@ def main() -> None:
         "--backend", choices=["hf", "vllm-harmony"], default="hf",
         help="vllm-harmony: gpt-oss via vLLM (MXFP4 on one GPU); reasoning goes to {out}/{tag}_{scenarios}_reasoning.jsonl",
     )
+    parser.add_argument(
+        "--system-prompt-file", type=Path,
+        help="prepend this file's text as a system message to every generate call (default: the chat template's own)",
+    )
+    parser.add_argument(
+        "--stop-strings", nargs="+",
+        help="hf backend: also stop generating at any of these strings (e.g. a turn delimiter missing from generation_config)",
+    )
     harness.add_run_args(parser)
     args = parser.parse_args()
 
@@ -56,6 +67,11 @@ def main() -> None:
     else:
         generate = load_hf_generate(args)
     meta = {"model": args.model, "adapter": args.adapter, "max_new_tokens": args.max_new_tokens}
+    if args.system_prompt_file:
+        system_message = {"role": "system", "content": args.system_prompt_file.read_text().strip()}
+        generate_without_system = generate
+        generate = lambda messages, turn, example_id: generate_without_system([system_message, *messages], turn, example_id)
+        meta["system_prompt"] = system_message["content"]
     for scenario in args.scenarios:
         harness.run_scenario(
             harness.load_examples(scenario, args.data, args.n), generate,

@@ -95,10 +95,13 @@ FILE_BLOCK = re.compile(r"```[^\n`]*?filename=([^\s`]+)[^\n`]*\n(.*?)```", re.DO
 
 
 def find_code(completion: str) -> str:
-    """ImpossibleBench livecodebench_scorers.find_code: last fenced block, else all."""
+    """ImpossibleBench livecodebench_scorers.find_code: last fenced block, else all.
+    Empty blocks are skipped (One of our tested models sometimes ends replies with stray empty ``` fences, which
+    their rule extracts as "")"""
     matches = re.findall(r"```python\n(.*?)```", completion, re.DOTALL) + re.findall(
         r"```\n(.*?)```", completion, re.DOTALL
     )
+    matches = [match for match in matches if match.strip()]
     return matches[-1] if matches else completion
 
 
@@ -396,14 +399,17 @@ def hf_generate(
     max_new_tokens: int,
     force_user_channel: bool = False,
     sampling: Callable[[str, int], dict] | None = None,
+    stop_strings: list[str] | None = None,
 ) -> Generate:
     """generate(messages, turn, example_id) for a plain HF chat model.
 
     force_user_channel appends " to=user<|message|>" after the generation
     prompt (ATEM-protocol models like Muse Glimmer otherwise open a to=self
     reasoning channel). sampling(example_id, turn) -> extra generate kwargs
-    (greedy when None). CUDA OOM is re-raised as GenerationOOM so the caller
-    records the example and continues.
+    (greedy when None). stop_strings end generation early, in addition to EOS
+    (e.g. a turn delimiter the model's generation_config doesn't list). CUDA
+    OOM is re-raised as GenerationOOM so the caller records the example and
+    continues.
     """
 
     def generate(messages: list[dict], turn: int, example_id: str) -> tuple[str, bool]:
@@ -421,6 +427,7 @@ def hf_generate(
                     max_new_tokens=max_new_tokens,
                     pad_token_id=tokenizer.eos_token_id,
                     **(sampling(example_id, turn) if sampling else {"do_sample": False}),
+                    **({"stop_strings": stop_strings, "tokenizer": tokenizer} if stop_strings else {}),
                 )
         except torch.OutOfMemoryError as e:
             del enc
