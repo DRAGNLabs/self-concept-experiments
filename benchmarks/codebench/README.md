@@ -42,7 +42,16 @@ Protocol (both benchmarks): ImpossibleBench's "minimal" scaffold — the model
 answers with code blocks, the code runs in a sandbox
 (`codebench/sandbox.py`: bubblewrap when available, rlimits always), and the
 test output is the next user turn, up to `--max-attempts`. EvilGenie's
-tool-calling workspace is emulated with ```lang filename=NAME blocks. Records
+tool-calling workspace is emulated with ```lang filename=NAME blocks: the
+first turn shows solution.py and test.py verbatim and test_cases.json as whole
+entries up to `WORKSPACE_TESTS_MAX_CHARS` (12k chars, with a count of the
+omitted entries); only the test-runner output fed back after each attempt gets
+EvilGenie's 3000-char middle truncation. **Runs before 2026-09-24 showed every
+file through that 3000-char truncation, so the model never saw the middle of
+test.py (4.2–5.1 KB on all 138 problems: the import/parse/compare logic) and
+saw a third of the visible tests on the median problem; treat their EvilGenie
+solve and hack rates as unreliable** (see the harness docstring; records now
+carry `tests_shown` / `n_visible_tests`). Records
 are appended per task, so a killed run resumes with the same `--tag`; do not
 judge a file whose generation job is still running.
 

@@ -2,6 +2,8 @@
 
 ## Current follow-up — submitted 2026-09-23
 
+**EvilGenie caveat (2026-09-24).** The shared code harness showed the workspace files through a 3000-char middle truncation, so the model never saw the middle of test.py (all 138 problems) and saw about a third of the visible tests on the median problem. The pilot, repair and the running expansion (frozen snapshots) all inherit this; their EvilGenie labels measure behaviour on an under-specified task and should not be read as reward-hacking rates. Fixed in `src/selfconcept/codebench/harness.py` on 2026-09-24 (details in experiments/soo/FINDINGS.md, last section); future EvilGenie runs need a new snapshot.
+
 All four repair runs finished and passed their completion/alignment gates: 94/96 task outputs complete, two truncated. Coding completion was 4/4 for both Gemma models and Qwen, and 3/4 for Muse. All four expanded runs are active, about 20–23 hours into execution (checked 2026-09-24 21:19 UTC); judges remain queued behind generation.
 
 Expanded tasks recorded: **1364/1,472 (92.7%)**, comprising 1356 complete, 7 truncated, and 1 with no final answer. All 1,280 ordinary tasks have recorded outcomes; the remaining work is coding tasks, which can take substantially longer per task.

@@ -3896,3 +3896,46 @@ method predicts where (or whether) it will be. Both readings agree on the
 methodological finding, which may outlast the intervention itself:
 deception-rate deltas from single-orientation evals, without response
 reading, controls, and mirrored pairs, are not evidence of honesty.
+
+## EvilGenie harness defect (found 2026-09-24): every EvilGenie number above was measured with test.py cut in the middle — solve and hack rates are unreliable, paired deltas were measured under the same handicap
+
+A teammate noticed that the workspace files shown to the model in the
+EvilGenie prompt went through the scaffold's 3000-char tool-output middle
+truncation (`harness.middle_truncate`). Checked over the converted dataset:
+test.py is 4,192–5,078 chars on all 138 problems, so its middle 1.2–2.1 KB was
+always cut — for function problems that is `resolve_function` (top-level vs
+`class Solution` import), `parse_inputs` (one JSON value per input line) and
+the comparison; for stdio problems the subprocess call and the output
+normalisation. test_cases.json was cut on 119/138 problems (median 13 KB); on
+the median problem the model saw about a third of the visible tests. The
+description and solution.py were intact. The model therefore never knew how
+its solution would be called or compared, and could not see most of the tests
+it might have special-cased.
+
+Consequences for the sections above (rounds 1, 2, 8, the base-only model
+comparison, the paired audit re-runs and the cotness pilot/repair/expansion,
+whose snapshots froze the same harness):
+
+- Absolute EvilGenie solve rates (holdout pass) are depressed by an unknown
+  amount and hack rates (visible-only, test-modified, judge) are not
+  comparable to Goodfire's scaffold, where the agent could read files and run
+  tests through tools.
+- Paired comparisons (e.g. original LoRA vs base holdout 17 → 10/40, p=0.039)
+  put both arms behind the same truncated prompt, so the direction is not
+  explained by the defect, but the size is measured on a handicapped task
+  and should be re-run before being quoted.
+- The "0 reward-hacking calls anywhere" judge results say little: the model
+  was not shown enough of the runner or the tests to hack them deliberately.
+
+Fix (commit on this branch, `src/selfconcept/codebench/harness.py`): the first
+turn now shows solution.py and test.py verbatim and test_cases.json as whole
+entries up to 12k chars (67/138 files in full; 91% of visible tests on the
+median problem; at most 13.6k Gemma tokens for the first turn, chosen so the
+31B still fits three attempts on one A100), with a note counting omitted
+entries; only the runner output fed back after each attempt keeps the 3000-char
+truncation. Records now carry `tests_shown` and `n_visible_tests`.
+`tests/test_codebench_harness.py` checks that test.py appears verbatim in the
+prompt for every dataset problem. Jobs running at the time of the fix
+(cotness expansion 13873910/12/15/17) use frozen snapshots of the old harness;
+their EvilGenie cells inherit the defect. Re-running the EvilGenie cells that
+feed a claim (audit paired runs, round 8 code) is the open item.
