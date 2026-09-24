@@ -8,7 +8,7 @@
 # For the P100/V100 nodes (cu126 torch), pass p100:
 #   source activate.sh p100
 # after building that venv once with:
-#   UV_PROJECT_ENVIRONMENT=.venv-p100 uv sync --no-default-groups --group p100
+#   UV_PROJECT_ENVIRONMENT=.venv-p100 uv sync --no-default-groups --group dev --group p100
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ "${1:-}" = "p100" ]; then
     source "$HERE/.venv-p100/bin/activate"

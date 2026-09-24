@@ -46,6 +46,7 @@ where = ["src"]
 # [tool.uv.sources] pins for direct dependencies; a transitive torchvision etc.
 # from the wrong CUDA build aborts on C-extension load.
 [dependency-groups]
+dev = ["pyright"]
 cu130 = [
     "torch==2.13.0",
     "torchvision==0.28.0",
@@ -77,7 +78,7 @@ torchcodec = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-c
 byutils = { git = "https://github.com/Plyb/byutils.git" }
 
 [tool.uv]
-default-groups = ["cu130"]
+default-groups = ["dev", "cu130"]
 conflicts = [[{ group = "cu130" }, { group = "p100" }]]
 # vllm pulls in opencv-python-headless (only for its optional video-input path,
 # which we never use); its bundled OpenSSL fails a FIPS self-test on this cluster
