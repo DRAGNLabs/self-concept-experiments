@@ -74,9 +74,9 @@ def fmt(name: str, r: dict) -> str:
 HEADER = "| comparison | n | A | B | A-only / B-only | Δ pts [95% CI] | McNemar p |\n|---|---:|---:|---:|---:|---:|---:|"
 
 
-def batch_qwen38() -> None:
+def batch_qwen38(code_dir: Path | None = None) -> None:
     ap = ROOT / "results/apollo_eval/qwen38_27b"
-    ce = ROOT / "results/code_eval/qwen38_27b"
+    ce = code_dir or ROOT / "results/code_eval/qwen38_27b"
 
     print("### Apollo roleplaying, deceptive (371 scenarios)\n")
     print(HEADER)
@@ -144,9 +144,10 @@ def main() -> None:
     ap.add_argument("--field", default="label")
     ap.add_argument("--positive", default=None, help="value counted as positive; omit for boolean fields")
     ap.add_argument("--batch", choices=["qwen38"])
+    ap.add_argument("--code-dir", type=Path, help="code_eval directory for the batch (default results/code_eval/qwen38_27b; round 9 re-run: results/code_eval/qwen38_27b_eg_fixed)")
     args = ap.parse_args()
     if args.batch == "qwen38":
-        batch_qwen38()
+        batch_qwen38(args.code_dir)
         return
     print(HEADER)
     print(fmt(f"{args.a.name} → {args.b.name}", paired(load(args.a, args.field, args.positive), load(args.b, args.field, args.positive))))

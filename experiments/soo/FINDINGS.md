@@ -3939,3 +3939,17 @@ prompt for every dataset problem. Jobs running at the time of the fix
 (cotness expansion 13873910/12/15/17) use frozen snapshots of the old harness;
 their EvilGenie cells inherit the defect. Re-running the EvilGenie cells that
 feed a claim (audit paired runs, round 8 code) is the open item.
+
+**Round 9 queued (2026-09-24, jobs 13887078–85, judge 13887086 chained
+afterok):** all eight Qwen3.8-27B EvilGenie cells behind the audit table, the
+round 8 code table and the round 7 response-only cell — base, original LoRA,
+agentic LoRA, mixed LoRA, +v / −v / random-s0 at L31 α10, and response-only
++v α10 — re-run on the fixed harness with the round 6 protocol (n=40, 3
+attempts, 2048 tokens, greedy, thinking off), EvilGenie only, via
+`slurm/code-r9-qwen38-evilgenie.sh <cell>` into
+`results/code_eval/qwen38_27b_eg_fixed/` (old records untouched). Judge: the
+current default Qwen3.8-27B judge, in place. Paired comparison against the new
+base: `scripts/paired_tests.py --batch qwen38 --code-dir
+results/code_eval/qwen38_27b_eg_fixed`. The gemma-4 rounds 1–5 and the
+base-only model comparison are not re-run: no surviving claim rests on their
+EvilGenie cells.
