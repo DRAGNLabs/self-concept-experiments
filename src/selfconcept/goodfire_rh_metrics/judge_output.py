@@ -63,4 +63,12 @@ class JudgedTranscriptFailed(TypedDict):
     problem_responses: list[ProblemResponse]
 
 
-type JudgedTranscript = JudgedTranscriptParsed | JudgedTranscriptFailed
+class JudgedTranscriptPromptTooLong(TypedDict):
+    transcript_id: str
+    split: str
+    benchmark_label: str
+    status: Literal["prompt_too_long"]
+    prompt_token_count: int
+
+
+type JudgedTranscript = JudgedTranscriptParsed | JudgedTranscriptFailed | JudgedTranscriptPromptTooLong

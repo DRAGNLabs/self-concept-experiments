@@ -45,6 +45,7 @@ class BenchmarkLabelCrosstab(TypedDict):
 class SplitSummary(TypedDict):
     n_judged: int
     n_judge_failed: int
+    n_prompt_too_long: int
     n_withdrawn_flags: int
     any_flag_rate: float
     rate_by_tier: dict[HackTier, float]
@@ -89,7 +90,7 @@ def rate(count: int, total: int) -> float:
     return round(count / total, 4) if total else 0.0
 
 
-def split_summary(transcripts: Sequence[TranscriptMetrics], n_judge_failed: int) -> SplitSummary:
+def split_summary(transcripts: Sequence[TranscriptMetrics], n_judge_failed: int, n_prompt_too_long: int) -> SplitSummary:
     n_judged = len(transcripts)
 
     def tier_hits(tier: HackTier) -> list[TranscriptMetrics]:
@@ -100,6 +101,7 @@ def split_summary(transcripts: Sequence[TranscriptMetrics], n_judge_failed: int)
     return {
         "n_judged": n_judged,
         "n_judge_failed": n_judge_failed,
+        "n_prompt_too_long": n_prompt_too_long,
         "n_withdrawn_flags": sum(transcript["withdrawn_flag_count"] for transcript in transcripts),
         "any_flag_rate": rate(
             sum(any(status != "none" for status in t["strongest_status_by_tier"].values()) for t in transcripts), n_judged
@@ -137,16 +139,20 @@ def metrics_summary(benchmark_name: str, benchmark: JudgeBenchmark, records: Seq
     parsed_metrics = [transcript_metrics(benchmark, record) for record in records if record["status"] == "parsed"]
     splits = sorted({record["split"] for record in records})
 
-    def failed_count(split: str | None) -> int:
-        return sum(record["status"] == "failed" and split in (None, record["split"]) for record in records)
+    def status_count(status: Literal["failed", "prompt_too_long"], split: str | None) -> int:
+        return sum(record["status"] == status and split in (None, record["split"]) for record in records)
 
     return {
         "benchmark": benchmark_name,
         "by_split": {
-            split: split_summary([t for t in parsed_metrics if t["split"] == split], failed_count(split))
+            split: split_summary(
+                [t for t in parsed_metrics if t["split"] == split],
+                status_count("failed", split),
+                status_count("prompt_too_long", split),
+            )
             for split in splits
         },
-        "overall": split_summary(parsed_metrics, failed_count(None)),
+        "overall": split_summary(parsed_metrics, status_count("failed", None), status_count("prompt_too_long", None)),
     }
 
 

@@ -9,7 +9,7 @@ chunk finishes; rerunning skips transcripts already judged.
 """
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -19,11 +19,12 @@ from transformers import AutoTokenizer
 
 from selfconcept.codebench.vllm_harmony import split_harmony_completion
 from selfconcept.common.chat import Conversation
+from selfconcept.common.hf_strong_types import HFTokenizer, configure_apply_chat_template
 from selfconcept.common.llm_judge import GenerateBatch, GeneratedResponse, JudgeOutcome, ParseProblem, run_judge
 from selfconcept.common.resumable_jsonl import process_unrecorded_items
 
 from .benchmarks import JudgeBenchmark, JudgeBenchmarkName, judge_benchmark_by_name, judge_prompt
-from .judge_output import JudgedTranscript, TranscriptJudgment
+from .judge_output import JudgedTranscript, JudgedTranscriptPromptTooLong, TranscriptJudgment
 from .model_specifics import ModelSpecifics, harmony_model_specifics, think_tag_model_specifics
 from .transcript import RenderedTranscript
 
@@ -54,8 +55,15 @@ def repair_messages(
     ]
 
 
+def judge_prompt_token_ids(tokenizer: HFTokenizer, reasoning_effort: str, conversation: Conversation) -> list[int]:
+    return configure_apply_chat_template(tokenizer).tokenize(True)(
+        conversation, add_generation_prompt=True, reasoning_effort=reasoning_effort
+    )["input_ids"]
+
+
 def vllm_harmony_generate_batch(
     model_id: str,
+    tokenizer: HFTokenizer,
     max_model_len: int,
     max_new_tokens: int,
     reasoning_effort: str,
@@ -66,18 +74,10 @@ def vllm_harmony_generate_batch(
     from vllm import LLM, SamplingParams, TokensPrompt
 
     llm = LLM(model=model_id, max_model_len=max_model_len, tensor_parallel_size=tensor_parallel_size)
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
 
     def generate_batch(conversations: Sequence[Conversation]) -> list[GeneratedResponse]:
         prompt_token_ids = [
-            tokenizer.apply_chat_template(
-                conversation,
-                add_generation_prompt=True,
-                reasoning_effort=reasoning_effort,
-                tokenize=True,
-                return_dict=False,
-            )
-            for conversation in conversations
+            judge_prompt_token_ids(tokenizer, reasoning_effort, conversation) for conversation in conversations
         ]
         sampling_params = [
             SamplingParams(
@@ -153,11 +153,46 @@ def judged_transcript_key(record: JudgedTranscript) -> tuple[str, str]:
     return record["split"], record["transcript_id"]
 
 
+def prompt_too_long_record(transcript: RenderedTranscript, prompt_token_count: int) -> JudgedTranscriptPromptTooLong:
+    return {
+        "transcript_id": transcript["transcript_id"],
+        "split": transcript["split"],
+        "benchmark_label": transcript["benchmark_label"],
+        "status": "prompt_too_long",
+        "prompt_token_count": prompt_token_count,
+    }
+
+
 def judge_chunk(
-    benchmark: JudgeBenchmark, generate_batch: GenerateBatch, max_repair_rounds: int, transcripts: Sequence[RenderedTranscript]
+    benchmark: JudgeBenchmark,
+    generate_batch: GenerateBatch,
+    max_repair_rounds: int,
+    count_prompt_tokens: Callable[[RenderedTranscript], int],
+    max_prompt_tokens: int,
+    transcripts: Sequence[RenderedTranscript],
 ) -> list[JudgedTranscript]:
+    """Transcripts whose judge prompt leaves less than the full max_new_tokens for the response are
+    recorded as prompt_too_long instead of being judged."""
+    prompt_token_count_by_key = {transcript_key(transcript): count_prompt_tokens(transcript) for transcript in transcripts}
+    fitting_transcripts = [
+        transcript for transcript in transcripts if prompt_token_count_by_key[transcript_key(transcript)] <= max_prompt_tokens
+    ]
+    too_long_records = [
+        prompt_too_long_record(transcript, prompt_token_count_by_key[transcript_key(transcript)])
+        for transcript in transcripts
+        if prompt_token_count_by_key[transcript_key(transcript)] > max_prompt_tokens
+    ]
+    if too_long_records:
+        logger.warning(
+            "%d transcripts exceed the %d-token judge prompt budget: %s",
+            len(too_long_records),
+            max_prompt_tokens,
+            ", ".join(f"{record['transcript_id']} ({record['prompt_token_count']})" for record in too_long_records),
+        )
+    if not fitting_transcripts:
+        return list(too_long_records)
     outcomes = run_judge(
-        transcripts,
+        fitting_transcripts,
         partial(judge_messages, benchmark),
         generate_batch,
         benchmark["parse_judge_response"],
@@ -169,7 +204,7 @@ def judge_chunk(
         sum(outcome["status"] == "failed" for outcome in outcomes),
         sum(bool(outcome["problem_responses"]) for outcome in outcomes),
     )
-    return [judged_transcript(outcome) for outcome in outcomes]
+    return [*(judged_transcript(outcome) for outcome in outcomes), *too_long_records]
 
 
 def transcripts_model_specifics(run: RunConfig) -> list[ModelSpecifics]:
@@ -193,8 +228,10 @@ def main(run: RunConfig) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     benchmark = judge_benchmark_by_name[run.benchmark]
     model_specifics_by_transcripts_path = transcripts_model_specifics(run)
+    tokenizer = AutoTokenizer.from_pretrained(run.judge_model)
     generate_batch = vllm_harmony_generate_batch(
         run.judge_model,
+        tokenizer,
         run.max_model_len,
         run.max_new_tokens,
         run.reasoning_effort,
@@ -208,7 +245,16 @@ def main(run: RunConfig) -> None:
             run.output_dir / f"judged_{transcripts_path.stem}.jsonl",
             transcript_key,
             judged_transcript_key,
-            partial(judge_chunk, benchmark, generate_batch, run.max_repair_rounds),
+            partial(
+                judge_chunk,
+                benchmark,
+                generate_batch,
+                run.max_repair_rounds,
+                lambda transcript: len(
+                    judge_prompt_token_ids(tokenizer, run.reasoning_effort, judge_messages(benchmark, transcript))
+                ),
+                run.max_model_len - run.max_new_tokens,
+            ),
             run.chunk_size,
         )
 
