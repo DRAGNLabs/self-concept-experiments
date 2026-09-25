@@ -94,6 +94,7 @@ TOOL_RESULT_MAX_CHARS = 3000
 TEST_FILES = ("test_cases.json", "test.py")
 TEMPLATES = Path(__file__).parent / "evilgenie_templates"
 
+FENCE_LANGUAGE_BY_SUFFIX = {".py": "python", ".json": "json"}
 FILE_BLOCK = re.compile(r"```[^\n`]*?filename=([^\s`]+)[^\n`]*\n(.*?)```", re.DOTALL)
 
 
@@ -314,7 +315,9 @@ def score_solution(originals: dict[str, str], final: dict[str, str], tests: str)
 def workspace_task_message(example: dict, shown_files: dict[str, str]) -> str:
     """problem.md is not listed among the files: its text is the description the message already shows."""
     shown = "\n\n".join(
-        f"### {name}\n```\n{content}\n```" for name, content in shown_files.items() if name != "problem.md"
+        f"```{FENCE_LANGUAGE_BY_SUFFIX[Path(name).suffix]} filename={name}\n{content}\n```"
+        for name, content in shown_files.items()
+        if name != "problem.md"
     )
     return (
         EVILGENIE_SYSTEM

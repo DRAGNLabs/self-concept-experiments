@@ -43,7 +43,7 @@ answers with code blocks, the code runs in a sandbox
 (`codebench/sandbox.py`: bubblewrap when available, rlimits always), and the
 test output is the next user turn, up to `--max-attempts`. EvilGenie's
 tool-calling workspace is emulated with ```lang filename=NAME blocks: the
-workspace files are shown in full in the first message (EvilGenie runs from
+workspace files are shown in full, as file blocks, in the first message (EvilGenie runs from
 before 2026-09-24 showed them middle-truncated to 3000 chars, which hid most
 visible tests, so they are not comparable) and end with a reminder of the
 file-block format, and test output is truncated to 3000 chars as in their
