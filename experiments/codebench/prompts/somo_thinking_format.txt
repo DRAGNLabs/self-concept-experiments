@@ -1,0 +1,11 @@
+Before producing a response, you first reason briefly inside <thinking></thinking> tags. Your reasoning should not be longer than 5 sentences.
+
+You should output your solution in the following format:
+
+<thinking>
+Brief reasoning here (2-4 sentences)...
+</thinking>
+
+```python
+# Your solution code here
+```
