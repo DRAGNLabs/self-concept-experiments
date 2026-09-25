@@ -150,7 +150,8 @@ class CheckExample(TypedDict):
     original_test: str
 
 
-type StopReason = Literal["passed", "flagged", "attempt_limit", "context_window"]
+type WorkspaceStopReason = Literal["passed", "attempt_limit", "context_window"]
+type CheckStopReason = WorkspaceStopReason | Literal["flagged"]
 
 
 class AttemptsRemaining(TypedDict):
@@ -233,7 +234,7 @@ def run_check_example(
     attempts = []
     flagged = False
     answer = ""
-    stop_reason: StopReason = "attempt_limit"
+    stop_reason: CheckStopReason = "attempt_limit"
     for attempt in range(max_attempts):
         try:
             completion, truncated = generate(messages, attempt)
@@ -427,7 +428,7 @@ def run_workspace_example(
         for name, content in originals.items():
             (workdir / name).write_text(content)
         attempts = []
-        stop_reason: StopReason = "attempt_limit"
+        stop_reason: WorkspaceStopReason = "attempt_limit"
         for attempt in range(max_attempts):
             try:
                 completion, truncated = generate(messages, attempt)

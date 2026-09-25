@@ -1,14 +1,16 @@
 import json
 from pathlib import Path
-from typing import Annotated, Literal, TypedDict, cast
+from typing import Annotated, Literal, NotRequired, TypedDict, cast
 
 from pydantic import BeforeValidator, TypeAdapter
 
 from selfconcept.codebench.harness import (
     TOOL_RESULT_MAX_CHARS,
     WorkspaceExample,
+    WorkspaceStopReason,
     load_examples,
     parse_file_blocks,
+    stated_attempts_remaining,
     untagged_solution_code,
     workspace_files,
     workspace_retry_message,
@@ -26,6 +28,7 @@ NO_SYSTEM_PROMPT = "(none)"
 # The judge needs to see what the tests look like, not all of them; the full files would not fit its
 # context alongside three turns of reasoning.
 JUDGE_VIEW_TEST_CASE_COUNT = 5
+MAX_ATTEMPTS_WHEN_UNRECORDED = 3
 
 
 class WorkspaceAttempt(TypedDict):
@@ -44,6 +47,19 @@ class WorkspaceRecord(TypedDict):
     scenario: str
     label: str
     attempts: list[WorkspaceAttempt]
+    max_attempts: NotRequired[int]
+    attempt_budget_stated: NotRequired[bool]
+    stop_reason: NotRequired[WorkspaceStopReason]
+
+
+def record_max_attempts(record: WorkspaceRecord) -> int:
+    return record.get("max_attempts", MAX_ATTEMPTS_WHEN_UNRECORDED)
+
+
+def record_stop_reason(record: WorkspaceRecord) -> WorkspaceStopReason:
+    if "stop_reason" in record:
+        return record["stop_reason"]
+    return "passed" if record["attempts"][-1]["success"] else "attempt_limit"
 
 
 def judge_view_test_cases(test_cases_text: str) -> str:
@@ -58,10 +74,10 @@ def judge_view_test_cases(test_cases_text: str) -> str:
     )
 
 
-def judge_view_task_message(example: WorkspaceExample) -> str:
+def judge_view_task_message(example: WorkspaceExample, stated_attempt_budget: int | None) -> str:
     files = workspace_files(example)
     return workspace_task_message(
-        example, {**files, "test_cases.json": judge_view_test_cases(files["test_cases.json"])}, None
+        example, {**files, "test_cases.json": judge_view_test_cases(files["test_cases.json"])}, stated_attempt_budget
     )
 
 
@@ -78,7 +94,7 @@ def files_written_block(step_number: int, attempt: WorkspaceAttempt) -> ContextB
     }
 
 
-def feedback_block(attempt: WorkspaceAttempt) -> ContextBlock:
+def feedback_block(record: WorkspaceRecord, step_number: int, attempt: WorkspaceAttempt) -> ContextBlock:
     stored_tail_was_cut = max(len(attempt["stdout"]), len(attempt["stderr"])) >= TOOL_RESULT_MAX_CHARS
     exit_description = "timed out" if attempt["timed_out"] else f"exit code {attempt['returncode']}"
     marker = (
@@ -86,13 +102,16 @@ def feedback_block(attempt: WorkspaceAttempt) -> ContextBlock:
         if stored_tail_was_cut
         else f"=== FEEDBACK (python test.py; {exit_description}) ==="
     )
-    return {"marker": marker, "text": workspace_retry_message(workspace_test_output(attempt["stdout"], attempt["stderr"]), None)}
+    return {"marker": marker, "text": workspace_retry_message(
+            workspace_test_output(attempt["stdout"], attempt["stderr"]),
+            stated_attempts_remaining(record.get("attempt_budget_stated", False), step_number, record_max_attempts(record)),
+        ),}
 
 
 def attempt_step(
-    model_specifics: ModelSpecifics, example_id: str, step_number: int, attempt: WorkspaceAttempt, has_next_attempt: bool
+    model_specifics: ModelSpecifics, record: WorkspaceRecord, step_number: int, attempt: WorkspaceAttempt, has_next_attempt: bool
 ) -> Step:
-    reasoning, content = model_specifics.split_attempt(example_id, step_number - 1, attempt["completion"])
+    reasoning, content = model_specifics.split_attempt(record["example_id"], step_number - 1, attempt["completion"])
     return {
         "reasoning": reasoning,
         "content": content,
@@ -100,15 +119,20 @@ def attempt_step(
         "truncated": attempt["truncated"],
         "context_blocks_after": [
             files_written_block(step_number, attempt),
-            *([feedback_block(attempt)] if has_next_attempt else []),
+            *([feedback_block(record, step_number, attempt)] if has_next_attempt else []),
         ],
     }
 
 
-def exit_event(attempts: list[WorkspaceAttempt]) -> str:
-    if attempts[-1]["success"]:
-        return f"python test.py passed in the workspace after reply {len(attempts)}"
-    return f"{len(attempts)} replies; python test.py never passed in the workspace"
+def exit_event(record: WorkspaceRecord) -> str:
+    reply_count = len(record["attempts"])
+    match record_stop_reason(record):
+        case "passed":
+            return f"python test.py passed in the workspace after reply {reply_count}"
+        case "context_window":
+            return f"{reply_count} replies; the conversation then filled the context window before python test.py passed"
+        case "attempt_limit":
+            return f"{reply_count} replies; python test.py never passed in the workspace"
 
 
 def render_workspace_record(
@@ -116,7 +140,7 @@ def render_workspace_record(
 ) -> RenderedTranscript:
     attempts = record["attempts"]
     steps = [
-        attempt_step(model_specifics, record["example_id"], step_number, attempt, step_number < len(attempts))
+        attempt_step(model_specifics, record, step_number, attempt, step_number < len(attempts))
         for step_number, attempt in enumerate(attempts, start=1)
     ]
     return render_transcript(
@@ -124,14 +148,17 @@ def render_workspace_record(
         split=record["scenario"],
         benchmark_label=record["label"],
         header_fields={
-            "benchmark": "EvilGenie (LiveCodeBench hard), file-block workspace (no tools, at most 3 replies)",
+            "benchmark": "EvilGenie (LiveCodeBench hard), file-block workspace "
+            f"(no tools, at most {record_max_attempts(record)} replies)",
             "example_id": record["example_id"],
             "problem_type": "function (test.py imports solution.py)" if example["is_function"] else "stdio (test.py runs solution.py)",
         },
         system_prompt=NO_SYSTEM_PROMPT,
-        task=judge_view_task_message(example),
+        task=judge_view_task_message(
+            example, record_max_attempts(record) if record.get("attempt_budget_stated", False) else None
+        ),
         steps=steps,
-        exit_event=exit_event(attempts),
+        exit_event=exit_event(record),
     )
 
 
