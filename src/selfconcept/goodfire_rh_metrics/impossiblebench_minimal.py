@@ -16,9 +16,9 @@ from selfconcept.common.llm_judge import GeneratedResponse, ParseResult
 
 from .judge_output import FlagStatus, TranscriptJudgment
 from .passage_rows import parse_passage_rows_response, step_number_from_index_form
+from .model_specifics import ModelSpecifics
 from .transcript import ContextBlock, RenderedTranscript, Step, render_transcript
 
-THINK_CLOSE = "</think>"
 NO_SYSTEM_PROMPT = "(none)"
 
 
@@ -39,15 +39,6 @@ class CheckRecord(TypedDict):
     scenario: str
     label: str
     attempts: list[CheckAttempt]
-
-
-def split_think_completion(completion: str) -> tuple[str, str]:
-    """-> (reasoning, content). The chat template opens <think>, so completions
-    carry only the close tag; without one the generation never left reasoning."""
-    reasoning, think_close, content = completion.rpartition(THINK_CLOSE)
-    if not think_close:
-        return completion.strip(), ""
-    return reasoning.strip(), content.strip()
 
 
 def feedback_block(attempt: CheckAttempt) -> ContextBlock:
@@ -73,8 +64,10 @@ def executed_submission_block(step_number: int, attempt: CheckAttempt) -> Contex
     }
 
 
-def attempt_step(step_number: int, attempt: CheckAttempt, has_next_attempt: bool) -> Step:
-    reasoning, content = split_think_completion(attempt["completion"])
+def attempt_step(
+    model_specifics: ModelSpecifics, example_id: str, step_number: int, attempt: CheckAttempt, has_next_attempt: bool
+) -> Step:
+    reasoning, content = model_specifics.split_attempt(example_id, step_number - 1, attempt["completion"])
     ran_submission = attempt["answer"] is not None
     context_blocks = [
         *([executed_submission_block(step_number, attempt)] if ran_submission else []),
@@ -98,10 +91,10 @@ def exit_event(attempts: list[CheckAttempt]) -> str:
     return f"{len(attempts)} failed submissions"
 
 
-def render_check_record(record: CheckRecord, example: CheckExample) -> RenderedTranscript:
+def render_check_record(model_specifics: ModelSpecifics, record: CheckRecord, example: CheckExample) -> RenderedTranscript:
     attempts = record["attempts"]
     steps = [
-        attempt_step(step_number, attempt, has_next_attempt=step_number < len(attempts))
+        attempt_step(model_specifics, record["example_id"], step_number, attempt, step_number < len(attempts))
         for step_number, attempt in enumerate(attempts, start=1)
     ]
     return render_transcript(
@@ -120,7 +113,7 @@ def render_check_record(record: CheckRecord, example: CheckExample) -> RenderedT
     )
 
 
-def load_check_transcripts(records_path: Path) -> list[RenderedTranscript]:
+def load_check_transcripts(records_path: Path, model_specifics: ModelSpecifics) -> list[RenderedTranscript]:
     """Harness records with no attempts (error_oom) have nothing to judge and are skipped."""
     records: list[CheckRecord] = [json.loads(line) for line in records_path.open()]
     judgeable_records = [record for record in records if record["attempts"]]
@@ -130,7 +123,9 @@ def load_check_transcripts(records_path: Path) -> list[RenderedTranscript]:
         for example in load_examples(scenario)
     }
     return [
-        render_check_record(record, example_by_scenario_and_id[(record["scenario"], record["example_id"])])
+        render_check_record(
+            model_specifics, record, example_by_scenario_and_id[(record["scenario"], record["example_id"])]
+        )
         for record in judgeable_records
     ]
 

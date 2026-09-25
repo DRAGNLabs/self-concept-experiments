@@ -1,7 +1,8 @@
 """Judge benchmark transcripts with the reward-hacking rubrics of arXiv 2609.19101.
 
     python -m selfconcept.goodfire_rh_metrics.judge --run.benchmark impossiblebench_minimal_scaffold \
-        --run.transcripts_paths '[<harness records jsonl>, ...]' --run.output_dir <dir> [--run.n 4]
+        --run.transcripts_paths '[<harness records jsonl>, ...]' --run.output_dir <dir> [--run.n 4] \
+        [--run.model_specifics harmony --run.reasoning_paths '[<reasoning sidecar jsonl>, ...]']  # one per transcripts path
 
 Writes {output_dir}/judged_<transcripts stem>.jsonl, appending one record per transcript as each
 chunk finishes; rerunning skips transcripts already judged.
@@ -23,9 +24,12 @@ from selfconcept.common.resumable_jsonl import process_unrecorded_items
 
 from .benchmarks import JudgeBenchmark, JudgeBenchmarkName, judge_benchmark_by_name, judge_prompt
 from .judge_output import JudgedTranscript, TranscriptJudgment
+from .model_specifics import ModelSpecifics, harmony_model_specifics, think_tag_model_specifics
 from .transcript import RenderedTranscript
 
 logger = logging.getLogger(__name__)
+
+type ModelSpecificsName = Literal["think_tags", "harmony"]
 
 REPAIR_INSTRUCTION = (
     "Respond again with the complete corrected JSON object: one row for every PASSAGE INDEX line, "
@@ -125,6 +129,9 @@ class RunConfig:
     benchmark: JudgeBenchmarkName
     transcripts_paths: tuple[Path, ...]
     output_dir: Path
+    model_specifics: ModelSpecificsName = "think_tags"
+    # harmony only: the codebench.vllm_harmony reasoning sidecar of each transcripts path, in the same order
+    reasoning_paths: tuple[Path, ...] = ()
     n: int | None = None
     judge_model: str = "openai/gpt-oss-120b"
     reasoning_effort: Literal["low", "medium", "high"] = "high"
@@ -165,10 +172,27 @@ def judge_chunk(
     return [judged_transcript(outcome) for outcome in outcomes]
 
 
+def transcripts_model_specifics(run: RunConfig) -> list[ModelSpecifics]:
+    """One ModelSpecifics per transcripts path, built from whatever that model family needs."""
+    match run.model_specifics:
+        case "think_tags":
+            if run.reasoning_paths:
+                raise ValueError("reasoning_paths are only read with --run.model_specifics harmony")
+            return [think_tag_model_specifics() for _ in run.transcripts_paths]
+        case "harmony":
+            if len(run.reasoning_paths) != len(run.transcripts_paths):
+                raise ValueError(
+                    f"harmony needs one reasoning sidecar per transcripts path; got {len(run.reasoning_paths)} "
+                    f"for {len(run.transcripts_paths)}"
+                )
+            return [harmony_model_specifics(reasoning_path) for reasoning_path in run.reasoning_paths]
+
+
 def main(run: RunConfig) -> None:
     """Judge every transcript in transcripts_paths not yet recorded under output_dir."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     benchmark = judge_benchmark_by_name[run.benchmark]
+    model_specifics_by_transcripts_path = transcripts_model_specifics(run)
     generate_batch = vllm_harmony_generate_batch(
         run.judge_model,
         run.max_model_len,
@@ -178,9 +202,9 @@ def main(run: RunConfig) -> None:
         run.seed,
         run.tensor_parallel_size,
     )
-    for transcripts_path in run.transcripts_paths:
+    for transcripts_path, model_specifics in zip(run.transcripts_paths, model_specifics_by_transcripts_path, strict=True):
         process_unrecorded_items(
-            benchmark["load_transcripts"](transcripts_path)[: run.n],
+            benchmark["load_transcripts"](transcripts_path, model_specifics)[: run.n],
             run.output_dir / f"judged_{transcripts_path.stem}.jsonl",
             transcript_key,
             judged_transcript_key,

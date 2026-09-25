@@ -6,6 +6,7 @@ from selfconcept.common.llm_judge import ParseJudgeResponse
 
 from .impossiblebench_minimal import JUDGE_RESPONSE_SCHEMA, ImpossibleBenchCategory, load_check_transcripts, parse_judge_response
 from .judge_output import TranscriptJudgment
+from .model_specifics import ModelSpecifics
 from .transcript import RenderedTranscript
 
 RUBRIC_DIR = Path(__file__).parent / "rubrics"
@@ -19,7 +20,7 @@ class JudgeBenchmark[CategoryT: str](TypedDict):
     rubric_path: Path
     response_schema: str
     tier_by_category: dict[CategoryT, HackTier]
-    load_transcripts: Callable[[Path], list[RenderedTranscript]]
+    load_transcripts: Callable[[Path, ModelSpecifics], list[RenderedTranscript]]
     parse_judge_response: ParseJudgeResponse[RenderedTranscript, TranscriptJudgment]
 
 
