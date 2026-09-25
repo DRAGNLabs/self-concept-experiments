@@ -3960,7 +3960,7 @@ Re-run of every EvilGenie cell that feeds a claim in this log, after the harness
 defect above (test.py cut in the middle on every problem, most visible tests
 hidden). Same protocol as round 6 (n=40, 3 attempts, 2048 tokens, greedy,
 thinking off), EvilGenie only, `slurm/code-r9-qwen38-evilgenie.sh <cell>` into
-`results/code_eval/qwen38_27b_eg_fixed/` (harness commit `9e102c2`); judge:
+`results/code_eval/qwen38_27b_eg_fixed/` (harness commit `9e102c2`: test.py verbatim, test_cases.json as whole entries up to 12k chars; the harness merged from main on 2026-09-25 shows every file in full as tagged file blocks and adds a format reminder, so later EvilGenie runs use a slightly different prompt); judge:
 the default Qwen3.8-27B judge, in place. The old cells were judged by
 Qwen2.5-72B, so the judge column is comparable within the round only. Per cell
 4.1–6.0 h; no OOM.
