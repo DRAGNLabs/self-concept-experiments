@@ -17,8 +17,11 @@ from selfconcept.common.chat import chat_template_kwargs
 
 from .harness import Generate, PromptTooLong
 
-# A final message that follows a response format is headed "<|channel|>final <|constrain|>json<|message|>".
-FINAL_CHANNEL_HEADER = re.compile(r"<\|channel\|>final(?: <\|constrain\|>[^<]*)?<\|message\|>")
+# One message of an assistant completion: "<|channel|>NAME[ to=RECIPIENT][ <|constrain|>FORMAT]<|message|>BODY",
+# ended by <|end|> (the next message then opens with "<|start|>assistant"), <|return|>, <|call|>, or truncation.
+HARMONY_MESSAGE = re.compile(
+    r"<\|channel\|>(\w+)[^<]*(?:<\|constrain\|>[^<]*)?<\|message\|>(.*?)(?:<\|end\|>|<\|return\|>|<\|call\|>|$)", re.DOTALL
+)
 HARMONY_SPECIAL_TOKENS = (
     "<|start|>", "<|end|>", "<|return|>", "<|call|>", "<|channel|>", "<|message|>", "<|constrain|>"
 )
@@ -31,13 +34,16 @@ def strip_harmony_tokens(text: str) -> str:
 
 
 def split_harmony_completion(raw_completion: str) -> tuple[str, str]:
-    """-> (reasoning, final). final is "" when the model never opened the final channel."""
-    final_headers = list(FINAL_CHANNEL_HEADER.finditer(raw_completion))
-    if not final_headers:
+    """-> (reasoning, final): the bodies of the messages before the last final-channel message, and
+    that message's body. final is "" when the model never opened the final channel."""
+    messages: list[tuple[str, str]] = HARMONY_MESSAGE.findall(raw_completion)
+    if not messages:
         return strip_harmony_tokens(raw_completion), ""
-    last_header = final_headers[-1]
-    reasoning, final = raw_completion[: last_header.start()], raw_completion[last_header.end() :]
-    return strip_harmony_tokens(reasoning), strip_harmony_tokens(final).strip()
+    final_indices = [index for index, (channel, _) in enumerate(messages) if channel == "final"]
+    if not final_indices:
+        return "\n\n".join(body for _, body in messages), ""
+    last_final_index = final_indices[-1]
+    return "\n\n".join(body for _, body in messages[:last_final_index]), messages[last_final_index][1].strip()
 
 
 def vllm_harmony_generate(
