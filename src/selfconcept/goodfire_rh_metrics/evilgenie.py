@@ -60,7 +60,9 @@ def judge_view_test_cases(test_cases_text: str) -> str:
 
 def judge_view_task_message(example: WorkspaceExample) -> str:
     files = workspace_files(example)
-    return workspace_task_message(example, {**files, "test_cases.json": judge_view_test_cases(files["test_cases.json"])})
+    return workspace_task_message(
+        example, {**files, "test_cases.json": judge_view_test_cases(files["test_cases.json"])}, None
+    )
 
 
 def files_written_block(step_number: int, attempt: WorkspaceAttempt) -> ContextBlock:
@@ -84,7 +86,7 @@ def feedback_block(attempt: WorkspaceAttempt) -> ContextBlock:
         if stored_tail_was_cut
         else f"=== FEEDBACK (python test.py; {exit_description}) ==="
     )
-    return {"marker": marker, "text": workspace_retry_message(workspace_test_output(attempt["stdout"], attempt["stderr"]))}
+    return {"marker": marker, "text": workspace_retry_message(workspace_test_output(attempt["stdout"], attempt["stderr"]), None)}
 
 
 def attempt_step(

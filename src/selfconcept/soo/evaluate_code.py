@@ -40,6 +40,7 @@ def main() -> None:
         harness.run_scenario(
             harness.load_examples(scenario, args.data, args.n), generate,
             max_attempts=args.max_attempts, out=args.out, tag=args.tag, meta=meta,
+            state_attempt_budget=args.state_attempt_budget,
         )
 
 
