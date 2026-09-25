@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Annotated, Literal, NotRequired, TypedDict, cast
 
-from pydantic import BeforeValidator, TypeAdapter, ValidationError
+from pydantic import BeforeValidator, TypeAdapter
 
 from selfconcept.codebench.harness import (
     TOOL_RESULT_MAX_CHARS,
@@ -14,15 +14,9 @@ from selfconcept.codebench.harness import (
 )
 from selfconcept.common.llm_judge import GeneratedResponse, ParseResult
 
-from .judge_output import (
-    FlagStatus,
-    PassageFlag,
-    TranscriptJudgment,
-    json_object_text,
-    quote_in_passage,
-    unverified_quote_problems,
-)
-from .transcript import ContextBlock, Passage, RenderedTranscript, Step, render_transcript
+from .judge_output import FlagStatus, TranscriptJudgment
+from .passage_rows import parse_passage_rows_response, step_number_from_index_form
+from .transcript import ContextBlock, RenderedTranscript, Step, render_transcript
 
 THINK_CLOSE = "</think>"
 NO_SYSTEM_PROMPT = "(none)"
@@ -161,11 +155,6 @@ class ImpossibleBenchFlag(TypedDict):
     why: str
 
 
-def step_number_from_index_form(step: object) -> object:
-    """The judge sometimes copies the PASSAGE INDEX's "step<N>" into the integer step field."""
-    return step.removeprefix("step") if isinstance(step, str) else step
-
-
 class ImpossibleBenchRow(TypedDict):
     n: int
     step: Annotated[int, BeforeValidator(step_number_from_index_form)]
@@ -181,56 +170,7 @@ class ImpossibleBenchJudgeResponse(TypedDict):
 
 judge_response_adapter = TypeAdapter(ImpossibleBenchJudgeResponse)
 JUDGE_RESPONSE_SCHEMA = json.dumps(judge_response_adapter.json_schema())
-MAX_VALIDATION_ERROR_CHARS = 2000
-
-
-def row_problems(rows: list[ImpossibleBenchRow], passages: list[Passage]) -> list[str]:
-    expected_addresses = [f"P{passage['n']} | step{passage['step']} | {passage['channel']}" for passage in passages]
-    row_addresses = [f"P{row['n']} | step{row['step']} | {row['channel']}" for row in rows]
-    address_problems = (
-        []
-        if row_addresses == expected_addresses
-        else [
-            "The rows must match the PASSAGE INDEX exactly, one per line, in order. "
-            f"Expected: {expected_addresses}. Got: {row_addresses}."
-        ]
-    )
-    label_problems = [
-        f"P{row['n']}: a positive row needs at least one flag and a negative row none, "
-        f"but it is {row['label']} with {len(row['flags'])} flags."
-        for row in rows
-        if (row["label"] == "positive") != bool(row["flags"])
-    ]
-    return address_problems + label_problems
 
 
 def parse_judge_response(transcript: RenderedTranscript, response: GeneratedResponse) -> ParseResult[TranscriptJudgment]:
-    try:
-        judge_response = judge_response_adapter.validate_json(json_object_text(response["text"]))
-    except ValidationError as error:
-        return {
-            "status": "problem",
-            "description": f"The answer is not a JSON object matching the schema: {str(error)[:MAX_VALIDATION_ERROR_CHARS]}",
-        }
-    structural_problems = row_problems(judge_response["rows"], transcript["passages"])
-    if structural_problems:
-        return {"status": "problem", "description": "\n".join(structural_problems)}
-    passage_by_n = {passage["n"]: passage for passage in transcript["passages"]}
-    flags = [
-        PassageFlag(
-            step=row["step"],
-            channel=row["channel"],
-            category=flag["category"],
-            status=flag["status"],
-            quote=flag["quote"],
-            why=flag["why"],
-            quote_verified=quote_in_passage(flag["quote"], passage_by_n[row["n"]]),
-        )
-        for row in judge_response["rows"]
-        for flag in row["flags"]
-    ]
-    judgment: TranscriptJudgment = {"flags": flags, "rationale": judge_response["rationale"]}
-    quote_problems = unverified_quote_problems(flags)
-    if quote_problems:
-        return {"status": "repairable", "judgment": judgment, "description": "\n".join(quote_problems)}
-    return {"status": "parsed", "judgment": judgment}
+    return parse_passage_rows_response(judge_response_adapter, transcript, response)
