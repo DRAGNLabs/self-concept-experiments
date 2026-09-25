@@ -53,7 +53,6 @@ def vllm_harmony_generate(
 
     llm = LLM(model=model_id, tensor_parallel_size=tensor_parallel_size)
     tokenizer = AutoTokenizer.from_pretrained(model_id)
-    sampling_params = SamplingParams(temperature=0.0, max_tokens=max_new_tokens, skip_special_tokens=False)
     reasoning_log_path.parent.mkdir(parents=True, exist_ok=True)
 
     def generate(messages: list[dict], turn: int, example_id: str) -> tuple[str, bool]:
@@ -62,6 +61,11 @@ def vllm_harmony_generate(
         )
         if len(prompt_token_ids) >= llm.model_config.max_model_len:
             raise PromptTooLong(f"turn {turn}: {len(prompt_token_ids)} prompt tokens, max_model_len {llm.model_config.max_model_len}")
+        sampling_params = SamplingParams(
+            temperature=0.0,
+            max_tokens=min(max_new_tokens, llm.model_config.max_model_len - len(prompt_token_ids)),
+            skip_special_tokens=False,
+        )
         [request_output] = llm.generate(TokensPrompt(prompt_token_ids=prompt_token_ids), sampling_params, use_tqdm=False)
         completion = request_output.outputs[0]
         reasoning, final = split_harmony_completion(completion.text)

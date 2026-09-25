@@ -37,16 +37,14 @@ Two example kinds:
 Output: {out}/{tag}_{scenario}.jsonl (one record per example with the full
 attempt history, final code and scores, appended as each finishes; rerunning
 the same tag resumes past the examples already recorded) and
-{tag}_{scenario}_summary.json. A CUDA OOM during generation records the
-example as error_oom, and a conversation longer than the context window (when
-the generate callable checks) as error_context_length, instead of killing the
-job.
+{tag}_{scenario}_summary.json.
 """
 
 import json
 import re
 import shutil
 import tempfile
+from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, TypedDict, cast
@@ -152,6 +150,7 @@ class CheckExample(TypedDict):
     original_test: str
 
 
+type StopReason = Literal["passed", "flagged", "attempt_limit", "context_window"]
 type TurnGenerate = Callable[[list[dict], int], tuple[str, bool]]
 
 
@@ -206,17 +205,26 @@ def run_check_example(example: CheckExample, generate: TurnGenerate, max_attempt
     attempts = []
     flagged = False
     answer = ""
+    stop_reason: StopReason = "attempt_limit"
     for attempt in range(max_attempts):
-        completion, truncated = generate(messages, attempt)
+        try:
+            completion, truncated = generate(messages, attempt)
+        except PromptTooLong:
+            if attempt == 0:
+                raise
+            stop_reason = "context_window"
+            break
         messages.append({"role": "assistant", "content": completion})
         if FLAG in completion.lower():
             flagged = True
+            stop_reason = "flagged"
             attempts.append({"completion": completion, "truncated": truncated, "answer": None, "flagged": True})
             break
         answer = find_code(completion)
         result = run_check(example, answer, example["test"], tests_first=True)
         attempts.append({"completion": completion, "truncated": truncated, "answer": answer, **exec_summary(result)})
         if result.success:
+            stop_reason = "passed"
             break
         messages.append({"role": "user", "content": check_retry_message(check_feedback_error(result.stdout, result.stderr))})
 
@@ -248,6 +256,7 @@ def run_check_example(example: CheckExample, generate: TurnGenerate, max_attempt
         "redefines_check": redefines_check,
         "flagged": flagged,
         "n_attempts": len(attempts),
+        "stop_reason": stop_reason,
         "final_code": answer,
         "attempts": attempts,
     }
@@ -369,8 +378,15 @@ def run_workspace_example(example: WorkspaceExample, generate, max_attempts: int
         for name, content in originals.items():
             (workdir / name).write_text(content)
         attempts = []
+        stop_reason: StopReason = "attempt_limit"
         for attempt in range(max_attempts):
-            completion, truncated = generate(messages, attempt)
+            try:
+                completion, truncated = generate(messages, attempt)
+            except PromptTooLong:
+                if attempt == 0:
+                    raise
+                stop_reason = "context_window"
+                break
             messages.append({"role": "assistant", "content": completion})
             blocks = parse_file_blocks(completion)
             if not blocks and "```" in completion:
@@ -381,6 +397,7 @@ def run_workspace_example(example: WorkspaceExample, generate, max_attempts: int
                 {"completion": completion, "truncated": truncated, "wrote": sorted(blocks), **exec_summary(result)}
             )
             if result.success:
+                stop_reason = "passed"
                 break
             messages.append(
                 {"role": "user", "content": workspace_retry_message(workspace_test_output(result.stdout, result.stderr))}
@@ -410,6 +427,7 @@ def run_workspace_example(example: WorkspaceExample, generate, max_attempts: int
         "test_modified": test_modified,
         "wrote_any": wrote_any,
         "n_attempts": len(attempts),
+        "stop_reason": stop_reason,
         "final_code": final.get("solution.py", ""),
         "final_test_files": {name: final.get(name) for name in TEST_FILES if final.get(name) != originals[name]},
         "holdout_output": holdout.stdout[-TOOL_RESULT_MAX_CHARS:],
@@ -433,8 +451,8 @@ class GenerationOOM(RuntimeError):
 
 
 class PromptTooLong(RuntimeError):
-    """The conversation no longer fits the model's context window; the example is recorded as
-    error_context_length and the run continues."""
+    """The conversation no longer fits the model's context window. On the first turn the example is
+    recorded as error_context_length; on a later turn the episode ends and is scored as it stands."""
 
 
 Generate = Callable[[list[dict], int, str], tuple[str, bool]]
@@ -555,6 +573,7 @@ def run_scenario(
         "counts": counts,
         "rates": {k: round(v / total, 4) for k, v in counts.items()},
         "mean_attempts": round(sum(r["n_attempts"] for r in records) / total, 3),
+        "stop_reason_counts": dict(Counter(r["stop_reason"] for r in records if "stop_reason" in r)),
         "truncated_attempt_rate": round(
             sum(a.get("truncated", False) for r in records for a in r["attempts"])
             / max(sum(r["n_attempts"] for r in records), 1),
