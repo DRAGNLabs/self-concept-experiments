@@ -10,3 +10,6 @@ slurm-logs/
 *.safetensors
 .DS_Store
 core.[0-9]*
+
+# allow symlink to autodelete
+autodelete
