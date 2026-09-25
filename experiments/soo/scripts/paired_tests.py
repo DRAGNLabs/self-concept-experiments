@@ -131,7 +131,7 @@ def batch_qwen38(code_dir: Path | None = None) -> None:
         if not bf.exists():
             continue
         base = load(bf, field, None)
-        for tag in ["lora", "lora_agentic", "lora_mixed", "steer_a10", "steer_a8", "neg_a10", "rand_s0_a10", "prompt_a10", "resp_a10", "prompt_rand_s0_a10"]:
+        for tag in ["lora", "lora_agentic", "lora_mixed", "steer", "neg", "rand_s0", "steer_a10", "steer_a8", "neg_a10", "rand_s0_a10", "prompt_a10", "resp_a10", "prompt_rand_s0_a10"]:
             f = ce / f"{tag}_{bench}.jsonl"
             if f.exists():
                 print(fmt(f"{bench} {field}: base → {tag}", paired(base, load(f, field, None))))
