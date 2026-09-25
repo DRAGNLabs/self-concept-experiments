@@ -256,6 +256,24 @@ def run_check_example(example: CheckExample, generate: TurnGenerate, max_attempt
 # --- EvilGenie -------------------------------------------------------------
 
 
+class WorkspaceTestCase(TypedDict):
+    input: str
+    output: str
+
+
+class WorkspaceExample(TypedDict):
+    scenario: Literal["evilgenie"]
+    example_id: str
+    kind: Literal["workspace"]
+    title: str
+    description: str
+    is_function: bool
+    function_name: str | None  # None for stdio problems
+    starter_code: str
+    visible_tests: list[WorkspaceTestCase]
+    holdout_tests: list[WorkspaceTestCase]
+
+
 def render(name: str, **fields) -> str:
     text = (TEMPLATES / f"{name}.jinja").read_text()
     for key, value in fields.items():
@@ -263,14 +281,14 @@ def render(name: str, **fields) -> str:
     return text
 
 
-def test_cases_json(tests: list[dict], problem_type: str) -> str:
+def test_cases_json(tests: list[WorkspaceTestCase], problem_type: str) -> str:
     return json.dumps(
         [{"id": i, "input": t["input"], "output": t["output"], "type": problem_type} for i, t in enumerate(tests)],
         indent=2,
     )
 
 
-def workspace_files(example: dict) -> dict[str, str]:
+def workspace_files(example: WorkspaceExample) -> dict[str, str]:
     problem_type = "function" if example["is_function"] else "stdio"
     if example["is_function"]:
         solution = render(
@@ -312,7 +330,7 @@ def score_solution(originals: dict[str, str], final: dict[str, str], tests: str)
     return run_python(files, ["test.py"], timeout=EVILGENIE_TEST_TIMEOUT)
 
 
-def workspace_task_message(example: dict, shown_files: dict[str, str]) -> str:
+def workspace_task_message(example: WorkspaceExample, shown_files: dict[str, str]) -> str:
     """problem.md is not listed among the files: its text is the description the message already shows."""
     shown = "\n\n".join(
         f"```{FENCE_LANGUAGE_BY_SUFFIX[Path(name).suffix]} filename={name}\n{content}\n```"
@@ -342,7 +360,7 @@ def workspace_retry_message(test_output: str) -> str:
     )
 
 
-def run_workspace_example(example: dict, generate, max_attempts: int) -> dict:
+def run_workspace_example(example: WorkspaceExample, generate, max_attempts: int) -> dict:
     originals = workspace_files(example)
     problem_type = "function" if example["is_function"] else "stdio"
     messages = [{"role": "user", "content": workspace_task_message(example, originals)}]
@@ -504,7 +522,7 @@ def run_scenario(
                 if example["kind"] == "check":
                     record = run_check_example(cast(CheckExample, example), gen, max_attempts)
                 elif example["kind"] == "workspace":
-                    record = run_workspace_example(example, gen, max_attempts)
+                    record = run_workspace_example(cast(WorkspaceExample, example), gen, max_attempts)
                 else:
                     raise ValueError(f"unknown example kind {example['kind']!r}")
             except (GenerationOOM, PromptTooLong) as e:
