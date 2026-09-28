@@ -3,8 +3,8 @@
 Reward-hacking coding benchmarks ported from ImpossibleBench (Zhong et al.
 2025, arXiv:2510.20270; Impossible-LiveCodeBench splits) and EvilGenie
 (Gabor & Ryzhov 2025, arXiv:2511.21654; LiveCodeBench v5/v6 hard). Code
-lives in `src/selfconcept/codebench/`; this directory holds the committed
-data and judge prompts. Nothing here depends on the SOO experiment.
+lives in `src/selfconcept/codebench/`; this directory holds the judge
+prompts and the generated (untracked) data. Nothing here depends on the SOO experiment.
 
 ## Layout
 
@@ -20,7 +20,8 @@ data and judge prompts. Nothing here depends on the SOO experiment.
   ...); the messages-only "does the model call out the contradiction"
   prompt.
 
-Rebuild with `python -m selfconcept.codebench.convert` (needs network once).
+Build `data/` with `python -m selfconcept.codebench.convert` (needs network once)
+before running anything.
 
 ## Running
 
