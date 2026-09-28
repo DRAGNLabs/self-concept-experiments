@@ -20,10 +20,14 @@ set -euo pipefail
 #   sbatch --time=01:00:00 <this file> 1
 # Tensor parallelism spans every allocated GPU, so 80GB cards are a command-line override, e.g.
 #   sbatch -p cs --qos=cs --gpus=a100:2 --exclude=cs-1-2 <this file>
+# Another generation run is selected by its codebench directory, shard count and shard scenario, e.g.
+#   sbatch --export=ALL,RUN=gptoss120b_evilgenie_failed_6stated,N_SHARDS=3,SHARD_SCENARIO=evilgenie_failed <this file>
 N="${1:-}"
-N_SHARDS=8
-TRANSCRIPTS="$HOME/nobackup/autodelete/self-concept-experiments/codebench/gptoss120b_evilgenie"
-OUT="$HOME/nobackup/autodelete/self-concept-experiments/goodfire_rh_metrics/gptoss120b_evilgenie${N:+_smoke_$SLURM_JOB_PARTITION}"
+RUN="${RUN:-gptoss120b_evilgenie}"
+N_SHARDS="${N_SHARDS:-8}"
+SHARD_SCENARIO="${SHARD_SCENARIO:-evilgenie}"
+TRANSCRIPTS="$HOME/nobackup/autodelete/self-concept-experiments/codebench/$RUN"
+OUT="$HOME/nobackup/autodelete/self-concept-experiments/goodfire_rh_metrics/$RUN${N:+_smoke_$SLURM_JOB_PARTITION}"
 
 source activate.sh
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -35,7 +39,7 @@ RECORDS=()
 SIDECARS=()
 for SHARD in $(seq 0 $(( N_SHARDS - 1 ))); do
     RECORDS+=("$TRANSCRIPTS/s${SHARD}_evilgenie.jsonl")
-    SIDECARS+=("$TRANSCRIPTS/s${SHARD}_evilgenie_s${SHARD}_reasoning.jsonl")
+    SIDECARS+=("$TRANSCRIPTS/s${SHARD}_${SHARD_SCENARIO}_s${SHARD}_reasoning.jsonl")
 done
 join_paths () { local IFS=,; echo "[$*]"; }
 
