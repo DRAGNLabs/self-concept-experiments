@@ -291,3 +291,113 @@ def apply_steering(
         handle.remove()
         if positions is not None and positions._handle is not None:
             positions._handle.remove()
+
+
+# --- Band steering: a trained LoRA band's mean deltas as fixed offsets (STEER_ROUND.md) ---
+#
+# The bisection round put the adapters' room-task effect in a contiguous band
+# of v_proj LoRA deltas below the read-out layer. Each such delta is an
+# input-dependent rank-r update  d_l(x) = s B_l A_l x  on one projection's
+# output. Band steering replaces every delta in the band by its mean over a
+# prompt set (scripts/extract_band_deltas.py), added as a fixed offset to the
+# base model's projection output at the masked positions, in all band layers
+# at once:  y_l <- y_l + alpha * mean_l.  alpha = 1 is the mean delta itself.
+# Controls use the same construction on the band's q_proj deltas and random
+# directions of matched per-layer norm.
+
+BAND_TOKEN_MODES = ("last", "all")
+
+
+def offset_key(layer: int, module: str) -> str:
+    return f"{layer}:{module}"
+
+
+def parse_offset_key(key: str) -> tuple[int, str]:
+    layer, _, module = key.partition(":")
+    return int(layer), module
+
+
+def attn_proj(layer, name: str):
+    """One projection of a decoder layer's attention block, e.g. self_attn.v_proj."""
+    try:
+        return layer.get_submodule(f"self_attn.{name}")
+    except AttributeError as e:
+        raise AttributeError(f"no self_attn.{name} in {type(layer).__name__}") from e
+
+
+def load_band_deltas(path: str | Path) -> dict:
+    """Load a scripts/extract_band_deltas.py output: metadata plus per-(layer, module) mean deltas."""
+    return torch.load(path, map_location="cpu", weights_only=True)
+
+
+def get_band_offsets(data: dict, module: str, token_mode: str) -> dict[str, torch.Tensor]:
+    """The band's mean deltas for one module ('v_proj' or 'q_proj'), keyed 'layer:module' (float32)."""
+    if token_mode not in BAND_TOKEN_MODES:
+        raise ValueError(f"token_mode must be one of {BAND_TOKEN_MODES}, got {token_mode!r}")
+    offsets = {k: v.float() for k, v in data["offsets"][token_mode].items() if parse_offset_key(k)[1] == module}
+    if not offsets:
+        raise KeyError(f"no {module} offsets in band deltas (have {sorted(data['offsets'][token_mode])})")
+    return offsets
+
+
+def random_matched_offsets(offsets: dict[str, torch.Tensor], seed: int) -> dict[str, torch.Tensor]:
+    """Per-layer random Gaussian directions with each layer's real offset norm (one generator, sorted key order)."""
+    gen = torch.Generator().manual_seed(seed)
+    out = {}
+    for key in sorted(offsets, key=parse_offset_key):
+        v = offsets[key]
+        rand = torch.randn(v.shape, generator=gen, dtype=torch.float32)
+        out[key] = rand / rand.norm() * v.norm()
+    return out
+
+
+class _Handles:
+    def __init__(self, handles):
+        self.handles = list(handles)
+
+    def remove(self) -> None:
+        for h in self.handles:
+            h.remove()
+        self.handles = []
+
+
+def steer_modules(model, offsets: dict[str, torch.Tensor], alpha: float, positions: PositionalSteering | None = None):
+    """Add alpha * offset to each named projection's output; returns a removable handle group.
+
+    `offsets` maps 'layer:module' to a vector of that projection's output width.
+    All hooks share one PositionalSteering (its model pre-hook is attached here).
+    """
+    layers = get_decoder_layers(model)
+    if positions is not None and positions.mode == "all":
+        positions = None
+    if positions is not None:
+        positions.attach(model)
+    handles = []
+    for key in sorted(offsets, key=parse_offset_key):
+        layer, module_name = parse_offset_key(key)
+        module = attn_proj(layers[layer], module_name)
+        vector = offsets[key].float()
+        if vector.ndim != 1 or vector.numel() != module.out_features:
+            raise ValueError(f"offset {key} has shape {tuple(vector.shape)}, module output width {module.out_features}")
+
+        def hook(_module, _inputs, output, vector=vector):
+            delta = alpha * vector.to(output.device, output.dtype)
+            if positions is not None:
+                delta = delta * positions.mask(output)
+            return output + delta
+
+        handles.append(module.register_forward_hook(hook))
+    return _Handles(handles)
+
+
+@contextmanager
+def apply_module_steering(model, offsets: dict[str, torch.Tensor], alpha: float, positions: PositionalSteering | None = None):
+    """Context-managed steer_modules (removes the projection hooks and the position pre-hook on exit)."""
+    group = steer_modules(model, offsets, alpha, positions)
+    try:
+        yield
+    finally:
+        group.remove()
+        if positions is not None and positions._handle is not None:
+            positions._handle.remove()
+            positions._handle = None

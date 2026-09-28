@@ -115,6 +115,13 @@ def parser():
     p.add_argument("--positions", choices=POSITION_MODES, default="all")
     p.add_argument("--random-seeds", type=int, nargs="*", default=[])
     p.add_argument("--adapter", type=Path, help="local PEFT adapter; compared separately to base")
+    p.add_argument("--adapter-layers", help="restrict the adapter's LoRA modules to these layers (selfconcept.soo.lora_subset spec)")
+    p.add_argument("--adapter-modules", help="restrict the adapter to these target modules, e.g. v_proj")
+    p.add_argument("--band-deltas", type=Path, help="band deltas .pt (scripts/extract_band_deltas.py): fixed offsets on the base model (STEER_ROUND.md)")
+    p.add_argument("--band-modules", nargs="+", default=["v_proj"], help="which projections' band offsets to measure, each as its own condition")
+    p.add_argument("--band-token-mode", choices=("last", "all"), default="last")
+    p.add_argument("--band-alpha", type=float, default=1.)
+    p.add_argument("--band-random-seeds", type=int, nargs="*", default=[], help="matched-norm random controls for the first band module")
     p.add_argument("--batch-size", type=int, default=4, help="pairs per batch")
     p.add_argument("--device", default="cpu", help="cpu, cuda, cuda:0, etc.")
     p.add_argument("--device-map", help="e.g. auto; overrides --device")
@@ -161,6 +168,10 @@ def main(argv=None):
             raise ValueError("steering vector must be finite, nonzero, and one-dimensional")
     if args.adapter:
         hashes.update(artifact_hashes(args.adapter))
+    if args.band_deltas:
+        hashes.update(artifact_hashes(args.band_deltas))
+    if (args.adapter_layers or args.adapter_modules) and not args.adapter:
+        raise ValueError("--adapter-layers / --adapter-modules need --adapter")
     if Path(args.model).is_dir():
         hashes.update(artifact_hashes(args.model))
 
@@ -185,7 +196,11 @@ def main(argv=None):
     device = model.get_input_embeddings().weight.device
     chat_kwargs = chat_template_kwargs()
     batches, token_records = encode_pairs(tokenizer, pairs, args.batch_size, device, chat_kwargs, args.endpoint_offset)
-    marker = response_marker(tokenizer, chat_kwargs) if args.positions != "all" else None
+    # 'from_last' needs no template marker (Mistral's template adds no generation prompt).
+    marker = response_marker(tokenizer, chat_kwargs) if args.positions in ("response", "prompt") else None
+
+    def positional():
+        return PositionalSteering(marker, args.positions) if args.positions != "all" else None
     if marker:
         # Refuse an ambiguous positional comparison instead of silently using a fallback.
         for row in token_records:
@@ -210,7 +225,7 @@ def main(argv=None):
     def steering(v, alpha):
         return lambda: apply_steering(
             model, args.layer, v, alpha, args.mode,
-            PositionalSteering(marker, args.positions) if marker else None,
+            positional(),
         )
 
     run("base")
@@ -246,7 +261,7 @@ def main(argv=None):
         def project(name, basis, alpha, method, **settings):
             condition_settings[name] = {"method": method, "strength": alpha, "rank": basis.shape[1], **settings}
             run(name, lambda: apply_subspace(model, args.layer, basis, alpha,
-                PositionalSteering(marker, args.positions) if marker else None))
+                positional()))
 
         fitted = subspace_fit["fits"]["self_other"]
         mean = fitted["mean_difference"]
@@ -271,11 +286,40 @@ def main(argv=None):
             for label, basis in bases.items():
                 for alpha in sorted(set(args.subspace_strengths) - {0.}):
                     project(f"{label}_r{rank}_a{alpha:g}", basis, alpha, label)
+    if args.band_deltas:
+        from .steering import apply_module_steering, get_band_offsets, load_band_deltas, random_matched_offsets
+        band = load_band_deltas(args.band_deltas)
+        if band.get("model") != args.model:
+            raise ValueError("band deltas' model ID does not match --model")
+
+        def band_steering(offsets):
+            return lambda: apply_module_steering(model, offsets, args.band_alpha,
+                                                 positional())
+
+        for i, module_name in enumerate(args.band_modules):
+            offsets = get_band_offsets(band, module_name, args.band_token_mode)
+            name = f"band_{module_name}"
+            run(name, band_steering(offsets))
+            condition_settings[name] = {"method": "band_offsets", "module": module_name, "alpha": args.band_alpha,
+                                        "token_mode": args.band_token_mode, "positions": args.positions,
+                                        "layers": sorted({int(k.split(":")[0]) for k in offsets}),
+                                        "offset_norms": {k: float(v.norm()) for k, v in offsets.items()}}
+            if i == 0:
+                for seed in sorted(set(args.band_random_seeds)):
+                    rand = random_matched_offsets(offsets, seed)
+                    run(f"{name}_random_s{seed}", band_steering(rand))
+                    condition_settings[f"{name}_random_s{seed}"] = {**condition_settings[name], "random_seed": seed,
+                                                                   "offset_norms": {k: float(v.norm()) for k, v in rand.items()}}
     if args.adapter:
         from peft import PeftModel
         model = PeftModel.from_pretrained(model, str(args.adapter), torch_device=str(device))
+        subset = None
+        if args.adapter_layers or args.adapter_modules:
+            from .lora_subset import apply_adapter_subset
+            subset = apply_adapter_subset(model, args.adapter_layers, args.adapter_modules)
+            model.eval()
         run("adapter")
-        condition_settings["adapter"] = {"method": "adapter", "path": str(args.adapter)}
+        condition_settings["adapter"] = {"method": "adapter", "path": str(args.adapter), "subset": subset}
 
     summary, records = summarize(conditions, pairs, args.bootstrap, args.seed)
     root = Path(__file__).resolve().parents[3]

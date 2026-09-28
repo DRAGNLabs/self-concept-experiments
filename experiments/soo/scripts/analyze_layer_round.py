@@ -48,8 +48,8 @@ def load(out: Path):
     return runs
 
 
-def verdict(runs, cond, need_persp=True):
-    ref, base = runs.get(REFERENCE, {}), runs.get(BASE, {})
+def verdict(runs, cond, need_persp=True, reference=REFERENCE):
+    ref, base = runs.get(reference, {}), runs.get(BASE, {})
     checks, repro, null, damage, incomplete = {}, True, True, False, False
     for o in ORIENTS:
         r, rr, rb = runs[cond].get(o, {}), ref.get(o, {}), base.get(o, {})

@@ -1,7 +1,7 @@
 """Freeze and submit the bisection round for one model (BISECT_ROUND.md).
 
 Usage, from the repository root:
-  .venv/bin/python experiments/soo/scripts/launch_bisect_round.py --model-key gemma4-31b [--no-submit]
+  .venv-313/bin/python experiments/soo/scripts/launch_bisect_round.py --model-key gemma4-31b [--round bisect2] [--no-submit]
 The job measures the training-layer collapse under each v_proj layer subset (make_constants.py),
 evaluates the references and every subset in both orientations on main / treasure_hunt / perspectives
 (n=250), runs the intent-language split on Mistral, then runs the pre-specified analysis.
@@ -11,12 +11,15 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[3]
+# Python 3.13 environment built from the merged lockfile (main needs >=3.13); the old .venv is 3.11.
+VENV = ROOT / ".venv-313"
 SOO = ROOT / "experiments/soo"
 TRAIN_FILE = "data/train_soo_pairs.jsonl"
 
@@ -45,6 +48,22 @@ def conditions(layer, key):
     return conds
 
 
+def conditions_bisect2(layer, key):
+    """BISECT2_ROUND.md: within 16-31 on gemma-4-31B, unions growing 24-31 downward, trims of 16-31 from the top."""
+    if key != "gemma4-31b" or layer != 32:
+        raise SystemExit("the second bisection round is written for gemma-4-31B L32 only")
+    return [("base", None), ("adapter-seed0", "all"), ("hi-half", "range:16-31"), ("q4", "range:24-31"),
+            ("u22", "range:22-31"), ("u20", "range:20-31"), ("u18", "range:18-31"),
+            ("t29", "range:16-29"), ("t27", "range:16-27"), ("t25", "range:16-25"),
+            ("mid", "range:20-27"), ("split", "layers:16,17,18,19,24,25,26,27,28,29,30,31")]
+
+
+ROUNDS = {
+    "bisect": {"plan": "BISECT_ROUND.md", "prefix": "bisect", "conditions": conditions},
+    "bisect2": {"plan": "BISECT2_ROUND.md", "prefix": "bisect2", "conditions": conditions_bisect2},
+}
+
+
 RUN_SH = """#!/bin/bash --login
 #SBATCH --job-name=__JOB__
 #SBATCH --time=__HOURS__:00:00
@@ -62,7 +81,11 @@ set -euo pipefail
 SNAPSHOT_ROOT=${1:?pass the frozen snapshot directory}
 REPO_ROOT=${SLURM_SUBMIT_DIR:?submit through Slurm from the repository root}
 export PYTHONPATH="$SNAPSHOT_ROOT/src"
+# byutils moves HF_HOME to an empty autodelete cache unless it is already set; the models live in the default cache.
+export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 export HF_HUB_OFFLINE=1
+# This cluster's system OpenSSL config fails its FIPS self-test; the login profile sets this too.
+export OPENSSL_CONF="${OPENSSL_CONF:-/dev/null}"
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export SOO_CHAT_KWARGS='{"enable_thinking": false}'
@@ -73,7 +96,7 @@ if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
 fi
 echo "Assigned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 cd "$SNAPSHOT_ROOT"
-PY="$REPO_ROOT/.venv/bin/python"
+PY="$REPO_ROOT/__VENV__/bin/python"
 MODEL=__MODEL__
 LAYER=__LAYER__
 NLAYERS=__NLAYERS__
@@ -164,7 +187,7 @@ def collapse_spec(name, spec):
     return f"--adapter {name}={target}"
 
 
-def freeze(snapshot, key, spec, n_layers):
+def freeze(snapshot, key, spec, n_layers, round_name="bisect"):
     snapshot.mkdir(parents=True, exist_ok=False)
     shutil.copytree(ROOT / "src", snapshot / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     (snapshot / "tests").mkdir()
@@ -177,14 +200,15 @@ def freeze(snapshot, key, spec, n_layers):
         for s in ("main", "treasure_hunt", "perspectives"):
             shutil.copy2(SOO / "data" / d / f"{s}.jsonl", snapshot / "data" / d / f"{s}.jsonl")
     shutil.copytree(SOO / spec["adapter_dir"] / "seed0", snapshot / "adapters" / "seed0")
-    for name in ("BISECT_ROUND.md", "scripts/make_constants.py", "scripts/analyze_layer_round.py", "scripts/analyze_bisect_round.py", "scripts/intent_language_check.py"):
+    # extract_band_deltas.py is not run here; tests/test_soo_band_steer.py loads it from the snapshot root.
+    for name in (ROUNDS[round_name]["plan"], "scripts/make_constants.py", "scripts/extract_band_deltas.py", "scripts/analyze_layer_round.py", "scripts/analyze_bisect_round.py", "scripts/intent_language_check.py"):
         shutil.copy2(SOO / name, snapshot / Path(name).name)
     shutil.copy2(Path(__file__), snapshot / "launch_bisect_round.py")
     layer = spec["layer"]
-    conds = conditions(layer, key)
+    conds = ROUNDS[round_name]["conditions"](layer, key)
     collapse = " ".join(collapse_spec(name, s) for name, s in conds if s is not None)
     runs = "\n".join(f'    run {name} "$orient" "$ALL" {condition_args(s)}'.rstrip() for name, s in conds)
-    script = (RUN_SH.replace("__JOB__", f"soo2-bisect-{key}").replace("__HOURS__", f"{spec['hours']:02d}")
+    script = (RUN_SH.replace("__VENV__", VENV.name).replace("__JOB__", f"soo2-{ROUNDS[round_name]['prefix']}-{key}").replace("__HOURS__", f"{spec['hours']:02d}")
               .replace("__MODEL__", spec["model"]).replace("__REVISION__", spec["revision"]).replace("__LAYER__", str(layer))
               .replace("__NLAYERS__", str(n_layers)).replace("__SUFFIX__", spec["suffix"])
               .replace("__COLLAPSE_SPECS__", collapse).replace("__RUNS__", runs))
@@ -193,8 +217,9 @@ def freeze(snapshot, key, spec, n_layers):
 
 
 def software_checks(snapshot):
-    env = {"PYTHONPATH": str(snapshot / "src"), "PATH": "/usr/bin:/bin", "HOME": str(Path.home()), "TOKENIZERS_PARALLELISM": "false", "HF_HUB_OFFLINE": "1"}
-    proc = subprocess.run([str(ROOT / ".venv/bin/python"), "-m", "unittest", "discover", "-s", str(snapshot / "tests"), "-p", "test_soo*.py", "-v"],
+    env = {"PYTHONPATH": str(snapshot / "src"), "PATH": "/usr/bin:/bin", "HOME": str(Path.home()), "TOKENIZERS_PARALLELISM": "false", "HF_HUB_OFFLINE": "1",
+           "OPENSSL_CONF": os.environ.get("OPENSSL_CONF", "/dev/null"), "HF_HOME": os.environ.get("HF_HOME", str(Path.home() / ".cache/huggingface"))}
+    proc = subprocess.run([str(VENV / "bin/python"), "-m", "unittest", "discover", "-s", str(snapshot / "tests"), "-p", "test_soo*.py", "-v"],
                           cwd=snapshot, env=env, text=True, capture_output=True)
     (snapshot / "software_checks.log").write_text(proc.stdout + proc.stderr)
     m = re.search(r"Ran (\d+) tests", proc.stderr + proc.stdout)
@@ -203,11 +228,11 @@ def software_checks(snapshot):
     return f"{m.group(1)} tests passed on CPU; see software_checks.log"
 
 
-def submit(snapshot, key):
+def submit(snapshot, key, prefix="bisect"):
     proc = subprocess.run(["sbatch", "--parsable", str(snapshot / "run.sh"), str(snapshot)], cwd=ROOT, text=True, capture_output=True, check=True)
     job = proc.stdout.strip().split(";")[0]
     (snapshot / "submission.json").write_text(json.dumps({"job_id": job, "submitted_utc": datetime.now(timezone.utc).isoformat(),
-                                                         "log": str(SOO / "slurm-logs" / f"soo2-bisect-{key}-{job}.out")}, indent=2) + "\n")
+                                                         "log": str(SOO / "slurm-logs" / f"soo2-{prefix}-{key}-{job}.out")}, indent=2) + "\n")
     print(f"submitted job {job}")
 
 
@@ -215,22 +240,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model-key", required=True, choices=sorted(MODELS))
     ap.add_argument("--no-submit", action="store_true")
+    ap.add_argument("--round", default="bisect", choices=sorted(ROUNDS))
     args = ap.parse_args()
     key, spec = args.model_key, MODELS[args.model_key]
+    rnd = ROUNDS[args.round]
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    snapshot = SOO / "results/study2" / f"bisect-{key}-L{spec['layer']}-{stamp}"
+    snapshot = SOO / "results/study2" / f"{rnd['prefix']}-{key}-L{spec['layer']}-{stamp}"
     adapter = check_adapter(spec)
     eval_data = check_eval_data()
-    freeze(snapshot, key, spec, adapter["n_layers"])
+    freeze(snapshot, key, spec, adapter["n_layers"], args.round)
     test_result = software_checks(snapshot)
     files = sorted(p for p in snapshot.rglob("*") if p.is_file())
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True).stdout.strip()
     dirty = subprocess.run(["git", "status", "--short"], cwd=ROOT, text=True, capture_output=True).stdout
     launch = {
         "created_utc": datetime.now(timezone.utc).isoformat(), "status": "frozen_before_submission",
-        "snapshot": str(snapshot), "code_commit": commit, "working_tree": dirty, "plan": "BISECT_ROUND.md",
+        "snapshot": str(snapshot), "code_commit": commit, "working_tree": dirty, "plan": rnd["plan"], "round": args.round, "python": str(VENV / "bin/python"),
         "model_key": key, **spec, "n_layers": adapter["n_layers"],
-        "conditions": {name: condition_args(s) for name, s in conditions(spec["layer"], key)},
+        "conditions": {name: condition_args(s) for name, s in rnd["conditions"](spec["layer"], key)},
         "orientations": ["orig", "mirrored"], "scenarios": ["main", "treasure_hunt", "perspectives"], "n_per_scenario": 250,
         "adapter": adapter, "eval_data": eval_data, "test_result": test_result,
         "files_sha256": {str(p.relative_to(snapshot)): sha256(p) for p in files},
@@ -238,7 +265,7 @@ def main():
     (snapshot / "launch.json").write_text(json.dumps(launch, indent=2) + "\n")
     print(f"frozen {snapshot}\n{test_result}")
     if not args.no_submit:
-        submit(snapshot, key)
+        submit(snapshot, key, rnd["prefix"])
 
 
 if __name__ == "__main__":

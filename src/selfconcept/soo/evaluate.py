@@ -110,6 +110,11 @@ def main() -> None:
     parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
     parser.add_argument("--steer-constants", type=Path, help="constants .pt from scripts/make_constants.py (mode replace)")
     parser.add_argument("--steer-constant", help="named constant in --steer-constants, e.g. adapter_seed0, base_mean, zero")
+    parser.add_argument("--band-deltas", type=Path, help="band deltas .pt from scripts/extract_band_deltas.py: a LoRA band's mean deltas added as fixed offsets (STEER_ROUND.md)")
+    parser.add_argument("--band-module", choices=["v_proj", "q_proj"], default="v_proj", help="which projection's band offsets to add")
+    parser.add_argument("--band-token-mode", choices=["last", "all"], default="last", help="mean over the last prompt token or over all prompt tokens")
+    parser.add_argument("--band-alpha", type=float, default=1.0, help="offset scale (1.0 = the mean delta itself)")
+    parser.add_argument("--band-random-seed", type=int, help="control: per-layer random directions of matched norm")
     parser.add_argument(
         "--steer-positions",
         choices=["all", "response", "prompt", "from_last"],
@@ -209,6 +214,34 @@ def main() -> None:
             "vector_norm": round(vector.norm().item(), 6),
         }
         print(f"Steering: {steering}")
+
+    if args.band_deltas:
+        if args.steer_vectors or args.steer_constants:
+            parser.error("--band-deltas is exclusive with --steer-vectors / --steer-constants")
+        if args.adapter:
+            parser.error("--band-deltas steers the base model; drop --adapter")
+        from .steering import (
+            PositionalSteering, get_band_offsets, load_band_deltas, random_matched_offsets, response_marker, steer_modules,
+        )
+
+        data = load_band_deltas(args.band_deltas)
+        if data.get("model") != args.model:
+            raise SystemExit(f"band deltas were measured on {data.get('model')}, not {args.model}")
+        offsets = get_band_offsets(data, args.band_module, args.band_token_mode)
+        if args.band_random_seed is not None:
+            offsets = random_matched_offsets(offsets, args.band_random_seed)
+        positions = None
+        if args.steer_positions != "all":
+            marker = None if args.steer_positions == "from_last" else response_marker(tokenizer, chat_template_kwargs())
+            positions = PositionalSteering(marker, args.steer_positions)
+        steer_modules(model, offsets, args.band_alpha, positions)
+        steering = {
+            "band_deltas": str(args.band_deltas), "band_module": args.band_module, "token_mode": args.band_token_mode,
+            "alpha": args.band_alpha, "random_seed": args.band_random_seed, "positions": args.steer_positions,
+            "layers": sorted({int(k.split(":")[0]) for k in offsets}),
+            "offset_norms": {k: round(v.norm().item(), 6) for k, v in offsets.items()},
+        }
+        print(f"Band steering: {steering}")
 
     args.out.mkdir(parents=True, exist_ok=True)
     all_summaries = {}
