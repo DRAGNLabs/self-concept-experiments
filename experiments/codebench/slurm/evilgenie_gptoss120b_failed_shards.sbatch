@@ -20,7 +20,12 @@ set -euo pipefail
 # Usage (from repo root): sbatch experiments/codebench/slurm/evilgenie_gptoss120b_failed_shards.sbatch [n]
 # With n, runs only the first n problems of each shard into a separate _smoke directory, e.g.
 #   sbatch --array=0 --time=01:00:00 <this file> 1
+# TEMPERATURE above 0 samples each turn with a seed fixed by SAMPLE_SEED, problem and turn, into a
+# _t<TEMPERATURE>_seed<SAMPLE_SEED> directory, e.g.
+#   sbatch --export=ALL,TEMPERATURE=1.0,SAMPLE_SEED=1 <this file>
 N="${1:-}"
+TEMPERATURE="${TEMPERATURE:-0}"
+SAMPLE_SEED="${SAMPLE_SEED:-0}"
 N_SHARDS=3
 REPO_MAIN="$SLURM_SUBMIT_DIR"
 source "$REPO_MAIN/activate.sh"
@@ -31,7 +36,8 @@ MODEL="openai/gpt-oss-120b"
 CODEBENCH="$HOME/nobackup/autodelete/self-concept-experiments/codebench"
 SHARD_DATA="$CODEBENCH/shards"
 PREVIOUS_RUN="$CODEBENCH/gptoss120b_evilgenie"
-OUT="$CODEBENCH/gptoss120b_evilgenie_failed_6stated${N:+_smoke}"
+if [ "$TEMPERATURE" = 0 ]; then SAMPLING=""; else SAMPLING="_t${TEMPERATURE}_seed${SAMPLE_SEED}"; fi
+OUT="$CODEBENCH/gptoss120b_evilgenie_failed_6stated${SAMPLING}${N:+_smoke}"
 SHARD=$SLURM_ARRAY_TASK_ID
 SHARD_FILE="$SHARD_DATA/evilgenie_failed_s${SHARD}.jsonl"
 mkdir -p "$SHARD_DATA" "$OUT"
@@ -69,6 +75,7 @@ python -m selfconcept.codebench.run \
     --data "$SHARD_DATA" \
     --scenarios "evilgenie_failed_s${SHARD}" \
     --max-attempts 6 --state-attempt-budget --max-new-tokens 16384 \
+    --temperature "$TEMPERATURE" --sample-seed "$SAMPLE_SEED" \
     --out "$OUT" --tag "s${SHARD}" ${N:+--n "$N"}
 
 echo "=== task $SLURM_ARRAY_TASK_ID done: shard $SHARD ==="
