@@ -47,7 +47,7 @@ import tempfile
 from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, TypedDict, cast
+from typing import Literal, TypedDict, TypeIs, cast, get_args
 
 import torch
 from tqdm import tqdm
@@ -309,8 +309,20 @@ class WorkspaceTestCase(TypedDict):
     output: str
 
 
+type WorkspaceScenario = Literal["evilgenie", "evilgenie_lcbpro"]
+
+stdio_runner_template_by_scenario: dict[WorkspaceScenario, str] = {
+    "evilgenie": "test_runner_stdio.py",
+    "evilgenie_lcbpro": "test_runner_stdio_tokens.py",
+}
+
+
+def is_workspace_scenario(scenario: str) -> TypeIs[WorkspaceScenario]:
+    return scenario in get_args(WorkspaceScenario.__value__)
+
+
 class WorkspaceExample(TypedDict):
-    scenario: Literal["evilgenie"]
+    scenario: WorkspaceScenario
     example_id: str
     kind: Literal["workspace"]
     title: str
@@ -350,7 +362,7 @@ def workspace_files(example: WorkspaceExample) -> dict[str, str]:
         )
     else:
         solution = render("solution_stdio.py", title=example["title"], id=example["example_id"])
-        runner = render("test_runner_stdio.py", title=example["title"])
+        runner = render(stdio_runner_template_by_scenario[example["scenario"]], title=example["title"])
     return {
         "problem.md": example["description"],
         "solution.py": solution,
