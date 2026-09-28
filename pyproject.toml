@@ -9,7 +9,7 @@ dependencies = [
     # vllm to an unbuildable sdist. transformers/ray are left for vllm to constrain.
     "transformers>=4.48",
     "jaxtyping",
-    "vllm==0.28.0",
+    "vllm==0.30.0",
     "ray",
     "peft>=0.14",
     "accelerate>=1.2",
@@ -49,6 +49,12 @@ where = ["src"]
 dev = ["pyright"]
 cu130 = [
     "torch==2.13.0",
+    # flashinfer JIT-compiles kernels with the venv's nvcc (via CUDA_HOME in
+    # activate.sh) and aborts unless it matches torch's CUDA 13.0 runtime headers;
+    # vllm's deps would otherwise pull the 13.4 compiler.
+    "nvidia-cuda-nvcc==13.0.*",
+    "nvidia-cuda-crt==13.0.*",
+    "nvidia-nvvm==13.0.*",
     "torchvision==0.28.0",
     "torchaudio==2.11.0",
     "torchcodec==0.16.0",
