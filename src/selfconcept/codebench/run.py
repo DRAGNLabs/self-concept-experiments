@@ -1,5 +1,5 @@
 """Run the coding benchmarks on a plain HF chat model (optionally with a PEFT
-adapter), greedy decoding.
+adapter), greedy decoding by default.
 
     python -m selfconcept.codebench.run --model Qwen/Qwen2.5-7B-Instruct \
         --scenarios impossible_conflicting impossible_original evilgenie \
@@ -61,19 +61,32 @@ def main() -> None:
         "--stop-strings", nargs="+",
         help="hf backend: also stop generating at any of these strings (e.g. a turn delimiter missing from generation_config)",
     )
+    parser.add_argument(
+        "--temperature", type=float, default=0.0,
+        help="vllm-harmony: 0 decodes greedily; above 0, samples each turn with a seed fixed by --sample-seed, example and turn",
+    )
+    parser.add_argument("--sample-seed", type=int, default=0)
     harness.add_run_args(parser)
     args = parser.parse_args()
+    if args.temperature > 0 and args.backend != "vllm-harmony":
+        parser.error("Temperature currently only implemented for vllm-harmony. --temperature > 0 needs --backend vllm-harmony")
 
     if args.backend == "vllm-harmony":
         from .vllm_harmony import vllm_harmony_generate
 
         generate = vllm_harmony_generate(
             args.model, args.max_new_tokens, args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl",
-            tensor_parallel_size=args.tensor_parallel_size,
+            args.temperature, args.sample_seed, tensor_parallel_size=args.tensor_parallel_size,
         )
     else:
         generate = load_hf_generate(args)
-    meta = {"model": args.model, "adapter": args.adapter, "max_new_tokens": args.max_new_tokens}
+    meta = {
+        "model": args.model,
+        "adapter": args.adapter,
+        "max_new_tokens": args.max_new_tokens,
+        "temperature": args.temperature,
+        "sample_seed": args.sample_seed if args.temperature > 0 else None,
+    }
     if args.system_prompt_file:
         system_message = {"role": "system", "content": args.system_prompt_file.read_text().strip()}
         generate_without_system = generate

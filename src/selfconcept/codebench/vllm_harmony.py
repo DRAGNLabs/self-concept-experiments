@@ -14,6 +14,7 @@ from pathlib import Path
 from transformers import AutoTokenizer
 
 from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.sampling import turn_sampling_seed
 
 from .harness import Generate, PromptTooLong
 
@@ -47,8 +48,15 @@ def split_harmony_completion(raw_completion: str) -> tuple[str, str]:
 
 
 def vllm_harmony_generate(
-    model_id: str, max_new_tokens: int, reasoning_log_path: Path, tensor_parallel_size: int = 1
+    model_id: str,
+    max_new_tokens: int,
+    reasoning_log_path: Path,
+    temperature: float,
+    sample_seed: int,
+    tensor_parallel_size: int = 1,
 ) -> Generate:
+    """temperature 0 decodes greedily; above 0, each turn is sampled with a seed fixed by
+    (sample_seed, example_id, turn)."""
     from vllm import LLM, SamplingParams, TokensPrompt
 
     llm = LLM(model=model_id, tensor_parallel_size=tensor_parallel_size)
@@ -62,7 +70,9 @@ def vllm_harmony_generate(
         if len(prompt_token_ids) >= llm.model_config.max_model_len:
             raise PromptTooLong(f"turn {turn}: {len(prompt_token_ids)} prompt tokens, max_model_len {llm.model_config.max_model_len}")
         sampling_params = SamplingParams(
-            temperature=0.0,
+            temperature=temperature,
+            top_p=1.0,
+            seed=turn_sampling_seed(sample_seed, example_id, turn) if temperature > 0 else None,
             max_tokens=min(max_new_tokens, llm.model_config.max_model_len - len(prompt_token_ids)),
             skip_special_tokens=False,
         )

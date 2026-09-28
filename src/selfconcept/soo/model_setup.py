@@ -8,12 +8,12 @@ seed. New harnesses should use this instead of copying evaluate.py.
 """
 
 import argparse
-import zlib
 from pathlib import Path
 
 import torch
 
 from selfconcept.common.loading import load_causal_lm
+from selfconcept.common.sampling import turn_sampling_seed
 
 
 def pick_device() -> str:
@@ -120,7 +120,6 @@ def _fail(message: str) -> None:
 def sampling_kwargs(args: argparse.Namespace, example_id: str, turn: int = 0) -> dict:
     """generate() decoding kwargs; seeds torch per (seed, example, turn) when sampling."""
     if args.temperature > 0:
-        key = f"{args.sample_seed}:{example_id}" + (f":{turn}" if turn else "")
-        torch.manual_seed(zlib.crc32(key.encode()))
+        torch.manual_seed(turn_sampling_seed(args.sample_seed, example_id, turn))
         return {"do_sample": True, "temperature": args.temperature, "top_p": 1.0, "top_k": 0}
     return {"do_sample": False}
