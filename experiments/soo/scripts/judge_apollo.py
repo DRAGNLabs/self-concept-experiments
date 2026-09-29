@@ -13,6 +13,11 @@ example) and <stem>_graded_summary.json (counts, rates, mean grade).
 Usage:
     python scripts/judge_apollo.py --responses results/apollo_eval/*/ap_*_roleplaying_none.jsonl \
         [--model Qwen/Qwen2.5-72B-Instruct] [--batch-size 16] [--device-map auto]
+
+Second-judge (independent-family) runs must set --out-suffix so they do not
+overwrite the primary grades, e.g.
+    python scripts/judge_apollo.py --model google/gemma-4-31B-it \
+        --responses ... --out-suffix _graded_g31
 """
 
 import argparse
@@ -58,6 +63,12 @@ def main() -> None:
         "after --think-close; open tag without close = truncated, excluded",
     )
     parser.add_argument("--think-close")
+    parser.add_argument(
+        "--out-suffix",
+        default="_graded",
+        help="output stem suffix; change it (e.g. _graded_g31) when re-grading "
+        "with a second judge so the primary grades are not overwritten",
+    )
     args = parser.parse_args()
     if bool(args.think_open) != bool(args.think_close):
         parser.error("--think-open and --think-close must be given together")
@@ -152,11 +163,11 @@ def main() -> None:
             "rates": {k: round(v / total, 4) for k, v in counts.items()},
             "mean_grade": round(sum(grades) / len(grades), 3) if grades else None,
         }
-        out_stem = path.with_suffix("")
-        with Path(f"{out_stem}_graded.jsonl").open("w") as f:
+        out_stem = f"{path.with_suffix('')}{args.out_suffix}"
+        with Path(f"{out_stem}.jsonl").open("w") as f:
             for g in graded:
                 f.write(json.dumps(g) + "\n")
-        with Path(f"{out_stem}_graded_summary.json").open("w") as f:
+        with Path(f"{out_stem}_summary.json").open("w") as f:
             json.dump(summary, f, indent=2)
         print(json.dumps({k: summary[k] for k in ("responses", "rates", "mean_grade")}), flush=True)
 

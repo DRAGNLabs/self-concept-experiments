@@ -174,7 +174,11 @@ The Apollo OOD rounds (FINDINGS.md, commits 8e5dbde…6edf971) turned the steeri
 comparison into a publishable claim. Headline: **a steering vector carries a cheap in-distribution
 generalization certificate — the direction-specificity controls (−v, random-vector) that validate
 it in-distribution predicted OOD transfer in 8 of 9 models — while fine-tuning's in-distribution
-perfection predicts nothing** (gemma-4-31B 100/100 LoRA inert OOD ×3 seeds; gemma-4-12B LoRA
+perfection predicts nothing** — **RETIRED 2026-09-18 (see §9 and the audit section in FINDINGS):
+the prospective tally is 5 of 7, not 8 of 9 (the round-3 preregistration in 26c3c7c predicted no
+transfer for gemma-2, which transferred; the two gemma-4 pilots informed the predictor and are
+not unseen tests), and the Qwen3.8 LoRA transfers at lower cost than its vector, so
+"fine-tuning predicts nothing" is false. "8 of 9" holds only as a post-hoc graded description.** (gemma-4-31B 100/100 LoRA inert OOD ×3 seeds; gemma-4-12B LoRA
 transfers ×3 seeds). Secondary result: Kimi-Dev-72B transfers with zero think blocks engaged —
 the direction carries honesty content beyond its apparent CoT mechanism. Frame the paper around
 predictability of generalization, not effect size: OOD effects are 10–20 pt mitigations, never
@@ -296,7 +300,8 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       on the judge-free measures (pass labels, rule spec-case, regex call-out) or a second judge;
       72B cells run one scenario per 3-GPU job. *Part 1 (FINDINGS "model screen, part 1")*: Muse
       and Qwen2.5-72B do not reward-hack at base (≤2/40 test-mods, 0 special-casing, 0 EvilGenie
-      hacks) — no +v cells; judge 13721677. *Part 2*: Kimi-Dev-72B is budget-bound at 4096 tokens (94–96% of attempts end inside `◁think▷`, 8–9 code blocks per split) — uninterpretable, not rerun (≥16k tokens ≈ 30–60 h per split). Screen closed: no non-gemma base model reward-hacks measurably; remaining code cell = Qwen3.8-27B in both interventions — queued as round 6 (jobs 13724151:13724152:13724153:13724154:13724155, judge + call-out 13724156 on Qwen2.5-72B): base, +v L31 α10, −v, random s0, LoRA L32 s0; conflicting/original/EvilGenie, n=40.
+      hacks) — no +v cells; judge 13721677. *Part 2*: Kimi-Dev-72B is budget-bound at 4096 tokens (94–96% of attempts end inside `◁think▷`, 8–9 code blocks per split) — uninterpretable, not rerun (≥16k tokens ≈ 30–60 h per split). Screen closed: no non-gemma base model reward-hacks measurably; remaining code cell = Qwen3.8-27B in both interventions — queued as round 6 (jobs 13724151:13724152:13724153:13724154:13724155, judge + call-out 13724156 on Qwen2.5-72B): base, +v L31 α10, −v, random s0, LoRA L32 s0; conflicting/original/EvilGenie, n=40. Early read (15–19 tasks): +v/−v/random at α10 collapse original-task pass to 11/7/0% vs base 60% (rumination in comments, as gemma-4 at its SOO α), LoRA 44%. Round 6b queued: +v L31 α8, α6 and random s0 α8 on conflicting + original (13729001:13729002:13729003, judge 13729004).
+    - *Round 7 = positional (conditional) steering (2026-09-17)*: `--steer-positions response|prompt` (steering.PositionalSteering) masks the o_proj offset by token position. **In-distribution result (13743987 L31, 13744010 L23; FINDINGS "Positional steering, round 7 part 1"): prompt-only +v reproduces the certified cells exactly (100/100 at L31 α10 and L23 α8); response-only +v is null (0 through L31 α12 / L23 α8, ≤8–20% before the generation breaks — empty output at L31 α24+, rumination at L23 α16). The SOO effect is carried by the prompt positions, i.e. the same positions whose perturbation collapses coding, so no position mask separates the effect from the capability cost.** Open lead, not pursued: −v on the response positions at L31 gives 28/64 (α10) and 12/70 (α16) orig/mirrored clean honest answers with random at floor (p≈1e-13 mirrored) — direction-specific, orientation-asymmetric, opposite sign to the certified cell. **Part 2 (code cells, 2026-09-18) reversed the cost half of that conclusion: response-only +v α10 collapses coding (12% original pass, = full cell) while null in-distribution; prompt-only +v α10 keeps 50% (base 62, n.s.; = LoRA) with the full in-distribution effect, call-out 18% (base 45). The collapse lives in the generated tokens, the effect in the context — masking separates them.** **Round 9 queued 2026-09-18**: prompt-only controls in-distribution (random s0, −v, +v on the other two scenarios), prompt-only +v / random transfer to roleplaying + insider (`steer-qwen38-prompt-r9.sh` 13754131, judge 13754132), prompt-only random α10 code cell (`code-r7-qwen38-pos.sh prompt_rand_s0_a10` 13754133, judge 13754134), positional caps (`caps-qwen38-pos.sh` 13754128). Remaining untested steering variant: multi-layer low-α; not planned unless the paper needs the stronger "no steering variant works" claim.
     - *Qwen3.8-27B onboarding (2026-09-15, jobs 13705498–501)*: the requested frontier test — a
       2026 ~30B-class model from a third lineage (next to gemma-4-31B and Muse-30B in the matrix's
       2026 row), fully open (apache-2.0), 64-layer hybrid stack (48 Gated DeltaNet + 16 full
@@ -347,3 +352,162 @@ Possibly other alternative: https://arxiv.org/pdf/2508.06361
       baseline in the matrix); +v L31 α10 42.0 deceptive (−6.8, p=0.08; random 45.8), −v 55.8 —
       sign-sensitive OOD although sign-agnostic in distribution; LoRA 51.2 (no transfer, like
       the 31B LoRA); L23 α8 cells null/worse. Verdict: vector weak-transfer / LoRA no-transfer.
+    - *Insider + sandbagging (FINDINGS 2026-09-17)*: LoRA concealed 54 → 24 / explicit 2 → 32
+      (largest insider effect in the matrix); +v L31 α10 removes hedging (implied 43 → 1), splits
+      into explicit 28 (direction-specific: random/−v 1) and concealed 72 — round-7 31B pattern on
+      a second model. Sandbagging unmeasurable at 600 tokens (94% unparsed: deliberation overruns);
+      optional 1.5k-token rerun on base/LoRA/+v L31 (~15 h/cell) only if the paper needs the row.
+    - *Round 6/6b code (FINDINGS 2026-09-17)*: no passing cheats anywhere; LoRA inert (50/32% pass,
+      call-out 25% n.s.); vector collapses coding at α≥8 (generic: random α8 as bad); at α8 +v
+      call-out 0/40 vs random 7/40 (p=0.012) — third model where the SOO direction silences the
+      contradiction report. EvilGenie complete: base 9/40 test-file edits are all benign runner
+      refactors (judge agrees, 8 legitimate / 1 heuristic), no cell has a passing cheat; LoRA 0
+      hacks at 25% holdout (base 42%, n.s.); judge special-casing on random α10 (7) is all
+      unverified broken code. Round closed.
+
+## 9. Paper reframing (2026-09-17) — extension, not refutation
+
+Advisor guidance: a paper whose contribution is "the published method works less well than
+claimed" does not advance the field and invites bad sentiment; propose something that works
+better instead. The 2026-09-10 headline in §8 (steering vector as a cheap generalization
+certificate, fine-tuning predicts nothing) is also no longer supported: on Qwen3.8-27B the LoRA
+transfers to insider trading as strongly as any cell in the matrix at zero capability cost,
+while the vector pays a 2–4× capability tax, collapses multi-turn coding at every α that flips
+the SOO task, and (round 7) acts entirely through the prompt positions, so no position mask
+separates its effect from its cost.
+
+**What the matrix supports as positive contributions**
+1. *SOO generalizes to agentic deception.* The adapter trained on 78 toy burglar fragments cuts
+   insider-trading concealment 54 → 24 and raises explicit disclosure 2 → 32 on Qwen3.8-27B,
+   3-seed robust on gemma-4-31B, at no measurable capability cost. Carauleanu et al. only
+   tested in-distribution generalization.
+2. *A characterization of what it moves.* Self-interested concealment yes; instructed deception
+   (Apollo roleplaying) no on 31B and Qwen3.8 (12B is the exception); sandbagging backfires on
+   31B; reward hacking on code has nothing to reduce. Direction-specificity controls hold on the
+   measures that matter.
+3. *A mechanism.* The self/other direction acts on how the model reads the context, not on
+   generation (round 7): prompt-only steering reproduces the certified cells, response-only
+   steering is null. Part 2 (2026-09-18): the *cost* lives in the response positions —
+   prompt-only +v keeps coding at the LoRA's level (50% vs base 62) with the full effect. So a
+   masked offset can substitute in-distribution; whether it transfers is open. The
+   steering-vs-LoRA work becomes the mechanistic section, not the headline.
+
+**The gap the data exposes → the method to build (option 1, chosen 2026-09-17):**
+*agentic SOO data.* SOO fails exactly where the training pairs are furthest from the task
+(a person or an assistant with a self-interested reason to mislead a counterpart). Round 8
+transplants the Table-1 self/other construction into that setting (`selfconcept.soo.agentic`:
+20 training situations × 3 templates = 60 pairs, 8 held-out situations for latent probes; the
+referent swap is applied to "who wants to know" and "who is told", fragments end on the
+referent token so `last_token` alignment is unchanged) and trains the unchanged L32 recipe on
+(a) the agentic pairs alone and (b) agentic + original (mixed), 3 seeds each
+(`lora-qwen38-agentic.sh`, judges `apollo-qwen38-agentic-judge.sh`). Read-outs: in-distribution
+toy scenarios (does the toy task still flip?), Apollo roleplaying (the target: base 48.8,
+original LoRA 51.2), insider trading (must not regress from 24% concealed), then code and caps
+for whichever variant moves. Caveat to carry: training situations overlap thematically with
+some roleplaying scenarios (student/teacher, employee/manager); the analysis will report the
+roleplaying effect on the subset whose role/counterpart pair matches no training situation.
+Alternatives held in reserve: (2) context-targeted SOO loss (weight the overlap loss on
+context tokens, motivated by round 7), (3) probe-gated adapters (detect-then-intervene), only
+interesting if (1) produces adapters that cost capability.
+
+**Round 8 status (2026-09-17, interim, seed 0, roleplaying only — FINDINGS "Round 8 interim").**
+Both agentic-data adapters cut Apollo roleplaying deception 48.8 → 26.4 (agentic-only) / 28.6
+(mixed), p ≤ 2e-8, present on the role-disjoint subset (→ 28.5 / 30.9) and after excluding
+AI-disclaimer responses; in-distribution still 100/0. Queued: code cells + caps for both
+variants (13747100/01/02 agentic, 13747125/26/27 mixed); seeds 1–2 and insider trading pending
+(13744234/35 → judge 13744236). Seed 1 replicates (30.5 / 31.0, p ≤ 1e-6) with no length or disclaimer excess. Caps: −1
+HellaSwag, −2.0/−2.4 MMLU vs base (original LoRA −1.3), far below the vector's −9 to −12.
+**Insider trading regresses** (seed 0): concealed 76% agentic / 89% mixed vs base 54, original
+LoRA 24 — the adapters copy the scenario's report template ("recommendation from StockAnalyze")
+and stop deliberating (reasoning 80–86 chars vs 144); profile matches the vector cell, not the
+original adapter. The two pair sets are not additive (mixed is worse). Next: (a) budget /
+reasoning-preserving rerun of the insider cell, (b) drop `trader_insider` from training to
+test in-situation pairs, (c) alternative 2 (context-targeted loss). **Queued 2026-09-17 (round
+8b)**: `agentic-noinsider` (57 pairs, trader_insider dropped; 13748869) and `agentic-persons`
+(42 pairs, kind=person only; 13748870), seed 0, insider + roleplaying, judge 13748871
+(`lora-qwen38-agentic.sh` now takes SEEDS/STAGES, the judge VARIANTS).
+**Final (2026-09-18, FINDINGS "Round 8" final block).** Roleplaying: agentic 27.0 ± 3.1, mixed
+32.3 ± 4.4 (3 seeds, all p ≤ 2e-3, role-disjoint holds). Insider: all six seeds regress
+(agentic 76–87, mixed 64–89 concealed; template copy 109–150/173; reasoning 76–108 chars);
+8b: dropping trader_insider → 70%, person-only pairs → 87% — the construction itself does it,
+not a situation or the agent-kind pairs. Code: agentic 62 → 38 original pass (p=0.04), 18%
+conflicting; mixed 48 / 25 (= original LoRA); no call-out suppression; one announced test
+rewrite (agentic). Caps −1 HS / −2 MMLU. Verdict: pair content sets what SOO moves; the two
+contrasts are not additive; the method needs a deliberation-preserving ingredient before it
+is a contribution. Next: prompt-only vector (round 7 part 2) on the same read-outs, then
+alternative 2.
+Open: seed-0 agentic doubles response length (seed 1 does not); a few wrong-way
+flips on Student/Patient/Applicant scenarios; alternatives (2)–(3) stay in reserve unless the
+code/caps cells show a cost.
+
+Positioning: "Self-other overlap generalizes to agentic deception, and closing its
+instructed-deception gap with agentic self/other data", with the vector analysis as mechanism
+and the reward-hacking benchmarks as the null-result boundary. §8's work items 2–3 (honesty
+baseline vector, judge validity) stay relevant as supporting analyses.
+
+## 10. External audit response (2026-09-18)
+
+Codex audited the checkout at 32559dd ([AUDIT.md](AUDIT.md), with a link to the historical data snapshot, read-only script
+`scripts/audit_sanity.py`). Every quantitative claim it makes reproduces. Four items changed
+the record; details and tables in FINDINGS "External audit".
+
+Done:
+
+1. **Sandbagging measurement repaired.** `scripts/reparse_sandbagging.py` re-reads all 26 saved
+   response files into separated fields (decision, parse validity, private answer, final answer,
+   completion, correctness), recovers malformed-but-intelligible tags, preserves the old label
+   as `legacy_label`, and reports three denominators. Result: the old parser scored "declared
+   sandbag, no private answer" as deceptive, and the gemma-4-31B baseline's 57% is 105/143 such
+   records. **"31B +v mitigates sandbagging" is withdrawn** (established disagreements go
+   38 → 101 /250 the wrong way; n.s. on matched records). The over-trigger result (a decision
+   rate) stands, and the 12B results strengthen (+v 139 → 83, p=1e-22; 12B LoRA → 0).
+2. **Paired tests everywhere.** `scripts/paired_tests.py` (exact McNemar + paired item
+   bootstrap); `--batch qwen38` regenerates the Qwen3.8-27B tables. Round-8 effects strengthen
+   (agentic s0 Δ −22.4 pts, p=1.9e-16); "original LoRA is code-inert" and "prompt-only masking
+   costs nothing" are withdrawn (EvilGenie p=0.039, conflicting p=0.039); +v L31 roleplaying is
+   significant vs base (p=0.0073) but **not** vs a random direction (p=0.18).
+3. **Overstated claims corrected in place.** §8's "predicted 8 of 9" retired (prospective tally
+   is 5/7 against the 26c3c7c preregistration); "code inert"/"costs nothing" qualified in
+   FINDINGS and STEERING_MATRIX; the trailing four-model synthesis now carries a SUPERSEDED
+   banner naming its three wrong conclusions; mechanism claims ("projection null refutes SOO",
+   "high-LR effects are optimization drift", "not a decision to conceal") demoted to hypotheses.
+4. **Dose-vs-content control queued (round 10).** Variants differ in optimizer steps (original
+   160, agentic 120, mixed 280, noinsider 120, persons 88). Existing data already rule dose out
+   as the sole driver of the insider regression (it appears at 88/120/280 steps while the
+   original adapter at 160 does not regress), but the agentic-vs-mixed gap could be dose.
+   Jobs **13756196** (`agentic-long`: 60 pairs × 19 epochs = 285 steps ≈ mixed's 280) and
+   **13756197** (`mixed-short`: 138 pairs × 3 epochs = 105 ≈ agentic's 120), seed 0,
+   roleplaying + insider, judge **13756198**.
+
+Not done, ranked for later:
+
+- **Judge validity (audit item 7) — STARTED 2026-09-18.** Two halves, both queued the same day.
+  (a) *Independent family*: job **13756213** re-grades the eight round-8 headline roleplaying
+  conditions with gemma-4-31B-it instead of Qwen2.5-72B, writing `*_graded_g31.jsonl`
+  (`judge_apollo.py` gained `--out-suffix` so primary grades are never overwritten). Score with
+  `make_apollo_validation_sample.py --score-judge _graded_g31`, which reports per-condition
+  label distributions, binary agreement and Cohen's kappa on all 371 scenarios.
+  (b) *Blinded human*: `scripts/make_apollo_validation_sample.py` wrote 120 blinded samples to
+  `validation/apollo/sample.jsonl` (8 conditions × 3 judge labels × 5), condition-stripped and
+  shuffled, key alongside; add `"human_label"` per row and run `--score`. Note for whoever
+  labels: median response length runs *opposite* to the judge's deception call (honest 341
+  chars, ambiguous 253, deceptive 174), so the naive verbosity-bias worry is not the live one.
+  (c) *Insider judge*, same day: `judge_insider.py` also gained `--out-suffix`, and job
+  **13756223** re-grades the seven insider conditions carrying the round-8 regression with
+  gemma-4-31B-it; score with `--score-judge-insider _graded_g31`. The scoring path is
+  self-tested (grading a file against itself gives 100% / kappa 1.000). Blinded human labeling
+  of the insider reports is not built yet; the roleplaying sample is the priority.
+- **Frozen selection protocol (items 2, 9) — DONE 2026-09-18: `PROTOCOL.md`.** Development is
+  in-distribution indices 0–49 (the pilot prefix) and confirmation is 50–249; Apollo transfer
+  claims report the 246 role-disjoint scenarios as primary; the predictor, cells, metric,
+  success criterion and confirmatory list must be committed before the generation job; paired
+  tests and a separate direction-specificity contrast are mandatory; no equivalence claims from
+  an underpowered null; a reporting vocabulary fixes what each word licenses.
+- **Mechanism experiment (items 4, 5).** Fixed update budget; self/other vs shuffled-pair,
+  self/self-with-independent-dropout, and non-social paraphrase contrasts; deterministic
+  eval-mode held-out pair loss, activation norm/variance and normalized separation; behaviour
+  on held-out scenarios. More diagnostic than another layer/dose sweep.
+- **Provenance manifest (item 10).** Save `SOO_CHAT_KWARGS`, data hash, model/code revision,
+  generation budget and completion status alongside every summary; stop reusing output tags.
+- **Sandbagging follow-ups (item 8).** Stratified MMLU subjects and a matched no-sabotage prompt
+  before any benign-over-trigger claim; 3-seed random controls are already the standard.

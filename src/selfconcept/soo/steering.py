@@ -15,8 +15,28 @@ base model (scripts/extract_steering.py), then intervene at inference:
 Applied at the same site the SOO loss trained on (one layer's
 self_attn.o_proj output, every token position), so results are directly
 comparable to the LoRA rounds.
+
+Positional variants (PositionalSteering): a constant offset added at every
+token also perturbs the model's *reading* of the prompt, and at the alpha
+that flips the SOO task on Qwen3.8-27B any matched-norm offset collapses
+multi-turn coding. `positions='response'` adds the vector only from the
+current assistant turn's header onward (the generation-prompt suffix of the
+chat template plus every generated token, i.e. the positions the 'last'
+extraction convention read from); `positions='prompt'` is the complementary
+diagnostic (context only, never the model's own turn). Earlier assistant
+turns inside a multi-turn prompt count as context. `positions='from_last'`
+needs no template marker: it covers the last prompt token and every
+generated token, the position the overlap measurements read.
+
+Constant replacement (mode 'replace', second study): h <- (1-alpha) h + alpha c
+sets the layer's output to a fixed vector c at the masked positions, with no
+training. It is the hand-built version of the degenerate solution the
+last-token LoRA loss converges to (FINDINGS2.md rounds 2-2c); c may be an
+adapter's measured constant, the base model's mean output, zero, or a random
+vector of matched norm (scripts/make_constants.py, CONSTANT_ROUND.md).
 """
 
+import atexit
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -25,6 +45,8 @@ import torch
 from .activations import attn_out_proj, get_decoder_layers
 
 TOKEN_MODES = ("last", "mean")
+POSITION_MODES = ("all", "response", "prompt", "from_last")
+STEER_MODES = ("add", "project", "replace")
 
 
 def load_vectors(path: str | Path) -> dict:
@@ -50,33 +72,332 @@ def random_matched_vector(vector: torch.Tensor, seed: int) -> torch.Tensor:
     return rand / rand.norm() * vector.norm()
 
 
-def steer_o_proj(model, layer: int, vector: torch.Tensor, alpha: float, mode: str = "add"):
+def load_constants(path: str | Path) -> dict:
+    """Load a scripts/make_constants.py output: metadata plus named constant vectors."""
+    return torch.load(path, map_location="cpu", weights_only=True)
+
+
+def get_constant(data: dict, name: str) -> torch.Tensor:
+    """One named constant (float32, [hidden_size]), e.g. 'adapter_seed0', 'base_mean', 'zero'."""
+    if name == "zero":
+        any_vec = next(iter(data["constants"].values()))
+        return torch.zeros_like(any_vec, dtype=torch.float32)
+    if name not in data["constants"]:
+        raise KeyError(f"constant {name!r} not in {sorted(data['constants'])}")
+    return data["constants"][name].float()
+
+
+def response_marker(tokenizer, chat_kwargs: dict | None = None) -> list[int]:
+    """Token ids the chat template appends for add_generation_prompt=True.
+
+    E.g. '<|im_start|>assistant\\n<think>\\n\\n</think>\\n\\n' for Qwen3.x with
+    thinking off, '<|turn>model\\n<|channel>thought\\n<channel|>' for gemma-4.
+    The last occurrence in a prompt marks the assistant turn being generated.
+    """
+    kwargs = chat_kwargs or {}
+    messages = [{"role": "user", "content": "x"}]
+
+    def ids(gen: bool) -> list[int]:
+        enc = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=gen, tokenize=True, return_dict=True, **kwargs
+        )
+        return list(enc["input_ids"])
+
+    without, with_ = ids(False), ids(True)
+    if with_[: len(without)] != without or len(with_) == len(without):
+        raise ValueError("chat template's generation prompt is not a suffix of the no-generation rendering")
+    return with_[len(without) :]
+
+
+def _last_marker_start(input_ids: torch.Tensor, marker: list[int]) -> torch.Tensor:
+    """Per row, index where the last occurrence of `marker` starts; seq_len if absent."""
+    batch, seq = input_ids.shape
+    k = len(marker)
+    if seq < k:
+        return torch.full((batch,), seq, device=input_ids.device, dtype=torch.long)
+    m = torch.tensor(marker, device=input_ids.device, dtype=input_ids.dtype)
+    hit = (input_ids.unfold(1, k, 1) == m).all(-1)  # [batch, seq-k+1]
+    last = (seq - k) - hit.flip(1).int().argmax(1)
+    return torch.where(hit.any(1), last, torch.full_like(last, seq))
+
+
+def _past_length(kwargs: dict) -> int:
+    """Tokens already in the KV cache for this forward call (0 for a fresh sequence).
+
+    transformers 5.x generate() passes `past_key_values` (a Cache) and
+    `position_ids` to the top-level forward but not `cache_position`, so read
+    the cache's length; honor `cache_position` when a caller does pass it.
+    """
+    cache_position = kwargs.get("cache_position")
+    if cache_position is not None:
+        return int(cache_position[0])
+    cache = kwargs.get("past_key_values")
+    if cache is None:
+        return 0
+    if hasattr(cache, "get_seq_length"):
+        return int(cache.get_seq_length())
+    raise RuntimeError(f"positional steering: cannot read the length of cache type {type(cache).__name__}")
+
+
+class PositionalSteering:
+    """Restrict a steering hook to the model's own turn (or to the context).
+
+    A forward pre-hook on the model records, per forward call, the absolute
+    positions of the tokens being processed (cache length + arange(seq);
+    arange(seq) for a plain cache-less forward) and, at the start of each
+    sequence, where the current assistant turn begins (last occurrence of the
+    chat template's generation-prompt suffix; seq_len when absent, i.e.
+    nothing is 'response'). The o_proj hook then masks the offset per
+    position: 'response' steers positions >= start, 'prompt' positions < start.
+    """
+
+    def __init__(self, marker: list[int] | None, mode: str):
+        if mode not in POSITION_MODES:
+            raise ValueError(f"positions must be one of {POSITION_MODES}, got {mode!r}")
+        if mode == "from_last":
+            marker = marker or []
+        elif not marker:
+            raise ValueError("empty response marker")
+        self.marker = marker
+        self.mode = mode
+        self.positions: torch.Tensor | None = None
+        self.start: torch.Tensor | None = None
+        self.n_sequences = 0
+        self.n_missing = 0
+        self._handle = None
+
+    def attach(self, model) -> None:
+        self._handle = model.register_forward_pre_hook(self._pre_hook, with_kwargs=True)
+        atexit.register(self.report)
+
+    def _pre_hook(self, _module, args, kwargs) -> None:
+        input_ids = kwargs.get("input_ids", args[0] if args else None)
+        if input_ids is None or input_ids.dim() != 2:
+            self.positions = None
+            return
+        seq = input_ids.shape[1]
+        past = _past_length(kwargs)
+        positions = past + torch.arange(seq, device=input_ids.device)
+        if past == 0:
+            if seq < max(len(self.marker), 2):
+                # generate() always prefills a full chat prompt; a "fresh"
+                # 1-token sequence means the cache length was not readable
+                # and decode steps would be mis-steered as new prompts.
+                raise RuntimeError(f"positional steering: {seq}-token sequence with no past (cache length unreadable?)")
+            if self.mode == "from_last":
+                # Last valid prompt token per row (either padding side), then
+                # every later position; no chat-template marker involved.
+                mask = kwargs.get("attention_mask")
+                if mask is None or mask.dim() != 2:
+                    self.start = torch.full((input_ids.shape[0],), seq - 1, device=input_ids.device, dtype=torch.long)
+                else:
+                    pos = torch.arange(seq, device=input_ids.device)
+                    self.start = pos.expand_as(mask).masked_fill(~mask.bool(), -1).max(1).values
+                    if (self.start < 0).any():
+                        raise RuntimeError("positional steering: a sequence has no valid token")
+            else:
+                self.start = _last_marker_start(input_ids, self.marker)
+            self.n_sequences += 1
+            missing = int((self.start >= seq).sum())
+            self.n_missing += missing
+            if self.n_sequences == 1:
+                print(
+                    f"Positional steering ({self.mode}): marker {len(self.marker)} tokens, "
+                    f"first sequence start {self.start.tolist()} of {seq}",
+                    flush=True,
+                )
+            if missing and self.n_missing <= 5:
+                print(f"Positional steering: marker absent in a {seq}-token sequence (treated as all prompt)", flush=True)
+        self.positions = positions
+
+    def mask(self, output: torch.Tensor) -> torch.Tensor:
+        """[batch, seq, 1] multiplier for the steering offset."""
+        batch, seq = output.shape[0], output.shape[1]
+        if self.positions is None or self.start is None or self.positions.shape[0] != seq or self.start.shape[0] != batch:
+            raise RuntimeError(
+                f"positional steering lost alignment: output {tuple(output.shape)}, "
+                f"positions {None if self.positions is None else tuple(self.positions.shape)}, "
+                f"start {None if self.start is None else tuple(self.start.shape)}"
+            )
+        positions = self.positions.to(output.device)
+        start = self.start.to(output.device)
+        response = positions[None, :] >= start[:, None]  # [batch, seq]
+        keep = ~response if self.mode == "prompt" else response
+        return keep.to(output.dtype)[..., None]
+
+    def report(self) -> None:
+        print(
+            f"Positional steering ({self.mode}): {self.n_sequences} sequences, "
+            f"marker missing in {self.n_missing}",
+            flush=True,
+        )
+
+
+def steer_o_proj(
+    model,
+    layer: int,
+    vector: torch.Tensor,
+    alpha: float,
+    mode: str = "add",
+    positions: PositionalSteering | None = None,
+):
     """Register a steering hook on one layer's o_proj output; returns the handle.
 
     The hook stays active for the model's lifetime unless the handle is
     removed — use apply_steering() when a scoped intervention is needed.
+    With `positions`, the offset is masked per token position (see
+    PositionalSteering); its pre-hook is attached to `model` here.
     """
+    if mode not in STEER_MODES:
+        raise ValueError(f"unknown steering mode {mode!r}; expected one of {STEER_MODES}")
     module = attn_out_proj(get_decoder_layers(model)[layer])
     vector = vector.float()
-    unit = vector / vector.norm()
+    unit = vector / vector.norm() if mode == "project" else vector
+    if positions is not None and positions.mode == "all":
+        positions = None
+    if positions is not None:
+        positions.attach(model)
 
     def hook(_module, _inputs, output):
         v = vector.to(output.device, output.dtype)
         if mode == "add":
-            return output - alpha * v
-        if mode == "project":
+            delta = alpha * v
+        elif mode == "project":
             u = unit.to(output.device, output.dtype)
-            return output - alpha * (output * u).sum(-1, keepdim=True) * u
-        raise ValueError(f"unknown steering mode {mode!r}")
+            delta = alpha * (output * u).sum(-1, keepdim=True) * u
+        else:  # replace: output - alpha * (output - c) == (1 - alpha) * output + alpha * c
+            delta = alpha * (output - v)
+        if positions is not None:
+            delta = delta * positions.mask(output)
+        return output - delta
 
     return module.register_forward_hook(hook)
 
 
 @contextmanager
-def apply_steering(model, layer: int, vector: torch.Tensor, alpha: float, mode: str = "add"):
-    """Context-managed steer_o_proj (removes the hook on exit)."""
-    handle = steer_o_proj(model, layer, vector, alpha, mode)
+def apply_steering(
+    model,
+    layer: int,
+    vector: torch.Tensor,
+    alpha: float,
+    mode: str = "add",
+    positions: PositionalSteering | None = None,
+):
+    """Context-managed steer_o_proj (removes both hooks on exit)."""
+    handle = steer_o_proj(model, layer, vector, alpha, mode, positions)
     try:
         yield
     finally:
         handle.remove()
+        if positions is not None and positions._handle is not None:
+            positions._handle.remove()
+
+
+# --- Band steering: a trained LoRA band's mean deltas as fixed offsets (STEER_ROUND.md) ---
+#
+# The bisection round put the adapters' room-task effect in a contiguous band
+# of v_proj LoRA deltas below the read-out layer. Each such delta is an
+# input-dependent rank-r update  d_l(x) = s B_l A_l x  on one projection's
+# output. Band steering replaces every delta in the band by its mean over a
+# prompt set (scripts/extract_band_deltas.py), added as a fixed offset to the
+# base model's projection output at the masked positions, in all band layers
+# at once:  y_l <- y_l + alpha * mean_l.  alpha = 1 is the mean delta itself.
+# Controls use the same construction on the band's q_proj deltas and random
+# directions of matched per-layer norm.
+
+BAND_TOKEN_MODES = ("last", "all")
+
+
+def offset_key(layer: int, module: str) -> str:
+    return f"{layer}:{module}"
+
+
+def parse_offset_key(key: str) -> tuple[int, str]:
+    layer, _, module = key.partition(":")
+    return int(layer), module
+
+
+def attn_proj(layer, name: str):
+    """One projection of a decoder layer's attention block, e.g. self_attn.v_proj."""
+    try:
+        return layer.get_submodule(f"self_attn.{name}")
+    except AttributeError as e:
+        raise AttributeError(f"no self_attn.{name} in {type(layer).__name__}") from e
+
+
+def load_band_deltas(path: str | Path) -> dict:
+    """Load a scripts/extract_band_deltas.py output: metadata plus per-(layer, module) mean deltas."""
+    return torch.load(path, map_location="cpu", weights_only=True)
+
+
+def get_band_offsets(data: dict, module: str, token_mode: str) -> dict[str, torch.Tensor]:
+    """The band's mean deltas for one module ('v_proj' or 'q_proj'), keyed 'layer:module' (float32)."""
+    if token_mode not in BAND_TOKEN_MODES:
+        raise ValueError(f"token_mode must be one of {BAND_TOKEN_MODES}, got {token_mode!r}")
+    offsets = {k: v.float() for k, v in data["offsets"][token_mode].items() if parse_offset_key(k)[1] == module}
+    if not offsets:
+        raise KeyError(f"no {module} offsets in band deltas (have {sorted(data['offsets'][token_mode])})")
+    return offsets
+
+
+def random_matched_offsets(offsets: dict[str, torch.Tensor], seed: int) -> dict[str, torch.Tensor]:
+    """Per-layer random Gaussian directions with each layer's real offset norm (one generator, sorted key order)."""
+    gen = torch.Generator().manual_seed(seed)
+    out = {}
+    for key in sorted(offsets, key=parse_offset_key):
+        v = offsets[key]
+        rand = torch.randn(v.shape, generator=gen, dtype=torch.float32)
+        out[key] = rand / rand.norm() * v.norm()
+    return out
+
+
+class _Handles:
+    def __init__(self, handles):
+        self.handles = list(handles)
+
+    def remove(self) -> None:
+        for h in self.handles:
+            h.remove()
+        self.handles = []
+
+
+def steer_modules(model, offsets: dict[str, torch.Tensor], alpha: float, positions: PositionalSteering | None = None):
+    """Add alpha * offset to each named projection's output; returns a removable handle group.
+
+    `offsets` maps 'layer:module' to a vector of that projection's output width.
+    All hooks share one PositionalSteering (its model pre-hook is attached here).
+    """
+    layers = get_decoder_layers(model)
+    if positions is not None and positions.mode == "all":
+        positions = None
+    if positions is not None:
+        positions.attach(model)
+    handles = []
+    for key in sorted(offsets, key=parse_offset_key):
+        layer, module_name = parse_offset_key(key)
+        module = attn_proj(layers[layer], module_name)
+        vector = offsets[key].float()
+        if vector.ndim != 1 or vector.numel() != module.out_features:
+            raise ValueError(f"offset {key} has shape {tuple(vector.shape)}, module output width {module.out_features}")
+
+        def hook(_module, _inputs, output, vector=vector):
+            delta = alpha * vector.to(output.device, output.dtype)
+            if positions is not None:
+                delta = delta * positions.mask(output)
+            return output + delta
+
+        handles.append(module.register_forward_hook(hook))
+    return _Handles(handles)
+
+
+@contextmanager
+def apply_module_steering(model, offsets: dict[str, torch.Tensor], alpha: float, positions: PositionalSteering | None = None):
+    """Context-managed steer_modules (removes the projection hooks and the position pre-hook on exit)."""
+    group = steer_modules(model, offsets, alpha, positions)
+    try:
+        yield
+    finally:
+        group.remove()
+        if positions is not None and positions._handle is not None:
+            positions._handle.remove()
+            positions._handle = None

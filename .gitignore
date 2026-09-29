@@ -1,6 +1,6 @@
 __pycache__/
 *.pyc
-.venv/
+.venv*/
 venv/
 .env/
 *.egg-info/
@@ -13,3 +13,6 @@ core.[0-9]*
 
 # allow symlink to autodelete
 autodelete
+
+# Codex CLI state
+.codex/
