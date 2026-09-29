@@ -37,3 +37,9 @@ The layer round's rule with `band-v` as the reference. A condition **reproduces*
 - Gap: report each condition's self/other and name-control gap changes against base with their family-bootstrap intervals at the three sites. A direction that reduces the self/other gap more than the name-control gap at the band's read-out is the first such result in this study; a reduction of both by similar amounts is the collapse pattern of rounds 2–2c; no reduction under a reproducing cell dissociates the behavior from the gap. Descriptive only; no threshold is set.
 
 No honesty claim follows from any outcome. A deceptive-rate drop is a behavioral change; on Mistral it has to pass the response reading before it counts as anything other than a confused answer.
+
+## Addendum, 2026-09-29, before launching: gemma-4-31B
+
+Written after the 12B and Mistral jobs finished (not yet written up in FINDINGS2) and after the second bisection on gemma-4-31B ([BISECT2_ROUND.md](BISECT2_ROUND.md)) found its band: the seed-0 adapter's `v_proj` deltas at layers 20–31 reproduce the adapter on main in both orientations (0% / 2% deceptive, perspectives 100%, no refusals), 22–31 and 24–31 are partial, and every range ending below 31 is null. Layers 20–31 hold 10 `v_proj` modules; the other two are gemma-4 global-attention layers, which have none, and carry only their `q_proj` means.
+
+Same design, conditions, gap measurement and rule as above, with `band-v` = 20–31 @ `v_proj` (top 31, training layer 32, last layer 59). No condition is added or dropped, so the three models stay comparable. Context the rule does not change: on gemma-4-12B the seed-0 random offsets at every position also moved the room task (53% / 84% deceptive at α = 1, 0% at α = 2), so on 31B the matched random cells decide whether any `v-all` reproduction is attributed to the direction, as the second bullet of the decision list already says. One random seed, as on the other two models.

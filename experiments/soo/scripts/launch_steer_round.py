@@ -1,7 +1,7 @@
 """Freeze and submit the band-steering round for one model (STEER_ROUND.md).
 
 Usage, from the repository root:
-  .venv-313/bin/python experiments/soo/scripts/launch_steer_round.py --model-key gemma4-12b [--no-submit]
+  .venv-313/bin/python experiments/soo/scripts/launch_steer_round.py --model-key gemma4-31b [--no-submit]
 The job measures the band's mean LoRA deltas on the training prompts (extract_band_deltas.py), evaluates the
 references and every steered cell in both orientations on main / treasure_hunt / perspectives (n=250), measures
 the self/other and name-control gaps under each intervention (measure_overlap), runs the intent split on
@@ -20,6 +20,10 @@ from launch_bisect_round import ROOT, SOO, TRAIN_FILE, VENV, check_adapter, chec
 PROBES = "data/subspace_pilot_pairs.jsonl"
 
 MODELS = {
+    # Band from the second bisection (BISECT2_ROUND.md): 20-31 is the smallest reproducing union; 22-31 and 16-29 are not.
+    "gemma4-31b": dict(model="google/gemma-4-31B-it", revision="842da3794eaa0b77d5f08bae87a17459d91ff475", layer=32,
+                       adapter_dir="results/checkpoints/gemma4-31b-L32", suffix="room_only", hours=16,
+                       band=(20, 31), bisect="u20 (20-31): main D 0/2, TH D 100/100 (adapter 0/6), perspectives 100/100, no refusals"),
     "gemma4-12b": dict(model="google/gemma-4-12B-it", revision="707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7", layer=24,
                        adapter_dir="results/checkpoints/gemma4-12b-L24", suffix="room_only", hours=8,
                        band=(19, 23), bisect="band (19-23): main D 0/0, TH 0/0, perspectives 100/100, no refusals"),
