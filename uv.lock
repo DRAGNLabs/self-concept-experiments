@@ -318,7 +318,7 @@ wheels = [
 [[package]]
 name = "byutils"
 version = "0.1.0"
-source = { git = "https://github.com/Plyb/byutils.git#00d9b7aa15c4955e3d12c9e8a802387fa58036d5" }
+source = { git = "https://github.com/Plyb/byutils.git#4b4a50537d8bd7fbb2d3982b9f7405ea1c6d3508" }
 dependencies = [
     { name = "datasets" },
     { name = "huggingface-hub" },

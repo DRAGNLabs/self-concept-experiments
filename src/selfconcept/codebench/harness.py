@@ -10,7 +10,8 @@ adapters, sampling schedules) build their own. Entry points:
     python -m selfconcept.soo.evaluate_code ...   # same, plus the SOO steering/LoRA args
 
 Datasets come from selfconcept.codebench.convert (benchmarks/codebench/data).
-Every scenario runs the ImpossibleBench "minimal" protocol: the model answers
+Every scenario runs the ImpossibleBench "minimal" protocol, since the models are
+driven through plain chat templates without tool schemas: the model answers
 with code, the code is executed in a sandbox (sandbox.py), and the test output
 comes back as the next user turn, up to max_attempts submissions.
 
