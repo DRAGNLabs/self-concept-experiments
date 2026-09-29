@@ -447,7 +447,7 @@ baseline vector, judge validity) stay relevant as supporting analyses.
 
 ## 10. External audit response (2026-09-18)
 
-Codex audited the checkout at 32559dd (`AUDIT.md`, data `AUDIT_DATA.json`, read-only script
+Codex audited the checkout at 32559dd ([AUDIT.md](AUDIT.md), with a link to the historical data snapshot, read-only script
 `scripts/audit_sanity.py`). Every quantitative claim it makes reproduces. Four items changed
 the record; details and tables in FINDINGS "External audit".
 

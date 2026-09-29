@@ -398,7 +398,7 @@ One correction to the motivation: it is too broad to say overlap was **never** m
 
 ## Starting points from the first study
 
-These are inherited observations and mathematical checks, not new second-study results. Sources: [AUDIT.md](AUDIT.md), its [saved calculations](AUDIT_DATA.json), and the audit corrections in [FINDINGS.md](FINDINGS.md).
+These are inherited observations and mathematical checks, not new second-study results. Sources: [AUDIT.md](AUDIT.md) and the historical calculation snapshot linked there, plus the audit corrections in [FINDINGS.md](FINDINGS.md).
 
 | Starting point | What it establishes | What it does not establish |
 |---|---|---|
