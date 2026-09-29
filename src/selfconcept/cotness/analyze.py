@@ -80,13 +80,25 @@ def association(x, y, controls, bootstrap=1000, seed=1729):
 
 
 def analyze(directory, bootstrap=1000):
-    validation = json.loads((directory / "probes/validation.json").read_text())
-    if not validation["usable"]:
-        return {"status": "probe_failed_validation"}
+    manifest_path = directory / "manifest.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    measurement = manifest.get("args", {}).get("measurement", "cotness")
+    if measurement == "cotness":
+        validation = json.loads((directory / "probes/validation.json").read_text())
+        if not validation["usable"]:
+            return {"status": "probe_failed_validation", "measurement": measurement}
+        primary_layer = validation["primary_layer"]
+    elif measurement == "assistant-axis":
+        primary_layer = manifest["assistant_axis"]["primary_layer"]
+    else:
+        raise ValueError(f"Unknown measurement: {measurement}")
     if not (directory / "outcomes.jsonl").exists():
-        return {"status": "awaiting_outcomes"}
+        return {"status": "awaiting_outcomes", "measurement": measurement}
     # Retries after an interrupted task replace its turn, never multiply units.
-    generations = {(r["scenario"], r["example_id"], r["turn"]): r for r in read_jsonl(directory / "generations.jsonl")}
+    generation_rows = read_jsonl(directory / "generations.jsonl") if (directory / "generations.jsonl").exists() else []
+    if any(r.get("measurement", "cotness") != measurement for r in generation_rows):
+        raise ValueError("Cannot analyze mixed measurements in one run")
+    generations = {(r["scenario"], r["example_id"], r["turn"]): r for r in generation_rows}
     records = {(r["scenario"], r["example_id"]): r for r in read_jsonl(directory / "outcomes.jsonl")}
     grades = {}
     for path in directory.glob("base_*_graded.jsonl"):
@@ -129,12 +141,13 @@ def analyze(directory, bootstrap=1000):
     for (scenario, layer, region), values in sorted(grouped.items()):
         x, y, controls = zip(*values)
         cells.append({"scenario": scenario, "layer": int(layer), "region": region,
-                      "primary": int(layer) == validation["primary_layer"] and region == "prompt",
+                      "measurement": measurement,
+                      "primary": int(layer) == primary_layer and region == "prompt",
                       **association(x, y, controls, bootstrap)})
-    return {"status": "exploratory", "coverage": dict(coverage), "cells": cells,
-            "primary_layer": validation["primary_layer"],
+    return {"status": "exploratory", "measurement": measurement, "coverage": dict(coverage), "cells": cells,
+            "primary_layer": primary_layer,
             "limitations": ["Small feasibility pilot; no confirmatory significance tests.",
-                            "No cross-model pooling of probabilities.", "Coding outcomes operationalize reward hacking, not established deceptive intent.",
+                            "No cross-model pooling of measurement scores.", "Coding outcomes operationalize reward hacking, not established deceptive intent.",
                             "Bootstrap units are examples within each cell; cells/orientations are not independent replications.",
                             "Length adjustment is omitted below n=20. Missingness can bias complete-case associations."]}
 
@@ -147,10 +160,12 @@ def main():
     for directory in args.directories:
         result = analyze(directory, args.bootstrap)
         (directory / "analysis.json").write_text(json.dumps(result, indent=2, allow_nan=False))
-        lines = [f"# {directory.name}: CoT-ness/deception pilot", "", f"Status: {result['status']}", ""]
+        metric = result["measurement"]
+        lines = [f"# {directory.name}: {metric} associations", "", f"Status: {result['status']}", ""]
         for scenario, counts in result.get("coverage", {}).items():
             lines.append(f"- {scenario}: {dict(counts)}")
-        lines += ["", "Primary: first-turn prompt content at the fixed midpoint layer.", "",
+        lines += ["", f"Primary: first-turn prompt content at prespecified layer {result.get('primary_layer')}.",
+                  "Generated CoT/final regions are descriptive associations with the eventual outcome.", "",
                   "| Scenario | n | Spearman rho | AUC |", "|---|---:|---:|---:|"]
         for cell in result.get("cells", []):
             if cell["primary"]:
