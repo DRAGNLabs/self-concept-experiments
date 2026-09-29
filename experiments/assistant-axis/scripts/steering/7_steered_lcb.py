@@ -16,6 +16,12 @@ record per problem to ``{output_dir}/coef_{coefficient:+.2f}.jsonl`` (full compl
 its thinking, extracted code, grade) and a summary JSON next to it. Re-running skips problems
 already on disk.
 
+With ``persona`` set to a role in ``roles_dir`` (the axis pipeline's role instructions), each
+problem is asked under one of that role's ``pos`` system prompts (variants rotated over the
+problems), placed as a system turn as in the axis extraction (build_conversation), which
+replaces the model's default system prompt; output goes to ``persona_{role}_coef_...``.
+``problem_limit`` keeps the first k problems of the fixed sample.
+
 Usage (from experiments/assistant-axis):
     python scripts/steering/7_steered_lcb.py --config configs/steering/7_steered_lcb.yaml \
         --run.coefficient -0.25 --run.axis_path AXIS --run.norms_path NORMS --run.output_dir OUT
@@ -39,6 +45,7 @@ from selfconcept.assistant_axis.models import get_config
 from selfconcept.assistant_axis.steering import apply_steering
 from selfconcept.codebench import harness
 from selfconcept.codebench.sandbox import run_python
+from selfconcept.common.hf_utils import build_conversation
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -92,6 +99,14 @@ class RunConfig:
     top_p: float = 0.95
     seed: int = 0
     dtype: str = "bfloat16"
+    persona: str | None = None
+    roles_dir: Path = Path("data/roles/instructions")
+    problem_limit: int | None = None
+
+
+def persona_prompts(role: str, roles_dir: Path) -> list[str]:
+    """The role's ``pos`` system-prompt variants, as used to extract the axis."""
+    return [item["pos"] for item in json.loads((roles_dir / f"{role}.json").read_text())["instruction"]]
 
 
 def load_axis(path: Path) -> Float[Tensor, "layers hidden"]:
@@ -166,9 +181,10 @@ def stop_ids(probing_model: ProbingModel) -> list[int]:
     return sorted(i for i in flat if isinstance(i, int) and i >= 0)
 
 
-def generate_batch(probing_model: ProbingModel, prompts: list[str], run: RunConfig, seed: int, eos: list[int]) -> list[dict]:
+def generate_batch(probing_model: ProbingModel, prompts: list[tuple[str | None, str]], run: RunConfig, seed: int, eos: list[int]) -> list[dict]:
+    """prompts: (system prompt or None for the model's default, user message) pairs."""
     tok = probing_model.tokenizer
-    texts = [tok.apply_chat_template([{"role": "user", "content": p}], tokenize=False, add_generation_prompt=True) for p in prompts]
+    texts = [tok.apply_chat_template(build_conversation(p, system, tok), tokenize=False, add_generation_prompt=True) for system, p in prompts]
     enc = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(probing_model.device)
     torch.manual_seed(seed)
     sampling = {"do_sample": True, "temperature": run.temperature, "top_p": run.top_p} if run.do_sample else {"do_sample": False}
@@ -215,14 +231,18 @@ def summarize(records: list[dict]) -> dict:
 
 def main(run: RunConfig = RunConfig()) -> None:
     run.output_dir.mkdir(parents=True, exist_ok=True)
-    out_path = run.output_dir / f"coef_{run.coefficient:+.2f}.jsonl"
+    stem = f"coef_{run.coefficient:+.2f}" if run.persona is None else f"persona_{run.persona}_coef_{run.coefficient:+.2f}"
+    out_path = run.output_dir / f"{stem}.jsonl"
     done = {}
     if out_path.exists():
         done = {r["example_id"]: r for r in map(json.loads, out_path.read_text().splitlines()) if r}
     problems = select_problems(harness.load_examples("evilgenie"), run.n_problems, run.sample_seed)
     (run.output_dir / "problems.json").write_text(json.dumps([p["example_id"] for p in problems], indent=1) + "\n")
+    problems = problems[: run.problem_limit]
+    variants = persona_prompts(run.persona, run.roles_dir) if run.persona else [None]
+    system_by_id = {p["example_id"]: variants[i % len(variants)] for i, p in enumerate(problems)}
     todo = [p for p in problems if p["example_id"] not in done]
-    logger.info("%d problems, %d already done, coefficient %+.2f", len(problems), len(done), run.coefficient)
+    logger.info("%d problems, %d already done, coefficient %+.2f, persona %s", len(problems), len(done), run.coefficient, run.persona)
 
     probing_model = ProbingModel(run.model, dtype=DTYPE_MAP[run.dtype])
     layers = probing_model.get_layers()
@@ -246,7 +266,7 @@ def main(run: RunConfig = RunConfig()) -> None:
         pending = [p for p in batch if p["example_id"] not in done]
         if not pending:
             continue
-        prompts = [lcb_prompt(p) for p in batch]
+        prompts = [(system_by_id[p["example_id"]], lcb_prompt(p)) for p in batch]
         logger.info("batch %d/%d (%d problems)", b + 1, len(batches), len(batch))
         if scale == 0.0:
             outs = generate_with_backoff(probing_model, prompts, run, run.seed + b, eos)
@@ -254,7 +274,7 @@ def main(run: RunConfig = RunConfig()) -> None:
             with apply_steering(probing_model, target_layer, unit, coefficient=scale):
                 outs = generate_with_backoff(probing_model, prompts, run, run.seed + b, eos)
         with out_path.open("a") as f:
-            for example, prompt, gen in zip(batch, prompts, outs):
+            for example, (system_prompt, prompt), gen in zip(batch, prompts, outs):
                 if example["example_id"] in done:
                     continue
                 thinking, answer, closed = split_thinking(gen["completion"])
@@ -262,7 +282,7 @@ def main(run: RunConfig = RunConfig()) -> None:
                 record = {
                     "example_id": example["example_id"], "title": example["title"], "is_function": example["is_function"],
                     "coefficient": run.coefficient, "target_layer": target_layer, "steering_norm": scale,
-                    "prompt": prompt, "completion": gen["completion"], "thinking": thinking, "answer": answer,
+                    "persona": run.persona, "system_prompt": system_prompt, "prompt": prompt, "completion": gen["completion"], "thinking": thinking, "answer": answer,
                     "think_closed": closed, "n_new_tokens": gen["n_new_tokens"], "truncated": not gen["finished"],
                     "code": code, **grade(example, code),
                 }
@@ -272,7 +292,7 @@ def main(run: RunConfig = RunConfig()) -> None:
 
     records = [done[p["example_id"]] for p in problems]
     summary = {**meta, **summarize(records)}
-    (run.output_dir / f"coef_{run.coefficient:+.2f}_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    (run.output_dir / f"{stem}_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     logger.info("summary: %s", json.dumps(summarize(records)))
 
 
