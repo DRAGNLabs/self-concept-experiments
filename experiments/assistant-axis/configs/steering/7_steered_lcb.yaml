@@ -1,0 +1,20 @@
+# Step 7: LiveCodeBench problems (the EvilGenie set, plain LCB prompt, no workspace) under
+# assistant-axis steering at the middle layer. Run from experiments/assistant-axis:
+#   python scripts/steering/7_steered_lcb.py --config configs/steering/7_steered_lcb.yaml \
+#       --run.coefficient -0.25 --run.axis_path AXIS --run.norms_path NORMS --run.output_dir OUT
+# coefficient is a fraction of the layer's mean residual norm, as in 6_steered_traces.
+# Sampling follows the model card (temperature 0.6, top_p 0.95); seeds are fixed per batch
+# so every coefficient sees the same draws. 16384 new tokens: the Think model's budget in the
+# ImpossibleBench runs (experiments/codebench/slurm/impossiblebench_olmo32b.sbatch).
+run:
+  model: allenai/Olmo-3.1-32B-Think
+  target_layer: null
+  n_problems: 40
+  sample_seed: 0
+  max_new_tokens: 16384
+  batch_size: 12
+  do_sample: true
+  temperature: 0.6
+  top_p: 0.95
+  seed: 0
+  dtype: bfloat16
