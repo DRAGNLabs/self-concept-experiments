@@ -4,13 +4,14 @@ The experiments support substantial, reproducible **changes in measured behavior
 
 This is an audit of the checkout at `32559dd`, its saved results, and the recorded arguments. It does not overwrite experiment code, grades, or historical findings. No model training or generation was rerun. The review covered the SOO training/extraction/steering/evaluation paths, Apollo conversion and grading, the coding harness and relevant scoring paths, configurations, the findings/matrix/plan, and the original SOO and Apollo sources. New round-9 runs are not adjudicated here.
 
-Reproduce the numerical checks with:
+Reproduce the numerical checks with the saved SOO result files available under
+`experiments/soo/results` (these generated inputs are not included in the checkout):
 
 ```bash
 .venv/bin/python experiments/soo/scripts/audit_sanity.py > /tmp/soo-audit.json
 ```
 
-The saved [audit data](AUDIT_DATA.json) contains 84 matched comparisons, diagnostic sandbagging counts, dataset checks, and hashes of the input record files. The [audit script](scripts/audit_sanity.py) is read-only. All recalculated p-values below are **exploratory, unadjusted, two-sided exact McNemar tests**, conditional on the existing labels and on treating example IDs as independent units. They do not account for the full history of adaptive searches, related scenario families, or judge error.
+The [historical audit data](https://github.com/DRAGNLabs/self-concept-experiments/blob/cc26619dfc89a0eed666663615c410381e90d6c2/experiments/soo/AUDIT_DATA.json) contains 84 matched comparisons, diagnostic sandbagging counts, dataset checks, and hashes of the input record files. This generated snapshot is preserved in Git history rather than the current tree; no pipeline code requires it. Reproducing the historical numbers requires the same input records. The [audit script](scripts/audit_sanity.py) is read-only. All recalculated p-values below are **exploratory, unadjusted, two-sided exact McNemar tests**, conditional on the existing labels and on treating example IDs as independent units. They do not account for the full history of adaptive searches, related scenario families, or judge error.
 
 ## What passed
 

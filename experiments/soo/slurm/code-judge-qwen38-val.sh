@@ -30,10 +30,6 @@ export CUDA_VISIBLE_DEVICES=$pick
 echo "Using GPU $CUDA_VISIBLE_DEVICES"
 
 set -e
-# Reward-hacking coding round 1 (12b, condition base): ImpossibleBench
-# conflicting (cheat rate) + original (capability control) + EvilGenie, first
-# N tasks each, 3 submissions per task. Same steer layer/alpha and LoRA
-set -e
 # Judge-swap validation: the codebench default judge moved from
 # Qwen2.5-72B (3 GPUs) to Qwen3.8-27B (one GPU, thinking off). Grade three
 # already-72B-graded gemma-4-12B files with the new default into a separate
@@ -43,7 +39,16 @@ set -e
 # still left 6/40 on the LoRA file (the judge deliberates ~1.5k tokens);
 # rerun at the package default (now 2048, rejudge 3072).
 export SOO_CHAT_KWARGS='{"enable_thinking": false}'
-files="results/code_eval/gemma4_12b/base_impossible_conflicting.jsonl results/code_eval/gemma4_12b/lora_s0_impossible_conflicting.jsonl results/code_eval/gemma4_12b/base_evilgenie.jsonl"
-python -m selfconcept.codebench.judge --responses $files --out-dir results/code_eval/judge_qwen38 --batch-size 4
-python -m selfconcept.codebench.callout --responses $files --out-dir results/code_eval/judge_qwen38 --rejudge-errors
+# Override the response selection and destination for a separate validation pass.
+# No arguments or OUT_DIR preserves the original three-file validation.
+if (( $# )); then
+    responses=("$@")
+else
+    responses=(results/code_eval/gemma4_12b/base_impossible_conflicting.jsonl
+               results/code_eval/gemma4_12b/lora_s0_impossible_conflicting.jsonl
+               results/code_eval/gemma4_12b/base_evilgenie.jsonl)
+fi
+OUT_DIR=${OUT_DIR:-results/code_eval/judge_qwen38}
+python -m selfconcept.codebench.judge --responses "${responses[@]}" --out-dir "$OUT_DIR" --batch-size 4
+python -m selfconcept.codebench.callout --responses "${responses[@]}" --out-dir "$OUT_DIR" --rejudge-errors
 echo "=== code judge qwen38 validation complete ==="

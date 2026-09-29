@@ -35,20 +35,23 @@ echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 
 
 set -e
-# Grade the round-4 insider trading reports (10 files x 173). Sandbagging
-# needs no judge -- scripts/parse_sandbagging.py runs on the login node.
-# Submitted with --dependency=afterok on the four r4 generation jobs.
-python scripts/judge_insider.py \
-    --responses results/apollo_eval/gemma4_12b/ap_base_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_12b/ap_steer_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_12b/ap_neg_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_12b/ap_rand_s0_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_12b/ap_lora_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_31b/ap_base_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_31b/ap_steer_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_31b/ap_neg_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_31b/ap_rand_s0_insider_trading_none.jsonl \
-                results/apollo_eval/gemma4_31b/ap_lora_insider_trading_none.jsonl \
+# Pass response paths as positional arguments to select another model or round.
+# No arguments preserves the original round-4 selection.
+if (( $# )); then
+    responses=("$@")
+else
+    responses=(results/apollo_eval/gemma4_12b/ap_base_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_12b/ap_steer_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_12b/ap_neg_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_12b/ap_rand_s0_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_12b/ap_lora_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_31b/ap_base_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_31b/ap_steer_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_31b/ap_neg_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_31b/ap_rand_s0_insider_trading_none.jsonl
+               results/apollo_eval/gemma4_31b/ap_lora_insider_trading_none.jsonl)
+fi
+python scripts/judge_insider.py --responses "${responses[@]}" \
     --batch-size 16 --max-new-tokens 256
 
 echo "=== apollo r4 judge complete ==="

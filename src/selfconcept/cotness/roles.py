@@ -35,7 +35,7 @@ def template_kwargs(family):
 
 
 def markers(family):
-    return {"qwen": ("<think>", "</think>"), "kimi": ("◁think▷", "◁/think▷"),
+    return {"qwen": ("<think>", "</think>"), "olmo": ("<think>", "</think>"), "kimi": ("◁think▷", "◁/think▷"),
             "gemma": ("<|channel>thought\n", "<channel|>"),
             "muse": ("<|start|>assistant to=self<|message|>",
                      "<|start|>assistant to=user<|message|>")}[family]

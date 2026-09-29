@@ -34,11 +34,16 @@ export CUDA_VISIBLE_DEVICES
 echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 
 set -e
+# Pass response paths to grade another Kimi batch with the same legacy markers.
+if (( $# )); then
+    responses=("$@")
+else
+    responses=(results/apollo_eval/kimi_dev_72b/ap_base_roleplaying_none.jsonl
+               results/apollo_eval/kimi_dev_72b/ap_steer_roleplaying_none.jsonl
+               results/apollo_eval/kimi_dev_72b/ap_neg_roleplaying_none.jsonl
+               results/apollo_eval/kimi_dev_72b/ap_rand_s0_roleplaying_none.jsonl)
+fi
 python scripts/judge_apollo.py \
-    --responses \
-    results/apollo_eval/kimi_dev_72b/ap_base_roleplaying_none.jsonl \
-    results/apollo_eval/kimi_dev_72b/ap_steer_roleplaying_none.jsonl \
-    results/apollo_eval/kimi_dev_72b/ap_neg_roleplaying_none.jsonl \
-    results/apollo_eval/kimi_dev_72b/ap_rand_s0_roleplaying_none.jsonl \
+    --responses "${responses[@]}" \
     --batch-size 16 --max-new-tokens 256 --think-open '◁think▷' --think-close '◁/think▷'
 echo "=== apollo-r3-judge-c complete ==="

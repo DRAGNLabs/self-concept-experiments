@@ -3681,8 +3681,8 @@ by `SEEDS`/`SCENARIOS`). Insider trading is the regression check: the original a
 
 ## External audit (Codex, AUDIT.md) and repairs — 2026-09-18: the sandbagging labels conflated missing evidence with deception and one headline reverses; every roleplaying/code comparison re-run paired; the "8 of 9 prospective" claim is 5 of 7
 
-An external model audit (`AUDIT.md`, checkout 32559dd, read-only; its numbers in
-`AUDIT_DATA.json`, script `scripts/audit_sanity.py`) raised ten items. I reproduced every
+An external model audit (`AUDIT.md`, checkout 32559dd, read-only; its historical data snapshot
+linked from [AUDIT.md](AUDIT.md), script `scripts/audit_sanity.py`) raised ten items. I reproduced every
 quantitative claim it makes. Four are correct and change what is written here; the rest are
 correct as cautions about wording. Repairs below, in the order they were made.
 

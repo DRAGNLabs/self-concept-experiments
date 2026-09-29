@@ -19,6 +19,7 @@ from .roles import ROLES, content_indices, render_probe
 def capture(model, layers, project=None):
     """Capture residual output (not attention o_proj); project on-device in generation.
 
+    ``project`` accepts fitted softmax probes or signed unit-axis directions.
     Generation consumes the prompt then one token at a time. Its final sampled
     token is unprocessed; callers explicitly exclude it from token projections.
     """
@@ -28,7 +29,10 @@ def capture(model, layers, project=None):
         def hook(module, inputs, output, layer=layer):
             hidden = output[0] if isinstance(output, tuple) else output
             hidden = hidden.detach().float()[0]
-            if project is not None:
+            if project is not None and "direction" in project[layer]:
+                direction = torch.as_tensor(project[layer]["direction"], device=hidden.device)
+                hidden = hidden @ direction
+            elif project is not None:
                 weight = torch.as_tensor(project[layer]["weight"], device=hidden.device)
                 bias = torch.as_tensor(project[layer]["bias"], device=hidden.device)
                 hidden = torch.softmax(hidden @ weight.T + bias, dim=-1)[:, ROLES.index("cot")]

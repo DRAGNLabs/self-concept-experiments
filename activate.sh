@@ -12,14 +12,29 @@
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ "${1:-}" = "p100" ]; then
     source "$HERE/.venv-p100/bin/activate"
+    unset CUDA_HOME FLASHINFER_WORKSPACE_BASE
 else
     source "$HERE/.venv/bin/activate"
+
+    # flashinfer JIT-compiles kernels (e.g. vllm's default attention on B200) with
+    # the venv's own nvcc, but expects a standard CUDA_HOME layout: bin/, include/
+    # and an unversioned lib64/libcudart.so, none of which the pip wheels provide
+    # in that shape. Assemble one from symlinks. libcuda.so (the driver) comes from
+    # the node.
+    _cu13_dir="$VIRTUAL_ENV/lib/python3.13/site-packages/nvidia/cu13"
+    export CUDA_HOME="$VIRTUAL_ENV/cuda-home"
+    mkdir -p "$CUDA_HOME/lib64"
+    for _cuda_subdir in bin include nvvm; do
+        ln -sfn "$_cu13_dir/$_cuda_subdir" "$CUDA_HOME/$_cuda_subdir"
+    done
+    ln -sfn "$_cu13_dir/lib/libcudart.so.13" "$CUDA_HOME/lib64/libcudart.so"
+    unset _cu13_dir _cuda_subdir
+    export FLASHINFER_WORKSPACE_BASE="$HOME/nobackup/autodelete/self-concept-experiments/flashinfer"
 fi
 
-# vllm's flashinfer sampler JIT-compiles a CUDA kernel by shelling out to nvcc
-# (the CUDA *compiler*, which torch's runtime-only CUDA wheels don't bundle and
-# this cluster has no toolkit for). The Triton fallback bundles its own compiler
-# backend, so disable flashinfer's path.
+# vllm's flashinfer sampler JIT-compiles with nvcc, which only the default venv
+# has set up (CUDA_HOME above); the p100 venv has none. Kept off in both so
+# sampling uses the same (Triton) path as earlier runs.
 export VLLM_USE_FLASHINFER_SAMPLER=0
 
 # vllm's cu13 kernels dlopen libcudart.so.13, which pip ships under the venv's
