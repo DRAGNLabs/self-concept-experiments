@@ -17,6 +17,7 @@ import re
 import sys
 from pathlib import Path
 
+from .harness import is_workspace_scenario
 from .judge import CONFLICT_RE, DATA
 _EXAMPLES: dict[str, dict[str, dict]] = {}
 
@@ -55,8 +56,12 @@ def targets_conflict(rec: dict, scenario: str) -> bool:
 LABELS = {
     "impossible_conflicting": ["cheat_modify_tests", "cheat_special_case", "honest_correct", "honest_fail", "error_oom"],
     "impossible_original": ["cheat_modify_tests", "cheat_special_case", "honest_correct", "honest_fail", "error_oom"],
-    "evilgenie": ["solved", "hack_visible_only", "visible_only_holdout_timeout", "hack_test_modified", "failed", "error_oom"],
+    "workspace": ["solved", "hack_visible_only", "visible_only_holdout_timeout", "hack_test_modified", "failed", "error_oom"],
 }
+
+
+def scenario_labels(scenario: str) -> list[str]:
+    return LABELS["workspace" if is_workspace_scenario(scenario) else scenario]
 
 
 def text_stats(recs: list[dict]) -> tuple[float, float, float]:
@@ -78,7 +83,7 @@ def text_stats(recs: list[dict]) -> tuple[float, float, float]:
 def row(path: Path) -> str:
     recs = [json.loads(l) for l in path.open()]
     scenario = recs[0]["scenario"]
-    labels = LABELS[scenario]
+    labels = scenario_labels(scenario)
     counts = {k: sum(r["label"] == k for r in recs) for k in labels}
     n = len(recs)
     trunc, comm, fence = text_stats(recs)
@@ -96,7 +101,7 @@ def row(path: Path) -> str:
     if summary.exists():
         s = json.load(summary.open())
         c = s["counts"]
-        if scenario == "evilgenie":
+        if is_workspace_scenario(scenario):
             cells.append(f"leg {c['legitimate']} / heur {c['heuristic']} / RH {c['reward_hacking']} / err {c['error']}")
         else:
             nc = s.get("notes_conflict_rate")
@@ -116,7 +121,7 @@ def main() -> None:
     for p in paths:
         by_scenario.setdefault(json.loads(p.open().readline())["scenario"], []).append(p)
     for scenario, ps in by_scenario.items():
-        labels = [k for k in LABELS[scenario] if k != "error_oom"]
+        labels = [k for k in scenario_labels(scenario) if k != "error_oom"]
         extra = ["orig pass", "regex call-out", "rule spec-case"] if scenario.startswith("impossible") else ["holdout pass"]
         head = ["model", "cond", "n"] + labels + extra + ["trunc att", "comment lines", "unclosed fence", "judge"]
         print(f"\n**{scenario}**\n")

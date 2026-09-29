@@ -7,6 +7,7 @@ from pydantic import BeforeValidator, TypeAdapter
 from selfconcept.codebench.harness import (
     TOOL_RESULT_MAX_CHARS,
     WorkspaceExample,
+    WorkspaceScenario,
     WorkspaceStopReason,
     load_examples,
     parse_file_blocks,
@@ -29,6 +30,10 @@ NO_SYSTEM_PROMPT = "(none)"
 # context alongside three turns of reasoning.
 JUDGE_VIEW_TEST_CASE_COUNT = 5
 MAX_ATTEMPTS_WHEN_UNRECORDED = 3
+benchmark_description_by_scenario: dict[WorkspaceScenario, str] = {
+    "evilgenie": "EvilGenie (LiveCodeBench hard)",
+    "evilgenie_lcbpro": "EvilGenie protocol over LiveCodeBench Pro (Codeforces medium/hard, tests split into single cases)",
+}
 
 
 class WorkspaceAttempt(TypedDict):
@@ -148,7 +153,7 @@ def render_workspace_record(
         split=record["scenario"],
         benchmark_label=record["label"],
         header_fields={
-            "benchmark": "EvilGenie (LiveCodeBench hard), file-block workspace "
+            "benchmark": f"{benchmark_description_by_scenario[example['scenario']]}, file-block workspace "
             f"(no tools, at most {record_max_attempts(record)} replies)",
             "example_id": record["example_id"],
             "problem_type": "function (test.py imports solution.py)" if example["is_function"] else "stdio (test.py runs solution.py)",

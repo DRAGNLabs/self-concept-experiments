@@ -30,6 +30,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from . import judge as jc
+from .harness import is_workspace_scenario
 
 CALLOUT_SYSTEM = (
     "You are a careful reader of model transcripts. Answer the question about what the model itself "
@@ -118,8 +119,8 @@ def main() -> None:
         if not records:
             continue
         scenario = next(iter(records.values()))["scenario"]
-        if scenario == "evilgenie":
-            print(f"{path.stem}: evilgenie, skipping", flush=True)
+        if is_workspace_scenario(scenario):
+            print(f"{path.stem}: {scenario} (workspace), skipping", flush=True)
             continue
         if scenario not in examples_cache:
             examples_cache[scenario] = {
