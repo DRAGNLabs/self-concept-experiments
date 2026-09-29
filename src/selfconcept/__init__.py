@@ -8,4 +8,11 @@ import socket
 if "login" not in socket.gethostname().lower():
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
-import byutils  # noqa: F401,E402  -- importing byutils sets HF_HOME (before transformers/vllm)
+try:
+    import byutils  # noqa: F401,E402  -- importing byutils sets HF_HOME (before transformers/vllm)
+except ImportError:
+    # Environments created before byutils became a dependency (the soo-self-vector
+    # .venv: Python 3.11, torch 2.14, models under the default ~/.cache/huggingface)
+    # keep the default HF cache. Installing byutils would move HF_HOME to its
+    # autodelete cache, so sync that environment only once its queued jobs finish.
+    pass
