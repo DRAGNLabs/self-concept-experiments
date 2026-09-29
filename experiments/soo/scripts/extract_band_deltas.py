@@ -22,7 +22,7 @@ import torch
 from make_constants import encode
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.soo.activations import get_decoder_layers
-from selfconcept.soo.lora_subset import LAYER_INDEX, parse_layer_spec, parse_module_spec
+from selfconcept.soo.lora_subset import LAYER_INDEX, fused_qkv_slices, parse_layer_spec, parse_module_spec
 from selfconcept.soo.steering import offset_key
 
 
@@ -67,6 +67,16 @@ class DeltaAccumulator:
             "base_output_rms_norm": (self.base_sq / self.n_tokens) ** 0.5,
         }
         return {"last": mean_last, "all": mean_all}, {"last": stats_last, "all": stats_all}
+
+
+def fused_slices(peft, modules: dict[str, torch.nn.Module]) -> dict[str, dict[str, tuple[int, int]]]:
+    """Output-channel ranges (q, k, v) of every fused Gated DeltaNet in_proj_qkv in the band, read from its parent block."""
+    names = {id(m): n for n, m in peft.named_modules()}
+    out = {}
+    for key, module in modules.items():
+        if key.endswith(":in_proj_qkv"):
+            out[key] = fused_qkv_slices(peft.get_submodule(names[id(module)].rsplit(".", 1)[0]))
+    return out
 
 
 def band_lora_modules(peft, keep_layers: set[int], keep_modules: tuple[str, ...]) -> dict[str, torch.nn.Module]:
@@ -147,7 +157,7 @@ def main():
     offsets, stats = measure_band(peft, modules, encode(tokenizer, prompts, device))
     meta = {"model": args.model, "revision": args.revision, "adapter": args.adapter, "layer_spec": args.layers,
             "layers": sorted(keep_layers), "modules": list(keep_modules), "keys": sorted(modules, key=lambda k: (int(k.split(":")[0]), k)),
-            "pairs": str(args.pairs), "n_prompts": len(prompts)}
+            "pairs": str(args.pairs), "n_prompts": len(prompts), "slices": fused_slices(peft, modules)}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     torch.save({**meta, "offsets": offsets, "stats": stats}, args.out)
     args.out.with_suffix(".json").write_text(json.dumps({**meta, "stats": stats}, indent=2) + "\n")

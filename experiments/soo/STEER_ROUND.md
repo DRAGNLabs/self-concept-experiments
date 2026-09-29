@@ -43,3 +43,22 @@ No honesty claim follows from any outcome. A deceptive-rate drop is a behavioral
 Written after the 12B and Mistral jobs finished (not yet written up in FINDINGS2) and after the second bisection on gemma-4-31B ([BISECT2_ROUND.md](BISECT2_ROUND.md)) found its band: the seed-0 adapter's `v_proj` deltas at layers 20–31 reproduce the adapter on main in both orientations (0% / 2% deceptive, perspectives 100%, no refusals), 22–31 and 24–31 are partial, and every range ending below 31 is null. Layers 20–31 hold 10 `v_proj` modules; the other two are gemma-4 global-attention layers, which have none, and carry only their `q_proj` means.
 
 Same design, conditions, gap measurement and rule as above, with `band-v` = 20–31 @ `v_proj` (top 31, training layer 32, last layer 59). No condition is added or dropped, so the three models stay comparable. Context the rule does not change: on gemma-4-12B the seed-0 random offsets at every position also moved the room task (53% / 84% deceptive at α = 1, 0% at α = 2), so on 31B the matched random cells decide whether any `v-all` reproduction is attributed to the direction, as the second bullet of the decision list already says. One random seed, as on the other two models.
+
+## Addendum, 2026-09-29, before launching: Qwen3.8-27B
+
+Written after the Qwen localization round ([QWEN_LOC_ROUND.md](QWEN_LOC_ROUND.md), FINDINGS2): on Qwen3.8-27B L32 the effect sits in layers 24–31 (all modules reproduce; 28–31 partial), in the fused Gated DeltaNet `in_proj_qkv` deltas (below-train @ `in_proj_qkv` reproduces; its value slice alone is partial at 42% / 56% deceptive; its query-key slice alone and the full-attention layers' `q_proj`/`v_proj` are null). There is no separate `v_proj` band on this model, so the steered module is the fused projection; the band's two full-attention layers (27, 31) are not steered, since their modules are null below L32 as a group.
+
+Band deltas are measured on `in_proj_qkv`, `q_proj` and `v_proj` at layers 24–31, with each fused projection's query, key and value channel ranges recorded (read from the model). A slice offset (`--band-module in_proj_qkv.v` or `.qk`) is the mean delta with the other channels zeroed; its random control is confined to the same channels.
+
+Conditions, both orientations, three scenarios, n = 250 (reference for the rule: `band-qkv`):
+
+- `base`, `adapter-seed0`; `band-qkv` (the adapter's `in_proj_qkv` deltas at 24–31 only, the reference) and `band-qkv-v` (their value slice only); neither was run in the localization round.
+- `qkv-resp-a1`: the `last` mean on the whole fused output, from the last prompt token onward.
+- `qkv-all-a1`, `qkv-all-a1.5`, `qkv-all-a2`: the `all` mean on the whole fused output at every position.
+- `v-all-a1`, `v-all-a2`: the value slice only; `qk-all-a1`: the query-key slice only (this model's counterpart of the `q_proj` control).
+- `rand-all-a1`, `rand-all-a2`: seed-0 random directions of the whole fused offset's per-layer norm.
+- `qkv-content-a1`, `qkv-prompt-a1`: the `all` mean on the user message's tokens only, or on every prompt token and no generated token ([DOSE_ROUND.md](DOSE_ROUND.md)).
+
+Gaps as in the design above at the band's top layer (31, a full-attention layer), the training layer and the last layer, under the whole, value-slice and query-key-slice offsets with the seed-0 random control of the whole offset, the `band-qkv` subset, for the `resp` α = 1 and `all` α = 1 and 2 settings, and under the full adapter.
+
+Decision list as above, with `band-qkv` as reference. Added for this model: `v-all` reproducing while `qk-all` is null would put the steering effect in the value channels even though the LoRA needed both; `qkv-all` reproducing while neither slice does would mean the fixed offset, like the LoRA, needs both parts. One random seed.

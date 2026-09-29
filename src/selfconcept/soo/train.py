@@ -70,7 +70,7 @@ def soo_loss(a_self: torch.Tensor, a_other: torch.Tensor, mode: str, self_mask, 
 def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
     set_seed(seed)
     dtype = torch.bfloat16 if device in ("cuda", "mps") else torch.float32
-    tokenizer = AutoTokenizer.from_pretrained(config["model"])
+    tokenizer = AutoTokenizer.from_pretrained(config["model"], **({"revision": config["revision"]} if config.get("revision") else {}))
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
@@ -89,6 +89,10 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
         # No gradient checkpointing: its reentrant mode severs the graph for
         # hook-captured activations (our loss), raising "does not require grad".
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
+    elif config.get("device_map"):
+        # Models too large for one GPU (Kimi-Dev-72B): shard across the visible GPUs; inputs go to the first.
+        model = load_causal_lm(config["model"], dtype=dtype, device_map=config["device_map"],
+                               **({"revision": config["revision"]} if config.get("revision") else {}))
     else:
         model = load_causal_lm(config["model"], dtype=dtype)
     lora = LoraConfig(
@@ -99,7 +103,7 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
         task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora)
-    if not config.get("quant_4bit"):
+    if not config.get("quant_4bit") and not config.get("device_map"):
         model.to(device)
     model.train()
 

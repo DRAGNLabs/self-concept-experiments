@@ -27,6 +27,10 @@ diagnostic (context only, never the model's own turn). Earlier assistant
 turns inside a multi-turn prompt count as context. `positions='from_last'`
 needs no template marker: it covers the last prompt token and every
 generated token, the position the overlap measurements read.
+`positions='content'` covers only the user message's own tokens (the text the
+caller placed in the user turn, no chat-template tokens, no generated tokens);
+the caller supplies each prompt's token span with set_spans() before generating
+(DOSE_ROUND.md).
 
 Constant replacement (mode 'replace', second study): h <- (1-alpha) h + alpha c
 sets the layer's output to a fixed vector c at the masked positions, with no
@@ -45,7 +49,9 @@ import torch
 from .activations import attn_out_proj, get_decoder_layers
 
 TOKEN_MODES = ("last", "mean")
-POSITION_MODES = ("all", "response", "prompt", "from_last")
+POSITION_MODES = ("all", "response", "prompt", "from_last", "content")
+# Modes that need no per-prompt span from the caller (usable by measure_overlap).
+MARKER_POSITION_MODES = ("all", "response", "prompt", "from_last")
 STEER_MODES = ("add", "project", "replace")
 
 
@@ -154,7 +160,7 @@ class PositionalSteering:
     def __init__(self, marker: list[int] | None, mode: str):
         if mode not in POSITION_MODES:
             raise ValueError(f"positions must be one of {POSITION_MODES}, got {mode!r}")
-        if mode == "from_last":
+        if mode in ("from_last", "content"):
             marker = marker or []
         elif not marker:
             raise ValueError("empty response marker")
@@ -165,6 +171,17 @@ class PositionalSteering:
         self.n_sequences = 0
         self.n_missing = 0
         self._handle = None
+        self.spans: torch.Tensor | None = None  # content mode: [batch, 2] token [start, end) per row
+        self._spans_fresh = False
+
+    def set_spans(self, spans: list[tuple[int, int]]) -> None:
+        """Content mode: the user message's token span in each row of the next generate() call."""
+        if self.mode != "content":
+            raise ValueError("set_spans is only for positions='content'")
+        if any(not 0 <= a < b for a, b in spans):
+            raise ValueError(f"bad content spans {spans}")
+        self.spans = torch.tensor(spans, dtype=torch.long)
+        self._spans_fresh = True
 
     def attach(self, model) -> None:
         self._handle = model.register_forward_pre_hook(self._pre_hook, with_kwargs=True)
@@ -184,7 +201,14 @@ class PositionalSteering:
                 # 1-token sequence means the cache length was not readable
                 # and decode steps would be mis-steered as new prompts.
                 raise RuntimeError(f"positional steering: {seq}-token sequence with no past (cache length unreadable?)")
-            if self.mode == "from_last":
+            if self.mode == "content":
+                if not self._spans_fresh or self.spans is None or self.spans.shape[0] != input_ids.shape[0]:
+                    raise RuntimeError("positional steering (content): set_spans() must precede each new prompt batch")
+                self._spans_fresh = False
+                if int(self.spans[:, 1].max()) > seq:
+                    raise RuntimeError(f"positional steering (content): span beyond the {seq}-token prompt")
+                self.start = self.spans[:, 0].to(input_ids.device)
+            elif self.mode == "from_last":
                 # Last valid prompt token per row (either padding side), then
                 # every later position; no chat-template marker involved.
                 mask = kwargs.get("attention_mask")
@@ -222,7 +246,11 @@ class PositionalSteering:
         positions = self.positions.to(output.device)
         start = self.start.to(output.device)
         response = positions[None, :] >= start[:, None]  # [batch, seq]
-        keep = ~response if self.mode == "prompt" else response
+        if self.mode == "content":
+            end = self.spans[:, 1].to(output.device)
+            keep = response & (positions[None, :] < end[:, None])
+        else:
+            keep = ~response if self.mode == "prompt" else response
         return keep.to(output.dtype)[..., None]
 
     def report(self) -> None:
@@ -318,11 +346,14 @@ def parse_offset_key(key: str) -> tuple[int, str]:
 
 
 def attn_proj(layer, name: str):
-    """One projection of a decoder layer's attention block, e.g. self_attn.v_proj."""
-    try:
-        return layer.get_submodule(f"self_attn.{name}")
-    except AttributeError as e:
-        raise AttributeError(f"no self_attn.{name} in {type(layer).__name__}") from e
+    """One projection of a decoder layer's token mixer: self_attn.<name>, or linear_attn.<name> on a Gated
+    DeltaNet layer (Qwen3.5/3.8 in_proj_qkv)."""
+    for block in ("self_attn", "linear_attn"):
+        try:
+            return layer.get_submodule(f"{block}.{name}")
+        except AttributeError:
+            continue
+    raise AttributeError(f"no self_attn.{name} or linear_attn.{name} in {type(layer).__name__}")
 
 
 def load_band_deltas(path: str | Path) -> dict:
@@ -330,23 +361,59 @@ def load_band_deltas(path: str | Path) -> dict:
     return torch.load(path, map_location="cpu", weights_only=True)
 
 
+def band_supports(data: dict, module: str) -> dict[str, torch.Tensor] | None:
+    """For a sliced fused module ('in_proj_qkv.v'), each key's boolean mask of the kept output channels; else None.
+
+    Channel ranges come from the band deltas' 'slices' metadata (extract_band_deltas.py, read from the model)."""
+    from .lora_subset import split_module
+
+    leaf, part = split_module(module)
+    if part is None:
+        return None
+    if "slices" not in data:
+        raise KeyError(f"band deltas carry no slice metadata; cannot cut {module!r}")
+    masks = {}
+    for key, ranges in data["slices"].items():
+        if parse_offset_key(key)[1] != leaf:
+            continue
+        width = max(b for _, b in ranges.values())
+        mask = torch.zeros(width, dtype=torch.bool)
+        for letter in part:
+            a, b = ranges[letter]
+            mask[a:b] = True
+        masks[key] = mask
+    return masks
+
+
 def get_band_offsets(data: dict, module: str, token_mode: str) -> dict[str, torch.Tensor]:
-    """The band's mean deltas for one module ('v_proj' or 'q_proj'), keyed 'layer:module' (float32)."""
+    """The band's mean deltas for one module ('v_proj', 'q_proj', 'in_proj_qkv', or a slice such as
+    'in_proj_qkv.v' with the channels outside the slice zeroed), keyed 'layer:module' (float32)."""
+    from .lora_subset import split_module
+
     if token_mode not in BAND_TOKEN_MODES:
         raise ValueError(f"token_mode must be one of {BAND_TOKEN_MODES}, got {token_mode!r}")
-    offsets = {k: v.float() for k, v in data["offsets"][token_mode].items() if parse_offset_key(k)[1] == module}
+    leaf, _ = split_module(module)
+    offsets = {k: v.float() for k, v in data["offsets"][token_mode].items() if parse_offset_key(k)[1] == leaf}
     if not offsets:
-        raise KeyError(f"no {module} offsets in band deltas (have {sorted(data['offsets'][token_mode])})")
+        raise KeyError(f"no {leaf} offsets in band deltas (have {sorted(data['offsets'][token_mode])})")
+    supports = band_supports(data, module)
+    if supports is not None:
+        offsets = {k: v * supports[k].to(v.dtype) for k, v in offsets.items()}
     return offsets
 
 
-def random_matched_offsets(offsets: dict[str, torch.Tensor], seed: int) -> dict[str, torch.Tensor]:
-    """Per-layer random Gaussian directions with each layer's real offset norm (one generator, sorted key order)."""
+def random_matched_offsets(offsets: dict[str, torch.Tensor], seed: int,
+                           supports: dict[str, torch.Tensor] | None = None) -> dict[str, torch.Tensor]:
+    """Per-layer random Gaussian directions with each layer's real offset norm (one generator, sorted key order).
+
+    With `supports` (band_supports), each random vector is confined to the same output channels as the real one."""
     gen = torch.Generator().manual_seed(seed)
     out = {}
     for key in sorted(offsets, key=parse_offset_key):
         v = offsets[key]
         rand = torch.randn(v.shape, generator=gen, dtype=torch.float32)
+        if supports is not None:
+            rand = rand * supports[key].to(rand.dtype)
         out[key] = rand / rand.norm() * v.norm()
     return out
 
