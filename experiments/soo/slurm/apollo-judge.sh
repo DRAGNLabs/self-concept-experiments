@@ -34,14 +34,16 @@ export CUDA_VISIBLE_DEVICES
 echo "Using GPUs $CUDA_VISIBLE_DEVICES"
 
 set -e
-# Grade all Apollo roleplaying generations (both gemma models, all
-# conditions) with the local judge (Qwen2.5-72B-Instruct standing in for
-# Apollo's GPT-4o; offline cluster). Submitted with
-# --dependency=afterok on the three generation jobs. 10 files x 371
-# responses, batched.
+# Pass response paths as positional arguments to select another model or round.
+# No arguments preserves the original Gemma file selection.
+if (( $# )); then
+    responses=("$@")
+else
+    responses=(results/apollo_eval/gemma4_12b/ap_*_roleplaying_none.jsonl
+               results/apollo_eval/gemma4_31b/ap_*_roleplaying_none.jsonl)
+fi
 python scripts/judge_apollo.py \
-    --responses results/apollo_eval/gemma4_12b/ap_*_roleplaying_none.jsonl \
-                results/apollo_eval/gemma4_31b/ap_*_roleplaying_none.jsonl \
+    --responses "${responses[@]}" \
     --batch-size 16 --max-new-tokens 256
 
 echo "=== apollo judge complete ==="

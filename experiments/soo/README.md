@@ -7,6 +7,11 @@ Recreation of the LLM experiments from [Carauleanu et al. 2024](https://arxiv.or
 ("Towards Safe and Honest AI Agents with Neural Self-Other Overlap") using the OLMo 2 model
 family. See [PLAN.md](PLAN.md) for the full design.
 
+The current second study is described in [PLAN2.md](PLAN2.md). See the
+[script inventory and cleanup decisions](SCRIPTS.md) for current launchers,
+reusable training recipes, analysis dependencies, and replacements for redundant
+judge jobs.
+
 ### Setup
 
 ```bash
