@@ -61,8 +61,10 @@ def soo_loss(a_self: torch.Tensor, a_other: torch.Tensor, mode: str, self_mask, 
     if mode == "full":
         return torch.nn.functional.mse_loss(a_self, a_other)
     if mode == "last_token":
-        self_last = a_self[torch.arange(len(a_self)), self_mask.sum(1) - 1]
-        other_last = a_other[torch.arange(len(a_other)), other_mask.sum(1) - 1]
+        # Index on the activations' device: under device_map the training layer may sit on another GPU than the inputs.
+        dev = a_self.device
+        self_last = a_self[torch.arange(len(a_self), device=dev), (self_mask.sum(1) - 1).to(dev)]
+        other_last = a_other[torch.arange(len(a_other), device=dev), (other_mask.sum(1) - 1).to(dev)]
         return torch.nn.functional.mse_loss(self_last, other_last)
     raise ValueError(mode)
 
