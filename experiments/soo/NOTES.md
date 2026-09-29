@@ -3,3 +3,6 @@ Two things the merge changes for this branch.
 
 1. Python 3.11 is gone. Main now uses 3.13-only syntax in the harness, the common chat module and the new goodfire metrics package, so the branch's existing .venv cannot import the repo source at all. I built a separate .venv-313 from the merged lockfile without touching the old one, because three cotness jobs and their judges still run on it. All 24 tests pass there. Once the queue is empty, the old venv should be replaced by that build. I added .venv*/ to .gitignore.
 2. HF cache moves. Under the new environment, byutils sets the HF cache to a path under nobackup/autodelete, which currently holds no models. The 12 models this branch uses live in the default cache. Any job launched from the new environment needs either the models copied over or HF_HOME exported to the old location in its script.
+
+
+- Cleanup repo
