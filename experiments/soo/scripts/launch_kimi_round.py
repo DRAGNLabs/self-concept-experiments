@@ -145,7 +145,7 @@ def check_model(config):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--hours", type=int, default=96)
+    ap.add_argument("--hours", type=int, default=72)  # dw87 QOS maximum
     ap.add_argument("--no-submit", action="store_true")
     args = ap.parse_args()
     config = yaml.safe_load((SOO / CONFIG).read_text())
