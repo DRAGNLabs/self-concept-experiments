@@ -19,9 +19,12 @@ from selfconcept.common.sampling import turn_sampling_seed
 from .harness import Generate, PromptTooLong
 
 # One message of an assistant completion: "<|channel|>NAME[ to=RECIPIENT][ <|constrain|>FORMAT]<|message|>BODY",
-# ended by <|end|> (the next message then opens with "<|start|>assistant"), <|return|>, <|call|>, or truncation.
+# ended by <|end|> (the next message then opens with "<|start|>assistant"), <|return|>, <|call|>, truncation, or
+# the next message opening without an <|end|>.
 HARMONY_MESSAGE = re.compile(
-    r"<\|channel\|>(\w+)[^<]*(?:<\|constrain\|>[^<]*)?<\|message\|>(.*?)(?:<\|end\|>|<\|return\|>|<\|call\|>|$)", re.DOTALL
+    r"<\|channel\|>(\w+)[^<]*(?:<\|constrain\|>[^<]*)?<\|message\|>(.*?)"
+    r"(?:<\|end\|>|<\|return\|>|<\|call\|>|$|(?=<\|start\|>|<\|channel\|>))",
+    re.DOTALL,
 )
 HARMONY_SPECIAL_TOKENS = (
     "<|start|>", "<|end|>", "<|return|>", "<|call|>", "<|channel|>", "<|message|>", "<|constrain|>"
