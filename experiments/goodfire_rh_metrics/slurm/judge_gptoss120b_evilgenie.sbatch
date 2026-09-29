@@ -22,10 +22,15 @@ set -euo pipefail
 #   sbatch -p cs --qos=cs --gpus=a100:2 --exclude=cs-1-2 <this file>
 # Another generation run is selected by its codebench directory, shard count and shard scenario, e.g.
 #   sbatch --export=ALL,RUN=gptoss120b_evilgenie_failed_6stated,N_SHARDS=3,SHARD_SCENARIO=evilgenie_failed <this file>
+# SCENARIO is the records' scenario (their file stem after s<k>_); SHARD_SCENARIO defaults to it. E.g.
+#   sbatch --export=ALL,RUN=gptoss120b_evilgenie_lcbpro,N_SHARDS=15,SCENARIO=evilgenie_lcbpro <this file>
+# MAX_NEW_TOKENS lowers the judge response budget so longer transcripts fit the context, e.g. MAX_NEW_TOKENS=14000.
 N="${1:-}"
 RUN="${RUN:-gptoss120b_evilgenie}"
 N_SHARDS="${N_SHARDS:-8}"
-SHARD_SCENARIO="${SHARD_SCENARIO:-evilgenie}"
+SCENARIO="${SCENARIO:-evilgenie}"
+SHARD_SCENARIO="${SHARD_SCENARIO:-$SCENARIO}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-}"
 TRANSCRIPTS="$HOME/nobackup/autodelete/self-concept-experiments/codebench/$RUN"
 OUT="$HOME/nobackup/autodelete/self-concept-experiments/goodfire_rh_metrics/$RUN${N:+_smoke_$SLURM_JOB_PARTITION}"
 
@@ -38,7 +43,7 @@ N_GPUS=$(nvidia-smi --list-gpus | wc -l)
 RECORDS=()
 SIDECARS=()
 for SHARD in $(seq 0 $(( N_SHARDS - 1 ))); do
-    RECORDS+=("$TRANSCRIPTS/s${SHARD}_evilgenie.jsonl")
+    RECORDS+=("$TRANSCRIPTS/s${SHARD}_${SCENARIO}.jsonl")
     SIDECARS+=("$TRANSCRIPTS/s${SHARD}_${SHARD_SCENARIO}_s${SHARD}_reasoning.jsonl")
 done
 join_paths () { local IFS=,; echo "[$*]"; }
@@ -48,11 +53,12 @@ python -m selfconcept.goodfire_rh_metrics.judge \
     --run.model_specifics harmony \
     --run.transcripts_paths "$(join_paths "${RECORDS[@]}")" \
     --run.reasoning_paths "$(join_paths "${SIDECARS[@]}")" \
-    --run.output_dir "$OUT" --run.tensor_parallel_size "$N_GPUS" ${N:+--run.n "$N"}
+    --run.output_dir "$OUT" --run.tensor_parallel_size "$N_GPUS" ${N:+--run.n "$N"} \
+    ${MAX_NEW_TOKENS:+--run.max_new_tokens "$MAX_NEW_TOKENS"}
 
 python -m selfconcept.goodfire_rh_metrics.metrics \
     --run.benchmark evilgenie_file_blocks \
-    --run.judged_paths "$(join_paths "$OUT"/judged_s*_evilgenie.jsonl)" \
+    --run.judged_paths "$(join_paths "$OUT"/judged_s*_"$SCENARIO".jsonl)" \
     --run.output_path "$OUT/metrics_summary.json"
 
 echo "=== Done: judged -> $OUT ==="
