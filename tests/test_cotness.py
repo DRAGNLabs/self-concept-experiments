@@ -9,10 +9,12 @@ import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 
 from selfconcept.correlation.analyze import analyze, association, outcome
-from selfconcept.cotness.probe import capture, fit_linear, probabilities
+from selfconcept.cotness.probe import cot_probability_scorer, fit_linear, probabilities
+from selfconcept.measurement.capture import capture
 from selfconcept.cotness.roles import render_probe
 from selfconcept.measurement.templates import content_indices, response_spans
-from selfconcept.correlation.run import generation_seed, select_examples
+from selfconcept.correlation.generate import generation_seed
+from selfconcept.correlation.scenarios import select_examples
 from selfconcept.cotness.gate import assess, CODE_SCENARIOS, SCENARIOS
 
 
@@ -69,7 +71,7 @@ class MeasurementTests(unittest.TestCase):
         probes = {1: {"weight": np.zeros((3, 16), dtype=np.float32), "bias": np.zeros(3, dtype=np.float32)}}
         with torch.inference_mode():
             baseline = model.generate(x, max_new_tokens=5, do_sample=False)
-            with capture(model, [1], probes) as values:
+            with capture(model, [1], cot_probability_scorer(probes)) as values:
                 measured = model.generate(x, max_new_tokens=5, do_sample=False)
         self.assertTrue(torch.equal(baseline, measured))
         scores = torch.cat(values[1])

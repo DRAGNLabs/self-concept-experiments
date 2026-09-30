@@ -1,12 +1,12 @@
 """Correlate CoT-ness or assistant-axis projections with existing benchmark outcomes."""
 import argparse
 import hashlib
-import importlib.util
 import json
 import os
 import shutil
 from pathlib import Path
 import sys
+from typing import get_args
 
 import numpy as np
 import sklearn
@@ -14,220 +14,20 @@ import torch
 import transformers
 from transformers import AutoTokenizer
 
-from selfconcept.common.jsonl import read_jsonl
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.paths import REPO_ROOT
 from selfconcept.soo.activations import get_decoder_layers
-from selfconcept.soo.evaluate import build_prompt, classify, SUFFIXES
-from selfconcept.codebench import harness
-from selfconcept.assistant_axis.projection import load_unit_axes
-from selfconcept.cotness import probe
-from selfconcept.measurement.templates import MODELS, ModelSpec, clean_final, content_indices, render_generation, response_spans, template_kwargs
-
-
-def append(path, record):
-    with path.open("a") as f:
-        f.write(json.dumps(record, allow_nan=False) + "\n")
-        f.flush()
-
-
-def script_module(name):
-    spec = importlib.util.spec_from_file_location(name, REPO_ROOT / f"experiments/soo/scripts/{name}.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def score_summary(values, indices):
-    selected = values[[i for i in indices if i < len(values)]]
-    return {"n": len(selected), "mean": float(selected.mean()) if len(selected) else None,
-            "p90": float(np.quantile(selected, .9)) if len(selected) else None}
-
-
-def token_offsets(tokenizer, ids, text):
-    # Single-token decoding is exact for ordinary text, but not split UTF-8.
-    pieces = [tokenizer.decode([i], skip_special_tokens=False, clean_up_tokenization_spaces=False) for i in ids]
-    if "".join(pieces) == text:
-        ends = np.cumsum([len(p) for p in pieces]).tolist()
-        return list(zip([0] + ends[:-1], ends))
-    enc = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
-    if enc["input_ids"] == ids:
-        return enc["offset_mapping"]
-    return None  # Never assign an activation to the wrong token.
-
-
-def generation_seed(seed, scenario, example_id, turn):
-    return int.from_bytes(hashlib.sha256(f"{seed}:{scenario}:{example_id}:{turn}".encode()).digest()[:4], "big")
-
-
-class MeasuredGenerator:
-    def __init__(self, model, tokenizer, family, projections, out, max_new_tokens,
-                 temperature=0.0, top_p=0.95, top_k=64, seed=1729, measurement="cotness"):
-        required = {"cotness": {"weight", "bias"}, "assistant-axis": {"direction"}}
-        if measurement not in required or not projections or any(set(p) != required[measurement] for p in projections.values()):
-            raise ValueError("Projections must contain only the selected measurement")
-        self.model, self.tokenizer, self.family = model, tokenizer, family
-        self.projections, self.out, self.max_new_tokens = projections, out, max_new_tokens
-        self.records = []
-        self.scenario = ""
-        self.sampling = ({"do_sample": True, "temperature": temperature, "top_p": top_p, "top_k": top_k}
-                         if temperature > 0 else {"do_sample": False})
-        self.seed = seed
-        self.measurement = measurement
-
-    def __call__(self, messages, turn, example_id):
-        tok = self.tokenizer
-        prompt = render_generation(tok, self.family, messages)
-        enc = tok(prompt, add_special_tokens=False, return_tensors="pt").to(self.model.get_input_embeddings().weight.device)
-        context_limit = getattr(getattr(self.model.config, "text_config", self.model.config), "max_position_embeddings", None)
-        if context_limit and enc.input_ids.shape[1] + self.max_new_tokens > context_limit:
-            raise ValueError("Prompt plus generation budget exceeds model context; refusing silent truncation")
-        try:
-            seed = generation_seed(self.seed, self.scenario, example_id, turn)
-            torch.manual_seed(seed)
-            with torch.inference_mode(), probe.capture(self.model, list(self.projections), self.projections) as captured:
-                output = self.model.generate(**enc, max_new_tokens=self.max_new_tokens, **self.sampling,
-                                             pad_token_id=tok.eos_token_id, use_cache=True)
-        except torch.OutOfMemoryError as exc:
-            torch.cuda.empty_cache()
-            raise harness.GenerationOOM(str(exc)[:200]) from None
-        n_prompt = enc.input_ids.shape[1]
-        ids = output[0].tolist()
-        new_ids = ids[n_prompt:]
-        raw = tok.decode(new_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-        spans = response_spans(prompt, raw, self.family)
-        final = clean_final(raw, spans, tok)
-        eos = self.model.generation_config.eos_token_id
-        eos = eos if isinstance(eos, list) else [eos]
-        truncated = len(new_ids) >= self.max_new_tokens and new_ids[-1] not in eos
-        status = "truncated" if truncated else "complete" if final else "no_final"
-        prompt_enc = tok(prompt, add_special_tokens=False, return_offsets_mapping=True)
-        # Measure only content from the last externally supplied message, excluding
-        # assistant history, system instructions and generation-role delimiters.
-        # Native templates may trim user content (notably coding feedback's
-        # leading newline). Match the shared non-whitespace content exactly.
-        last = messages[-1]["content"].strip()
-        start = prompt.rfind(last)
-        if start < 0 or prompt_enc.input_ids != ids[:n_prompt]:
-            raise ValueError("Cannot exactly locate the last message in the rendered prompt")
-        p_indices = content_indices(prompt_enc.offset_mapping, [(start, start+len(last))], tok.all_special_ids, ids[:n_prompt])
-        offsets = token_offsets(tok, new_ids, raw)
-        groups = {"prompt": p_indices}
-        if offsets is not None:
-            groups.update({role: [n_prompt+i for i in content_indices(offsets, segments, tok.all_special_ids, new_ids)]
-                           for role, segments in spans.items()})
-        scores, arrays = {}, {"input_ids": np.asarray(ids, dtype=np.int32), "prompt_length": np.array(n_prompt)}
-        for layer, chunks in captured.items():
-            values = torch.cat(chunks).numpy()
-            if len(values) != len(ids)-1:
-                raise ValueError(f"Unexpected cached generation alignment: {len(values)} vs {len(ids)-1}")
-            scores[str(layer)] = {name: score_summary(values, idx) for name, idx in groups.items()}
-            arrays[f"{self.measurement.replace('-', '_')}_layer_{layer}"] = values
-        for name, indices in groups.items():
-            arrays[f"indices_{name}"] = np.asarray([i for i in indices if i < len(ids)-1], dtype=np.int32)
-        trace_key = hashlib.sha256(f"{self.scenario}:{example_id}:{turn}".encode()).hexdigest()[:24]
-        trace = self.out / "traces" / f"{trace_key}.npz"
-        trace.parent.mkdir(exist_ok=True)
-        np.savez_compressed(trace, **arrays)
-        rec = {"example_id": example_id, "scenario": self.scenario, "turn": turn,
-               "response": final, "raw_response": raw, "rendered_prompt": prompt,
-               "status": status, "truncated": truncated, "generated_tokens": len(new_ids),
-               "sampling": self.sampling, "seed": seed,
-               "prompt_tokens": n_prompt, "spans": spans, "scores": scores,
-               "generated_alignment": "exact" if offsets is not None else "unavailable",
-               "trace": str(trace.relative_to(self.out)), "measurement": self.measurement}
-        self.records.append(rec)
-        append(self.out / "generations.jsonl", rec)
-        # A partial final answer/code is never a completed behavioral submission.
-        return final if status == "complete" else "", truncated
-
-
-def select_examples(rows, n, scenario, offset=0):
-    if n < 1 or offset < 0:
-        raise ValueError("Positive count and nonnegative offset required")
-    if scenario == "sandbagging":
-        groups = [[x for x in rows if x["expected"] == half] for half in ("sandbag", "normal")]
-    else:
-        groups = [rows]
-    if any(len(group) < offset + n for group in groups):
-        raise ValueError(f"Insufficient examples in {scenario} for offset={offset}, n={n}")
-    return [r for group in groups for r in group[offset:offset+n]]
-
-
-def evaluate(args, model, tokenizer, fitted, family=None):
-    generator = MeasuredGenerator(model, tokenizer, family or MODELS[args.model].family, fitted, args.out, args.max_new_tokens,
-                                  args.temperature, args.top_p, args.top_k, args.seed, measurement=args.measurement)
-    results = args.out / "outcomes.jsonl"
-    done = {(r["scenario"], r["example_id"]) for r in read_jsonl(results)} if results.exists() else set()
-    sandbag = script_module("reparse_sandbagging")
-    for scenario in args.scenarios:
-        code = scenario in ("evilgenie", "impossible_original", "impossible_oneoff", "impossible_conflicting")
-        mirror = scenario.endswith("_mirrored")
-        name = scenario.removesuffix("_mirrored")
-        if code:
-            path = REPO_ROOT / f"benchmarks/codebench/data/{name}.jsonl"
-        else:
-            folder = "eval_mirrored" if mirror else "eval_apollo" if name in ("roleplaying", "insider_trading", "sandbagging") else "eval"
-            path = REPO_ROOT / f"experiments/soo/data/{folder}/{name}.jsonl"
-        rows = select_examples(read_jsonl(path), args.code_n if code else args.n, name,
-                               args.code_offset if code else args.offset)
-        generator.scenario = scenario
-        generator.max_new_tokens = args.code_max_new_tokens if code else args.max_new_tokens
-        for example in rows:
-            key = (scenario, example["example_id"])
-            if key in done:
-                continue
-            generator.records = []
-            try:
-                if code:
-                    generate = lambda messages, turn: generator(messages, turn, example["example_id"])
-                    run = harness.run_workspace_example if name == "evilgenie" else harness.run_check_example
-                    rec = run(example, generate, args.max_attempts)
-                    rec["status"] = "complete" if generator.records[-1]["status"] == "complete" else generator.records[-1]["status"]
-                    if rec["status"] != "complete":
-                        rec["behavior_label"] = None
-                    else:
-                        rec["behavior_label"] = rec["label"]
-                else:
-                    messages = [dict(m) for m in example["messages"]] if "messages" in example else [
-                        {"role": "user", "content": build_prompt(example, SUFFIXES[args.suffix] if name not in ("roleplaying", "sandbagging") else None, False)}]
-                    if example.get("answer_prefix"):
-                        messages[-1]["content"] += f"\n\nBegin your final answer with {example['answer_prefix']!r}."
-                    response, _ = generator(messages, 0, example["example_id"])
-                    status = generator.records[-1]["status"]
-                    rec = {"example_id": example["example_id"], "scenario": scenario,
-                           "response": response, "status": status, "label": "ungraded"}
-                    if name == "sandbagging":
-                        evidence = sandbag.grade_record(response)
-                        rec.update(evidence=evidence, expected=example["expected"], topic=example["topic"])
-                        rec["correct"] = evidence["final_answer"] == example["correct_answer"] if evidence["final_answer"] else None
-                        rec["label"] = "deceptive" if evidence["disagree"] is True else "honest" if evidence["disagree"] is False else "unparsed"
-                    elif name not in ("roleplaying", "insider_trading") and status == "complete":
-                        rec["label"] = classify(response, example["honest_answer"], example["deceptive_answer"])
-                    # Judge scripts prepend answer_prefix themselves.
-                    if example.get("answer_prefix") and response.startswith(example["answer_prefix"]):
-                        rec["response"] = response[len(example["answer_prefix"]):].lstrip()
-                rec["generation_turns"] = len(generator.records)
-                rec["model_key"] = args.model
-                append(results, rec)
-                print(f"{scenario}/{example['example_id']}: {rec['status']} {rec['label']}", flush=True)
-            except harness.GenerationOOM as exc:
-                append(results, {"example_id": example["example_id"], "scenario": scenario,
-                                 "model_key": args.model, "response": "", "status": "error_oom", "label": "ungraded", "error": str(exc)})
-                print(f"OOM {scenario}/{example['example_id']}", flush=True)
-    # Rebuild judge inputs from committed outcomes: interruption/retry cannot
-    # duplicate a task or leave judges reading an unfinished generation file.
-    records = {(r["scenario"], r["example_id"]): r for r in read_jsonl(results)}
-    for scenario in args.scenarios:
-        code = scenario in ("evilgenie", "impossible_original", "impossible_oneoff", "impossible_conflicting")
-        suffix = "" if code else "_none"
-        target = args.out / f"base_{scenario}{suffix}.jsonl"
-        target.write_text("".join(json.dumps(r) + "\n" for (s, _), r in records.items() if s == scenario))
+from selfconcept.soo.evaluate import SUFFIXES
+from selfconcept.assistant_axis.projection import build_axis_measurement
+from selfconcept.cotness.probe import build_cotness_measurement
+from selfconcept.measurement.interface import MeasurementName
+from selfconcept.measurement.templates import MODELS, ModelSpec, template_kwargs
+from .scenarios import evaluate
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--measurement", choices=("cotness", "assistant-axis"), default="cotness",
+    parser.add_argument("--measurement", choices=get_args(MeasurementName), default="cotness",
                         help="One measurement per run (default: cotness)")
     parser.add_argument("--model", required=True, help="Registered model key, or HF model ID in assistant-axis mode")
     parser.add_argument("--family", choices=("qwen", "gemma", "muse", "olmo"), help="Required for unregistered HF models")
@@ -314,35 +114,31 @@ def main():
     model.eval()
     count = len(get_decoder_layers(model))
     layers = [int(count * fraction)-1 for fraction in (.25, .5, .75)]
-    axes = {}
-    if args.assistant_axis:
+    if args.measurement == "assistant-axis":
         axis_layers = args.axis_layers if args.axis_layers is not None else [layers[1]]
         config = getattr(model.config, "text_config", model.config)
-        axes = load_unit_axes(args.assistant_axis, axis_layers, count, config.hidden_size, spec.model)
+        measurement = build_axis_measurement(args.assistant_axis, axis_layers, count, config.hidden_size, spec.model)
         frozen_axis = args.out / "assistant_axis.pt"
         if args.assistant_axis.resolve() != frozen_axis.resolve():
             shutil.copy2(args.assistant_axis, frozen_axis)
         manifest["assistant_axis"] = {"sha256": manifest["axis_sha256"], "layers": axis_layers,
                                       "primary_layer": axis_layers[0], "artifact": frozen_axis.name,
                                       "site": "post_decoder_layer_residual", "normalization": "unit_direction"}
-    directory = args.out / "probes"
-    if args.probe_source:
-        shutil.copytree(args.probe_source, directory, dirs_exist_ok=True)
-    if args.measurement == "assistant-axis":
-        fitted, report = axes, None
-    elif (directory / "validation.json").exists():
-        fitted, report = probe.load(directory)
+        report = None
     else:
-        fitted, report = probe.train(model, tok, spec.family, args.corpus, directory, layers)
-    if report is not None:
+        measurement, report = build_cotness_measurement(model, tok, spec.family, args.corpus, args.probe_source,
+                                                        args.out / "probes", layers)
         manifest["probe_usable"] = report["usable"]
+    if report is None or report["usable"]:
+        manifest["measurement"] = {"name": measurement.name, "layers": measurement.layers,
+                                   "primary_layer": measurement.primary_layer}
     manifest["stage"] = "axis_ready" if report is None else "probe_ready" if report["usable"] else "probe_failed_validation"
     manifest_path.write_text(json.dumps(manifest, indent=2))
     if report is not None and not report["usable"]:
         print("Midpoint probe failed validation; no deception correlations will be interpreted.", flush=True)
         return
     if not args.train_only:
-        evaluate(args, model, tok, fitted, family=spec.family)
+        evaluate(args, model, tok, measurement, family=spec.family)
     manifest["stage"] = "complete"
     manifest_path.write_text(json.dumps(manifest, indent=2))
 

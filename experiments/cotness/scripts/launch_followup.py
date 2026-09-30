@@ -11,7 +11,7 @@ import subprocess
 from launch import ROOT, batch_header, preflight, sha
 from selfconcept.cotness.gate import CODE_SCENARIOS, SCENARIOS
 from selfconcept.common.jsonl import read_jsonl
-from selfconcept.correlation.run import select_examples
+from selfconcept.correlation.scenarios import select_examples
 from selfconcept.measurement.templates import MODELS
 
 PILOTS = {key: ROOT / 'experiments/cotness/results' / ('pilot-20260922T192618Z' if key == 'qwen38-27b' else 'pilot-20260922T192346Z') / 'output' / key for key in MODELS}

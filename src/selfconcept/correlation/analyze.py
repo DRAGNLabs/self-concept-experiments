@@ -83,7 +83,10 @@ def analyze(directory, bootstrap=1000):
     manifest_path = directory / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     measurement = manifest.get("args", {}).get("measurement", "cotness")
-    if measurement == "cotness":
+    if "measurement" in manifest:
+        primary_layer = manifest["measurement"]["primary_layer"]
+    # Runs from before the manifest's measurement block, or whose probe failed validation.
+    elif measurement == "cotness":
         validation = json.loads((directory / "probes/validation.json").read_text())
         if not validation["usable"]:
             return {"status": "probe_failed_validation", "measurement": measurement}

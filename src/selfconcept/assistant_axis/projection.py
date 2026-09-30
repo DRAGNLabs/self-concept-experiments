@@ -1,7 +1,12 @@
 """Load the layer-by-hidden tensors produced by the assistant-axis pipeline."""
 from pathlib import Path
 
+from jaxtyping import Float
+import numpy as np
 import torch
+from torch import Tensor
+
+from selfconcept.measurement.interface import Measurement, TokenScorer
 
 
 def load_unit_axes(path: Path, layers, num_layers, hidden_size, model_name=None):
@@ -27,3 +32,16 @@ def load_unit_axes(path: Path, layers, num_layers, hidden_size, model_name=None)
             raise ValueError(f"Assistant axis at layer {layer} must be finite and nonzero")
         directions[layer] = {"direction": (direction / norm).numpy()}
     return directions
+
+
+def unit_axis_scorer(directions_by_layer: dict[int, dict[str, np.ndarray]]) -> TokenScorer:
+    def score(*, layer: int, residual: Float[Tensor, "seq hidden"]) -> Float[Tensor, "seq"]:
+        return residual @ torch.as_tensor(directions_by_layer[layer]["direction"], device=residual.device)
+    return score
+
+
+def build_axis_measurement(path: Path, layers: list[int], num_layers: int, hidden_size: int,
+                           model_name: str | None = None) -> Measurement:
+    """The first of ``layers`` is the primary layer."""
+    directions_by_layer = load_unit_axes(path, layers, num_layers, hidden_size, model_name)
+    return Measurement("assistant-axis", list(layers), layers[0], unit_axis_scorer(directions_by_layer))
