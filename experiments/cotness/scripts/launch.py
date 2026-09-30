@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
-from selfconcept.measurement.templates import MODELS
+from selfconcept.measurement.templates import MODEL_SPECS_BY_KEY
 
 
 def sha(path):
@@ -26,7 +26,7 @@ def preflight(keys):
     from selfconcept.cotness.roles import ROLES, render_probe
     report = {}
     for key in keys:
-        spec = MODELS[key]
+        spec = MODEL_SPECS_BY_KEY[key]
         cached_config = try_to_load_from_cache(spec.model, "config.json", revision=spec.revision)
         if not isinstance(cached_config, str):
             raise RuntimeError(f"No cached config for {key}")
@@ -82,7 +82,7 @@ echo "Assigned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--models", nargs="+", choices=MODELS, default=list(MODELS))
+    parser.add_argument("--models", nargs="+", choices=MODEL_SPECS_BY_KEY, default=list(MODEL_SPECS_BY_KEY))
     parser.add_argument("--no-submit", action="store_true")
     parser.add_argument("--n", type=int, default=8)
     parser.add_argument("--code-n", type=int, default=4)
@@ -100,7 +100,7 @@ def main():
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, target)
     for key in args.models:
-        spec = MODELS[key]
+        spec = MODEL_SPECS_BY_KEY[key]
         script = batch_header(f"cotness-{key}", spec.gpus, 36 if key == "kimi-72b" else 18, snapshot)
         script += f'"$PY" -u -m selfconcept.correlation.run --model {key} --out output/{key} --n {args.n} --code-n {args.code_n}\n'
         script += f'"$PY" -m selfconcept.correlation.analyze output/{key}\n'

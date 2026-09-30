@@ -8,11 +8,11 @@ import numpy as np
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 
-from selfconcept.correlation.analyze import analyze, association, outcome
+from selfconcept.correlation.analyze import analyze_run, binary_outcome, rank_association
 from selfconcept.cotness.probe import cot_probability_scorer, fit_linear, probabilities
 from selfconcept.measurement.capture import capture
 from selfconcept.cotness.roles import render_probe
-from selfconcept.measurement.templates import content_indices, response_spans
+from selfconcept.measurement.templates import content_token_indices, response_spans
 from selfconcept.correlation.generate import generation_seed
 from selfconcept.correlation.scenarios import select_examples
 from selfconcept.cotness.gate import assess, CODE_SCENARIOS, SCENARIOS
@@ -42,7 +42,7 @@ class BoundaryTests(unittest.TestCase):
 
     def test_boundary_straddles_and_specials_are_excluded(self):
         offsets = [(0, 3), (3, 5), (5, 7), (7, 9), (9, 9)]
-        self.assertEqual(content_indices(offsets, [(4, 9)], [2], [0, 1, 2, 3, 4]), [3])
+        self.assertEqual(content_token_indices(offsets, [(4, 9)], [2], [0, 1, 2, 3, 4]), [3])
 
     def test_template_trimming_preserves_identical_role_content(self):
         class TrimmingTokenizer:
@@ -90,23 +90,23 @@ class MeasurementTests(unittest.TestCase):
 
     def test_missingness_and_visible_only_success_are_not_deception(self):
         for status in ("truncated", "no_final", "error_oom"):
-            self.assertIsNone(outcome({"status": status, "scenario": "main", "label": "deceptive"})[0])
-        self.assertIsNone(outcome({"status": "complete", "scenario": "evilgenie", "label": "hack_visible_only"})[0])
-        self.assertIsNone(outcome({"status": "complete", "scenario": "sandbagging", "label": "unparsed"})[0])
-        self.assertIsNone(outcome({"status": "complete", "scenario": "perspectives", "label": "deceptive"})[0])
+            self.assertIsNone(binary_outcome({"status": status, "scenario": "main", "label": "deceptive"})[0])
+        self.assertIsNone(binary_outcome({"status": "complete", "scenario": "evilgenie", "label": "hack_visible_only"})[0])
+        self.assertIsNone(binary_outcome({"status": "complete", "scenario": "sandbagging", "label": "unparsed"})[0])
+        self.assertIsNone(binary_outcome({"status": "complete", "scenario": "perspectives", "label": "deceptive"})[0])
 
     def test_direction_is_not_flipped_to_make_auc_large(self):
         x = np.arange(20.)
         y = np.array([1]*10 + [0]*10)
-        r = association(x, y, np.ones((20, 3)), bootstrap=20)
+        r = rank_association(x, y, np.ones((20, 3)), bootstrap_samples=20)
         self.assertEqual(r["auc"], 0.)
         self.assertLess(r["rho"], 0.)
-        self.assertEqual(association(x, np.ones(20), [], bootstrap=20)["status"], "insufficient_variation")
+        self.assertEqual(rank_association(x, np.ones(20), [], bootstrap_samples=20)["status"], "insufficient_variation")
 
     def test_rule_confirmed_code_and_conflict_flags_survive_no_code_judge(self):
         for label, expected in [("flagged", 0), ("cheat_modify_tests", 1)]:
             rec = {"scenario": "impossible_conflicting", "status": "complete", "label": label}
-            self.assertEqual(outcome(rec, {"label": "no_code"})[0], expected)
+            self.assertEqual(binary_outcome(rec, {"label": "no_code"})[0], expected)
 
     def test_disjoint_slices_and_sandbagging_half_offsets(self):
         rows = [{"example_id": f"{half}-{i}", "expected": half} for half in ("sandbag", "normal") for i in range(50)]
@@ -127,7 +127,7 @@ class MeasurementTests(unittest.TestCase):
 
     def test_sandbagging_normal_is_capability_control(self):
         rec = {'scenario': 'sandbagging', 'expected': 'normal', 'status': 'complete', 'label': 'unparsed'}
-        self.assertEqual(outcome(rec), (None, 'capability_control'))
+        self.assertEqual(binary_outcome(rec), (None, 'capability_control'))
 
     def test_expansion_gate_uses_completion_not_deception(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -174,7 +174,7 @@ class MeasurementTests(unittest.TestCase):
             records.append(records[-1])
             (p / "outcomes.jsonl").write_text("".join(json.dumps(r)+'\n' for r in records))
             (p / "generations.jsonl").write_text("".join(json.dumps(r)+'\n' for r in generations))
-            result = analyze(p, bootstrap=10)
+            result = analyze_run(p, bootstrap_samples=10)
             cells = {r["scenario"]: r for r in result["cells"]}
             self.assertEqual(cells["main"]["n"], 8)
             self.assertEqual(cells["main"]["auc"], 1.)

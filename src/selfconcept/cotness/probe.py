@@ -2,7 +2,6 @@
 import json
 from pathlib import Path
 import shutil
-from typing import Any
 import warnings
 
 import numpy as np
@@ -13,11 +12,11 @@ from sklearn.preprocessing import StandardScaler
 from jaxtyping import Float
 import torch
 from torch import nn, Tensor
-from transformers import PreTrainedTokenizerBase
 
+from selfconcept.common.hf_strong_types import HFTokenizer
 from selfconcept.measurement.capture import capture
 from selfconcept.measurement.interface import Measurement, TokenScorer
-from selfconcept.measurement.templates import content_indices
+from selfconcept.measurement.templates import content_token_indices, ModelFamily
 from .roles import ROLES, render_probe
 
 
@@ -67,7 +66,7 @@ def train(model, tokenizer, family, corpus, out: Path, layers, seed=1729):
         # Match by content-relative offsets, so every class sees identical tokens.
         maps = []
         for enc, (_, (start, end)) in zip(encoded, rendered):
-            indices = content_indices(enc["offset_mapping"], [(start, end)], tokenizer.all_special_ids, enc["input_ids"])
+            indices = content_token_indices(enc["offset_mapping"], [(start, end)], tokenizer.all_special_ids, enc["input_ids"])
             maps.append({(enc["offset_mapping"][i][0]-start, enc["offset_mapping"][i][1]-start, enc["input_ids"][i]): i for i in indices})
         common = sorted(set(maps[0]).intersection(*[set(m) for m in maps[1:]]))[2:-2]
         if len(common) < 16:
@@ -119,16 +118,15 @@ def cot_probability_scorer(probes_by_layer: dict[int, dict[str, np.ndarray]]) ->
     return score
 
 
-def build_cotness_measurement(model: nn.Module, tokenizer: PreTrainedTokenizerBase, family: str, corpus: Path,
-                              probe_source: Path | None, probe_directory: Path,
-                              layers: list[int]) -> tuple[Measurement, dict[str, Any]]:
-    """Reuse a frozen or previously fitted probe, else train one. Callers must check the report's ``usable``."""
+def build_cotness_measurement(model: nn.Module, tokenizer: HFTokenizer, family: ModelFamily, corpus: Path,
+                              probe_source: Path | None, probe_directory: Path, layers: list[int]) -> Measurement | None:
+    """Reuse a frozen or previously fitted probe, else train one. None when the probe fails validation."""
     if probe_source:
         shutil.copytree(probe_source, probe_directory, dirs_exist_ok=True)
     if (probe_directory / "validation.json").exists():
         probes_by_layer, report = load(probe_directory)
     else:
         probes_by_layer, report = train(model, tokenizer, family, corpus, probe_directory, layers)
-    measurement = Measurement("cotness", list(probes_by_layer), report["primary_layer"],
-                              cot_probability_scorer(probes_by_layer))
-    return measurement, report
+    if not report["usable"]:
+        return None
+    return Measurement("cotness", list(probes_by_layer), report["primary_layer"], cot_probability_scorer(probes_by_layer))

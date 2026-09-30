@@ -30,6 +30,8 @@ class BatchEncoding[OffsetMappingT: OffsetMappingPossibilities](Protocol):
 
 class HFTokenizer[RoleT: AllRoles = AllRoles](Protocol):
     all_special_ids: list[int]
+    all_special_tokens: list[str]
+    eos_token_id: int | None
 
     def __call__(
         self,

@@ -12,9 +12,9 @@ from launch import ROOT, batch_header, preflight, sha
 from selfconcept.cotness.gate import CODE_SCENARIOS, SCENARIOS
 from selfconcept.common.jsonl import read_jsonl
 from selfconcept.correlation.scenarios import select_examples
-from selfconcept.measurement.templates import MODELS
+from selfconcept.measurement.templates import MODEL_SPECS_BY_KEY
 
-PILOTS = {key: ROOT / 'experiments/cotness/results' / ('pilot-20260922T192618Z' if key == 'qwen38-27b' else 'pilot-20260922T192346Z') / 'output' / key for key in MODELS}
+PILOTS = {key: ROOT / 'experiments/cotness/results' / ('pilot-20260922T192618Z' if key == 'qwen38-27b' else 'pilot-20260922T192346Z') / 'output' / key for key in MODEL_SPECS_BY_KEY}
 
 
 def judge_commands(directory):
@@ -49,7 +49,7 @@ def selected_ids(n, code_n, offset, code_offset):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--no-submit', action='store_true')
-    parser.add_argument('--models', nargs='+', choices=MODELS, default=list(MODELS))
+    parser.add_argument('--models', nargs='+', choices=MODEL_SPECS_BY_KEY, default=list(MODEL_SPECS_BY_KEY))
     args = parser.parse_args()
     os.environ['HF_HUB_OFFLINE'] = '1'
     report = preflight(args.models)
@@ -70,7 +70,7 @@ def main():
         source = PILOTS[key]
         manifest = json.loads((source / 'manifest.json').read_text())
         validation = json.loads((source / 'probes/validation.json').read_text())
-        if manifest['model'] != MODELS[key].__dict__ or not validation['usable']:
+        if manifest['model'] != MODEL_SPECS_BY_KEY[key].__dict__ or not validation['usable']:
             raise ValueError(f'Cannot reuse pilot probe for {key}')
         target = snapshot / 'frozen_probes' / key
         shutil.copytree(source / 'probes', target)
@@ -78,7 +78,7 @@ def main():
         for stage, limits, hours in [('repair', '--n 2 --code-n 1 --offset 0 --code-offset 0', 18),
                                      ('expanded', '--n 32 --code-n 12 --offset 8 --code-offset 4', 72)]:
             directory = f'output/{stage}/{key}'
-            script = batch_header(f'cot-{stage}-{key}', MODELS[key].gpus, hours, snapshot)
+            script = batch_header(f'cot-{stage}-{key}', MODEL_SPECS_BY_KEY[key].gpus, hours, snapshot)
             if stage == 'expanded':
                 script += f'"$PY" -m selfconcept.cotness.gate output/repair/{key}\n'
             script += f'"$PY" -u -m selfconcept.correlation.run --model {key} --out {directory} --probe-source frozen_probes/{key} {limits} --temperature 1.0 --top-p 0.95 --top-k 64 --seed 1729 --max-new-tokens 8192 --code-max-new-tokens 32768\n'

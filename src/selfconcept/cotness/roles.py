@@ -1,6 +1,6 @@
 """Render identical content in each native role for probe training."""
 
-from selfconcept.measurement.templates import template_kwargs
+from selfconcept.measurement.templates import reasoning_template_kwargs
 
 ROLES = ("user", "cot", "assistant")
 
@@ -29,7 +29,7 @@ def render_probe(tokenizer, family, text, role, context="A neutral document foll
         if role == "cot":
             message["reasoning_content"] = text
         messages.append(message)
-    rendered = tokenizer.apply_chat_template(messages, tokenize=False, **template_kwargs(family))
+    rendered = tokenizer.apply_chat_template(messages, tokenize=False, **reasoning_template_kwargs(family))
     if rendered.count(text) != 1:
         raise ValueError(f"Template lost or duplicated {role} content")
     start = rendered.index(text)

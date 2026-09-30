@@ -1,118 +1,182 @@
 """Generate while scoring every processed token with one residual-stream measurement."""
 import hashlib
-import json
+from itertools import accumulate
+from pathlib import Path
+from typing import Any, cast, NamedTuple
 
+from jaxtyping import Float
 import numpy as np
 import torch
+from transformers import PreTrainedModel
 
 from selfconcept.codebench import harness
+from selfconcept.common.hf_strong_types import configure_call, Conversation, HFTokenizer, OffsetMappingPresent
+from selfconcept.common.jsonl import append_jsonl
 from selfconcept.measurement.capture import capture
-from selfconcept.measurement.interface import Measurement
-from selfconcept.measurement.templates import clean_final, content_indices, render_generation, response_spans
+from selfconcept.measurement.interface import Measurement, MeasurementName
+from selfconcept.measurement.templates import (
+    content_token_indices, final_answer_text, ModelFamily, render_generation_prompt, response_spans, ResponseSpans)
+from .records import GenerationRecord, GenerationStatus, Region, RegionSummary, Sampling
+
+type TokenScores = Float[np.ndarray, "token"]
 
 
-def append(path, record):
-    with path.open("a") as f:
-        f.write(json.dumps(record, allow_nan=False) + "\n")
-        f.flush()
+class MeasuredModel(NamedTuple):
+    model: PreTrainedModel
+    tokenizer: HFTokenizer
+    family: ModelFamily
+    measurement: Measurement
 
 
-def score_summary(values, indices):
-    selected = values[[i for i in indices if i < len(values)]]
-    return {"n": len(selected), "mean": float(selected.mean()) if len(selected) else None,
-            "p90": float(np.quantile(selected, .9)) if len(selected) else None}
+class GenerationSettings(NamedTuple):
+    output_directory: Path
+    sampling: Sampling
+    seed: int
+    max_new_tokens: int
 
 
-def token_offsets(tokenizer, ids, text):
+class ScoredGeneration(NamedTuple):
+    token_ids: list[int]
+    token_scores_by_layer: dict[int, TokenScores]
+
+
+def sampling_kwargs(temperature: float, top_p: float, top_k: int) -> Sampling:
+    if temperature > 0:
+        return {"do_sample": True, "temperature": temperature, "top_p": top_p, "top_k": top_k}
+    return {"do_sample": False}
+
+
+def summarize_region_scores(token_scores: TokenScores, indices: list[int]) -> RegionSummary:
+    selected = token_scores[[index for index in indices if index < len(token_scores)]]
+    if not len(selected):
+        return {"n": 0, "mean": None, "p90": None}
+    return {"n": len(selected), "mean": float(selected.mean()), "p90": float(np.quantile(selected, .9))}
+
+
+def generated_token_offsets(tokenizer: HFTokenizer, token_ids: list[int], text: str) -> OffsetMappingPresent | None:
     # Single-token decoding is exact for ordinary text, but not split UTF-8.
-    pieces = [tokenizer.decode([i], skip_special_tokens=False, clean_up_tokenization_spaces=False) for i in ids]
+    pieces = [tokenizer.decode([token_id], skip_special_tokens=False, clean_up_tokenization_spaces=False)
+              for token_id in token_ids]
     if "".join(pieces) == text:
-        ends = np.cumsum([len(p) for p in pieces]).tolist()
+        ends = list(accumulate(len(piece) for piece in pieces))
         return list(zip([0] + ends[:-1], ends))
-    enc = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
-    if enc["input_ids"] == ids:
-        return enc["offset_mapping"]
+    encoding = configure_call(tokenizer).return_offsets_mapping(True)(text, add_special_tokens=False)
+    if encoding["input_ids"] == token_ids:
+        return encoding["offset_mapping"]
     return None  # Never assign an activation to the wrong token.
 
 
-def generation_seed(seed, scenario, example_id, turn):
+def generation_seed(seed: int, scenario: str, example_id: str, turn: int) -> int:
     return int.from_bytes(hashlib.sha256(f"{seed}:{scenario}:{example_id}:{turn}".encode()).digest()[:4], "big")
 
 
-class MeasuredGenerator:
-    def __init__(self, model, tokenizer, family, measurement: Measurement, out, max_new_tokens,
-                 temperature=0.0, top_p=0.95, top_k=64, seed=1729):
-        self.model, self.tokenizer, self.family = model, tokenizer, family
-        self.out, self.max_new_tokens = out, max_new_tokens
-        self.records = []
-        self.scenario = ""
-        self.sampling = ({"do_sample": True, "temperature": temperature, "top_p": top_p, "top_k": top_k}
-                         if temperature > 0 else {"do_sample": False})
-        self.seed = seed
-        self.measurement = measurement
+def check_context_budget(model: PreTrainedModel, prompt_length: int, max_new_tokens: int) -> None:
+    context_limit = getattr(getattr(model.config, "text_config", model.config), "max_position_embeddings", None)
+    if context_limit and prompt_length + max_new_tokens > context_limit:
+        raise ValueError("Prompt plus generation budget exceeds model context; refusing silent truncation")
 
-    def __call__(self, messages, turn, example_id):
-        tok = self.tokenizer
-        prompt = render_generation(tok, self.family, messages)
-        enc = tok(prompt, add_special_tokens=False, return_tensors="pt").to(self.model.get_input_embeddings().weight.device)
-        context_limit = getattr(getattr(self.model.config, "text_config", self.model.config), "max_position_embeddings", None)
-        if context_limit and enc.input_ids.shape[1] + self.max_new_tokens > context_limit:
-            raise ValueError("Prompt plus generation budget exceeds model context; refusing silent truncation")
-        try:
-            seed = generation_seed(self.seed, self.scenario, example_id, turn)
-            torch.manual_seed(seed)
-            with torch.inference_mode(), capture(self.model, self.measurement.layers, self.measurement.score) as captured:
-                output = self.model.generate(**enc, max_new_tokens=self.max_new_tokens, **self.sampling,
-                                             pad_token_id=tok.eos_token_id, use_cache=True)
-        except torch.OutOfMemoryError as exc:
-            torch.cuda.empty_cache()
-            raise harness.GenerationOOM(str(exc)[:200]) from None
-        n_prompt = enc.input_ids.shape[1]
-        ids = output[0].tolist()
-        new_ids = ids[n_prompt:]
-        raw = tok.decode(new_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-        spans = response_spans(prompt, raw, self.family)
-        final = clean_final(raw, spans, tok)
-        eos = self.model.generation_config.eos_token_id
-        eos = eos if isinstance(eos, list) else [eos]
-        truncated = len(new_ids) >= self.max_new_tokens and new_ids[-1] not in eos
-        status = "truncated" if truncated else "complete" if final else "no_final"
-        prompt_enc = tok(prompt, add_special_tokens=False, return_offsets_mapping=True)
-        # Measure only content from the last externally supplied message, excluding
-        # assistant history, system instructions and generation-role delimiters.
-        # Native templates may trim user content (notably coding feedback's
-        # leading newline). Match the shared non-whitespace content exactly.
-        last = messages[-1]["content"].strip()
-        start = prompt.rfind(last)
-        if start < 0 or prompt_enc.input_ids != ids[:n_prompt]:
-            raise ValueError("Cannot exactly locate the last message in the rendered prompt")
-        p_indices = content_indices(prompt_enc.offset_mapping, [(start, start+len(last))], tok.all_special_ids, ids[:n_prompt])
-        offsets = token_offsets(tok, new_ids, raw)
-        groups = {"prompt": p_indices}
-        if offsets is not None:
-            groups.update({role: [n_prompt+i for i in content_indices(offsets, segments, tok.all_special_ids, new_ids)]
-                           for role, segments in spans.items()})
-        scores, arrays = {}, {"input_ids": np.asarray(ids, dtype=np.int32), "prompt_length": np.array(n_prompt)}
-        for layer, chunks in captured.items():
-            values = torch.cat(chunks).numpy()
-            if len(values) != len(ids)-1:
-                raise ValueError(f"Unexpected cached generation alignment: {len(values)} vs {len(ids)-1}")
-            scores[str(layer)] = {name: score_summary(values, idx) for name, idx in groups.items()}
-            arrays[f"{self.measurement.name.replace('-', '_')}_layer_{layer}"] = values
-        for name, indices in groups.items():
-            arrays[f"indices_{name}"] = np.asarray([i for i in indices if i < len(ids)-1], dtype=np.int32)
-        trace_key = hashlib.sha256(f"{self.scenario}:{example_id}:{turn}".encode()).hexdigest()[:24]
-        trace = self.out / "traces" / f"{trace_key}.npz"
-        trace.parent.mkdir(exist_ok=True)
-        np.savez_compressed(trace, **arrays)
-        rec = {"example_id": example_id, "scenario": self.scenario, "turn": turn,
-               "response": final, "raw_response": raw, "rendered_prompt": prompt,
-               "status": status, "truncated": truncated, "generated_tokens": len(new_ids),
-               "sampling": self.sampling, "seed": seed,
-               "prompt_tokens": n_prompt, "spans": spans, "scores": scores,
-               "generated_alignment": "exact" if offsets is not None else "unavailable",
-               "trace": str(trace.relative_to(self.out)), "measurement": self.measurement.name}
-        self.records.append(rec)
-        append(self.out / "generations.jsonl", rec)
-        # A partial final answer/code is never a completed behavioral submission.
-        return final if status == "complete" else "", truncated
+
+def generate_scored(measured_model: MeasuredModel, prompt_ids: list[int], sampling: Sampling,
+                    max_new_tokens: int, seed: int) -> ScoredGeneration:
+    model, tokenizer, _, measurement = measured_model
+    input_ids = torch.tensor([prompt_ids], device=next(model.get_input_embeddings().parameters()).device)
+    try:
+        torch.manual_seed(seed)
+        with torch.inference_mode(), capture(model, measurement.layers, measurement.score) as scores_by_layer:
+            output = cast(Any, model).generate(input_ids=input_ids, attention_mask=torch.ones_like(input_ids),
+                                               max_new_tokens=max_new_tokens, **sampling,
+                                               pad_token_id=tokenizer.eos_token_id, use_cache=True)
+    except torch.OutOfMemoryError as exc:
+        torch.cuda.empty_cache()
+        raise harness.GenerationOOM(str(exc)[:200]) from None
+    token_ids: list[int] = output[0].tolist()
+    token_scores_by_layer = {layer: torch.cat(chunks).numpy() for layer, chunks in scores_by_layer.items()}
+    for token_scores in token_scores_by_layer.values():
+        if len(token_scores) != len(token_ids) - 1:
+            raise ValueError(f"Unexpected cached generation alignment: {len(token_scores)} vs {len(token_ids) - 1}")
+    return ScoredGeneration(token_ids, token_scores_by_layer)
+
+
+def last_message_token_indices(tokenizer: HFTokenizer, messages: Conversation, prompt: str,
+                               prompt_offsets: OffsetMappingPresent, prompt_ids: list[int]) -> list[int]:
+    # Measure only content from the last externally supplied message, excluding
+    # assistant history, system instructions and generation-role delimiters.
+    # Native templates may trim user content (notably coding feedback's
+    # leading newline). Match the shared non-whitespace content exactly.
+    last_message = messages[-1]["content"].strip()
+    start = prompt.rfind(last_message)
+    if start < 0:
+        raise ValueError("Cannot exactly locate the last message in the rendered prompt")
+    return content_token_indices(prompt_offsets, [(start, start + len(last_message))], tokenizer.all_special_ids, prompt_ids)
+
+
+def response_token_indices_by_region(tokenizer: HFTokenizer, new_token_ids: list[int], raw_response: str,
+                                     spans: ResponseSpans, prompt_length: int) -> dict[Region, list[int]] | None:
+    offsets = generated_token_offsets(tokenizer, new_token_ids, raw_response)
+    if offsets is None:
+        return None
+    return {region: [prompt_length + index
+                     for index in content_token_indices(offsets, spans[region], tokenizer.all_special_ids, new_token_ids)]
+            for region in ("cot", "final")}
+
+
+def generation_status(new_token_ids: list[int], max_new_tokens: int, eos_token_ids: list[int],
+                      final_answer: str) -> tuple[GenerationStatus, bool]:
+    truncated = len(new_token_ids) >= max_new_tokens and new_token_ids[-1] not in eos_token_ids
+    return ("truncated" if truncated else "complete" if final_answer else "no_final"), truncated
+
+
+def write_trace(output_directory: Path, scenario: str, example_id: str, turn: int, measurement_name: MeasurementName,
+                scored_generation: ScoredGeneration, prompt_length: int,
+                token_indices_by_region: dict[Region, list[int]]) -> Path:
+    token_ids, token_scores_by_layer = scored_generation
+    trace_key = hashlib.sha256(f"{scenario}:{example_id}:{turn}".encode()).hexdigest()[:24]
+    trace_path = output_directory / "traces" / f"{trace_key}.npz"
+    trace_path.parent.mkdir(exist_ok=True)
+    np.savez_compressed(
+        trace_path, allow_pickle=True,
+        input_ids=np.asarray(token_ids, dtype=np.int32), prompt_length=np.array(prompt_length),
+        **{f"{measurement_name.replace('-', '_')}_layer_{layer}": token_scores
+           for layer, token_scores in token_scores_by_layer.items()},
+        **{f"indices_{region}": np.asarray([index for index in indices if index < len(token_ids) - 1], dtype=np.int32)
+           for region, indices in token_indices_by_region.items()})
+    return trace_path
+
+
+def measured_generate(measured_model: MeasuredModel, settings: GenerationSettings, scenario: str,
+                      example_id: str, messages: Conversation, turn: int) -> GenerationRecord:
+    """Generate one turn, write its token trace, and append its record to generations.jsonl."""
+    model, tokenizer, family, measurement = measured_model
+    prompt = render_generation_prompt(tokenizer, family, messages)
+    prompt_encoding = configure_call(tokenizer).return_offsets_mapping(True)(prompt, add_special_tokens=False)
+    prompt_ids = prompt_encoding["input_ids"]
+    prompt_length = len(prompt_ids)
+    check_context_budget(model, prompt_length, settings.max_new_tokens)
+    seed = generation_seed(settings.seed, scenario, example_id, turn)
+    scored_generation = generate_scored(measured_model, prompt_ids, settings.sampling, settings.max_new_tokens, seed)
+    new_token_ids = scored_generation.token_ids[prompt_length:]
+    raw_response = tokenizer.decode(new_token_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
+    spans = response_spans(prompt, raw_response, family)
+    final_answer = final_answer_text(raw_response, spans, tokenizer)
+    eos_token_id = model.generation_config.eos_token_id
+    eos_token_ids = eos_token_id if isinstance(eos_token_id, list) else [eos_token_id]
+    status, truncated = generation_status(new_token_ids, settings.max_new_tokens, eos_token_ids, final_answer)
+    response_indices_by_region = response_token_indices_by_region(tokenizer, new_token_ids, raw_response, spans, prompt_length)
+    token_indices_by_region: dict[Region, list[int]] = {
+        "prompt": last_message_token_indices(tokenizer, messages, prompt, prompt_encoding["offset_mapping"], prompt_ids),
+        **(response_indices_by_region or {})}
+    trace_path = write_trace(settings.output_directory, scenario, example_id, turn, measurement.name,
+                             scored_generation, prompt_length, token_indices_by_region)
+    record: GenerationRecord = {
+        "example_id": example_id, "scenario": scenario, "turn": turn,
+        "response": final_answer, "raw_response": raw_response, "rendered_prompt": prompt,
+        "status": status, "truncated": truncated, "generated_tokens": len(new_token_ids),
+        "sampling": settings.sampling, "seed": seed,
+        "prompt_tokens": prompt_length, "spans": spans,
+        "scores": {str(layer): {region: summarize_region_scores(token_scores, indices)
+                                for region, indices in token_indices_by_region.items()}
+                   for layer, token_scores in scored_generation.token_scores_by_layer.items()},
+        "generated_alignment": "exact" if response_indices_by_region is not None else "unavailable",
+        "trace": str(trace_path.relative_to(settings.output_directory)), "measurement": measurement.name}
+    append_jsonl(settings.output_directory / "generations.jsonl", record)
+    return record

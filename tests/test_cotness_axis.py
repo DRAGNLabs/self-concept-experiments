@@ -15,8 +15,8 @@ from tokenizers.pre_tokenizers import WhitespaceSplit
 from transformers import LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
 from selfconcept.assistant_axis.projection import load_unit_axes, unit_axis_scorer
-from selfconcept.correlation.analyze import analyze
-from selfconcept.correlation.generate import MeasuredGenerator
+from selfconcept.correlation.analyze import analyze_run
+from selfconcept.correlation.generate import GenerationSettings, measured_generate, MeasuredModel
 from selfconcept.correlation.run import main, parse_args
 from selfconcept.measurement.capture import capture
 from selfconcept.measurement.interface import Measurement
@@ -89,10 +89,9 @@ class AxisTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             out = Path(temp)
             measurement = Measurement("assistant-axis", [1], 1, unit_axis_scorer({1: {"direction": direction}}))
-            generator = MeasuredGenerator(model, tok, "qwen", measurement, out, 4)
-            generator.scenario = "impossible_conflicting"
-            generator([{"role": "user", "content": "A B"}], 0, "example")
-            rec = generator.records[0]
+            rec = measured_generate(MeasuredModel(model, tok, "qwen", measurement),
+                                    GenerationSettings(out, {"do_sample": False}, 1729, 4),
+                                    "impossible_conflicting", "example", [{"role": "user", "content": "A B"}], 0)
             self.assertEqual(rec["measurement"], "assistant-axis")
             self.assertEqual(rec["generated_alignment"], "exact")
             with np.load(out / rec["trace"]) as trace:
@@ -138,11 +137,11 @@ class AxisTests(unittest.TestCase):
                   patch("selfconcept.correlation.run.load_causal_lm", return_value=self.model()) as load_model,
                   patch("selfconcept.cotness.probe.train") as train,
                   patch("selfconcept.cotness.probe.load") as load_probe,
-                  patch("selfconcept.correlation.run.evaluate") as evaluate):
+                  patch("selfconcept.correlation.run.run_scenarios") as run_scenarios):
                 main()
                 train.assert_not_called()
                 load_probe.assert_not_called()
-                self.assertEqual(evaluate.call_args.args[3].name, "assistant-axis")
+                self.assertEqual(run_scenarios.call_args.args[1].measurement.name, "assistant-axis")
                 self.assertFalse((out / "probes").exists())
                 manifest = json.loads((out / "manifest.json").read_text())
                 self.assertEqual(manifest["stage"], "complete")
@@ -173,20 +172,20 @@ class AxisTests(unittest.TestCase):
                       patch("selfconcept.correlation.run.AutoTokenizer.from_pretrained"),
                       patch("selfconcept.correlation.run.load_causal_lm", return_value=self.model()),
                       patch("selfconcept.cotness.probe.train") as train,
-                      patch("selfconcept.correlation.run.evaluate") as evaluate):
+                      patch("selfconcept.correlation.run.run_scenarios") as run_scenarios):
                     main()
                 train.assert_not_called()
                 manifest = json.loads((out / "manifest.json").read_text())
                 if usable:
-                    measurement = evaluate.call_args.args[3]
+                    measurement = run_scenarios.call_args.args[1].measurement
                     self.assertEqual((measurement.name, measurement.layers, measurement.primary_layer), ("cotness", [0, 1], 1))
                     torch.testing.assert_close(measurement.score(layer=1, residual=torch.ones(2, 16)), torch.full((2,), 1/3))
                     self.assertEqual(manifest["measurement"], {"name": "cotness", "layers": [0, 1], "primary_layer": 1})
                 else:
-                    evaluate.assert_not_called()
+                    run_scenarios.assert_not_called()
                     self.assertNotIn("measurement", manifest)
                     (out / "outcomes.jsonl").write_text("")
-                    self.assertEqual(analyze(out)["status"], "probe_failed_validation")
+                    self.assertEqual(analyze_run(out)["status"], "probe_failed_validation")
 
     def test_analysis_reads_primary_layer_from_measurement_block(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -194,7 +193,7 @@ class AxisTests(unittest.TestCase):
             (out / "manifest.json").write_text(json.dumps({"args": {"measurement": "cotness"},
                                                          "measurement": {"name": "cotness", "layers": [1, 2], "primary_layer": 2}}))
             (out / "outcomes.jsonl").write_text("")
-            result = analyze(out, bootstrap=10)
+            result = analyze_run(out, bootstrap_samples=10)
             self.assertEqual(result["primary_layer"], 2)
             self.assertFalse((out / "probes").exists())
 
@@ -220,7 +219,7 @@ class AxisTests(unittest.TestCase):
             generations.append(generations[0])
             (out / "outcomes.jsonl").write_text("".join(json.dumps(r)+"\n" for r in outcomes))
             (out / "generations.jsonl").write_text("".join(json.dumps(r)+"\n" for r in generations))
-            result = analyze(out, bootstrap=10)
+            result = analyze_run(out, bootstrap_samples=10)
             self.assertEqual(result["measurement"], "assistant-axis")
             self.assertEqual(len(result["cells"]), 2)
             for cell in result["cells"]:
@@ -233,7 +232,7 @@ class AxisTests(unittest.TestCase):
             generations[0]["measurement"] = "cotness"
             (out / "generations.jsonl").write_text("".join(json.dumps(r)+"\n" for r in generations))
             with self.assertRaisesRegex(ValueError, "mixed measurements"):
-                analyze(out, bootstrap=10)
+                analyze_run(out, bootstrap_samples=10)
 
 
 if __name__ == "__main__":

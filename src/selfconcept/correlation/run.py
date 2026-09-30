@@ -1,31 +1,45 @@
 """Correlate CoT-ness or assistant-axis projections with existing benchmark outcomes."""
 import argparse
+from dataclasses import asdict
 import hashlib
 import json
+import logging
 import os
-import shutil
 from pathlib import Path
+import shutil
 import sys
-from typing import get_args
+from typing import cast, get_args
 
 import numpy as np
 import sklearn
 import torch
 import transformers
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedModel
 
+from selfconcept.common.hf_strong_types import HFTokenizer
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.paths import REPO_ROOT
 from selfconcept.soo.activations import get_decoder_layers
 from selfconcept.soo.evaluate import SUFFIXES
 from selfconcept.assistant_axis.projection import build_axis_measurement
 from selfconcept.cotness.probe import build_cotness_measurement
-from selfconcept.measurement.interface import MeasurementName
-from selfconcept.measurement.templates import MODELS, ModelSpec, template_kwargs
-from .scenarios import evaluate
+from selfconcept.measurement.interface import Measurement, MeasurementName
+from selfconcept.measurement.templates import MODEL_SPECS_BY_KEY, ModelSpec, reasoning_template_kwargs
+from .config import RunConfig
+from .generate import MeasuredModel
+from .records import Manifest
+from .scenarios import run_scenarios
+
+logger = logging.getLogger(__name__)
+
+AXIS_DEFAULT_SCENARIOS = ["impossible_original", "impossible_conflicting", "impossible_oneoff"]
+COTNESS_DEFAULT_SCENARIOS = ["main", "main_mirrored", "treasure_hunt", "treasure_hunt_mirrored",
+                             "perspectives", "perspectives_mirrored", "roleplaying", "insider_trading", "sandbagging",
+                             "impossible_original", "impossible_conflicting", "impossible_oneoff", "evilgenie"]
+RESUME_IDENTITY_KEYS = ("args", "model", "chat_kwargs", "corpus_sha256", "probe_sha256", "axis_sha256")
 
 
-def parse_args(argv=None):
+def parse_args(argv: list[str] | None = None) -> RunConfig:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--measurement", choices=get_args(MeasurementName), default="cotness",
                         help="One measurement per run (default: cotness)")
@@ -58,9 +72,9 @@ def parse_args(argv=None):
         parser.error("Axis options require --measurement assistant-axis; measurements cannot be combined")
     if args.axis_layers and not args.assistant_axis:
         parser.error("--axis-layers requires --assistant-axis")
-    if args.model not in MODELS and (args.measurement != "assistant-axis" or not args.family):
+    if args.model not in MODEL_SPECS_BY_KEY and (args.measurement != "assistant-axis" or not args.family):
         parser.error("Unregistered models require --measurement assistant-axis and --family")
-    if args.model in MODELS and (args.family or args.revision):
+    if args.model in MODEL_SPECS_BY_KEY and (args.family or args.revision):
         parser.error("Registered models already pin their family and revision")
     if min(args.n, args.code_n, args.max_new_tokens, args.code_max_new_tokens, args.max_attempts) < 1:
         parser.error("Counts and budgets must be positive")
@@ -69,78 +83,106 @@ def parse_args(argv=None):
     if args.axis_layers is not None and (min(args.axis_layers) < 0 or len(set(args.axis_layers)) != len(args.axis_layers)):
         parser.error("Axis layers must be unique nonnegative indices")
     if args.scenarios is None:
-        args.scenarios = (["impossible_original", "impossible_conflicting", "impossible_oneoff"]
-                          if args.measurement == "assistant-axis" else
-                          ["main", "main_mirrored", "treasure_hunt", "treasure_hunt_mirrored",
-                           "perspectives", "perspectives_mirrored", "roleplaying", "insider_trading", "sandbagging",
-                           "impossible_original", "impossible_conflicting", "impossible_oneoff", "evilgenie"])
-    return args
+        args.scenarios = AXIS_DEFAULT_SCENARIOS if args.measurement == "assistant-axis" else COTNESS_DEFAULT_SCENARIOS
+    return RunConfig(**vars(args))
 
 
-def main():
-    args = parse_args()
-    os.environ["HF_HUB_OFFLINE"] = "1"
-    torch.manual_seed(1729)
-    spec = MODELS.get(args.model) or ModelSpec(args.model, args.revision or "main", args.family, 0)
-    args.out.mkdir(parents=True, exist_ok=True)
-    manifest = {"args": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
-                "model": spec.__dict__, "chat_kwargs": template_kwargs(spec.family),
-                "corpus_sha256": None if args.measurement == "assistant-axis" else hashlib.sha256(args.corpus.read_bytes()).hexdigest(),
-                "torch": torch.__version__, "transformers": transformers.__version__,
-                "sklearn": sklearn.__version__, "numpy": np.__version__,
-                "python": sys.version, "stage": "started"}
-    manifest_path = args.out / "manifest.json"
-    if args.assistant_axis:
-        manifest["axis_sha256"] = hashlib.sha256(args.assistant_axis.read_bytes()).hexdigest()
-    if args.probe_source:
-        source = json.loads((args.probe_source / "source_manifest.json").read_text())
+def resolve_model_spec(config: RunConfig) -> ModelSpec:
+    if config.model in MODEL_SPECS_BY_KEY:
+        return MODEL_SPECS_BY_KEY[config.model]
+    assert config.family is not None, "parse_args requires --family for unregistered models"
+    return ModelSpec(config.model, config.revision or "main", config.family, 0)
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def initial_manifest(config: RunConfig, spec: ModelSpec) -> Manifest:
+    manifest: Manifest = {
+        "args": {key: str(value) if isinstance(value, Path) else value for key, value in config._asdict().items()},
+        "model": asdict(spec), "chat_kwargs": reasoning_template_kwargs(spec.family),
+        "corpus_sha256": None if config.measurement == "assistant-axis" else file_sha256(config.corpus),
+        "torch": torch.__version__, "transformers": transformers.__version__,
+        "sklearn": sklearn.__version__, "numpy": np.__version__,
+        "python": sys.version, "stage": "started"}
+    if config.assistant_axis:
+        manifest["axis_sha256"] = file_sha256(config.assistant_axis)
+    if config.probe_source:
+        source = json.loads((config.probe_source / "source_manifest.json").read_text())
         if source["model"] != manifest["model"] or source["corpus_sha256"] != manifest["corpus_sha256"]:
             raise ValueError("Frozen probe model/corpus differs from evaluation")
-        if not json.loads((args.probe_source / "validation.json").read_text())["usable"]:
+        if not json.loads((config.probe_source / "validation.json").read_text())["usable"]:
             raise ValueError("Cannot reuse a probe that failed validation")
-        manifest["probe_sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                                   for p in args.probe_source.iterdir() if p.is_file()}
+        manifest["probe_sha256"] = {path.name: file_sha256(path) for path in config.probe_source.iterdir() if path.is_file()}
+    return manifest
+
+
+def check_resumable(previous: Manifest, manifest: Manifest) -> None:
+    # New optional measurements preserve resumability of legacy CoT runs.
+    legacy_arg_defaults = {"family": None, "revision": None, "assistant_axis": None, "axis_layers": None,
+                           "measurement": "cotness"}
+    previous_args = {**legacy_arg_defaults, **previous["args"]}
+    previous_identity = {key: previous.get(key) for key in RESUME_IDENTITY_KEYS} | {"args": previous_args}
+    if any(previous_identity[key] != manifest.get(key) for key in RESUME_IDENTITY_KEYS):
+        raise ValueError("Refusing to mix different configurations in an output directory")
+
+
+def write_manifest(path: Path, manifest: Manifest) -> None:
+    path.write_text(json.dumps(manifest, indent=2))
+
+
+def prepare_axis_measurement(config: RunConfig, spec: ModelSpec, model: PreTrainedModel, num_layers: int,
+                             default_layer: int, manifest: Manifest) -> tuple[Measurement, Manifest]:
+    assert config.assistant_axis is not None and "axis_sha256" in manifest, "parse_args requires --assistant-axis"
+    axis_layers = config.axis_layers if config.axis_layers is not None else [default_layer]
+    text_config = getattr(model.config, "text_config", model.config)
+    measurement = build_axis_measurement(config.assistant_axis, axis_layers, num_layers, text_config.hidden_size, spec.model)
+    frozen_axis = config.out / "assistant_axis.pt"
+    if config.assistant_axis.resolve() != frozen_axis.resolve():
+        shutil.copy2(config.assistant_axis, frozen_axis)
+    return measurement, {**manifest, "assistant_axis": {
+        "sha256": manifest["axis_sha256"], "layers": axis_layers, "primary_layer": axis_layers[0],
+        "artifact": frozen_axis.name, "site": "post_decoder_layer_residual", "normalization": "unit_direction"}}
+
+
+def main() -> None:
+    config = parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    torch.manual_seed(1729)
+    spec = resolve_model_spec(config)
+    config.out.mkdir(parents=True, exist_ok=True)
+    manifest_path = config.out / "manifest.json"
+    manifest: Manifest = initial_manifest(config, spec)
     if manifest_path.exists():
-        previous = json.loads(manifest_path.read_text())
-        # New optional measurements preserve resumability of legacy CoT runs.
-        for key in ("family", "revision", "assistant_axis", "axis_layers", "measurement"):
-            previous["args"].setdefault(key, "cotness" if key == "measurement" else None)
-        if any(previous.get(k) != manifest.get(k) for k in ("args", "model", "chat_kwargs", "corpus_sha256", "probe_sha256", "axis_sha256")):
-            raise ValueError("Refusing to mix different configurations in an output directory")
-    manifest_path.write_text(json.dumps(manifest, indent=2))
-    tok = AutoTokenizer.from_pretrained(spec.model, revision=spec.revision, local_files_only=True)
-    model = load_causal_lm(spec.model, revision=spec.revision, local_files_only=True, dtype=torch.bfloat16,
-                           device_map="auto")
+        check_resumable(json.loads(manifest_path.read_text()), manifest)
+    write_manifest(manifest_path, manifest)
+    tokenizer = cast(HFTokenizer, AutoTokenizer.from_pretrained(spec.model, revision=spec.revision, local_files_only=True))
+    model: PreTrainedModel = load_causal_lm(spec.model, revision=spec.revision, local_files_only=True,
+                                            dtype=torch.bfloat16, device_map="auto")
     model.eval()
-    count = len(get_decoder_layers(model))
-    layers = [int(count * fraction)-1 for fraction in (.25, .5, .75)]
-    if args.measurement == "assistant-axis":
-        axis_layers = args.axis_layers if args.axis_layers is not None else [layers[1]]
-        config = getattr(model.config, "text_config", model.config)
-        measurement = build_axis_measurement(args.assistant_axis, axis_layers, count, config.hidden_size, spec.model)
-        frozen_axis = args.out / "assistant_axis.pt"
-        if args.assistant_axis.resolve() != frozen_axis.resolve():
-            shutil.copy2(args.assistant_axis, frozen_axis)
-        manifest["assistant_axis"] = {"sha256": manifest["axis_sha256"], "layers": axis_layers,
-                                      "primary_layer": axis_layers[0], "artifact": frozen_axis.name,
-                                      "site": "post_decoder_layer_residual", "normalization": "unit_direction"}
-        report = None
+    num_layers = len(get_decoder_layers(model))
+    probe_layers = [int(num_layers * fraction) - 1 for fraction in (.25, .5, .75)]
+    if config.measurement == "assistant-axis":
+        measurement, manifest = prepare_axis_measurement(config, spec, model, num_layers, probe_layers[1], manifest)
+        stage = "axis_ready"
     else:
-        measurement, report = build_cotness_measurement(model, tok, spec.family, args.corpus, args.probe_source,
-                                                        args.out / "probes", layers)
-        manifest["probe_usable"] = report["usable"]
-    if report is None or report["usable"]:
-        manifest["measurement"] = {"name": measurement.name, "layers": measurement.layers,
-                                   "primary_layer": measurement.primary_layer}
-    manifest["stage"] = "axis_ready" if report is None else "probe_ready" if report["usable"] else "probe_failed_validation"
-    manifest_path.write_text(json.dumps(manifest, indent=2))
-    if report is not None and not report["usable"]:
-        print("Midpoint probe failed validation; no deception correlations will be interpreted.", flush=True)
+        measurement = build_cotness_measurement(model, tokenizer, spec.family, config.corpus, config.probe_source,
+                                                config.out / "probes", probe_layers)
+        manifest = {**manifest, "probe_usable": measurement is not None}
+        stage = "probe_ready" if measurement is not None else "probe_failed_validation"
+    if measurement is not None:
+        manifest = {**manifest, "measurement": {"name": measurement.name, "layers": measurement.layers,
+                                                "primary_layer": measurement.primary_layer}}
+    manifest = {**manifest, "stage": stage}
+    write_manifest(manifest_path, manifest)
+    if measurement is None:
+        logger.info("Midpoint probe failed validation; no deception correlations will be interpreted.")
         return
-    if not args.train_only:
-        evaluate(args, model, tok, measurement, family=spec.family)
-    manifest["stage"] = "complete"
-    manifest_path.write_text(json.dumps(manifest, indent=2))
+    if not config.train_only:
+        run_scenarios(config, MeasuredModel(model, tokenizer, spec.family, measurement))
+    write_manifest(manifest_path, {**manifest, "stage": "complete"})
 
 
 if __name__ == "__main__":
