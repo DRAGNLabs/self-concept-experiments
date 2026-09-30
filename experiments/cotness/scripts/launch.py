@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
-from selfconcept.cotness.roles import MODELS
+from selfconcept.measurement.templates import MODELS
 
 
 def sha(path):
@@ -102,8 +102,8 @@ def main():
     for key in args.models:
         spec = MODELS[key]
         script = batch_header(f"cotness-{key}", spec.gpus, 36 if key == "kimi-72b" else 18, snapshot)
-        script += f'"$PY" -u -m selfconcept.cotness.run --model {key} --out output/{key} --n {args.n} --code-n {args.code_n}\n'
-        script += f'"$PY" -m selfconcept.cotness.analyze output/{key}\n'
+        script += f'"$PY" -u -m selfconcept.correlation.run --model {key} --out output/{key} --n {args.n} --code-n {args.code_n}\n'
+        script += f'"$PY" -m selfconcept.correlation.analyze output/{key}\n'
         (snapshot / f"{key}.sh").write_text(script)
     judge = batch_header("cotness-judge", 3, 8, snapshot)
     judge += 'export SOO_CHAT_KWARGS=\'{"enable_thinking": false}\'\n'
@@ -114,7 +114,7 @@ def main():
         judge += f'  "$PY" experiments/soo/scripts/judge_insider.py --responses {directory}/base_insider_trading_none.jsonl --batch-size 2\n'
         files = " ".join(f"{directory}/base_{s}.jsonl" for s in ("impossible_original", "impossible_oneoff", "impossible_conflicting", "evilgenie"))
         judge += f'  "$PY" -m selfconcept.codebench.judge --model Qwen/Qwen2.5-72B-Instruct --responses {files} --batch-size 1 --skip-existing\n'
-        judge += f'  "$PY" -m selfconcept.cotness.analyze {directory}\nfi\n'
+        judge += f'  "$PY" -m selfconcept.correlation.analyze {directory}\nfi\n'
     (snapshot / "judge.sh").write_text(judge)
     source_files = {str(p.relative_to(snapshot)): sha(p) for p in snapshot.rglob("*") if p.is_file()}
     report = {"created_utc": stamp, "models": model_report, "n": args.n, "code_n": args.code_n,

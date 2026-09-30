@@ -14,18 +14,15 @@ import torch
 import transformers
 from transformers import AutoTokenizer
 
+from selfconcept.common.jsonl import read_jsonl
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.paths import REPO_ROOT
 from selfconcept.soo.activations import get_decoder_layers
 from selfconcept.soo.evaluate import build_prompt, classify, SUFFIXES
 from selfconcept.codebench import harness
 from selfconcept.assistant_axis.projection import load_unit_axes
-from . import probe
-from .roles import MODELS, ModelSpec, clean_final, content_indices, render_generation, response_spans, template_kwargs
-
-
-def read_jsonl(path):
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+from selfconcept.cotness import probe
+from selfconcept.measurement.templates import MODELS, ModelSpec, clean_final, content_indices, render_generation, response_spans, template_kwargs
 
 
 def append(path, record):

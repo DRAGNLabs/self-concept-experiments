@@ -15,9 +15,9 @@ from tokenizers.pre_tokenizers import WhitespaceSplit
 from transformers import LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
 from selfconcept.assistant_axis.projection import load_unit_axes
-from selfconcept.cotness.analyze import analyze
+from selfconcept.correlation.analyze import analyze
 from selfconcept.cotness.probe import capture
-from selfconcept.cotness.run import MeasuredGenerator, main, parse_args
+from selfconcept.correlation.run import MeasuredGenerator, main, parse_args
 
 
 class AxisTests(unittest.TestCase):
@@ -139,12 +139,12 @@ class AxisTests(unittest.TestCase):
             args = parse_args(["--model", "test/model", "--family", "qwen", "--out", str(out),
                                "--measurement", "assistant-axis", "--assistant-axis", str(axis),
                                "--corpus", str(root / "nonexistent.jsonl")])
-            with (patch("selfconcept.cotness.run.parse_args", return_value=args),
-                  patch("selfconcept.cotness.run.AutoTokenizer.from_pretrained"),
-                  patch("selfconcept.cotness.run.load_causal_lm", return_value=self.model()) as load_model,
-                  patch("selfconcept.cotness.run.probe.train") as train,
-                  patch("selfconcept.cotness.run.probe.load") as load_probe,
-                  patch("selfconcept.cotness.run.evaluate") as evaluate):
+            with (patch("selfconcept.correlation.run.parse_args", return_value=args),
+                  patch("selfconcept.correlation.run.AutoTokenizer.from_pretrained"),
+                  patch("selfconcept.correlation.run.load_causal_lm", return_value=self.model()) as load_model,
+                  patch("selfconcept.correlation.run.probe.train") as train,
+                  patch("selfconcept.correlation.run.probe.load") as load_probe,
+                  patch("selfconcept.correlation.run.evaluate") as evaluate):
                 main()
                 train.assert_not_called()
                 load_probe.assert_not_called()

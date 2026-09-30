@@ -12,7 +12,8 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 from selfconcept.soo.activations import get_decoder_layers
-from .roles import ROLES, content_indices, render_probe
+from selfconcept.measurement.templates import content_indices
+from .roles import ROLES, render_probe
 
 
 @contextmanager

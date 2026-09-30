@@ -27,12 +27,12 @@ HF_HUB_OFFLINE=1 .venv/bin/python experiments/cotness/scripts/launch_followup.py
 .venv/bin/python experiments/cotness/scripts/launch.py --no-submit --models gemma4-12b
 
 # Direct execution on an allocated GPU, for an isolated diagnostic:
-HF_HUB_OFFLINE=1 .venv/bin/python -m selfconcept.cotness.run \
+HF_HUB_OFFLINE=1 .venv/bin/python -m selfconcept.correlation.run \
   --model gemma4-12b --out experiments/cotness/results/diagnostic \
   --n 2 --code-n 1 --scenarios main impossible_conflicting evilgenie
 
 # Repeat analysis after grades arrive:
-.venv/bin/python -m selfconcept.cotness.analyze <snapshot>/output/*/
+.venv/bin/python -m selfconcept.correlation.analyze <snapshot>/output/*/
 ```
 
 Each model directory holds `manifest.json`, `probes/validation.json`, frozen
@@ -48,7 +48,7 @@ On an allocated GPU with the model cached locally, use a Python 3.13+ environmen
 (the commands below use this checkout's `.venv-313`):
 
 ```bash
-HF_HUB_OFFLINE=1 .venv-313/bin/python -m selfconcept.cotness.run \
+HF_HUB_OFFLINE=1 .venv-313/bin/python -m selfconcept.correlation.run \
   --measurement assistant-axis \
   --model allenai/Olmo-3.1-32B-Think --family olmo \
   --assistant-axis /path/to/olmo32b-thinking/axis_response_only.pt \
@@ -61,7 +61,7 @@ HF_HUB_OFFLINE=1 .venv-313/bin/python -m selfconcept.cotness.run \
   --responses experiments/cotness/results/axis-impossible-olmo/base_impossible_*.jsonl \
   --batch-size 1 --skip-existing
 
-.venv-313/bin/python -m selfconcept.cotness.analyze \
+.venv-313/bin/python -m selfconcept.correlation.analyze \
   experiments/cotness/results/axis-impossible-olmo
 ```
 

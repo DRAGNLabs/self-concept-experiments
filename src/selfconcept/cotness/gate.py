@@ -4,7 +4,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from .run import read_jsonl
+from selfconcept.common.jsonl import read_jsonl
 
 CODE_SCENARIOS = ('impossible_original', 'impossible_conflicting', 'impossible_oneoff', 'evilgenie')
 SCENARIOS = ('main', 'main_mirrored', 'treasure_hunt', 'treasure_hunt_mirrored',

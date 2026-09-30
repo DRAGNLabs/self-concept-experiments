@@ -8,10 +8,11 @@ import numpy as np
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 
-from selfconcept.cotness.analyze import analyze, association, outcome
+from selfconcept.correlation.analyze import analyze, association, outcome
 from selfconcept.cotness.probe import capture, fit_linear, probabilities
-from selfconcept.cotness.roles import content_indices, render_probe, response_spans
-from selfconcept.cotness.run import generation_seed, select_examples
+from selfconcept.cotness.roles import render_probe
+from selfconcept.measurement.templates import content_indices, response_spans
+from selfconcept.correlation.run import generation_seed, select_examples
 from selfconcept.cotness.gate import assess, CODE_SCENARIOS, SCENARIOS
 
 

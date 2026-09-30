@@ -8,7 +8,7 @@ import numpy as np
 from scipy.stats import rankdata, spearmanr
 from sklearn.metrics import roc_auc_score
 
-from .run import read_jsonl
+from selfconcept.common.jsonl import read_jsonl
 
 
 def outcome(record, grade=None):

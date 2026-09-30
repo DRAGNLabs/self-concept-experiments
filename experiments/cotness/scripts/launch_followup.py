@@ -10,8 +10,9 @@ import subprocess
 
 from launch import ROOT, batch_header, preflight, sha
 from selfconcept.cotness.gate import CODE_SCENARIOS, SCENARIOS
-from selfconcept.cotness.roles import MODELS
-from selfconcept.cotness.run import read_jsonl, select_examples
+from selfconcept.common.jsonl import read_jsonl
+from selfconcept.correlation.run import select_examples
+from selfconcept.measurement.templates import MODELS
 
 PILOTS = {key: ROOT / 'experiments/cotness/results' / ('pilot-20260922T192618Z' if key == 'qwen38-27b' else 'pilot-20260922T192346Z') / 'output' / key for key in MODELS}
 
@@ -26,7 +27,7 @@ def judge_commands(directory):
     lines += [f'files=(); for path in {files}; do [[ ! -s "$path" ]] || files+=("$path"); done',
               'if (( ${#files[@]} )); then',
               '  "$PY" -m selfconcept.codebench.judge --model Qwen/Qwen2.5-72B-Instruct --responses "${files[@]}" --batch-size 1 --skip-existing', 'fi',
-              f'if [[ -f {directory}/outcomes.jsonl ]]; then "$PY" -m selfconcept.cotness.analyze {directory}; fi']
+              f'if [[ -f {directory}/outcomes.jsonl ]]; then "$PY" -m selfconcept.correlation.analyze {directory}; fi']
     return '\n'.join(lines) + '\n'
 
 
@@ -80,8 +81,8 @@ def main():
             script = batch_header(f'cot-{stage}-{key}', MODELS[key].gpus, hours, snapshot)
             if stage == 'expanded':
                 script += f'"$PY" -m selfconcept.cotness.gate output/repair/{key}\n'
-            script += f'"$PY" -u -m selfconcept.cotness.run --model {key} --out {directory} --probe-source frozen_probes/{key} {limits} --temperature 1.0 --top-p 0.95 --top-k 64 --seed 1729 --max-new-tokens 8192 --code-max-new-tokens 32768\n'
-            script += f'"$PY" -m selfconcept.cotness.analyze {directory}\n'
+            script += f'"$PY" -u -m selfconcept.correlation.run --model {key} --out {directory} --probe-source frozen_probes/{key} {limits} --temperature 1.0 --top-p 0.95 --top-k 64 --seed 1729 --max-new-tokens 8192 --code-max-new-tokens 32768\n'
+            script += f'"$PY" -m selfconcept.correlation.analyze {directory}\n'
             (snapshot / f'{stage}-{key}.sh').write_text(script)
         judge = batch_header(f'cot-judge-{key}', 3, 12, snapshot)
         judge += 'export SOO_CHAT_KWARGS=\'{"enable_thinking": false}\'\n'
