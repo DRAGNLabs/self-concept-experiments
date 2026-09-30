@@ -99,6 +99,8 @@ def response_marker(tokenizer, chat_kwargs: dict | None = None) -> list[int]:
     E.g. '<|im_start|>assistant\\n<think>\\n\\n</think>\\n\\n' for Qwen3.x with
     thinking off, '<|turn>model\\n<|channel>thought\\n<channel|>' for gemma-4.
     The last occurrence in a prompt marks the assistant turn being generated.
+    Empty when the template adds nothing (Mistral's '[INST] ... [/INST]'): the
+    assistant turn then starts at the first generated token.
     """
     kwargs = chat_kwargs or {}
     messages = [{"role": "user", "content": "x"}]
@@ -110,7 +112,7 @@ def response_marker(tokenizer, chat_kwargs: dict | None = None) -> list[int]:
         return list(enc["input_ids"])
 
     without, with_ = ids(False), ids(True)
-    if with_[: len(without)] != without or len(with_) == len(without):
+    if with_[: len(without)] != without:
         raise ValueError("chat template's generation prompt is not a suffix of the no-generation rendering")
     return with_[len(without) :]
 
@@ -162,8 +164,8 @@ class PositionalSteering:
             raise ValueError(f"positions must be one of {POSITION_MODES}, got {mode!r}")
         if mode in ("from_last", "content"):
             marker = marker or []
-        elif not marker:
-            raise ValueError("empty response marker")
+        elif marker is None:
+            raise ValueError("response marker required")  # [] is allowed: no generation prompt, see response_marker
         self.marker = marker
         self.mode = mode
         self.positions: torch.Tensor | None = None
@@ -219,10 +221,13 @@ class PositionalSteering:
                     self.start = pos.expand_as(mask).masked_fill(~mask.bool(), -1).max(1).values
                     if (self.start < 0).any():
                         raise RuntimeError("positional steering: a sequence has no valid token")
-            else:
+            elif self.marker:
                 self.start = _last_marker_start(input_ids, self.marker)
+            else:
+                # No generation prompt in the template: the whole prefill is prompt, generated tokens are response.
+                self.start = torch.full((input_ids.shape[0],), seq, device=input_ids.device, dtype=torch.long)
             self.n_sequences += 1
-            missing = int((self.start >= seq).sum())
+            missing = int((self.start >= seq).sum()) if self.marker else 0
             self.n_missing += missing
             if self.n_sequences == 1:
                 print(

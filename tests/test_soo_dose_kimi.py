@@ -19,6 +19,7 @@ from selfconcept.soo.activations import get_decoder_layers
 from selfconcept.soo.evaluate import answer_text, content_span
 from selfconcept.soo.steering import (
     PositionalSteering, apply_module_steering, attn_proj, band_supports, get_band_offsets, random_matched_offsets,
+    response_marker,
 )
 from test_soo_band_steer import capture_proj, load_script, save_tiny_model_with_tokenizer
 from test_soo_hybrid_subset import lora as hybrid_lora, tiny_hybrid
@@ -65,6 +66,37 @@ class ContentPositionTests(unittest.TestCase):
             h.remove()
         self.assertEqual(seen[0].tolist(), [[1.0, 1.0, 1.0, 0.0]])
         self.assertTrue(all(m.sum() == 0 for m in seen[1:]))
+
+
+class NoGenerationPromptTests(unittest.TestCase):
+    """Mistral's template adds nothing for the assistant turn: 'prompt' is every prefill token, 'response' the generated ones."""
+
+    def setUp(self):
+        self.model = tiny_model()
+        self.offsets = {"1:v_proj": torch.full((16,), 0.5)}
+
+    def test_response_marker_is_empty_when_the_template_adds_nothing(self):
+        class Tok:
+            def apply_chat_template(self, messages, add_generation_prompt, tokenize, return_dict):
+                return {"input_ids": [1, 2, 3]}
+        self.assertEqual(response_marker(Tok()), [])
+
+    def test_empty_marker_splits_at_the_first_generated_token(self):
+        seen = {}
+        for mode in ("prompt", "response"):
+            positions = PositionalSteering([], mode)
+            masks = []
+            with apply_module_steering(self.model, self.offsets, 1.0, positions):
+                v = attn_proj(get_decoder_layers(self.model)[1], "v_proj")
+                h = v.register_forward_hook(lambda _m, _i, o: masks.append(positions.mask(o)[..., 0].clone()))
+                with torch.no_grad():
+                    self.model.generate(input_ids=torch.tensor([[1, 4, 5, 9]]), max_new_tokens=3, do_sample=False, pad_token_id=0)
+                h.remove()
+            seen[mode] = [m.sum().item() for m in masks]
+        self.assertEqual(seen["prompt"], [4.0, 0.0, 0.0])
+        self.assertEqual(seen["response"], [0.0, 1.0, 1.0])
+        with self.assertRaises(ValueError):
+            PositionalSteering(None, "prompt")
 
 
 class SliceOffsetTests(unittest.TestCase):
