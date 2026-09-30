@@ -71,7 +71,7 @@ Limits: one seed, one training layer, and the mirrored `v_proj`/`q_proj` cells a
 
 Same-day `band-qkv` is weaker than in the localization round, where the band 24–31 with every module type gave 100% honest; here the reference keeps only the six fused modules and drops the full-attention modules at 27 and 31. The localization round had guessed those two layers were not needed; this cell says they are.
 
-Gaps on the development pairs at the band's top layer (L31 attention output), all-position offsets: the fused offset at α = 1 cuts the self/other gap from 0.00707 to 0.00074 (−90%) and the name-control gap from 0.000247 to 0.000034 (−86%); the value slice gives −85% and −81%, the query-key slice −48% and −43%, the random offset −6% and −3%, and the adapter −95% and −92%.
+Gaps on the development pairs at the band's top layer (L31 attention output), all-position offsets: the fused offset at α = 1 cuts the self/other gap from 0.00707 to 0.00074 (−90%) and the name-control gap from 0.000247 to 0.000034 (−86%); the value slice gives −85% and −81%, the query-key slice −48% and −43%, the random offset −6% and −3%, and the band's own LoRA −95% and −92%.
 
 **Interpretation.** The mean offset works on Qwen as on the other models, with a higher threshold. At α = 1 it matches the band's fused LoRA (65 / 47 against 54 / 43), and from the last prompt token onward it does nothing. At α = 1.5 and 2 it goes past the band's LoRA to the full adapter's result on every readout, including the treasure hunt, with no refusals and perspectives at 100%. No other model tolerated α = 2. The labels say "partial" because the rule measures distance from a reference that the offset exceeds; the plan did not anticipate that, and the table should be read by its rates.
 
