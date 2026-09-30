@@ -1,6 +1,7 @@
 """On-disk record shapes. Field names are the keys existing runs were written with."""
 from typing import Any, Literal, NotRequired, TypedDict
 
+from selfconcept.common.hf_strong_types import Conversation
 from selfconcept.measurement.interface import MeasurementName
 from selfconcept.measurement.templates import ResponseSpans
 
@@ -40,8 +41,8 @@ class GenerationRecord(TypedDict):
     status: GenerationStatus
     truncated: bool
     generated_tokens: int
-    sampling: Sampling
-    seed: int
+    sampling: NotRequired[Sampling]
+    seed: NotRequired[int]
     prompt_tokens: int
     spans: ResponseSpans
     scores: dict[str, dict[Region, RegionSummary]]
@@ -65,6 +66,17 @@ class OutcomeRecord(TypedDict):
     topic: NotRequired[str]
     correct: NotRequired[bool | None]
     error: NotRequired[str]
+
+
+class TranscriptRecord(TypedDict):
+    example_id: str
+    scenario: str
+    turn: int
+    messages: Conversation
+    chat_kwargs: dict[str, bool | str]
+    raw_response: str
+    truncated: bool
+    outcome: OutcomeRecord
 
 
 class JudgeGrade(TypedDict):
