@@ -50,6 +50,12 @@ def split_harmony_completion(raw_completion: str) -> tuple[str, str]:
     return "\n\n".join(body for _, body in messages[:last_final_index]), messages[last_final_index][1].strip()
 
 
+def join_harmony_completion(reasoning: str, final: str) -> str:
+    """Inverse of split_harmony_completion for a completion with one analysis and one final message."""
+    return (f"<|channel|>analysis<|message|>{reasoning}<|end|>"
+            f"<|start|>assistant<|channel|>final<|message|>{final}<|return|>")
+
+
 def vllm_harmony_generate(
     model_id: str,
     max_new_tokens: int,

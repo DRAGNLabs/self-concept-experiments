@@ -44,7 +44,7 @@ def parse_args(argv: list[str] | None = None) -> RunConfig:
     parser.add_argument("--measurement", choices=get_args(MeasurementName), default="cotness",
                         help="One measurement per run (default: cotness)")
     parser.add_argument("--model", required=True, help="Registered model key, or HF model ID in assistant-axis mode")
-    parser.add_argument("--family", choices=("qwen", "gemma", "muse", "olmo"), help="Required for unregistered HF models")
+    parser.add_argument("--family", choices=("qwen", "gemma", "muse", "olmo", "gpt-oss"), help="Required for unregistered HF models")
     parser.add_argument("--revision", help="Checkpoint revision for an unregistered HF model")
     parser.add_argument("--assistant-axis", type=Path, help="Model-matched axis .pt from the assistant-axis pipeline")
     parser.add_argument("--axis-layers", type=int, nargs="+", help="Zero-based decoder layers; defaults to the fixed midpoint")

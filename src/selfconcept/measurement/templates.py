@@ -5,10 +5,11 @@ import re
 from collections.abc import Sequence
 from typing import Literal, TypedDict
 
+from selfconcept.codebench.vllm_harmony import HARMONY_MESSAGE
 from selfconcept.common.hf_strong_types import (
     configure_apply_chat_template, Conversation, HFTokenizer, OffsetMappingPresent)
 
-type ModelFamily = Literal["qwen", "gemma", "muse", "olmo", "kimi"]
+type ModelFamily = Literal["qwen", "gemma", "muse", "olmo", "kimi", "gpt-oss"]
 type CharSpan = tuple[int, int]
 
 
@@ -72,6 +73,16 @@ def muse_response_spans(prompt: str, raw_response: str) -> ResponseSpans:
     return spans
 
 
+def harmony_response_spans(raw_response: str) -> ResponseSpans:
+    spans: ResponseSpans = {"cot": [], "final": []}
+    for match in HARMONY_MESSAGE.finditer(raw_response):
+        if match[1] == "analysis":
+            spans["cot"].append(match.span(2))
+        elif match[1] == "final":
+            spans["final"].append(match.span(2))
+    return spans
+
+
 def response_spans(prompt: str, raw_response: str, family: ModelFamily) -> ResponseSpans:
     """Character spans in the generated text. Open/unclosed thoughts have no answer.
 
@@ -80,6 +91,8 @@ def response_spans(prompt: str, raw_response: str, family: ModelFamily) -> Respo
     """
     if family == "muse":
         return muse_response_spans(prompt, raw_response)
+    if family == "gpt-oss":
+        return harmony_response_spans(raw_response)
     opening_marker, closing_marker = REASONING_MARKERS_BY_FAMILY[family]
     spans: ResponseSpans = {"cot": [], "final": []}
     # Qwen's <think> is usually in the prompt, not in generated tokens.
