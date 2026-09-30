@@ -30,3 +30,4 @@ class RunConfig(NamedTuple):
     suffix: str
     train_only: bool
     scenarios: list[str]
+    transcripts: Path | None

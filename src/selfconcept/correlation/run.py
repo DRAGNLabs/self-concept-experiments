@@ -17,6 +17,7 @@ import transformers
 from transformers import AutoTokenizer, PreTrainedModel
 
 from selfconcept.common.hf_strong_types import HFTokenizer
+from selfconcept.common.jsonl import read_jsonl
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.paths import REPO_ROOT
 from selfconcept.soo.activations import get_decoder_layers
@@ -27,8 +28,9 @@ from selfconcept.measurement.interface import Measurement, MeasurementName
 from selfconcept.measurement.templates import MODEL_SPECS_BY_KEY, ModelSpec, reasoning_template_kwargs
 from .config import RunConfig
 from .generate import MeasuredModel
-from .records import Manifest
+from .records import Manifest, TranscriptRecord
 from .scenarios import run_scenarios
+from .transcripts import score_transcripts
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,8 @@ AXIS_DEFAULT_SCENARIOS = ["impossible_original", "impossible_conflicting", "impo
 COTNESS_DEFAULT_SCENARIOS = ["main", "main_mirrored", "treasure_hunt", "treasure_hunt_mirrored",
                              "perspectives", "perspectives_mirrored", "roleplaying", "insider_trading", "sandbagging",
                              "impossible_original", "impossible_conflicting", "impossible_oneoff", "evilgenie"]
-RESUME_IDENTITY_KEYS = ("args", "model", "chat_kwargs", "corpus_sha256", "probe_sha256", "axis_sha256")
+RESUME_IDENTITY_KEYS = ("args", "model", "chat_kwargs", "corpus_sha256", "probe_sha256", "axis_sha256",
+                        "transcripts_sha256")
 
 
 def parse_args(argv: list[str] | None = None) -> RunConfig:
@@ -65,6 +68,8 @@ def parse_args(argv: list[str] | None = None) -> RunConfig:
     parser.add_argument("--suffix", choices=SUFFIXES, default="i_would")
     parser.add_argument("--train-only", action="store_true")
     parser.add_argument("--scenarios", nargs="+", help="Defaults to ImpossibleBench for assistant-axis, all scenarios for cotness")
+    parser.add_argument("--transcripts", type=Path,
+                        help="Score this transcripts.jsonl (TranscriptRecord lines) instead of generating")
     args = parser.parse_args(argv)
     if args.measurement == "assistant-axis" and (not args.assistant_axis or args.probe_source or args.train_only):
         parser.error("--measurement assistant-axis requires --assistant-axis and excludes --probe-source/--train-only")
@@ -82,6 +87,11 @@ def parse_args(argv: list[str] | None = None) -> RunConfig:
         parser.error("Invalid offset or sampling configuration")
     if args.axis_layers is not None and (min(args.axis_layers) < 0 or len(set(args.axis_layers)) != len(args.axis_layers)):
         parser.error("Axis layers must be unique nonnegative indices")
+    if args.transcripts and (args.train_only or args.scenarios):
+        parser.error("--transcripts takes its scenarios from the file and excludes --train-only")
+    if args.transcripts:
+        transcripts: list[TranscriptRecord] = read_jsonl(args.transcripts)
+        args.scenarios = list(dict.fromkeys(transcript["scenario"] for transcript in transcripts))
     if args.scenarios is None:
         args.scenarios = AXIS_DEFAULT_SCENARIOS if args.measurement == "assistant-axis" else COTNESS_DEFAULT_SCENARIOS
     return RunConfig(**vars(args))
@@ -108,6 +118,8 @@ def initial_manifest(config: RunConfig, spec: ModelSpec) -> Manifest:
         "python": sys.version, "stage": "started"}
     if config.assistant_axis:
         manifest["axis_sha256"] = file_sha256(config.assistant_axis)
+    if config.transcripts:
+        manifest["transcripts_sha256"] = file_sha256(config.transcripts)
     if config.probe_source:
         source = json.loads((config.probe_source / "source_manifest.json").read_text())
         if source["model"] != manifest["model"] or source["corpus_sha256"] != manifest["corpus_sha256"]:
@@ -121,7 +133,7 @@ def initial_manifest(config: RunConfig, spec: ModelSpec) -> Manifest:
 def check_resumable(previous: Manifest, manifest: Manifest) -> None:
     # New optional measurements preserve resumability of legacy CoT runs.
     legacy_arg_defaults = {"family": None, "revision": None, "assistant_axis": None, "axis_layers": None,
-                           "measurement": "cotness"}
+                           "measurement": "cotness", "transcripts": None}
     previous_args = {**legacy_arg_defaults, **previous["args"]}
     previous_identity = {key: previous.get(key) for key in RESUME_IDENTITY_KEYS} | {"args": previous_args}
     if any(previous_identity[key] != manifest.get(key) for key in RESUME_IDENTITY_KEYS):
@@ -180,8 +192,11 @@ def main() -> None:
     if measurement is None:
         logger.info("Midpoint probe failed validation; no deception correlations will be interpreted.")
         return
-    if not config.train_only:
-        run_scenarios(config, MeasuredModel(model, tokenizer, spec.family, measurement))
+    measured_model = MeasuredModel(model, tokenizer, spec.family, measurement)
+    if config.transcripts:
+        score_transcripts(config, measured_model)
+    elif not config.train_only:
+        run_scenarios(config, measured_model)
     write_manifest(manifest_path, {**manifest, "stage": "complete"})
 
 

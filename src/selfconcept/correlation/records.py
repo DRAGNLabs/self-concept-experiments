@@ -111,6 +111,7 @@ class Manifest(TypedDict):
     python: str
     stage: RunStage
     axis_sha256: NotRequired[str]
+    transcripts_sha256: NotRequired[str]
     probe_sha256: NotRequired[dict[str, str]]
     assistant_axis: NotRequired[AssistantAxisManifest]
     probe_usable: NotRequired[bool]

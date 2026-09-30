@@ -1,4 +1,5 @@
 """Score existing transcripts with one teacher-forced forward pass per transcript."""
+import logging
 from pathlib import Path
 from typing import Literal, NamedTuple
 
@@ -7,13 +8,18 @@ import torch
 from selfconcept.codebench import harness
 from selfconcept.common.hf_strong_types import (
     configure_apply_chat_template, configure_call, Conversation, HFTokenizer, OffsetMappingPresent)
-from selfconcept.common.jsonl import append_jsonl
+from selfconcept.common.jsonl import append_jsonl, read_jsonl
+from selfconcept.common.resumable_jsonl import process_unrecorded_items
 from selfconcept.measurement.capture import capture
 from selfconcept.measurement.templates import final_answer_text, ResponseSpans, response_spans
 from .generate import (
     last_message_token_indices, MeasuredModel, response_token_indices_by_region, ScoredGeneration,
     summarize_region_scores, write_trace)
-from .records import GenerationRecord, GenerationStatus, Region, RegionSummary, TranscriptRecord
+from .config import RunConfig
+from .records import GenerationRecord, GenerationStatus, OutcomeRecord, Region, RegionSummary, TranscriptRecord
+from .scenarios import oom_outcome, write_judge_inputs
+
+logger = logging.getLogger(__name__)
 
 type Alignment = Literal["exact", "unavailable"]
 
@@ -42,7 +48,11 @@ def forward_scored(measured_model: MeasuredModel, token_ids: list[int]) -> Score
     except torch.OutOfMemoryError as exc:
         torch.cuda.empty_cache()
         raise harness.GenerationOOM(str(exc)[:200]) from None
-    return ScoredGeneration(token_ids, {layer: torch.cat(chunks).numpy() for layer, chunks in scores_by_layer.items()})
+    token_scores_by_layer = {layer: torch.cat(chunks)[:-1].numpy() for layer, chunks in scores_by_layer.items()}
+    for token_scores in token_scores_by_layer.values():
+        if len(token_scores) != len(token_ids) - 1:
+            raise ValueError(f"Unexpected teacher-forced alignment: {len(token_scores)} vs {len(token_ids) - 1}")
+    return ScoredGeneration(token_ids, token_scores_by_layer)
 
 
 def transcript_token_indices_by_region(tokenizer: HFTokenizer, messages: Conversation, raw_response: str,
@@ -95,3 +105,30 @@ def measured_score(measured_model: MeasuredModel, output_directory: Path,
         "trace": str(trace_path.relative_to(output_directory)), "measurement": measurement.name}
     append_jsonl(output_directory / "generations.jsonl", record)
     return record
+
+
+def score_transcript(measured_model: MeasuredModel, output_directory: Path,
+                     transcript: TranscriptRecord) -> OutcomeRecord:
+    try:
+        measured_score(measured_model, output_directory, transcript)
+        outcome = transcript["outcome"]
+    except harness.GenerationOOM as error:
+        outcome = oom_outcome(transcript["scenario"], transcript["example_id"], transcript["outcome"]["model_key"], error)
+    logger.info(f"{transcript['scenario']}/{transcript['example_id']}: {outcome['status']} {outcome['label']}")
+    return outcome
+
+
+def outcome_key(outcome: OutcomeRecord | TranscriptRecord) -> tuple[str, str]:
+    return outcome["scenario"], outcome["example_id"]
+
+
+def score_transcripts(config: RunConfig, measured_model: MeasuredModel) -> None:
+    assert config.transcripts is not None, "main only scores transcripts when --transcripts is set"
+    transcripts: list[TranscriptRecord] = read_jsonl(config.transcripts)
+    if len({outcome_key(transcript) for transcript in transcripts}) != len(transcripts):
+        raise ValueError("Transcript (scenario, example_id) pairs must be unique")
+    outcomes_path = config.out / "outcomes.jsonl"
+    process_unrecorded_items(
+        transcripts, outcomes_path, outcome_key, outcome_key,
+        lambda chunk: [score_transcript(measured_model, config.out, transcript) for transcript in chunk], chunk_size=1)
+    write_judge_inputs(config.out, outcomes_path, config.scenarios)
