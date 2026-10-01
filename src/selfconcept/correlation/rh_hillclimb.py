@@ -278,6 +278,22 @@ def one_per_problem_and_label(records: list[LabeledRecord]) -> list[LabeledRecor
     return kept
 
 
+def stratified_records(records: list[LabeledRecord]) -> list[LabeledRecord]:
+    """Every transcript of each problem with both labels; non-hacks are scored at the problem's earliest hack turn."""
+    kept: list[LabeledRecord] = []
+    for problem_records in records_by_problem(records).values():
+        hacks = [item for item in problem_records if item.label]
+        non_hacks = [item for item in problem_records if not item.label]
+        if not hacks or not non_hacks:
+            continue
+        earliest_hack_turn = min(hack.turn for hack in hacks)
+        kept += hacks
+        kept += [item._replace(turn=min(earliest_hack_turn, last_turn(item.record))) for item in non_hacks]
+    logger.info("Kept %d strata: %d hacks, %d non-hacks", len({item.record["example_id"] for item in kept}),
+                sum(item.label for item in kept), sum(not item.label for item in kept))
+    return kept
+
+
 def build_transcripts(root: Path, records: list[LabeledRecord]) -> list[TranscriptRecord]:
     worklists = load_worklists(root)
 
@@ -321,9 +337,12 @@ def main() -> None:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--verdicts", type=Path, nargs="+", required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--stratified", action="store_true",
+                        help="Keep every transcript of problems with both labels, for stratified analysis")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    selected = one_per_problem_and_label(labeled_records(args.root, load_verdicts(args.verdicts)))
+    records = labeled_records(args.root, load_verdicts(args.verdicts))
+    selected = stratified_records(records) if args.stratified else one_per_problem_and_label(records)
     transcripts = build_transcripts(args.root, selected)
     write_transcripts(args.out, transcripts)
     logger.info("Wrote %d transcripts to %s", len(transcripts), args.out)
