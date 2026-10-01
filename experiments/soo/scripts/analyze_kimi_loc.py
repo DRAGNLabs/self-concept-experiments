@@ -117,7 +117,7 @@ def main():
         lines += ["", "## Band deltas (all-token means over layers " + f"{d['layers'][0]}-{d['layers'][-1]})", "",
                   "| module | median mean norm | median base output rms norm | median spread / mean norm |", "|---|---:|---:|---:|"]
         for mod in ("v_proj", "q_proj"):
-            st = [d["stats"][k]["all"] for k in d["keys"] if k.endswith(":" + mod)]
+            st = [d["stats"]["all"][k] for k in d["keys"] if k.endswith(":" + mod)]
             if st:
                 med = lambda key: sorted(x[key] for x in st)[len(st) // 2]  # noqa: E731
                 lines.append(f"| {mod} | {med('mean_norm'):.3f} | {med('base_output_rms_norm'):.3f} | {med('rms_spread_over_mean_norm'):.2f} |")
