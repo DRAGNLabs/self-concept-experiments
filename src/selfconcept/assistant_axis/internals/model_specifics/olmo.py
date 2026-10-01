@@ -1,11 +1,11 @@
 from typing import Any
 
 from selfconcept.assistant_axis.internals.model_specifics._shared import build_turn_spans_chatml, get_response_indices_chatml
-from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics
 from selfconcept.common.hf_strong_types import ConversationTurn, HFTokenizer, configure_call
 
 
-class OlmoModelSpecifics(CoverallLayerGetter, ModelSpecifics):
+class OlmoModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics):
     """This was built for OLMo 3. OLMo 3 uses a different chat template than earlier versions."""
 
     def get_response_indices(

@@ -195,6 +195,7 @@ class VLLMGenerator(BatchEngine):
         responses = self.generate_batch(all_conversations)
 
         # Build results
+        model_specifics = get_model_specifics_by_name(self.model_name)
         results = []
         for conv, meta, response in zip(all_conversations, all_metadata, responses):
             result = {
@@ -202,7 +203,7 @@ class VLLMGenerator(BatchEngine):
                 "prompt_index": meta["prompt_index"],
                 "question_index": meta["question_index"],
                 "question": meta["question"],
-                "conversation": conv + [{"role": "assistant", "content": response}],
+                "conversation": conv + [model_specifics.to_assistant_turn(response)],
             }
             results.append(result)
 

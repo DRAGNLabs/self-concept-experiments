@@ -1,7 +1,7 @@
 import warnings
 from typing import Any, Iterator, NamedTuple
 
-from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics
 from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
 
 
@@ -42,7 +42,7 @@ def _pooled_messages(tokenizer: HFTokenizer, full_ids: list[int], **apply_chat_t
     ]
 
 
-class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics):
+class GptModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics):
     def get_response_indices(
         self,
         conversation: Conversation,

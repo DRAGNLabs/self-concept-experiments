@@ -2,10 +2,10 @@ from typing import Any, Protocol, cast
 
 import torch.nn as nn
 
-from selfconcept.common.hf_strong_types import AllRoles, HFTokenizer, _Conversation
+from selfconcept.common.hf_strong_types import AllRoles, ConversationTurn, HFTokenizer, _Conversation
 
 
-class ModelSpecifics[RoleT: AllRoles = AllRoles](Protocol): # TODO: include tokenizer?
+class ModelSpecifics[RoleT: AllRoles = AllRoles, AssistantTurnT: ConversationTurn = ConversationTurn](Protocol): # TODO: include tokenizer?
     def get_response_indices(self, conversation: _Conversation[RoleT], tokenizer: HFTokenizer[RoleT], **apply_chat_template_kwargs: Any) -> list[list[int]]: ... # TODO: figure out what to do with apply_chat_template_kwargs
 
     def build_turn_spans(
@@ -25,6 +25,12 @@ class ModelSpecifics[RoleT: AllRoles = AllRoles](Protocol): # TODO: include toke
     def thinking_close_ids(self, tokenizer: HFTokenizer[RoleT]) -> list[int]: ...
 
     def get_layers(self, model: Any) -> nn.ModuleList: ...
+
+    def to_assistant_turn(self, completion: str) -> AssistantTurnT: ...
+
+class HFStyleAssistantTurn:
+    def to_assistant_turn(self, completion: str) -> ConversationTurn:
+        return {"role": "assistant", "content": completion}
 
 class CoverallLayerGetter:
     def get_layers(self, model: Any) -> nn.ModuleList:
