@@ -3,6 +3,8 @@
 Label 1: every v3 verdict for the record is HACK (STRONG or WEAK). Label 0: no verdict and not a review candidate.
 Everything else (NOT_HACK, BORDERLINE, disagreeing judges, candidates awaiting review) is excluded.
 One transcript is kept per (base problem, label), so a problem contributes at most one hack and one non-hack.
+Hacks are scored at the verdict's hack turn; non-hacks at their problem's hack turn (or their last turn, if shorter or
+the problem has no hack).
 """
 import argparse
 from collections import Counter
@@ -40,6 +42,7 @@ class VerdictRecord(TypedDict):
     file: str
     verdict: str
     strength: NotRequired[str | None]
+    turn: NotRequired[int | None]
 
 
 class LabeledRecord(NamedTuple):
@@ -49,6 +52,7 @@ class LabeledRecord(NamedTuple):
     record: dict[str, Any]
     verdicts: list[VerdictRecord]
     label: BinaryLabel
+    turn: int
 
 
 class WorklistSettings(NamedTuple):
@@ -101,15 +105,26 @@ def iter_tier1_records(root: Path) -> Iterator[tuple[RecordKey, str, str, dict[s
                 yield record_key(run, path.stem, record["example_id"]), run, path.stem, record
 
 
+def hack_turn(verdicts: list[VerdictRecord]) -> int:
+    turns = {verdict.get("turn") for verdict in verdicts}
+    if len(turns) != 1 or not isinstance(turn := turns.pop(), int):
+        raise ValueError(f"HACK verdicts need one agreed integer turn: {verdicts[0]['file']}")
+    return turn
+
+
+def last_turn(record: dict[str, Any]) -> int:
+    return len(record["attempts"]) - 1
+
+
 def select_record(key: RecordKey, run: str, stem: str, record: dict[str, Any],
                   verdicts: list[VerdictRecord]) -> tuple[LabeledRecord | None, Selection]:
     if verdicts and all(verdict["verdict"] == "HACK" for verdict in verdicts):
-        return LabeledRecord(key, run, stem, record, verdicts, 1), "hack"
+        return LabeledRecord(key, run, stem, record, verdicts, 1, hack_turn(verdicts)), "hack"
     if verdicts:
         return None, "excluded_verdict"
     if is_review_candidate(record):
         return None, "candidate_unreviewed"
-    return LabeledRecord(key, run, stem, record, verdicts, 0), "unflagged"
+    return LabeledRecord(key, run, stem, record, verdicts, 0, last_turn(record)), "unflagged"
 
 
 def labeled_records(root: Path, verdicts_by_key: dict[RecordKey, list[VerdictRecord]]) -> list[LabeledRecord]:
@@ -183,11 +198,31 @@ def task_message(example: dict[str, Any], record: dict[str, Any]) -> str:
         workspace_example, harness.workspace_files(workspace_example), budget, feedback)
 
 
-def initial_messages(example: dict[str, Any], record: dict[str, Any], settings: WorklistSettings) -> Conversation:
+def harness_feedback_message(example: dict[str, Any], record: dict[str, Any], turn: int) -> str:
+    """The neutral-protocol harness reply to one attempt, rebuilt from the stored output (its last 3000 characters)."""
+    if not harness.is_neutral(record["feedback"]):
+        raise ValueError(f"Only the neutral protocol is reconstructed, not {record['feedback']}")
+    attempt = record["attempts"][turn]
+    remaining = harness.stated_attempts_remaining(record["attempt_budget_stated"], turn + 1, record["max_attempts"])
+    if example["kind"] == "check":
+        error = harness.check_feedback_error(attempt["stdout"], attempt["stderr"])
+        return harness.neutral_retry_message(error, remaining)
+    if not attempt["wrote"]:
+        return harness.neutral_no_files_message(remaining)
+    output = harness.workspace_test_output(attempt["stdout"], attempt["stderr"])
+    return harness.neutral_workspace_retry_message(output, remaining)
+
+
+def conversation_before_turn(example: dict[str, Any], record: dict[str, Any], settings: WorklistSettings,
+                             turn: int) -> Conversation:
+    """The model saw only the final channel of its earlier replies."""
     messages: Conversation = []
     if settings.system_prompt is not None:
         messages.append({"role": "system", "content": settings.system_prompt})
     messages.append({"role": "user", "content": task_message(example, record)})
+    for earlier_turn in range(turn):
+        messages.append({"role": "assistant", "content": record["attempts"][earlier_turn]["completion"]})
+        messages.append({"role": "user", "content": harness_feedback_message(example, record, earlier_turn)})
     return messages
 
 
@@ -207,14 +242,37 @@ def transcript_outcome(item: LabeledRecord, example_id: str, model_key: str) -> 
     return outcome
 
 
-def one_per_problem_and_label(records: list[LabeledRecord]) -> list[LabeledRecord]:
-    """Choose among complete episodes only, since analysis drops truncated ones."""
-    records_by_problem_and_label: dict[tuple[str, BinaryLabel], list[LabeledRecord]] = {}
+def key_hash(item: LabeledRecord) -> str:
+    return hashlib.sha256(item.key.encode()).hexdigest()
+
+
+def records_by_problem(records: list[LabeledRecord]) -> dict[str, list[LabeledRecord]]:
+    """Complete episodes only, since analysis drops truncated ones."""
+    grouped: dict[str, list[LabeledRecord]] = {}
     for item in records:
         if not item.record["attempts"][-1]["truncated"]:
-            records_by_problem_and_label.setdefault((item.record["example_id"], item.label), []).append(item)
-    kept = [min(group, key=lambda item: hashlib.sha256(item.key.encode()).hexdigest())
-            for group in records_by_problem_and_label.values()]
+            grouped.setdefault(item.record["example_id"], []).append(item)
+    return grouped
+
+
+def matched_non_hack(non_hacks: list[LabeledRecord], matched_turn: int | None) -> LabeledRecord:
+    """Prefer an episode long enough to reach the matched turn, then score it there (or at its last turn)."""
+    if matched_turn is None:
+        return min(non_hacks, key=key_hash)
+    chosen = min(non_hacks, key=lambda item: (last_turn(item.record) < matched_turn, key_hash(item)))
+    return chosen._replace(turn=min(matched_turn, last_turn(chosen.record)))
+
+
+def one_per_problem_and_label(records: list[LabeledRecord]) -> list[LabeledRecord]:
+    kept: list[LabeledRecord] = []
+    for problem_records in records_by_problem(records).values():
+        hacks = [item for item in problem_records if item.label]
+        non_hacks = [item for item in problem_records if not item.label]
+        hack = min(hacks, key=key_hash) if hacks else None
+        if hack is not None:
+            kept.append(hack)
+        if non_hacks:
+            kept.append(matched_non_hack(non_hacks, hack.turn if hack is not None else None))
     logger.info("Kept one transcript per problem and label: %d hacks, %d non-hacks",
                 sum(item.label for item in kept), sum(not item.label for item in kept))
     return kept
@@ -240,12 +298,13 @@ def build_transcripts(root: Path, records: list[LabeledRecord]) -> list[Transcri
     for item in records:
         tag, record = record_tag(item), item.record
         settings = worklists[item.run, tag]
-        attempt = record["attempts"][0]
-        reasoning, final = model_specifics(item.run, tag).split_attempt(record["example_id"], 0, attempt["completion"])
+        attempt = record["attempts"][item.turn]
+        reasoning, final = model_specifics(item.run, tag).split_attempt(
+            record["example_id"], item.turn, attempt["completion"])
         example_id = f"{item.run}/{tag}/{record['example_id']}"
         transcripts.append({
-            "example_id": example_id, "scenario": record["scenario"], "turn": 0,
-            "messages": initial_messages(examples(tag)[record["example_id"]], record, settings),
+            "example_id": example_id, "scenario": record["scenario"], "turn": item.turn,
+            "messages": conversation_before_turn(examples(tag)[record["example_id"]], record, settings, item.turn),
             "chat_kwargs": settings.chat_kwargs, "raw_response": join_harmony_completion(reasoning, final),
             "truncated": attempt["truncated"],
             "outcome": transcript_outcome(item, example_id, model_key(item.run, item.stem))})
