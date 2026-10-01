@@ -1,9 +1,8 @@
 import warnings
 from typing import Any, Iterator, NamedTuple
 
-from selfconcept.assistant_axis.internals.conversation_utils import content_only_ids_and_offset_standard
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
-from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template
+from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
 
 
 class HarmonyMessage(NamedTuple):
@@ -81,16 +80,6 @@ class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics):
             if message.content_indices
         ]
         return full_ids, spans
-
-    def content_only_ids_and_offset(
-        self,
-        messages_before: Conversation,
-        tokenizer: HFTokenizer,
-        role: AllRoles,
-        content: str,
-        **chat_kwargs,
-    ) -> tuple[list[int], int]:
-        return content_only_ids_and_offset_standard(messages_before, tokenizer, role, content, **chat_kwargs)
 
     def set_enable_thinking(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
         # The template ignores enable_thinking; it only tells the span methods whether CoT pooling was requested.

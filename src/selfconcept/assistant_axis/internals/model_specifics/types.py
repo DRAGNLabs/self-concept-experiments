@@ -2,11 +2,10 @@ from typing import Any, Protocol, cast
 
 import torch.nn as nn
 
-from selfconcept.assistant_axis.internals.conversation_utils import ContentOnlyIdsAndOffsetFn
 from selfconcept.common.hf_strong_types import AllRoles, HFTokenizer, _Conversation
 
 
-class ModelSpecifics[RoleT: AllRoles = AllRoles](ContentOnlyIdsAndOffsetFn[RoleT], Protocol): # TODO: include tokenizer?
+class ModelSpecifics[RoleT: AllRoles = AllRoles](Protocol): # TODO: include tokenizer?
     def get_response_indices(self, conversation: _Conversation[RoleT], tokenizer: HFTokenizer[RoleT], **apply_chat_template_kwargs: Any) -> list[list[int]]: ... # TODO: figure out what to do with apply_chat_template_kwargs
 
     def build_turn_spans(
