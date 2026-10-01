@@ -26,6 +26,11 @@ MODEL_CONFIGS = {
         "total_layers": 80,
         "short_name": "Llama",
     },
+    "openai/gpt-oss-120b": {
+        "target_layer": 18,
+        "total_layers": 36,
+        "short_name": "ChatGPT",
+    },
 }
 
 
