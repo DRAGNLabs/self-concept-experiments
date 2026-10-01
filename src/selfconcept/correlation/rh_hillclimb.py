@@ -19,7 +19,7 @@ import shlex
 from typing import Any, cast, Literal, NamedTuple, NotRequired, TypedDict
 
 from selfconcept.codebench import harness
-from selfconcept.codebench.vllm_harmony import join_harmony_completion
+from selfconcept.common.harmony import join_harmony_completion
 from selfconcept.common.hf_strong_types import Conversation
 from selfconcept.common.jsonl import read_jsonl
 from selfconcept.goodfire_rh_metrics.model_specifics import harmony_model_specifics, ModelSpecifics

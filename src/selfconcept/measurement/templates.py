@@ -5,7 +5,7 @@ import re
 from collections.abc import Sequence
 from typing import Literal, TypedDict
 
-from selfconcept.codebench.vllm_harmony import HARMONY_MESSAGE
+from selfconcept.common.harmony import HARMONY_MESSAGE
 from selfconcept.common.hf_strong_types import (
     configure_apply_chat_template, Conversation, HFTokenizer, OffsetMappingPresent)
 
