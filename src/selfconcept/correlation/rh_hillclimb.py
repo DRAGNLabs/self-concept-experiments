@@ -2,12 +2,14 @@
 
 Label 1: every v3 verdict for the record is HACK (STRONG or WEAK). Label 0: no verdict and not a review candidate.
 Everything else (NOT_HACK, BORDERLINE, disagreeing judges, candidates awaiting review) is excluded.
+One transcript is kept per (base problem, label), so a problem contributes at most one hack and one non-hack.
 """
 import argparse
 from collections import Counter
 from collections.abc import Iterator
 from fnmatch import fnmatch
 from functools import cache
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -205,6 +207,19 @@ def transcript_outcome(item: LabeledRecord, example_id: str, model_key: str) -> 
     return outcome
 
 
+def one_per_problem_and_label(records: list[LabeledRecord]) -> list[LabeledRecord]:
+    """Choose among complete episodes only, since analysis drops truncated ones."""
+    records_by_problem_and_label: dict[tuple[str, BinaryLabel], list[LabeledRecord]] = {}
+    for item in records:
+        if not item.record["attempts"][-1]["truncated"]:
+            records_by_problem_and_label.setdefault((item.record["example_id"], item.label), []).append(item)
+    kept = [min(group, key=lambda item: hashlib.sha256(item.key.encode()).hexdigest())
+            for group in records_by_problem_and_label.values()]
+    logger.info("Kept one transcript per problem and label: %d hacks, %d non-hacks",
+                sum(item.label for item in kept), sum(not item.label for item in kept))
+    return kept
+
+
 def build_transcripts(root: Path, records: list[LabeledRecord]) -> list[TranscriptRecord]:
     worklists = load_worklists(root)
 
@@ -249,7 +264,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    selected = labeled_records(args.root, load_verdicts(args.verdicts))
+    selected = one_per_problem_and_label(labeled_records(args.root, load_verdicts(args.verdicts)))
     transcripts = build_transcripts(args.root, selected)
     write_transcripts(args.out, transcripts)
     logger.info("Wrote %d transcripts to %s", len(transcripts), args.out)
