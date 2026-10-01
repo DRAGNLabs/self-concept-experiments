@@ -3,6 +3,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from typing import NamedTuple
 
+import numpy as np
 from scipy.stats import rankdata
 
 from .analyze import BinaryOutcome
@@ -17,6 +18,11 @@ class StratifiedExample(NamedTuple):
 class StratifiedAuroc(NamedTuple):
     auroc: float | None
     n_pairs: int
+
+
+class ConfidenceInterval(NamedTuple):
+    low: float
+    high: float
 
 
 def mann_whitney_u(positive_scores: list[float], negative_scores: list[float]) -> float:
@@ -39,3 +45,24 @@ def stratified_auroc(examples: Sequence[StratifiedExample]) -> StratifiedAuroc:
         concordant_pairs += mann_whitney_u(positive_scores, negative_scores)
         n_pairs += len(positive_scores) * len(negative_scores)
     return StratifiedAuroc(concordant_pairs / n_pairs if n_pairs else None, n_pairs)
+
+
+def stratum_bootstrap_interval(examples: Sequence[StratifiedExample], samples: int = 1000,
+                               seed: int = 1729) -> ConfidenceInterval | None:
+    """95% interval from resampling whole strata; a stratum drawn twice enters as two separate strata."""
+    examples_by_stratum: defaultdict[str, list[StratifiedExample]] = defaultdict(list)
+    for example in examples:
+        examples_by_stratum[example.stratum].append(example)
+    strata = sorted(examples_by_stratum)
+    rng = np.random.default_rng(seed)
+    draws: list[float] = []
+    for _ in range(samples):
+        drawn_strata = [strata[index] for index in rng.integers(len(strata), size=len(strata))]
+        resampled = [example._replace(stratum=f"{draw}:{stratum}")
+                     for draw, stratum in enumerate(drawn_strata) for example in examples_by_stratum[stratum]]
+        if (auroc := stratified_auroc(resampled).auroc) is not None:
+            draws.append(auroc)
+    if not draws:
+        return None
+    low, high = np.quantile(draws, [.025, .975]).tolist()
+    return ConfidenceInterval(low, high)
