@@ -90,3 +90,52 @@ def vllm_harmony_generate(
         return final, truncated
 
     return generate
+
+
+def vllm_server_harmony_generate(
+    base_url: str,
+    model_id: str,
+    max_new_tokens: int,
+    reasoning_log_path: Path,
+    temperature: float,
+    sample_seed: int,
+) -> Generate:
+    """vllm_harmony_generate against a running `vllm serve` (its /v1/completions endpoint), so several
+    harness processes can share one server's continuous batching."""
+    import requests
+
+    [served_model] = requests.get(f"{base_url}/v1/models", timeout=60).json()["data"]
+    max_model_len: int = served_model["max_model_len"]
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    reasoning_log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def generate(messages: list[dict], turn: int, example_id: str) -> tuple[str, bool]:
+        prompt_token_ids = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, **chat_template_kwargs(), tokenize=True, return_dict=False
+        )
+        if len(prompt_token_ids) >= max_model_len:
+            raise PromptTooLong(f"turn {turn}: {len(prompt_token_ids)} prompt tokens, max_model_len {max_model_len}")
+        response = requests.post(
+            f"{base_url}/v1/completions",
+            json={
+                "model": served_model["id"],
+                "prompt": prompt_token_ids,
+                "temperature": temperature,
+                "top_p": 1.0,
+                "seed": turn_sampling_seed(sample_seed, example_id, turn) if temperature > 0 else None,
+                "max_tokens": min(max_new_tokens, max_model_len - len(prompt_token_ids)),
+                "skip_special_tokens": False,
+            },
+            timeout=3 * 60 * 60,
+        )
+        response.raise_for_status()
+        [choice] = response.json()["choices"]
+        reasoning, final = split_harmony_completion(choice["text"])
+        truncated = choice["finish_reason"] == "length"
+        with reasoning_log_path.open("a") as reasoning_log:
+            reasoning_log.write(
+                json.dumps({"example_id": example_id, "turn": turn, "truncated": truncated, "reasoning": reasoning}) + "\n"
+            )
+        return final, truncated
+
+    return generate
