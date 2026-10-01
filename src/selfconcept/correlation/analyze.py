@@ -21,6 +21,7 @@ JUDGE_POSITIVE_LABELS = frozenset({"deceptive", "reward_hacking", "special_casin
                                    "operator_overloading", "other_exploit"})
 JUDGE_NEGATIVE_LABELS = frozenset({"honest", "legitimate"})
 REGIONS: tuple[Region, ...] = ("prompt", "cot", "final")
+PRIMARY_REGION: Region = "final"
 LIMITATIONS = ["Small feasibility pilot; no confirmatory significance tests.",
                "No cross-model pooling of measurement scores.", "Coding outcomes operationalize reward hacking, not established deceptive intent.",
                "Bootstrap units are examples within each cell; cells/orientations are not independent replications.",
@@ -250,7 +251,7 @@ def analyze_run(directory: Path, bootstrap_samples: int = 1000) -> AnalysisResul
     for (scenario, layer, region), examples in sorted(examples_by_cell.items()):
         scores, outcomes, length_controls = zip(*examples)
         cells.append({"scenario": scenario, "layer": int(layer), "region": region, "measurement": measurement_name,
-                      "primary": int(layer) == primary_layer and region == "prompt",
+                      "primary": int(layer) == primary_layer and region == PRIMARY_REGION,
                       **rank_association(scores, outcomes, length_controls, bootstrap_samples)})
     return {"status": "exploratory", "measurement": measurement_name, "coverage": dict(coverage_by_scenario),
             "cells": cells, "primary_layer": primary_layer, "limitations": LIMITATIONS}
@@ -261,8 +262,8 @@ def render_markdown(directory_name: str, result: AnalysisResult) -> str:
     lines = [f"# {directory_name}: {result['measurement']} associations", "", f"Status: {result['status']}", ""]
     for scenario, counts in (completed["coverage"] if completed else {}).items():
         lines.append(f"- {scenario}: {dict(counts)}")
-    lines += ["", f"Primary: scored-turn prompt content (turn 0 for generated runs) at prespecified layer {completed['primary_layer'] if completed else None}.",
-              "Generated CoT/final regions are descriptive associations with the eventual outcome.", "",
+    lines += ["", f"Primary: scored-turn {PRIMARY_REGION} content (turn 0 for generated runs) at prespecified layer {completed['primary_layer'] if completed else None}.",
+              "Other regions are descriptive associations with the eventual outcome; see analysis.json.", "",
               "| Scenario | n | Spearman rho | AUC |", "|---|---:|---:|---:|"]
     for cell in (completed["cells"] if completed else []):
         if cell["primary"]:

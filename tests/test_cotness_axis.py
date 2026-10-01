@@ -276,7 +276,7 @@ class AxisTests(unittest.TestCase):
                     for turn in (0, 1):
                         generations.append({"scenario": scenario, "example_id": str(i), "turn": turn,
                                             "measurement": "assistant-axis", "prompt_tokens": 10,
-                                            "scores": {"1": {"prompt": {"mean": i-4 if turn == 0 else 0, "n": 10}}}})
+                                            "scores": {"1": {"final": {"mean": i-4 if turn == 0 else 0, "n": 10}}}})
                 (out / f"base_{scenario}_graded.jsonl").write_text("".join(json.dumps(g)+"\n" for g in grades))
                 grades = []
             outcomes += [{"scenario": "impossible_oneoff", "example_id": "missing", "status": "truncated",
