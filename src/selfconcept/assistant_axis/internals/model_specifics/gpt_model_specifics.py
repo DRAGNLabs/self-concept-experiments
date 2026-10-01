@@ -1,8 +1,13 @@
 import warnings
 from typing import Any, Iterator, NamedTuple
 
-from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics
-from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
+from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.common.harmony import split_harmony_completion
+from selfconcept.common.hf_strong_types import AllRoles, Conversation, ConversationTurn, HFTokenizer, configure_apply_chat_template
+
+
+class HarmonyAssistantTurn(ConversationTurn):
+    thinking: str
 
 
 class HarmonyMessage(NamedTuple):
@@ -42,7 +47,9 @@ def _pooled_messages(tokenizer: HFTokenizer, full_ids: list[int], **apply_chat_t
     ]
 
 
-class GptModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics):
+class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics[AllRoles, HarmonyAssistantTurn]):
+    skip_special_tokens = False
+
     def get_response_indices(
         self,
         conversation: Conversation,
@@ -87,3 +94,7 @@ class GptModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecific
 
     def thinking_close_ids(self, tokenizer: HFTokenizer) -> list[int]:
         return []  # gpt-oss always reasons
+
+    def to_assistant_turn(self, completion: str) -> HarmonyAssistantTurn:
+        reasoning, final = split_harmony_completion(completion)
+        return {"role": "assistant", "content": final, "thinking": reasoning}
