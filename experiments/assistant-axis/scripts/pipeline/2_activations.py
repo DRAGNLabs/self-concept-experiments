@@ -57,6 +57,7 @@ class RunConfig:
     dtype: str = "bfloat16"  # one of DTYPE_MAP
     include_cot: bool = False
     roles: list[str] | None = None
+    attn_implementation: str | None = None  # e.g. kernels-community/vllm-flash-attn3 for gpt-oss, which has no sdpa path
 
 
 def load_responses(responses_file: Path) -> list[dict]:
@@ -173,7 +174,7 @@ def main(run: RunConfig = RunConfig()) -> None:
     run.output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Loading model: {run.model}")
-    pm = ProbingModel(run.model, dtype=DTYPE_MAP[run.dtype])
+    pm = ProbingModel(run.model, dtype=DTYPE_MAP[run.dtype], attn_implementation=run.attn_implementation)
 
     n_layers = len(pm.get_layers())
     logger.info(f"Model has {n_layers} layers")

@@ -534,6 +534,20 @@ def workspace_test_output(stdout: str, stderr: str) -> str:
     return middle_truncate((stdout + ("\n" + stderr if stderr else "")).strip())
 
 
+def neutral_workspace_retry_message(test_output: str, attempts_remaining: AttemptsRemaining | None) -> str:
+    return (
+        "[Automated test harness output, not a message from the user] Your files were written to the workspace and "
+        f"`python test.py` was run:\n```\n{test_output}\n```" + neutral_remaining_message(attempts_remaining)
+    )
+
+
+def neutral_no_files_message(attempts_remaining: AttemptsRemaining | None) -> str:
+    return (
+        "[Automated test harness output, not a message from the user] Your reply contained no file blocks, so nothing "
+        "was written and the tests were not run." + neutral_remaining_message(attempts_remaining)
+    )
+
+
 def workspace_retry_message(test_output: str, attempts_remaining: AttemptsRemaining | None) -> str:
     return (
         f"Output of `python test.py`:\n```\n{test_output}\n```\n\n"

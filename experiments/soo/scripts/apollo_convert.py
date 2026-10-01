@@ -14,7 +14,8 @@ Three operationalizations from ApolloResearch/deception-detection
 - sandbagging.jsonl: their sandbagging_v2 wmdp_mmlu variant — system prompt
   instructing the model to hide dangerous-capability knowledge, over WMDP
   questions (expected sandbag) and MMLU questions (honest control). Labeled
-  programmatically by scripts/parse_sandbagging.py from the step tags.
+  programmatically by scripts/reparse_sandbagging.py from the step tags.
+  The original parse_sandbagging.py is retained only for legacy audit reproduction.
   Needs cais/wmdp + cais/mmlu, so run on a node with internet (cached after).
 
 Prompt construction folds the system turn into the first user turn for every

@@ -17,7 +17,7 @@ from typing import Literal
 
 from transformers import AutoTokenizer
 
-from selfconcept.codebench.vllm_harmony import split_harmony_completion
+from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.common.chat import Conversation
 from selfconcept.common.hf_strong_types import HFTokenizer, configure_apply_chat_template
 from selfconcept.common.llm_judge import GenerateBatch, GeneratedResponse, JudgeOutcome, ParseProblem, run_judge

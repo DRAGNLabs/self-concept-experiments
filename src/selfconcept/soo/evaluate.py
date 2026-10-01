@@ -75,6 +75,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True)
     parser.add_argument("--adapter", help="optional PEFT adapter path (SOO fine-tuned)")
+    parser.add_argument("--adapter-layers", help="keep the adapter's LoRA modules only in these decoder layers "
+                        "(all | only:L | except:L | below:L | above:L | range:A-B | layers:3,5); others revert to the base layer")
+    parser.add_argument("--adapter-modules", help="keep only these target modules, e.g. q_proj or v_proj (default both)")
     parser.add_argument("--scenarios", nargs="+", default=["main"])
     parser.add_argument("--n", type=int, help="evaluate only the first n examples")
     parser.add_argument("--suffix", choices=SUFFIXES, default="i_would")
@@ -101,9 +104,26 @@ def main() -> None:
     parser.add_argument("--steer-vectors", type=Path, help="steering vectors .pt from scripts/extract_steering.py")
     parser.add_argument("--steer-layer", type=int, help="decoder layer to steer at (required with --steer-vectors)")
     parser.add_argument("--steer-alpha", type=float, default=1.0, help="steering strength (1.0 = full mean self-other difference)")
-    parser.add_argument("--steer-mode", choices=["add", "project"], default="add")
+    parser.add_argument("--steer-mode", choices=["add", "project", "replace"], default="add",
+                        help="replace: h <- (1-alpha) h + alpha c with c a constant from --steer-constants (no training)")
     parser.add_argument("--steer-token-mode", choices=["last", "mean"], default="last", help="which extraction convention's vector to use")
     parser.add_argument("--steer-random-seed", type=int, help="control: replace the vector with a random one of matched norm")
+    parser.add_argument("--steer-constants", type=Path, help="constants .pt from scripts/make_constants.py (mode replace)")
+    parser.add_argument("--steer-constant", help="named constant in --steer-constants, e.g. adapter_seed0, base_mean, zero")
+    parser.add_argument("--band-deltas", type=Path, help="band deltas .pt from scripts/extract_band_deltas.py: a LoRA band's mean deltas added as fixed offsets (STEER_ROUND.md)")
+    parser.add_argument("--band-module", choices=["v_proj", "q_proj"], default="v_proj", help="which projection's band offsets to add")
+    parser.add_argument("--band-token-mode", choices=["last", "all"], default="last", help="mean over the last prompt token or over all prompt tokens")
+    parser.add_argument("--band-alpha", type=float, default=1.0, help="offset scale (1.0 = the mean delta itself)")
+    parser.add_argument("--band-random-seed", type=int, help="control: per-layer random directions of matched norm")
+    parser.add_argument(
+        "--steer-positions",
+        choices=["all", "response", "prompt", "from_last"],
+        default="all",
+        help="which token positions receive the offset: all (default), response = the "
+        "current assistant turn (chat-template generation prompt + generated tokens), "
+        "prompt = the context only (diagnostic), from_last = the last prompt token and "
+        "every generated token (template-independent)",
+    )
     parser.add_argument(
         "--device-map",
         help="pass device_map to from_pretrained (e.g. 'auto' to shard models "
@@ -137,34 +157,91 @@ def main() -> None:
         model = load_causal_lm(args.model, dtype=dtype, device_map=args.device_map)
     else:
         model = load_causal_lm(args.model, dtype=dtype)
+    adapter_subset = None
     if args.adapter:
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, args.adapter)
+        from .lora_subset import apply_adapter_subset
+
+        adapter_subset = apply_adapter_subset(model, args.adapter_layers, args.adapter_modules)
+        if adapter_subset:
+            print(f"Adapter subset: {adapter_subset}")
+    elif args.adapter_layers or args.adapter_modules:
+        parser.error("--adapter-layers / --adapter-modules need --adapter")
     if not args.quant_4bit and not args.device_map:
         model.to(device)
     model.eval()
 
     steering = None
-    if args.steer_vectors:
+    if args.steer_vectors and args.steer_constants:
+        parser.error("--steer-vectors and --steer-constants are exclusive")
+    if args.steer_constants and (args.steer_mode != "replace" or not args.steer_constant):
+        parser.error("--steer-constants requires --steer-mode replace and --steer-constant NAME")
+    if args.steer_vectors or args.steer_constants:
         if args.steer_layer is None:
             parser.error("--steer-vectors requires --steer-layer")
         from .steering import get_vector, load_vectors, random_matched_vector, steer_o_proj
 
-        vector = get_vector(load_vectors(args.steer_vectors), args.steer_layer, args.steer_token_mode)
+        if args.steer_constants:
+            from .steering import get_constant, load_constants
+
+            data = load_constants(args.steer_constants)
+            if int(data["layer"]) != args.steer_layer:
+                raise SystemExit(f"constants were measured at layer {data['layer']}, not {args.steer_layer}")
+            vector = get_constant(data, args.steer_constant)
+        else:
+            vector = get_vector(load_vectors(args.steer_vectors), args.steer_layer, args.steer_token_mode)
         if args.steer_random_seed is not None:
             vector = random_matched_vector(vector, args.steer_random_seed)
-        steer_o_proj(model, args.steer_layer, vector, args.steer_alpha, args.steer_mode)
+        positions = None
+        if args.steer_positions != "all":
+            from .steering import PositionalSteering, response_marker
+
+            marker = None if args.steer_positions == "from_last" else response_marker(tokenizer, chat_template_kwargs())
+            positions = PositionalSteering(marker, args.steer_positions)
+        steer_o_proj(model, args.steer_layer, vector, args.steer_alpha, args.steer_mode, positions)
         steering = {
-            "vectors": str(args.steer_vectors),
+            "vectors": str(args.steer_vectors) if args.steer_vectors else None,
+            "constants": str(args.steer_constants) if args.steer_constants else None,
+            "constant": args.steer_constant,
             "layer": args.steer_layer,
             "alpha": args.steer_alpha,
             "mode": args.steer_mode,
             "token_mode": args.steer_token_mode,
             "random_seed": args.steer_random_seed,
+            "positions": args.steer_positions,
             "vector_norm": round(vector.norm().item(), 6),
         }
         print(f"Steering: {steering}")
+
+    if args.band_deltas:
+        if args.steer_vectors or args.steer_constants:
+            parser.error("--band-deltas is exclusive with --steer-vectors / --steer-constants")
+        if args.adapter:
+            parser.error("--band-deltas steers the base model; drop --adapter")
+        from .steering import (
+            PositionalSteering, get_band_offsets, load_band_deltas, random_matched_offsets, response_marker, steer_modules,
+        )
+
+        data = load_band_deltas(args.band_deltas)
+        if data.get("model") != args.model:
+            raise SystemExit(f"band deltas were measured on {data.get('model')}, not {args.model}")
+        offsets = get_band_offsets(data, args.band_module, args.band_token_mode)
+        if args.band_random_seed is not None:
+            offsets = random_matched_offsets(offsets, args.band_random_seed)
+        positions = None
+        if args.steer_positions != "all":
+            marker = None if args.steer_positions == "from_last" else response_marker(tokenizer, chat_template_kwargs())
+            positions = PositionalSteering(marker, args.steer_positions)
+        steer_modules(model, offsets, args.band_alpha, positions)
+        steering = {
+            "band_deltas": str(args.band_deltas), "band_module": args.band_module, "token_mode": args.band_token_mode,
+            "alpha": args.band_alpha, "random_seed": args.band_random_seed, "positions": args.steer_positions,
+            "layers": sorted({int(k.split(":")[0]) for k in offsets}),
+            "offset_norms": {k: round(v.norm().item(), 6) for k, v in offsets.items()},
+        }
+        print(f"Band steering: {steering}")
 
     args.out.mkdir(parents=True, exist_ok=True)
     all_summaries = {}
@@ -240,6 +317,7 @@ def main() -> None:
         summary = {
             "model": args.model,
             "adapter": args.adapter,
+            "adapter_subset": adapter_subset,
             "steering": steering,
             "scenario": scenario,
             "suffix": args.suffix,

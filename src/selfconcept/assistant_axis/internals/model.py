@@ -25,6 +25,7 @@ class ProbingModel:
         max_memory_per_gpu: dict[int, str] | None = None,
         chat_model_name: str | None = None,
         dtype: torch.dtype = torch.bfloat16,
+        attn_implementation: str | None = None,
     ):
         """
         Initialize and load a HuggingFace model and tokenizer.
@@ -38,6 +39,7 @@ class ProbingModel:
             max_memory_per_gpu: Optional dict mapping GPU ids to max memory (e.g. {0: "40GiB", 1: "40GiB"})
             chat_model_name: Optional HuggingFace model identifier for tokenizer (if different from base model)
             dtype: Data type for model weights (default: torch.bfloat16)
+            attn_implementation: Passed to from_pretrained when set (e.g. a hub kernel like "kernels-community/vllm-flash-attn3")
         """
         self.model_name = model_name
         self.chat_model_name = chat_model_name
@@ -56,6 +58,8 @@ class ProbingModel:
         model_kwargs: dict[str, Any] = {
             "dtype": dtype,
         }
+        if attn_implementation is not None:
+            model_kwargs["attn_implementation"] = attn_implementation
 
         if max_memory_per_gpu is not None:
             # Use custom memory limits (for multi-worker setups)

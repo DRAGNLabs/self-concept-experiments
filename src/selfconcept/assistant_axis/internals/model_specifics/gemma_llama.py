@@ -1,11 +1,11 @@
 from typing import Any
 
 from selfconcept.assistant_axis.internals.conversation_utils import content_only_ids_and_offset_standard, longest_common_prefix_len
-from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, _Conversation, configure_apply_chat_template, configure_call
 
 
-class GemmaLlamaModelSpecifics(CoverallLayerGetter, ModelSpecifics): # TODO: technically not quite right for Llama, since llama supports all roles
+class GemmaLlamaModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics): # TODO: technically not quite right for Llama, since llama supports all roles
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Gemma/Llama-specific implementation using offset mapping approach."""
         all_turn_indices = []
