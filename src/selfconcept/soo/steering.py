@@ -372,6 +372,8 @@ def band_supports(data: dict, module: str) -> dict[str, torch.Tensor] | None:
     Channel ranges come from the band deltas' 'slices' metadata (extract_band_deltas.py, read from the model)."""
     from .lora_subset import split_module
 
+    if "," in module:
+        return None  # joint offsets (get_band_offsets) take whole projections only
     leaf, part = split_module(module)
     if part is None:
         return None
@@ -390,13 +392,24 @@ def band_supports(data: dict, module: str) -> dict[str, torch.Tensor] | None:
     return masks
 
 
-def get_band_offsets(data: dict, module: str, token_mode: str) -> dict[str, torch.Tensor]:
+def get_band_offsets(data: dict, module: str, token_mode: str, layers: set[int] | None = None) -> dict[str, torch.Tensor]:
     """The band's mean deltas for one module ('v_proj', 'q_proj', 'in_proj_qkv', or a slice such as
-    'in_proj_qkv.v' with the channels outside the slice zeroed), keyed 'layer:module' (float32)."""
+    'in_proj_qkv.v' with the channels outside the slice zeroed), keyed 'layer:module' (float32).
+
+    Several whole projections joined by commas ('q_proj,v_proj') give the union of their offsets, added together
+    (KIMI_JOINT_ROUND.md). `layers` keeps only those layers' offsets."""
     from .lora_subset import split_module
 
     if token_mode not in BAND_TOKEN_MODES:
         raise ValueError(f"token_mode must be one of {BAND_TOKEN_MODES}, got {token_mode!r}")
+    if "," in module:
+        parts = [m.strip() for m in module.split(",")]
+        if len(set(parts)) != len(parts) or any(split_module(m)[1] is not None for m in parts):
+            raise ValueError(f"joint band module {module!r} must list distinct whole projections")
+        offsets = {}
+        for m in parts:
+            offsets.update(get_band_offsets(data, m, token_mode, layers))
+        return offsets
     leaf, _ = split_module(module)
     offsets = {k: v.float() for k, v in data["offsets"][token_mode].items() if parse_offset_key(k)[1] == leaf}
     if not offsets:
@@ -404,6 +417,10 @@ def get_band_offsets(data: dict, module: str, token_mode: str) -> dict[str, torc
     supports = band_supports(data, module)
     if supports is not None:
         offsets = {k: v * supports[k].to(v.dtype) for k, v in offsets.items()}
+    if layers is not None:
+        offsets = {k: v for k, v in offsets.items() if parse_offset_key(k)[0] in layers}
+        if not offsets:
+            raise KeyError(f"no {leaf} offsets in layers {sorted(layers)}")
     return offsets
 
 

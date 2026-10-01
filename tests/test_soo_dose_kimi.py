@@ -314,3 +314,114 @@ class KimiLocRuleTests(unittest.TestCase):
         self.assertEqual(self.mod.kind_of_change(stats, "same", "orig"), "neither")
         stats["conc/orig"] = {"main": {"think_rate": 0.62, "honest_of_thinking": 0.7}}
         self.assertEqual(self.mod.kind_of_change(stats, "conc", "orig"), "conclusion")
+
+
+class JointOffsetTests(unittest.TestCase):
+    """KIMI_JOINT_ROUND.md: q_proj and v_proj band offsets added together, restricted to a layer range, with a matched
+    random control over both projections; and the round's readout."""
+
+    @classmethod
+    def setUpClass(cls):
+        torch.set_num_threads(1)
+
+    def setUp(self):
+        torch.manual_seed(5)
+        self.offsets = {f"{l}:{m}": torch.randn(16) for l in (1, 2) for m in ("q_proj", "v_proj")}
+        self.data = {"offsets": {"last": {}, "all": self.offsets}}
+
+    def test_joint_offsets_are_the_union_and_layers_filter(self):
+        joint = get_band_offsets(self.data, "q_proj,v_proj", "all")
+        self.assertEqual(sorted(joint), sorted(self.offsets))
+        self.assertEqual(sorted(get_band_offsets(self.data, "q_proj,v_proj", "all", {2})), ["2:q_proj", "2:v_proj"])
+        self.assertEqual(list(get_band_offsets(self.data, "v_proj", "all", {1})), ["1:v_proj"])
+        with self.assertRaises(KeyError):
+            get_band_offsets(self.data, "q_proj,v_proj", "all", {0})
+        with self.assertRaises(ValueError):
+            get_band_offsets(self.data, "v_proj,v_proj", "all")
+        with self.assertRaises(ValueError):
+            get_band_offsets(self.data, "q_proj,in_proj_qkv.v", "all")
+        self.assertIsNone(band_supports(self.data, "q_proj,v_proj"))
+        rand = random_matched_offsets(joint, 0)
+        for key, v in joint.items():
+            self.assertAlmostEqual(rand[key].norm().item(), v.norm().item(), places=5)
+            self.assertFalse(torch.allclose(rand[key], v))
+
+    def test_both_projections_receive_their_offsets(self):
+        model = tiny_model()
+        batch = {"input_ids": torch.tensor([[1, 4, 5, 9, 6, 7]]), "attention_mask": torch.ones(1, 6, dtype=torch.long)}
+        layer1 = get_band_offsets(self.data, "q_proj,v_proj", "all", {1})
+        base = {m: capture_proj(model, 1, m, batch)[0] for m in ("q_proj", "v_proj")}
+        with apply_module_steering(model, layer1, 0.5):
+            steered = {m: capture_proj(model, 1, m, batch)[0] for m in ("q_proj", "v_proj")}
+        for m in ("q_proj", "v_proj"):
+            torch.testing.assert_close(steered[m] - base[m], (0.5 * self.offsets[f"1:{m}"]).expand_as(base[m]), atol=1e-5, rtol=1e-4)
+
+    def test_evaluate_accepts_joint_module_and_band_layers(self):
+        from selfconcept.soo import evaluate
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            model_path = root / "model"
+            save_tiny_model_with_tokenizer(tiny_model(), model_path)
+            deltas = root / "band_deltas.pt"
+            torch.save({"model": str(model_path), "offsets": {"last": self.offsets, "all": self.offsets}, "stats": {}}, deltas)
+            data = root / "data"
+            data.mkdir()
+            rows = [{"scenario": "main", "example_id": f"main_{i}", "prompt": "You Bob room", "other_name": "Bob",
+                     "honest_answer": "kitchen", "deceptive_answer": "garage"} for i in range(3)]
+            (data / "main.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+            out = root / "eval"
+            common = ["--model", str(model_path), "--data", str(data), "--out", str(out), "--scenarios", "main", "--n", "3",
+                      "--suffix", "none", "--max-new-tokens", "3", "--batch-size", "2", "--band-deltas", str(deltas),
+                      "--band-token-mode", "all", "--band-module", "q_proj,v_proj"]
+            with mock.patch.dict(os.environ, {"HF_HUB_OFFLINE": "1"}), mock.patch.object(evaluate, "pick_device", lambda: "cpu"):
+                with mock.patch("sys.argv", ["evaluate", *common, "--tag", "joint", "--band-layers", "range:2-2", "--band-alpha", "0.5",
+                                             "--steer-positions", "content"]):
+                    evaluate.main()
+                with mock.patch("sys.argv", ["evaluate", *common, "--tag", "rand", "--band-random-seed", "0"]):
+                    evaluate.main()
+            joint = json.loads((out / "joint_main_none_summary.json").read_text())["steering"]
+            self.assertEqual(joint["layers"], [2])
+            self.assertEqual(sorted(joint["offset_norms"]), ["2:q_proj", "2:v_proj"])
+            self.assertEqual((joint["band_module"], joint["band_layers"], joint["alpha"], joint["positions"]), ("q_proj,v_proj", "range:2-2", 0.5, "content"))
+            rand = json.loads((out / "rand_main_none_summary.json").read_text())["steering"]
+            self.assertEqual(rand["layers"], [1, 2])
+            for key, v in self.offsets.items():
+                self.assertAlmostEqual(rand["offset_norms"][key], v.norm().item(), places=4)
+
+
+class KimiJointRuleTests(unittest.TestCase):
+    """The joint round's readout: more deceptive than base is its own label, and a real offset is read with its random."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+        import sys
+        root = Path(__file__).resolve().parents[1]
+        script = next((c for c in (root / "experiments/soo/scripts/analyze_kimi_joint.py", root / "analyze_kimi_joint.py") if c.exists()), None)
+        if script is None:
+            raise unittest.SkipTest("analyze_kimi_joint.py is not part of this snapshot")
+        sys.path.insert(0, str(script.parent))
+        spec = importlib.util.spec_from_file_location("analyze_kimi_joint", script)
+        cls.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.mod)
+
+    def runs(self, **cells):
+        cell = KimiLocRuleTests.cell
+        return {"base": {"orig": cell(0.32, 0.68), "mirrored": cell(0.24, 0.75, 0.01)},
+                "below-train": {"orig": cell(0.75, 0.14, 0.11), "mirrored": cell(0.78, 0.10, 0.13)},
+                **{name: {"orig": cell(*a), "mirrored": cell(*b)} for name, (a, b) in cells.items()}}
+
+    def test_labels_and_pairing(self):
+        runs = self.runs(real=((0.74, 0.15, 0.11), (0.76, 0.11, 0.13)), rand=((0.30, 0.66, 0.04), (0.25, 0.74, 0.01)),
+                         worse=((0.0, 0.99, 0.01), (0.0, 0.97, 0.03)), half=((0.0, 0.99, 0.01), (0.13, 0.79, 0.08)),
+                         broken=((0.01, 0.06, 0.93), (0.02, 0.04, 0.94)))
+        v = {c: self.mod.joint_verdict(runs, c, "below-train") for c in ("real", "rand", "worse", "half", "broken")}
+        self.assertEqual([v[c]["label"] for c in ("real", "rand", "worse", "half")], ["reproduces", "null", "more deceptive than base", "partial"])
+        self.assertEqual(v["broken"]["label"], "budget-bound")  # deceptive rate near the reference's only because nothing finishes
+        self.assertFalse(v["broken"]["reproduces_adapter"])
+        self.assertEqual(self.mod.pair_reading(v["real"], v["rand"]), "reproduces; random does not (specific)")
+        self.assertEqual(self.mod.pair_reading(v["real"], v["real"]), "reproduces; random reproduces too (not specific)")
+        self.assertEqual(self.mod.pair_reading(v["real"], None), "reproduces; no matched random")
+        self.assertEqual(self.mod.pair_reading(v["worse"], v["rand"]), "offset does not reproduce")
+        self.assertEqual(self.mod.pair_reading(None, None), "pending")
