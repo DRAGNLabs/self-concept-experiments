@@ -93,6 +93,7 @@ class VLLMGenerator(BatchEngine):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             top_p=self.top_p,
+            skip_special_tokens=get_model_specifics_by_name(self.model_name).skip_special_tokens,
         )
 
         logger.info("Model loaded successfully")
