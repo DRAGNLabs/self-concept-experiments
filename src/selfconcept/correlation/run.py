@@ -25,7 +25,7 @@ from selfconcept.soo.evaluate import SUFFIXES
 from selfconcept.assistant_axis.projection import build_axis_measurement
 from selfconcept.cotness.probe import build_cotness_measurement
 from selfconcept.measurement.interface import Measurement, MeasurementName
-from selfconcept.measurement.templates import MODEL_SPECS_BY_KEY, ModelSpec, reasoning_template_kwargs
+from selfconcept.measurement.templates import MODEL_SPECS_BY_KEY, ModelFamily, ModelSpec, reasoning_template_kwargs
 from .config import RunConfig
 from .generate import MeasuredModel
 from .records import Manifest, TranscriptRecord
@@ -38,6 +38,9 @@ AXIS_DEFAULT_SCENARIOS = ["impossible_original", "impossible_conflicting", "impo
 COTNESS_DEFAULT_SCENARIOS = ["main", "main_mirrored", "treasure_hunt", "treasure_hunt_mirrored",
                              "perspectives", "perspectives_mirrored", "roleplaying", "insider_trading", "sandbagging",
                              "impossible_original", "impossible_conflicting", "impossible_oneoff", "evilgenie"]
+# gpt-oss has no sdpa path and eager attention materializes every score (~600 GB at 70k tokens); this flash
+# attention kernel supports its attention sinks on Hopper GPUs.
+ATTENTION_IMPLEMENTATION_BY_FAMILY: dict[ModelFamily, str] = {"gpt-oss": "kernels-community/vllm-flash-attn3"}
 RESUME_IDENTITY_KEYS = ("args", "model", "chat_kwargs", "corpus_sha256", "probe_sha256", "axis_sha256",
                         "transcripts_sha256")
 
@@ -171,8 +174,10 @@ def main() -> None:
         check_resumable(json.loads(manifest_path.read_text()), manifest)
     write_manifest(manifest_path, manifest)
     tokenizer = cast(HFTokenizer, AutoTokenizer.from_pretrained(spec.model, revision=spec.revision, local_files_only=True))
+    attention_kwargs = ({"attn_implementation": ATTENTION_IMPLEMENTATION_BY_FAMILY[spec.family]}
+                        if spec.family in ATTENTION_IMPLEMENTATION_BY_FAMILY else {})
     model: PreTrainedModel = load_causal_lm(spec.model, revision=spec.revision, local_files_only=True,
-                                            dtype=torch.bfloat16, device_map="auto")
+                                            dtype=torch.bfloat16, device_map="auto", **attention_kwargs)
     model.eval()
     num_layers = len(get_decoder_layers(model))
     probe_layers = [int(num_layers * fraction) - 1 for fraction in (.25, .5, .75)]

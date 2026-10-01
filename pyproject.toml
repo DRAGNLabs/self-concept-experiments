@@ -27,6 +27,7 @@ dependencies = [
     "scikit-learn>=1.5",
     "bitsandbytes>=0.45",
     "pydantic>=2.13",
+    "kernels>=0.16,<0.17",
 ]
 
 [build-system]
