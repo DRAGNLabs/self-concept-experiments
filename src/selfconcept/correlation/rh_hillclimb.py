@@ -236,7 +236,7 @@ def transcript_outcome(item: LabeledRecord, example_id: str, model_key: str) -> 
         "example_id": example_id, "scenario": record["scenario"],
         "status": "truncated" if record["attempts"][-1]["truncated"] else "complete", "label": record["label"],
         "model_key": model_key, "verdict": "HACK" if item.label else "unflagged",
-        "harness_label": record["label"], "final_code": record.get("final_code", "")}
+        "harness_label": record["label"], "final_code": record.get("final_code", ""), "stratum": record["example_id"]}
     if item.label:
         outcome["strength"] = hack_strength(item.verdicts)
     return outcome
