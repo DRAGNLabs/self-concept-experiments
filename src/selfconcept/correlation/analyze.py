@@ -199,12 +199,20 @@ def record_coverage(record: OutcomeRecord, outcome: BinaryOutcome | None, reason
         "declared_sandbag": int(evidence.get("decision") == "sandbag")}
 
 
-def scored_examples(first_turn: GenerationRecord, outcome: BinaryOutcome) -> dict[tuple[str, Region], ScoredExample]:
-    # Primary input signal is always turn zero, preceding all feedback.
+def earliest_turns(generations_by_key: dict[tuple[str, str, int], GenerationRecord]
+                   ) -> dict[tuple[str, str], GenerationRecord]:
+    """Generated runs score every turn and analyze turn zero, preceding all feedback; transcript runs score one turn."""
+    earliest_by_example: dict[tuple[str, str], GenerationRecord] = {}
+    for (scenario, example_id, turn), generation in sorted(generations_by_key.items(), reverse=True):
+        earliest_by_example[scenario, example_id] = generation
+    return earliest_by_example
+
+
+def scored_examples(scored_turn: GenerationRecord, outcome: BinaryOutcome) -> dict[tuple[str, Region], ScoredExample]:
     # Output regions are descriptive associations, not predictions.
     examples_by_layer_region: dict[tuple[str, Region], ScoredExample] = {}
-    for layer, summaries_by_region in first_turn["scores"].items():
-        length_controls = (first_turn["prompt_tokens"], summaries_by_region.get("cot", {}).get("n", 0),
+    for layer, summaries_by_region in scored_turn["scores"].items():
+        length_controls = (scored_turn["prompt_tokens"], summaries_by_region.get("cot", {}).get("n", 0),
                            summaries_by_region.get("final", {}).get("n", 0))
         for region in REGIONS:
             score = summaries_by_region.get(region, {}).get("mean")
@@ -223,7 +231,7 @@ def analyze_run(directory: Path, bootstrap_samples: int = 1000) -> AnalysisResul
         return {"status": "probe_failed_validation", "measurement": measurement_name}
     if not (directory / "outcomes.jsonl").exists():
         return {"status": "awaiting_outcomes", "measurement": measurement_name}
-    generations_by_key = load_generations(directory, measurement_name)
+    scored_turn_by_key = earliest_turns(load_generations(directory, measurement_name))
     outcomes_by_key: dict[tuple[str, str], OutcomeRecord] = {
         (record["scenario"], record["example_id"]): record for record in read_jsonl(directory / "outcomes.jsonl")}
     grades_by_key = load_grades(directory)
@@ -233,10 +241,10 @@ def analyze_run(directory: Path, bootstrap_samples: int = 1000) -> AnalysisResul
         outcome, reason = binary_outcome(record, grades_by_key.get(key))
         scenario = coverage_scenario(record)
         coverage_by_scenario[scenario].update(record_coverage(record, outcome, reason))
-        first_turn = generations_by_key.get((*key, 0))
-        if first_turn is None or outcome is None:
+        scored_turn = scored_turn_by_key.get(key)
+        if scored_turn is None or outcome is None:
             continue
-        for (layer, region), example in scored_examples(first_turn, outcome).items():
+        for (layer, region), example in scored_examples(scored_turn, outcome).items():
             examples_by_cell[scenario, layer, region].append(example)
     cells: list[Cell] = []
     for (scenario, layer, region), examples in sorted(examples_by_cell.items()):
@@ -253,7 +261,7 @@ def render_markdown(directory_name: str, result: AnalysisResult) -> str:
     lines = [f"# {directory_name}: {result['measurement']} associations", "", f"Status: {result['status']}", ""]
     for scenario, counts in (completed["coverage"] if completed else {}).items():
         lines.append(f"- {scenario}: {dict(counts)}")
-    lines += ["", f"Primary: first-turn prompt content at prespecified layer {completed['primary_layer'] if completed else None}.",
+    lines += ["", f"Primary: scored-turn prompt content (turn 0 for generated runs) at prespecified layer {completed['primary_layer'] if completed else None}.",
               "Generated CoT/final regions are descriptive associations with the eventual outcome.", "",
               "| Scenario | n | Spearman rho | AUC |", "|---|---:|---:|---:|"]
     for cell in (completed["cells"] if completed else []):
