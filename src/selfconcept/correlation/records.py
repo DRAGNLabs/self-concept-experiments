@@ -70,6 +70,9 @@ class OutcomeRecord(TypedDict):
     strength: NotRequired[str]
     harness_label: NotRequired[str]
     stratum: NotRequired[str]
+    problem: NotRequired[str]
+    run_family: NotRequired[str]
+    episode_id: NotRequired[str]
 
 
 class TranscriptRecord(TypedDict):

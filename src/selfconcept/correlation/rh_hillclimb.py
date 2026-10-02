@@ -14,6 +14,7 @@ from functools import cache
 import hashlib
 import json
 import logging
+import re
 from pathlib import Path
 import shlex
 from typing import Any, cast, Literal, NamedTuple, NotRequired, TypedDict
@@ -154,7 +155,7 @@ def option(tokens: list[str], name: str) -> str:
         raise ValueError(f"Worklist line missing {name}") from None
 
 
-def parse_worklist_line(line: str) -> tuple[tuple[str, str], WorklistSettings]:
+def parse_worklist_line(line: str, root: Path | None = None) -> tuple[tuple[str, str], WorklistSettings]:
     chat_kwargs: dict[str, bool | str] = {}
     if line.startswith("SOO_CHAT_KWARGS="):
         assignment, line = line.split(maxsplit=1)
@@ -162,6 +163,10 @@ def parse_worklist_line(line: str) -> tuple[tuple[str, str], WorklistSettings]:
     tokens = shlex.split(line)
     run, tag = Path(option(tokens, "--out")).name, option(tokens, "--tag")
     system_path = Path(option(tokens, "--system-prompt-file")) if "--system-prompt-file" in tokens else None
+    # Mirrored worklists still name the original owner's inaccessible home.
+    if system_path is not None and root is not None and "rh_hillclimb" in system_path.parts:
+        relative = system_path.parts[system_path.parts.index("rh_hillclimb") + 1:]
+        system_path = root.joinpath(*relative)
     system_prompt = system_path.read_text().strip() if system_path else None
     return (run, tag), WorklistSettings(chat_kwargs, system_prompt)
 
@@ -172,7 +177,7 @@ def load_worklists(root: Path) -> dict[tuple[str, str], WorklistSettings]:
         for line in path.read_text().splitlines():
             if not line.strip():
                 continue
-            key, value = parse_worklist_line(line)
+            key, value = parse_worklist_line(line, root)
             if key in settings and settings[key] != value:
                 raise ValueError(f"Conflicting worklist settings for {key}")
             settings[key] = value
@@ -294,6 +299,60 @@ def stratified_records(records: list[LabeledRecord]) -> list[LabeledRecord]:
     return kept
 
 
+def strict_transcripts(root: Path, records: list[LabeledRecord]) -> list[TranscriptRecord]:
+    """Match actual prompt/protocol, run family, and exact hack turn within a problem.
+
+    A negative episode may contribute at several hack turns. Its episode ID is
+    retained for auditing; analysis must cluster uncertainty by base problem.
+    Short negatives are excluded, never substituted at an earlier turn.
+    """
+    worklists = load_worklists(root)
+
+    @cache
+    def examples(tag: str) -> dict[str, dict[str, Any]]:
+        return {row["example_id"]: row for row in read_jsonl(root / "data" / f"{tag}.jsonl")}
+
+    groups: dict[tuple[str, str, str], list[LabeledRecord]] = {}
+    for item in records:
+        if item.record["attempts"][-1]["truncated"]:
+            continue
+        tag = record_tag(item)
+        settings = worklists[item.run, tag]
+        protocol = {
+            "run_family": re.sub(r"_seed\d+$", "", item.run),
+            "messages": conversation_before_turn(examples(tag)[item.record["example_id"]], item.record, settings, 0),
+            "chat_kwargs": settings.chat_kwargs,
+            "feedback": item.record.get("feedback"),
+            "max_attempts": item.record["max_attempts"],
+            "attempt_budget_stated": item.record["attempt_budget_stated"],
+        }
+        family = hashlib.sha256(json.dumps(protocol, sort_keys=True).encode()).hexdigest()
+        key = (item.record["scenario"], item.record["example_id"], family)
+        groups.setdefault(key, []).append(item)
+    selected = []
+    metadata = []
+    for (scenario, problem, family), items in sorted(groups.items()):
+        for turn in sorted({item.turn for item in items if item.label}):
+            hacks = [item for item in items if item.label and item.turn == turn]
+            negatives = [item._replace(turn=turn) for item in items if not item.label and last_turn(item.record) >= turn]
+            if not negatives:
+                continue
+            for item in hacks + negatives:
+                if item.record["attempts"][turn]["truncated"]:
+                    continue
+                selected.append(item)
+                metadata.append((problem, family, json.dumps([scenario, problem, family, turn])))
+    transcripts = build_transcripts(root, selected)
+    for transcript, (problem, family, stratum) in zip(transcripts, metadata, strict=True):
+        episode_id = transcript["example_id"]
+        transcript["example_id"] = f"{episode_id}/turn_{transcript['turn']}"
+        transcript["outcome"].update(example_id=transcript["example_id"], episode_id=episode_id,
+                                      problem=problem, run_family=family, stratum=stratum)
+    logger.info("Strict matching retained %d transcripts across %d strata", len(transcripts),
+                len({row["outcome"]["stratum"] for row in transcripts}))
+    return transcripts
+
+
 def build_transcripts(root: Path, records: list[LabeledRecord]) -> list[TranscriptRecord]:
     worklists = load_worklists(root)
 
@@ -339,11 +398,16 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--stratified", action="store_true",
                         help="Keep every transcript of problems with both labels, for stratified analysis")
+    parser.add_argument("--strict-strata", action="store_true",
+                        help="Match problem, exact prompt/run family, and turn; includes all supported hack turns")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     records = labeled_records(args.root, load_verdicts(args.verdicts))
-    selected = stratified_records(records) if args.stratified else one_per_problem_and_label(records)
-    transcripts = build_transcripts(args.root, selected)
+    if args.strict_strata:
+        transcripts = strict_transcripts(args.root, records)
+    else:
+        selected = stratified_records(records) if args.stratified else one_per_problem_and_label(records)
+        transcripts = build_transcripts(args.root, selected)
     write_transcripts(args.out, transcripts)
     logger.info("Wrote %d transcripts to %s", len(transcripts), args.out)
 
