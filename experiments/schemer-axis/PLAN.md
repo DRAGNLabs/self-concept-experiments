@@ -102,11 +102,18 @@ Also recorded: cosine with the AA at every layer, and per-layer norm relative to
 
 A vector that fails 1–3 is reported as unusable. That is a failed measurement, not evidence about reward hacking.
 
+Known risk (noted 2026-10-07 before the first job): the role judge keeps only responses scored 3, "fully playing the
+role, not identifying as an AI". An honest, rule-following persona looks much like the default assistant, so
+`straight_shooter` and `rule_follower` may rarely score 3 and `persona_contrast` may be unbuildable at the 50-response
+threshold. The smoke job runs all six roles so the per-role score distribution is seen first. Fallbacks, in order:
+pool honest-role responses scored ≥ 2 (recorded as a deviation), or use `persona_orth` as the primary vector.
+
 ## Phase 2: correlation on the cached cohort (CPU only)
 
 Project the cached layer-17 region means onto every candidate vector and repeat the random-vector control analysis
-with the candidates in place of the AA. `random_vector_analysis.py` currently takes one axis; generalize it to a
-list of named directions rather than writing a second script.
+with the candidates in place of the AA. Implemented as `selfconcept.correlation.direction_analysis` (2026-10-07),
+which reuses `random_vector_analysis`'s cache loader, pair counting and projection and adds the named-direction,
+orthogonalized, STRONG-only and diff-of-means statistics; the original module and its tests are unchanged.
 
 - **Primary cell:** `persona_contrast` (analysis-channel pooling), CoT region, layer 17, problem/family/turn strata.
   The CoT region is primary, unlike the AA study's final region, because the hypothesis is about deliberation and
@@ -210,3 +217,6 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   `assistant-axis/gptoss12b-thinking/axis_response_only.py`, which is a torch `.pt` file)
 - Residual cache: `~/nobackup/autodelete/rh-random-control-v3/`
 - Committed here: role files, configs, sbatch scripts, PLAN, FINDINGS. `results/` and `slurm-logs/` are gitignored.
+- Environment: this checkout's `.venv` is a stale Python 3.11 build; jobs use `.venv-313` via
+  `SELFCONCEPT_VENV=$REPO/.venv-313; source activate.sh` (override added to `activate.sh` on 2026-10-07). The
+  gpt-oss HF path needs the `kernels` package, installed into `.venv-313` the same day.

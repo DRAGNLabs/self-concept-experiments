@@ -16,8 +16,18 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
-Nothing has been run. The plan was written on 2026-10-02; the next step is the role files and the Phase 1
-extraction job.
+2026-10-07: no results yet. Infrastructure is in place and two smoke jobs are queued on the standby H200 partition:
+
+- Phase 1 smoke (`schemer-extract`, job 14016713): all six roles, 3 questions × 5 prompts each, to check the pipeline
+  end to end and to see the judge's score distribution for the honest roles before the full run.
+- Phase 3 smoke (`schemer-rh-smoke`, job 14016912): layer norms over the 45 hard-problem prompts, then 3 unsteered
+  episodes on the HF backend with the recipe settings, to measure throughput and check the HF path works at all.
+
+Code added (uncommitted on branch `random-vectors-rh`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
+`scripts/build_vectors.py`, `scripts/validate_vectors.py`; `selfconcept.correlation.direction_analysis` (Phase 2, CPU);
+`selfconcept.measurement.intervene` (add / cap hooks), `selfconcept.codebench.hf_harmony` (HF Harmony generator with
+reasoning and projection sidecars), `scripts/steered_rh.py` and `slurm/steered_rh_smoke.sbatch` (Phase 3). Unit tests
+in `tests/test_direction_analysis.py` and `tests/test_intervene.py` pass on a tiny model.
 
 | Question | Status | Answer so far |
 |---|---|---|
@@ -27,7 +37,24 @@ extraction job.
 
 ## Runs
 
-None yet.
+### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
+
+Not a schemer result. Run on the login node (CPU, ~1 min) with the AA as the candidate and an isotropic random
+direction (seed 99) as the "reference", `--random-count 256 --bootstrap 200`. The AA cells match the 2026-10-01
+analysis: prompt 0.525, CoT 0.696 (tail 0.054), final 0.714 (tail 0.304), problem/family/turn strata.
+
+New reference numbers for later comparison (same strata):
+
+| Region | Held-out diff-of-means AUROC (ceiling) | AA cos with diff-of-means (random tail) |
+|---|---:|---|
+| prompt | 0.592 | 0.030 (0.12) |
+| cot | 0.765 | 0.119 (0.004) |
+| final | 0.929 | −0.038 (0.05) |
+
+The ceiling is a hack-minus-non-hack mean direction fit with the scored problem's transcripts held out; it uses the
+labels, so it is an upper reference for any single layer-17 direction on this cohort, not a vector of interest.
+In the CoT region the AA is more aligned with that direction than 255 of 256 random directions are, which is a
+different statement from "the AA predicts hacks better than random directions" (tail 0.054 there).
 
 ## Background: the baseline this study compares against
 
