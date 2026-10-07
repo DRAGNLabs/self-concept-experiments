@@ -23,11 +23,12 @@ call a non-significant result evidence of no effect.
 - Phase 3 smoke (`schemer-rh-smoke`, job 14016912): layer norms over the 45 hard-problem prompts, then 3 unsteered
   episodes on the HF backend with the recipe settings, to measure throughput and check the HF path works at all.
 
-Code added (uncommitted on branch `random-vectors-rh`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
+Code (branch `schemer-axis`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
 `scripts/build_vectors.py`, `scripts/validate_vectors.py`; `selfconcept.correlation.direction_analysis` (Phase 2, CPU);
 `selfconcept.measurement.intervene` (add / cap hooks), `selfconcept.codebench.hf_harmony` (HF Harmony generator with
-reasoning and projection sidecars), `scripts/steered_rh.py` and `slurm/steered_rh_smoke.sbatch` (Phase 3). Unit tests
-in `tests/test_direction_analysis.py` and `tests/test_intervene.py` pass on a tiny model.
+reasoning and projection sidecars), `scripts/steered_rh.py` and `slurm/steered_rh_smoke.sbatch` (Phase 3); `scripts/make_dossiers.py` (blind
+judging dossiers, checked against Koby's extractor on his seed-0 run). Unit tests in `tests/test_direction_analysis.py`,
+`tests/test_intervene.py` and `tests/test_make_dossiers.py` pass on a tiny model.
 
 | Question | Status | Answer so far |
 |---|---|---|

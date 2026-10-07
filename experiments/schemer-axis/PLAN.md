@@ -206,6 +206,12 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
 - **Honest contrast roles.** `persona_contrast` depends on the choice of honest roles; `persona_orth` is the hedge.
 - **Judging.** Koby's verdicts came from Opus/Sonnet full-trace judging; the intervention arms need the same
   pipeline and rubric (`rh_hillclimb/judge_rubric_v3.md`). Who runs it, and with what budget, is not settled.
+  2026-10-07: `scripts/make_dossiers.py` builds the dossiers for our run directories (every visible-pass /
+  hidden-fail episode, no keyword prefilter, opaque file names with the arm key kept outside the dossier directory,
+  shuffled batches). Its output matches Koby's `extract_full.py` byte for byte after the header on his seed-0
+  `hsolvNCblow` run, and on that run the no-prefilter candidate set equals his keyword-filtered one (5 of 45
+  episodes). Still open: which model judges, and the budget (about 5 dossiers per 45 episodes at the base rate, more
+  in arms where steering raises the visible-pass/hidden-fail rate).
 - **GPU budget** for Phase 3: set after the throughput smoke.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
