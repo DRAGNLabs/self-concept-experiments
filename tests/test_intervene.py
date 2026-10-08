@@ -133,3 +133,31 @@ class VllmTupleHookTest(unittest.TestCase):
             h.remove()
         with self.assertRaises(ValueError):
             register_vllm_transforms(layers, {3: add_transform(direction, 1.0)})
+
+
+class VllmClassPatchTest(unittest.TestCase):
+    def test_patch_applies_by_layer_idx_and_restores(self):
+        import torch
+        from torch import nn
+        from selfconcept.measurement.intervene import add_transform, patch_vllm_blocks
+
+        class Block(nn.Module):
+            def __init__(self, layer_idx):
+                super().__init__()
+                self.layer_idx = layer_idx
+
+            def forward(self, hidden_states, positions, residual):
+                return hidden_states * 2, residual
+
+        blocks = [Block(0), Block(1)]
+        direction = torch.zeros(4); direction[1] = 1.0
+        restore = patch_vllm_blocks(Block, {1: add_transform(direction, 5.0)})
+        h, r = torch.ones(3, 4), torch.ones(3, 4)
+        out0, res0 = blocks[0](h, None, r)
+        self.assertTrue(torch.equal(out0, h * 2))
+        out1, res1 = blocks[1](h, None, r)
+        self.assertTrue(torch.allclose(out1 + res1, h * 2 + r + 5.0 * direction))
+        self.assertTrue(torch.equal(res1, r))
+        restore()
+        out1, _ = blocks[1](h, None, r)
+        self.assertTrue(torch.equal(out1, h * 2))

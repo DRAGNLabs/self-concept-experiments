@@ -1,10 +1,12 @@
 """Reward-hacking harness on vLLM with a residual-stream intervention (PLAN.md, Phase 3), same CLI as steered_rh.py.
 
-vLLM runs gpt-oss-120b about 18x faster than the HF path single-stream (smokes of 2026-10-07), so the main run uses
-it. Hooks are registered inside the engine worker with ``LLM.apply_model`` on the gpt-oss blocks, acting on the
-residual stream (mlp_output + residual) exactly where the HF path's hooks act; the engine runs eagerly so the
-hooks are not bypassed by compiled or captured graphs. Records and reasoning sidecars follow the vllm_harmony
-contract. No projection sidecar: projections are measured offline on the transcripts with the HF capture path.
+vLLM runs gpt-oss-120b far faster than the HF path, so the main run uses it. The intervention is a class-level patch
+of the gpt-oss ``TransformerBlock.forward`` made before the engine is built (``intervene.patch_vllm_blocks``), acting
+on the residual stream (mlp_output + residual) exactly where the HF path's hooks act; because the patch precedes
+torch.compile and CUDA-graph capture, it is part of the compiled model and runs at full speed. The engine runs in
+this process (VLLM_ENABLE_V1_MULTIPROCESSING=0) so the patch is visible to it. ``--eager`` disables compile and
+graphs (about 9x slower, smoke of 2026-10-08) and is kept for cross-checks. Records and reasoning sidecars follow
+the vllm_harmony contract. No projection sidecar: projections are measured offline with the HF capture path.
 
     python scripts/steered_rh_vllm.py --model openai/gpt-oss-120b --data <dir> --scenarios ib_solvhard_s0 --out <dir>
         --tag <tag> --temperature 1.0 --sample-seed 0 --impossible-prompt critical_no_carve --max-attempts 5
@@ -34,7 +36,7 @@ from selfconcept.codebench.vllm_harmony import vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.correlation.random_vectors import random_directions
-from selfconcept.measurement.intervene import add_transform, cap_transform, register_vllm_transforms
+from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_blocks
 
 
 def parse_args() -> argparse.Namespace:
@@ -43,7 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision", default=None, help="informational; vLLM loads the cached snapshot")
     parser.add_argument("--max-model-len", type=int, default=20480)
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
-    parser.add_argument("--no-enforce-eager", action="store_true", help="allow compile/cudagraphs (hooks may be bypassed)")
+    parser.add_argument("--eager", action="store_true", help="enforce_eager: no torch.compile / CUDA graphs (slow)")
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--sample-seed", type=int, default=0)
     parser.add_argument("--direction", type=Path, help="(layers, hidden) axis artifact")
@@ -72,13 +74,14 @@ def model_layers(model):
     return model.model.layers
 
 
-def directions_for(args, needed_layers: list[int]) -> dict[int, torch.Tensor]:
+def directions_for(args, needed_layers: list[int], device) -> dict[int, torch.Tensor]:
+    """Unit directions on ``device`` (the transforms must not copy host tensors inside a captured graph)."""
     num_layers, hidden = 36, 2880  # gpt-oss-120b; load_unit_axes validates the artifact against these
     if args.random_direction_seed is not None:
-        return {layer: torch.as_tensor(random_directions(hidden, 1, args.random_direction_seed, layer)[0]).float()
+        return {layer: torch.as_tensor(random_directions(hidden, 1, args.random_direction_seed, layer)[0]).float().to(device)
                 for layer in needed_layers}
     unit_axes = load_unit_axes(args.direction, needed_layers, num_layers, hidden, args.model if "gpt-oss" in args.model else None)
-    return {layer: torch.as_tensor(unit_axes[layer]["direction"]).float() for layer in needed_layers}
+    return {layer: torch.as_tensor(unit_axes[layer]["direction"]).float().to(device) for layer in needed_layers}
 
 
 def build_transforms(args, directions) -> tuple[dict[int, object], dict]:
@@ -148,39 +151,45 @@ def probe(args, llm, tokenizer, steering: dict) -> None:
             ids = tokenizer.apply_chat_template([{"role": "user", "content": question}], add_generation_prompt=True,
                                                 **chat_template_kwargs(), tokenize=True, return_dict=False)
             [out] = llm.generate(TokensPrompt(prompt_token_ids=ids),
-                                 SamplingParams(temperature=args.temperature, top_p=1.0, seed=args.sample_seed + i,
+                                 SamplingParams(temperature=args.temperature, top_p=1.0,
+                                                seed=args.sample_seed + i if args.temperature > 0 else None,
                                                 max_tokens=min(args.max_new_tokens, 1024), skip_special_tokens=False), use_tqdm=False)
             reasoning, final = split_harmony_completion(out.outputs[0].text)
-            row = {"question": question, "steering": steering, "reasoning": reasoning, "final": final}
+            row = {"question": question, "steering": steering, "eager": args.eager, "temperature": args.temperature,
+                   "reasoning": reasoning, "final": final}
             f.write(json.dumps(row) + "\n")
-            print(f"### {question}\n[steering {steering['mode']} alpha={steering.get('alpha')}]\n{final[:1500]}\n", flush=True)
+            print(f"### {question}\n[steering {steering['mode']} alpha={steering.get('alpha')} eager={args.eager} T={args.temperature}]"
+                  f"\n{final[:1500]}\n", flush=True)
 
 
 def main() -> None:
     args = parse_args()
-    os.environ.setdefault("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
+    os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
     from vllm import LLM
+    from vllm.model_executor.models.gpt_oss import TransformerBlock
 
-    llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
-              gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=not args.no_enforce_eager)
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    eager = args.eager or args.check_hook  # the recording hook has Python side effects and cannot be captured
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     needed = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *(args.cap_layers or []),
                      *([args.check_layer] if args.check_hook else [])})
-    directions = directions_for(args, needed) if needed else {}
+    directions = directions_for(args, needed, device) if needed else {}
+    transforms, steering = build_transforms(args, directions)
+    if transforms and not args.check_hook:
+        patch_vllm_blocks(TransformerBlock, transforms)  # before the engine builds, compiles and captures the model
+        steering["patched_layers"] = sorted(transforms)
+        print(f"patched TransformerBlock.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
+    llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
+              gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager)
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.check_hook:
         check_hook(args, llm, tokenizer, directions[args.check_layer])
         return
-    transforms, steering = build_transforms(args, directions)
-    if transforms:
-        n_hooks = llm.apply_model(lambda model: len(register_vllm_transforms(model_layers(model), transforms)))
-        steering["hooks_registered"] = n_hooks
-        print(f"registered {n_hooks} hook(s) per worker: {steering}", file=sys.stderr)
     if args.probe:
         probe(args, llm, tokenizer, steering)
         return
-    meta = {"model": args.model, "revision": args.revision, "backend": "vllm-harmony-hooked", "max_new_tokens": args.max_new_tokens,
+    meta = {"model": args.model, "revision": args.revision, "backend": "vllm-harmony-patched", "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature, "sample_seed": args.sample_seed if args.temperature > 0 else None,
-            "chat_kwargs": chat_template_kwargs(), "steering": steering, "enforce_eager": not args.no_enforce_eager}
+            "chat_kwargs": chat_template_kwargs(), "steering": steering, "enforce_eager": eager}
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
         generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl",

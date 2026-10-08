@@ -91,6 +91,33 @@ def register_vllm_transforms(layers, transforms_by_layer: dict[int, object]) -> 
     return handles
 
 
+def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
+    """Patch a vLLM block class's ``forward`` so blocks whose ``layer_idx`` is in ``transforms_by_layer`` apply the
+    transform to the residual stream ``mlp_output + residual`` (same arithmetic as ``register_vllm_transforms``).
+
+    Unlike a hook registered after engine start, a class patch made before ``LLM(...)`` is traced into torch.compile
+    and captured into CUDA graphs, so it stays in effect at full speed. Transform tensors must already live on the
+    model's device (no host-to-device copies inside a captured graph). Returns a function that restores the
+    original forward."""
+    original = block_cls.forward
+    transforms = dict(transforms_by_layer)
+
+    def forward(self, hidden_states, positions, residual):
+        mlp_output, residual = original(self, hidden_states, positions, residual)
+        transform = transforms.get(self.layer_idx)
+        if transform is not None:
+            stream = mlp_output + residual
+            mlp_output = mlp_output + (transform(stream) - stream).to(mlp_output.dtype)
+        return mlp_output, residual
+
+    block_cls.forward = forward
+
+    def restore():
+        block_cls.forward = original
+
+    return restore
+
+
 def unit(direction: torch.Tensor) -> torch.Tensor:
     norm = direction.float().norm()
     if not torch.isfinite(norm) or norm <= 0:
