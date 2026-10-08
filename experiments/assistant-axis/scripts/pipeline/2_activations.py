@@ -81,7 +81,7 @@ def extract_activations_batch(
     span_mapper = SpanMapper()
 
     chat_kwargs: dict[str, Any] = {}
-    chat_kwargs = get_model_specifics_by_name(pm.model_name).set_enable_thinking(chat_kwargs, include_cot)
+    chat_kwargs = get_model_specifics_by_name(pm.model_name).set_thinking_flag(chat_kwargs, include_cot)
 
     all_activations: list[torch.Tensor | None] = []
 
@@ -92,10 +92,11 @@ def extract_activations_batch(
             batch_conversations,
             layer=layers,
             max_length=max_length,
+            include_thinking=include_cot,
             **chat_kwargs,
         )
 
-        _, batch_spans, _ = encoder.build_batch_turn_spans(batch_conversations, **chat_kwargs)
+        _, batch_spans, _ = encoder.build_batch_turn_spans(batch_conversations, include_thinking=include_cot, **chat_kwargs)
 
         # Per-turn mean activations: list of tensors, each (num_turns, num_layers, hidden_size)
         conv_activations_list = span_mapper.map_spans(batch_activations, batch_spans, batch_metadata)

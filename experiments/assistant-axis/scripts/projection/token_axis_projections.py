@@ -119,7 +119,7 @@ def project_batch(
     assert encoder.tokenizer is not None
     tokenizer = encoder.tokenizer
 
-    activations, metadata = extractor.batch_conversations(conversations, layer=[target_layer], max_length=max_length)
+    activations, metadata = extractor.batch_conversations(conversations, layer=[target_layer], max_length=max_length, include_thinking=False)
     layer_activations: Float[Tensor, "batch seq hidden"] = activations[0].float()
     projections_by_axis = {
         axis_name: (layer_activations @ unit.to(layer_activations.device)).cpu().numpy()

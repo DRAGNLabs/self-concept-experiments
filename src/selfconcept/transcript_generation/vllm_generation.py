@@ -5,16 +5,34 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import os
-from typing import TYPE_CHECKING, NotRequired, Optional, TypedDict, Unpack, cast
+from typing import TYPE_CHECKING, Any, NotRequired, Optional, TypedDict, Unpack, cast
 
-from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
-from selfconcept.common.hf_strong_types import Conversation, HFTokenizer
+from selfconcept.common.generation.model_specifics import get_generation_specifics
+from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
+from selfconcept.common.llm_judge import GeneratedResponse
 from selfconcept.transcript_generation.generation import BatchEngine, format_conversation
 
 if TYPE_CHECKING:
     from vllm.config.model import ModelDType
 
 logger = logging.getLogger(__name__)
+
+
+def chat_prompt_text(
+    tokenizer: HFTokenizer,
+    model_name: str,
+    conversation: Conversation,
+    enable_thinking: bool,
+    chat_template_kwargs: dict[str, Any],
+) -> str:
+    model_specifics = get_generation_specifics(model_name)
+    direct_answer_prefix = "" if enable_thinking else tokenizer.decode(model_specifics.direct_answer_prefix_ids(tokenizer))
+    return configure_apply_chat_template(tokenizer).tokenize(False)(
+        conversation,
+        add_generation_prompt=True,
+        **model_specifics.set_thinking_flag(chat_template_kwargs, enable_thinking),
+    ) + direct_answer_prefix
+
 
 class VLLMGeneratorArgs(TypedDict):
     model_name: str
@@ -24,8 +42,10 @@ class VLLMGeneratorArgs(TypedDict):
     temperature: NotRequired[float]
     max_tokens: NotRequired[int]
     top_p: NotRequired[float]
+    top_k: NotRequired[int]
     dtype: NotRequired[ModelDType]
     enable_thinking: NotRequired[bool]
+    chat_template_kwargs: NotRequired[dict[str, str | bool]]
     distributed_executor_backend: NotRequired[Optional[str]]
 
 
@@ -53,8 +73,10 @@ class VLLMGenerator(BatchEngine):
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             top_p: Top-p sampling
+            top_k: Top-k sampling (-1 disables it)
             dtype: Model weight dtype passed to vLLM ("auto", "bfloat16", "float16", ...).
                 Use "float16" on GPUs without bf16 support (e.g. V100).
+            chat_template_kwargs: Extra apply_chat_template kwargs, e.g. gpt-oss reasoning_effort
         """
         self.model_name = args["model_name"]
         self.max_model_len = args.get("max_model_len", 2048)
@@ -63,8 +85,10 @@ class VLLMGenerator(BatchEngine):
         self.temperature = args.get("temperature", 0.7)
         self.max_tokens = args.get("max_tokens", 512)
         self.top_p = args.get("top_p", 0.9)
+        self.top_k = args.get("top_k", -1)
         self.dtype: ModelDType = args.get("dtype", "auto")
         self.enable_thinking = args.get("enable_thinking", False)
+        self.chat_template_kwargs = args.get("chat_template_kwargs", {})
         self.distributed_executor_backend = args.get("distributed_executor_backend", None)
 
         self.llm = None
@@ -93,7 +117,8 @@ class VLLMGenerator(BatchEngine):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             top_p=self.top_p,
-            skip_special_tokens=get_model_specifics_by_name(self.model_name).skip_special_tokens,
+            top_k=self.top_k,
+            skip_special_tokens=get_generation_specifics(self.model_name).skip_special_tokens,
         )
 
         logger.info("Model loaded successfully")
@@ -111,15 +136,19 @@ class VLLMGenerator(BatchEngine):
         Returns:
             List of generated response texts
         """
+        return [response["text"] for response in self.generate_responses(conversations)]
+
+    def generate_responses(
+        self,
+        conversations: list[Conversation],
+    ) -> list[GeneratedResponse]:
+        """Like generate_batch, plus whether each response hit max_tokens. A skipped over-long prompt
+        counts as truncated."""
         self.load()
         assert self.llm is not None
 
         tokenizer = self.llm.get_tokenizer()
         max_len = self.llm.model_config.max_model_len
-
-        model_specifics = get_model_specifics_by_name(self.model_name)
-        chat_template_kwargs = model_specifics.set_enable_thinking({}, self.enable_thinking)
-        thinking_close = "" if self.enable_thinking else tokenizer.decode(model_specifics.thinking_close_ids(cast(HFTokenizer, tokenizer)))
 
         # A prompt longer than the context window makes llm.generate raise for the
         # whole batch. Skip those (return "" for them) so one over-long prompt can't
@@ -127,10 +156,9 @@ class VLLMGenerator(BatchEngine):
         prompts = []
         keep_indices = []
         for idx, conv in enumerate(conversations):
-            prompt = tokenizer.apply_chat_template(
-                conv, tokenize=False, add_generation_prompt=True, # type: ignore
-                **chat_template_kwargs
-            ) + thinking_close
+            prompt = chat_prompt_text(
+                cast(HFTokenizer, tokenizer), self.model_name, conv, self.enable_thinking, self.chat_template_kwargs
+            )
             if len(tokenizer.encode(prompt, add_special_tokens=False)) >= max_len: # type: ignore
                 logger.warning("Skipping prompt %d: exceeds context window (%d tokens)", idx, max_len)
                 continue
@@ -140,10 +168,38 @@ class VLLMGenerator(BatchEngine):
         logger.info(f"Running batch inference for {len(prompts)} prompts...")
         outputs = self.llm.generate(prompts, self.sampling_params)
 
-        responses = [""] * len(conversations)
+        responses: list[GeneratedResponse] = [{"text": "", "reasoning": None, "truncated": True} for _ in conversations]
         for output, idx in zip(outputs, keep_indices):
-            responses[idx] = output.outputs[0].text
+            completion = output.outputs[0]
+            responses[idx] = {"text": completion.text, "reasoning": None, "truncated": completion.finish_reason == "length"}
         return responses
+
+    def next_token_logprobs(self, prompt_texts: list[str], top_logprobs: int) -> list[dict[int, float] | None]:
+        """The top next-token logprobs by token id after each prompt text (tokenized without added special
+        tokens), or None for a prompt that leaves no room in the context window for that token."""
+        self.load()
+        assert self.llm is not None
+        from vllm import SamplingParams, TokensPrompt
+
+        tokenizer = self.llm.get_tokenizer()
+        max_len = self.llm.model_config.max_model_len
+        prompt_ids = [tokenizer.encode(prompt_text, add_special_tokens=False) for prompt_text in prompt_texts]
+        fitting_indices = [index for index, ids in enumerate(prompt_ids) if len(ids) < max_len]
+        if len(fitting_indices) < len(prompt_texts):
+            logger.warning("Skipping %d prompts: exceed context window (%d tokens)", len(prompt_texts) - len(fitting_indices), max_len)
+
+        outputs = self.llm.generate(
+            [TokensPrompt(prompt_token_ids=prompt_ids[index]) for index in fitting_indices],
+            SamplingParams(max_tokens=1, logprobs=top_logprobs, temperature=0),
+        )
+        logprobs_by_prompt_index: dict[int, dict[int, float]] = {}
+        for index, output in zip(fitting_indices, outputs, strict=True):
+            first_token_logprobs = output.outputs[0].logprobs
+            assert first_token_logprobs is not None
+            logprobs_by_prompt_index[index] = {
+                token_id: logprob.logprob for token_id, logprob in first_token_logprobs[0].items()
+            }
+        return [logprobs_by_prompt_index.get(index) for index in range(len(prompt_texts))]
 
     def generate_for_role(
         self,
@@ -196,7 +252,7 @@ class VLLMGenerator(BatchEngine):
         responses = self.generate_batch(all_conversations)
 
         # Build results
-        model_specifics = get_model_specifics_by_name(self.model_name)
+        model_specifics = get_generation_specifics(self.model_name)
         results = []
         for conv, meta, response in zip(all_conversations, all_metadata, responses):
             result = {

@@ -35,6 +35,8 @@ class ActivationExtractor:
         conversations: list[Conversation],
         layer: int | list[int] | None = None,
         max_length: int = 4096,
+        *,
+        include_thinking: bool,
         **chat_kwargs,
     ) -> tuple[torch.Tensor, dict]:
         """
@@ -44,6 +46,7 @@ class ActivationExtractor:
             conversations: List of conversations, each being a list of {"role", "content"} dicts
             layer: int for single layer, list of ints for multiple layers, or None for all layers
             max_length: Maximum sequence length for padding
+            include_thinking: If False, thinking tokens are dropped from assistant-turn spans
             **chat_kwargs: Additional arguments for apply_chat_template
 
         Returns:
@@ -53,7 +56,7 @@ class ActivationExtractor:
         """
         # Get tokenized conversations and spans
         batch_full_ids, batch_spans, span_metadata = self.encoder.build_batch_turn_spans(
-            conversations, **chat_kwargs
+            conversations, include_thinking=include_thinking, **chat_kwargs
         )
 
         # Handle layer specification
