@@ -7,3 +7,4 @@
 run:
   top_k: 50
   exclude_train_roles: true
+  least_assistant_like: false
