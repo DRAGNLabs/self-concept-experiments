@@ -3,7 +3,12 @@ from dataclasses import dataclass
 from itertools import accumulate
 
 from selfconcept.common.hf_strong_types import HFTokenizer
-from selfconcept.common.span_targeting.model_specifics._shared import decode_token_pieces, place_after_prompt, trim_span
+from selfconcept.common.span_targeting.model_specifics._shared import (
+    TokenPiece,
+    decode_token_pieces,
+    place_after_prompt,
+    trim_span,
+)
 from selfconcept.common.span_targeting.types import CompletionSpans, PromptCompletion, TokenSpan
 
 type CharSpan = tuple[int, int]
@@ -29,7 +34,14 @@ def _thinking_and_response_char_spans(
     return (thinking_char_start, close_char), (close_char + len(close_tag), len(completion_text))
 
 
-def _tokens_within_chars(char_span: CharSpan, piece_starts: list[int], piece_ends: list[int]) -> TokenSpan:
+def token_piece_char_offsets(token_pieces: list[TokenPiece]) -> tuple[list[int], list[int]]:
+    """(piece_starts, piece_ends): each token's character offsets in the joined decoded text."""
+    piece_ends = list(accumulate(len(piece or "") for piece in token_pieces))
+    piece_starts = [0, *piece_ends[:-1]]
+    return piece_starts, piece_ends
+
+
+def tokens_within_chars(char_span: CharSpan, piece_starts: list[int], piece_ends: list[int]) -> TokenSpan:
     """Tokens lying entirely inside char_span, so a token straddling a tag belongs to neither side."""
     char_start, char_end = char_span
     token_start = bisect_left(piece_starts, char_start)
@@ -48,8 +60,7 @@ class ThinkTagModelSpecifics:
     def split_completion(self, example: PromptCompletion) -> CompletionSpans:
         completion_token_ids = example.completion_token_ids
         token_pieces = decode_token_pieces(self.tokenizer, completion_token_ids)
-        piece_ends = list(accumulate(len(piece or "") for piece in token_pieces))
-        piece_starts = [0, *piece_ends[:-1]]
+        piece_starts, piece_ends = token_piece_char_offsets(token_pieces)
         special_token_ids = set(self.tokenizer.all_special_ids)
 
         thinking_char_span, response_char_span = _thinking_and_response_char_spans(
@@ -62,7 +73,7 @@ class ThinkTagModelSpecifics:
         def to_token_spans(char_span: CharSpan | None) -> list[TokenSpan]:
             if char_span is None:
                 return []
-            token_span = _tokens_within_chars(char_span, piece_starts, piece_ends)
+            token_span = tokens_within_chars(char_span, piece_starts, piece_ends)
             return place_after_prompt(
                 [trim_span(token_span, completion_token_ids, token_pieces, special_token_ids)], example
             )

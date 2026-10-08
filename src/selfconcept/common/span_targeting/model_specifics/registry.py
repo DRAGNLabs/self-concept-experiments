@@ -9,9 +9,11 @@ from selfconcept.common.span_targeting.model_specifics.types import ModelSpecifi
 MODEL_SPECIFICS_FACTORY_BY_NAME_SUBSTRING: dict[str, Callable[[HFTokenizer], ModelSpecifics]] = {
     "gemma-2": NoThinkingModelSpecifics,
     "gemma-3": NoThinkingModelSpecifics,
+    "gemma-4": lambda tokenizer: ThinkTagModelSpecifics(tokenizer, open_tag="<|channel>thought", close_tag="<channel|>"),
     "llama": NoThinkingModelSpecifics,
     "qwen3": ThinkTagModelSpecifics,
     "olmo-3": ThinkTagModelSpecifics,
+    "glm": ThinkTagModelSpecifics,
     "gpt-oss": HarmonyModelSpecifics,
 }
 
