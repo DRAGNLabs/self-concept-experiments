@@ -2,14 +2,20 @@ from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-from jaxtyping import Float
+from jaxtyping import Float, Int8
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
 from selfconcept.assistant_axis_cot.records import REGIONS, AxisName, Condition, Region, TokenProjectionRecord
-from selfconcept.assistant_axis_cot.statistics import Measure, token_values
+from selfconcept.assistant_axis_cot.statistics import (
+    CONTENT_REGIONS,
+    ContentRegion,
+    ConversationSummary,
+    Measure,
+    token_values,
+)
 
 SURFACE = "#fcfcfb"
 PRIMARY_INK = "#0b0b0b"
@@ -115,6 +121,14 @@ def draw_token_trace(ax: Axes, record: TokenProjectionRecord, axis: AxisName, me
     )
 
 
+def region_legend_handles() -> list[Line2D]:
+    return [
+        Line2D([], [], color=COLOR_BY_REGION["cot"], linewidth=2, label="CoT"),
+        Line2D([], [], color=COLOR_BY_REGION["final"], linewidth=2, label="final"),
+        Line2D([], [], color=COLOR_BY_REGION["delimiter"], marker="D", linestyle="", label="delimiter token"),
+    ]
+
+
 def plot_absolute_position(
     records_by_condition: dict[Condition, Sequence[TokenProjectionRecord]],
     axis: AxisName,
@@ -141,12 +155,128 @@ def plot_absolute_position(
         axes[row, 0].set_ylabel(MEASURE_LABEL[measure], color=SECONDARY_INK, fontsize=8)
     for ax in axes[-1]:
         ax.set_xlabel("token position in completion", color=SECONDARY_INK, fontsize=8)
-    legend_handles = [
-        Line2D([], [], color=COLOR_BY_REGION["cot"], linewidth=2, label="CoT"),
-        Line2D([], [], color=COLOR_BY_REGION["final"], linewidth=2, label="final"),
-        Line2D([], [], color=COLOR_BY_REGION["delimiter"], marker="D", linestyle="", label="delimiter token"),
-    ]
-    figure.legend(handles=legend_handles, loc="upper right", ncols=3, frameon=False, fontsize=8, labelcolor=SECONDARY_INK)
+    figure.legend(handles=region_legend_handles(), loc="upper right", ncols=3, frameon=False, fontsize=8, labelcolor=SECONDARY_INK)
     figure.suptitle(f"{title} (line: {rolling_window}-token rolling mean)", color=PRIMARY_INK, fontsize=11, x=0.01, ha="left")
     figure.tight_layout(rect=(0, 0, 1, 0.95))
+    return figure
+
+
+def boundary_aligned_matrices(
+    records: Sequence[TokenProjectionRecord], axis: AxisName, measure: Measure, half_width: int
+) -> tuple[Float[np.ndarray, "conversation offset"], Int8[np.ndarray, "conversation offset"]]:
+    """Values and region codes at offsets -half_width..half_width-1 from each conversation's first final token;
+    NaN values (and code -1) where the conversation has no token at that offset."""
+    values_matrix = np.full((len(records), 2 * half_width), np.nan)
+    region_code_matrix = np.full((len(records), 2 * half_width), -1, dtype=np.int8)
+    for row, record in enumerate(records):
+        values = token_values(record, axis, measure)
+        first_final = int(np.argmax(record["region_codes"] == REGIONS.index("final")))
+        start, end = max(first_final - half_width, 0), min(first_final + half_width, len(values))
+        columns = slice(start - first_final + half_width, end - first_final + half_width)
+        values_matrix[row, columns] = values[start:end]
+        region_code_matrix[row, columns] = record["region_codes"][start:end]
+    return values_matrix, region_code_matrix
+
+
+def draw_boundary_aligned(
+    ax: Axes, records: Sequence[TokenProjectionRecord], axis: AxisName, measure: Measure, half_width: int
+) -> None:
+    """Per region, the mean and 10-90th percentile band across conversations at each offset, wherever at least
+    a tenth of the conversations have a token of that region."""
+    offsets = np.arange(-half_width, half_width)
+    values_matrix, region_code_matrix = boundary_aligned_matrices(records, axis, measure, half_width)
+    min_conversations = max(3, len(records) // 10)
+    for region in REGIONS:
+        region_values_matrix = np.where(region_code_matrix == REGIONS.index(region), values_matrix, np.nan)
+        enough = np.count_nonzero(~np.isnan(region_values_matrix), axis=0) >= min_conversations
+        if not enough.any():
+            continue
+        mean, low, high = np.full((3, len(offsets)), np.nan)
+        mean[enough] = np.nanmean(region_values_matrix[:, enough], axis=0)
+        low[enough], high[enough] = np.nanpercentile(region_values_matrix[:, enough], [10, 90], axis=0)
+        color = COLOR_BY_REGION[region]
+        if region == "delimiter":
+            ax.errorbar(
+                offsets[enough], mean[enough], yerr=[mean[enough] - low[enough], high[enough] - mean[enough]],
+                fmt="D", color=color, markersize=5, markeredgecolor=SURFACE, elinewidth=1, zorder=3,
+            )
+        else:
+            ax.fill_between(offsets, low, high, color=color, alpha=0.15, linewidth=0)
+            ax.plot(offsets, mean, color=color, linewidth=2)
+    ax.axvline(0, color=SECONDARY_INK, linewidth=1, linestyle="--")
+
+
+def plot_boundary_aligned(
+    records: Sequence[TokenProjectionRecord],
+    axis: AxisName,
+    measure: Measure,
+    title: str,
+    half_width: int = 200,
+) -> Figure:
+    """One panel per condition; x is the token offset from the first final-response token."""
+    figure, axes = plt.subplots(1, len(COLOR_BY_CONDITION), figsize=(11, 4.2), sharey=True, facecolor=SURFACE)
+    for ax, condition in zip(axes, COLOR_BY_CONDITION, strict=True):
+        style_axes(ax)
+        condition_records = [record for record in records if record["condition"] == condition]
+        if condition_records:
+            draw_boundary_aligned(ax, condition_records, axis, measure, half_width)
+        ax.set_title(f"{condition} (n={len(condition_records)})", color=PRIMARY_INK, fontsize=9, loc="left")
+        ax.set_xlabel("tokens from first final-response token", color=SECONDARY_INK, fontsize=8)
+    axes[0].set_ylabel(MEASURE_LABEL[measure], color=SECONDARY_INK, fontsize=8)
+    figure.legend(handles=region_legend_handles(), loc="upper right", ncols=3, frameon=False, fontsize=8, labelcolor=SECONDARY_INK)
+    figure.suptitle(f"{title} (mean, 10–90% band)", color=PRIMARY_INK, fontsize=11, x=0.01, ha="left")
+    figure.tight_layout(rect=(0, 0, 1, 0.93))
+    return figure
+
+
+def plot_region_mean_scatter(summaries: Sequence[ConversationSummary], measure: Measure, title: str) -> Figure:
+    """One dot per conversation, mean CoT value against mean final value; below the diagonal means the CoT
+    projects lower than the final response."""
+    figure, ax = plt.subplots(figsize=(5.5, 5.5), facecolor=SURFACE)
+    style_axes(ax)
+    for condition in ("persona", "unprompted"):
+        condition_summaries = [summary for summary in summaries if summary["condition"] == condition]
+        ax.scatter(
+            [summary["moments_by_region"]["final"]["mean"] for summary in condition_summaries],
+            [summary["moments_by_region"]["cot"]["mean"] for summary in condition_summaries],
+            s=16, color=COLOR_BY_CONDITION[condition], alpha=0.5, edgecolors=SURFACE, linewidths=0.5,
+            label=f"{condition} (n={len(condition_summaries)})",
+        )
+    low, high = (min(ax.get_xlim()[0], ax.get_ylim()[0]), max(ax.get_xlim()[1], ax.get_ylim()[1]))
+    ax.plot([low, high], [low, high], color=SECONDARY_INK, linewidth=1, linestyle="--", label="CoT = final")
+    ax.set_xlim(low, high)
+    ax.set_ylim(low, high)
+    ax.set_xlabel(f"final-response mean {MEASURE_LABEL[measure]}", color=SECONDARY_INK, fontsize=8)
+    ax.set_ylabel(f"CoT mean {MEASURE_LABEL[measure]}", color=SECONDARY_INK, fontsize=8)
+    ax.set_title(title, color=PRIMARY_INK, fontsize=10, loc="left")
+    ax.legend(frameon=False, labelcolor=SECONDARY_INK, fontsize=8)
+    figure.tight_layout()
+    return figure
+
+
+def plot_persona_drop_by_role(
+    drop_by_region_by_role: dict[str, dict[ContentRegion, float]], measure: Measure, title: str
+) -> Figure:
+    """Dumbbell per persona role: the unprompted minus persona mean in CoT and in the final response, sorted by
+    the final-response drop."""
+    roles = sorted(drop_by_region_by_role, key=lambda role: drop_by_region_by_role[role]["final"])
+    rows = np.arange(len(roles))
+    figure, ax = plt.subplots(figsize=(6.5, 0.28 * len(roles) + 1.4), facecolor=SURFACE)
+    style_axes(ax)
+    ax.grid(axis="y", visible=False)
+    drops_by_region = {
+        region: np.array([drop_by_region_by_role[role][region] for role in roles]) for region in CONTENT_REGIONS
+    }
+    ax.hlines(rows, drops_by_region["cot"], drops_by_region["final"], color=BASELINE, linewidth=2)
+    for region in CONTENT_REGIONS:
+        ax.scatter(
+            drops_by_region[region], rows, s=40, color=COLOR_BY_REGION[region], edgecolors=SURFACE, linewidths=1,
+            zorder=3, label="CoT" if region == "cot" else region,
+        )
+    ax.axvline(0, color=SECONDARY_INK, linewidth=1)
+    ax.set_yticks(rows, roles)
+    ax.set_xlabel(f"unprompted − persona mean {MEASURE_LABEL[measure]}", color=SECONDARY_INK, fontsize=8)
+    ax.set_title(title, color=PRIMARY_INK, fontsize=10, loc="left")
+    ax.legend(frameon=False, labelcolor=SECONDARY_INK, fontsize=8, loc="lower right")
+    figure.tight_layout()
     return figure

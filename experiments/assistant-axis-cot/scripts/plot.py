@@ -17,9 +17,20 @@ matplotlib.use("Agg")
 import numpy as np
 import torch
 
-from selfconcept.assistant_axis_cot.plotting import plot_absolute_position, plot_percent_of_response
+from selfconcept.assistant_axis_cot.plotting import (
+    plot_absolute_position,
+    plot_boundary_aligned,
+    plot_percent_of_response,
+    plot_persona_drop_by_role,
+    plot_region_mean_scatter,
+)
 from selfconcept.assistant_axis_cot.records import AxisName, Condition, TokenProjectionRecord
-from selfconcept.assistant_axis_cot.statistics import Measure, has_both_regions
+from selfconcept.assistant_axis_cot.statistics import (
+    Measure,
+    drop_by_region_by_role,
+    has_both_regions,
+    summarize_conversations,
+)
 from selfconcept.common.paths import scratch_dir
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -54,6 +65,7 @@ def main(run: RunConfig = RunConfig()) -> None:
     output_dir = run.output_dir / run.run
     output_dir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(run.seed)
+    summaries = summarize_conversations(records, run.axis, run.measure, run.min_region_tokens)
 
     figures_by_name = {
         "percent_of_response": plot_percent_of_response(records, run.axis, run.measure, title),
@@ -66,6 +78,9 @@ def main(run: RunConfig = RunConfig()) -> None:
             run.measure,
             title,
         ),
+        "boundary_aligned": plot_boundary_aligned(records, run.axis, run.measure, title),
+        "region_mean_scatter": plot_region_mean_scatter(summaries, run.measure, title),
+        "persona_drop_by_role": plot_persona_drop_by_role(drop_by_region_by_role(summaries), run.measure, title),
     }
     for name, figure in figures_by_name.items():
         path = output_dir / f"{name}_{run.axis}_{run.measure}.png"

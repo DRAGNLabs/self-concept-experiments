@@ -188,6 +188,26 @@ def mean_by_question(summaries: Sequence[ConversationSummary], region: ContentRe
     return {question_index: float(np.mean(means)) for question_index, means in means_by_question.items()}
 
 
+def drop_by_region_by_role(summaries: Sequence[ConversationSummary]) -> dict[str, dict[ContentRegion, float]]:
+    """Per persona role, the unprompted minus role mean of conversation means, averaged over questions."""
+    unprompted = [summary for summary in summaries if summary["condition"] == "unprompted"]
+    persona = [summary for summary in summaries if summary["condition"] == "persona"]
+    unprompted_mean_by_question_by_region = {region: mean_by_question(unprompted, region) for region in CONTENT_REGIONS}
+    return {
+        role: {
+            region: float(np.mean([
+                unprompted_mean_by_question_by_region[region][question] - role_mean
+                for question, role_mean in mean_by_question(
+                    [summary for summary in persona if summary["role"] == role], region
+                ).items()
+                if question in unprompted_mean_by_question_by_region[region]
+            ]))
+            for region in CONTENT_REGIONS
+        }
+        for role in sorted({summary["role"] for summary in persona})
+    }
+
+
 def persona_drop(summaries: Sequence[ConversationSummary], rng: np.random.Generator, resample_count: int) -> PersonaDrop:
     """Per question, the unprompted minus persona mean of conversation means, in each region; positive means the
     persona lowers the projection."""
@@ -212,19 +232,6 @@ def persona_drop(summaries: Sequence[ConversationSummary], rng: np.random.Genera
         region: drops_by_region[region] / unprompted_within_sd_by_region[region] for region in CONTENT_REGIONS
     }
 
-    roles = sorted({summary["role"] for summary in persona})
-    drop_by_region_by_role: dict[str, dict[ContentRegion, float]] = {}
-    for role in roles:
-        role_summaries = [summary for summary in persona if summary["role"] == role]
-        drop_by_region_by_role[role] = {
-            region: float(np.mean([
-                unprompted_mean_by_question_by_region[region][question] - role_mean
-                for question, role_mean in mean_by_question(role_summaries, region).items()
-                if question in unprompted_mean_by_question_by_region[region]
-            ]))
-            for region in CONTENT_REGIONS
-        }
-
     return {
         "question_count": len(shared_questions),
         "drop_by_region": {
@@ -241,5 +248,5 @@ def persona_drop(summaries: Sequence[ConversationSummary], rng: np.random.Genera
             rng,
             resample_count,
         ),
-        "drop_by_region_by_role": drop_by_region_by_role,
+        "drop_by_region_by_role": drop_by_region_by_role(summaries),
     }
