@@ -21,6 +21,10 @@ class GenerationSpecifics[RoleT: AllRoles = AllRoles, AssistantTurnT: Conversati
 
     def to_assistant_turn(self, completion: str) -> AssistantTurnT: ...
 
+    def to_completion(self, assistant_turn: AssistantTurnT) -> str:
+        """Inverse of to_assistant_turn."""
+        ...
+
 class TemplateWithoutThinkingFlag:
     def set_thinking_flag(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
         return old_chat_kwargs
@@ -28,3 +32,6 @@ class TemplateWithoutThinkingFlag:
 class HFStyleAssistantTurn:
     def to_assistant_turn(self, completion: str) -> ConversationTurn:
         return {"role": "assistant", "content": completion}
+
+    def to_completion(self, assistant_turn: ConversationTurn) -> str:
+        return assistant_turn["content"]

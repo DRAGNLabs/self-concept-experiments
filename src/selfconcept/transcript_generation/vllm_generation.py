@@ -8,8 +8,9 @@ import os
 from typing import TYPE_CHECKING, Any, NotRequired, Optional, TypedDict, Unpack, cast
 
 from selfconcept.common.generation.model_specifics import get_generation_specifics
-from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
+from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template, configure_call
 from selfconcept.common.llm_judge import GeneratedResponse
+from selfconcept.common.span_targeting.types import PromptCompletion
 from selfconcept.transcript_generation.generation import BatchEngine, format_conversation
 
 if TYPE_CHECKING:
@@ -33,6 +34,24 @@ def chat_prompt_text(
         **model_specifics.set_thinking_flag(chat_template_kwargs, enable_thinking),
     ) + direct_answer_prefix
 
+
+
+def generated_prompt_completion(
+    tokenizer: HFTokenizer,
+    model_name: str,
+    conversation: Conversation,
+    enable_thinking: bool,
+    chat_template_kwargs: dict[str, Any],
+) -> PromptCompletion:
+    """The tokens the final, generated assistant turn was sampled as. That turn is not re-rendered through the chat
+    template, since templates such as OLMo 3's, GLM 4.5's and Gemma 4's do not reproduce generated reasoning."""
+    prompt_text = chat_prompt_text(tokenizer, model_name, conversation[:-1], enable_thinking, chat_template_kwargs)
+    completion_text = get_generation_specifics(model_name).to_completion(conversation[-1])
+    tokenize = configure_call(tokenizer)
+    return PromptCompletion(
+        tokenize(prompt_text, add_special_tokens=False)["input_ids"],
+        tokenize(completion_text, add_special_tokens=False)["input_ids"],
+    )
 
 class VLLMGeneratorArgs(TypedDict):
     model_name: str
