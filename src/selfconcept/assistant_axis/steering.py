@@ -15,27 +15,15 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Literal
+from typing import Literal
 
-import torch.nn as nn
 from jaxtyping import Float
 from torch import Tensor
 
 from selfconcept.assistant_axis.internals.model import ProbingModel
+from selfconcept.common.steering import steer_decoder_layer
 
 SteerPositions = Literal["all", "last"]
-
-
-def _add_steering(
-    hidden_states: Float[Tensor, "batch seq hidden"],
-    steering: Float[Tensor, "hidden"],
-    positions: SteerPositions,
-) -> Float[Tensor, "batch seq hidden"]:
-    if positions == "all":
-        return hidden_states + steering
-    updated = hidden_states.clone()
-    updated[:, -1, :] += steering
-    return updated
 
 
 @contextmanager
@@ -48,18 +36,5 @@ def apply_steering(
     positions: SteerPositions = "all",
 ) -> Generator[None, None, None]:
     """Additively steer one decoder layer's output for the duration of the context."""
-    steering_vector = coefficient * vector
-
-    def hook(_module: nn.Module, _inputs: Any, output: Any) -> Any:
-        hidden_states = output[0] if isinstance(output, tuple) else output
-        steering = steering_vector.to(hidden_states.device, hidden_states.dtype)
-        steered = _add_steering(hidden_states, steering, positions)
-        if isinstance(output, tuple):
-            return (steered, *output[1:])
-        return steered
-
-    handle = probing_model.get_layers()[layer].register_forward_hook(hook)
-    try:
+    with steer_decoder_layer(probing_model.get_layers()[layer], vector, coefficient, positions=positions):
         yield
-    finally:
-        handle.remove()
