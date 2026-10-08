@@ -20,11 +20,15 @@ class CompletionProjections(TypedDict):
     truncated: bool
 
 
-class TokenProjectionRecord(CompletionProjections):
+class ConversationMetadata(TypedDict):
     role: str
     prompt_index: int
     question_index: int
     condition: Condition
+
+
+class TokenProjectionRecord(ConversationMetadata, CompletionProjections):
+    pass
 
 
 def condition_of(role: str, prompt_index: int) -> Condition | None:
