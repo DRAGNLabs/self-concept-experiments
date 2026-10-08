@@ -1,0 +1,152 @@
+from collections.abc import Sequence
+
+import matplotlib.pyplot as plt
+import numpy as np
+from jaxtyping import Float
+from matplotlib.axes import Axes
+from matplotlib.collections import LineCollection
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+
+from selfconcept.assistant_axis_cot.records import REGIONS, AxisName, Condition, Region, TokenProjectionRecord
+from selfconcept.assistant_axis_cot.statistics import Measure, token_values
+
+SURFACE = "#fcfcfb"
+PRIMARY_INK = "#0b0b0b"
+SECONDARY_INK = "#52514e"
+GRIDLINE = "#e1e0d9"
+BASELINE = "#c3c2b7"
+COLOR_BY_CONDITION: dict[Condition, str] = {"unprompted": "#2a78d6", "persona": "#eb6834"}
+COLOR_BY_REGION: dict[Region, str] = {"cot": "#2a78d6", "final": "#eb6834", "delimiter": "#1baf7a"}
+MEASURE_LABEL: dict[Measure, str] = {"projection": "projection onto axis", "cosine": "cosine with axis"}
+
+
+def style_axes(ax: Axes) -> None:
+    ax.set_facecolor(SURFACE)
+    ax.grid(color=GRIDLINE, linewidth=0.6)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(BASELINE)
+    ax.tick_params(colors=SECONDARY_INK, labelsize=8)
+
+
+def percent_of_response_bin_means(
+    record: TokenProjectionRecord, axis: AxisName, measure: Measure, bins_per_region: int
+) -> Float[np.ndarray, " bin"]:
+    """Mean value per bin, CoT rescaled onto the first bins_per_region bins and the final response onto the rest;
+    NaN for a bin no token lands in. Delimiter tokens are left out."""
+    values = token_values(record, axis, measure)
+    bin_means_by_region = []
+    for region in ("cot", "final"):
+        region_values = values[record["region_codes"] == REGIONS.index(region)]
+        bin_indices = np.arange(len(region_values)) * bins_per_region // len(region_values)
+        bin_sums = np.bincount(bin_indices, weights=region_values, minlength=bins_per_region)
+        bin_counts = np.bincount(bin_indices, minlength=bins_per_region)
+        with np.errstate(invalid="ignore"):
+            bin_means_by_region.append(bin_sums / bin_counts)
+    return np.concatenate(bin_means_by_region)
+
+
+def plot_percent_of_response(
+    records: Sequence[TokenProjectionRecord],
+    axis: AxisName,
+    measure: Measure,
+    title: str,
+    bins_per_region: int = 50,
+) -> Figure:
+    """Mean and 10-90th percentile band across conversations, per condition, with each conversation's CoT
+    stretched over 0-50% and its final response over 50-100%. Records must have tokens in both regions."""
+    figure, ax = plt.subplots(figsize=(9, 4.5), facecolor=SURFACE)
+    style_axes(ax)
+    bin_centers = (np.arange(2 * bins_per_region) + 0.5) * 100 / (2 * bins_per_region)
+    for condition, color in COLOR_BY_CONDITION.items():
+        condition_records = [record for record in records if record["condition"] == condition]
+        if not condition_records:
+            continue
+        bin_means = np.stack([
+            percent_of_response_bin_means(record, axis, measure, bins_per_region) for record in condition_records
+        ])
+        low, high = np.nanpercentile(bin_means, [10, 90], axis=0)
+        ax.fill_between(bin_centers, low, high, color=color, alpha=0.15, linewidth=0)
+        ax.plot(
+            bin_centers, np.nanmean(bin_means, axis=0), color=color, linewidth=2,
+            label=f"{condition} (n={len(condition_records)})",
+        )
+    ax.axvline(50, color=SECONDARY_INK, linewidth=1, linestyle="--")
+    ax.set_xlim(0, 100)
+    ax.set_xticks([0, 25, 50, 75, 100], ["CoT start", "CoT 50%", "final start", "final 50%", "end"])
+    ax.set_ylabel(MEASURE_LABEL[measure], color=SECONDARY_INK)
+    ax.set_title(title, color=PRIMARY_INK, fontsize=11, loc="left")
+    ax.legend(frameon=False, labelcolor=SECONDARY_INK, fontsize=8, title="mean, 10–90% band", title_fontsize=8)
+    figure.tight_layout()
+    return figure
+
+
+def centered_rolling_mean(values: Float[np.ndarray, " n_tokens"], window: int) -> Float[np.ndarray, " n_tokens"]:
+    """Shrinks the window at the ends rather than padding."""
+    kernel = np.ones(window)
+    return np.convolve(values, kernel, mode="same") / np.convolve(np.ones_like(values), kernel, mode="same")
+
+
+def draw_token_trace(ax: Axes, record: TokenProjectionRecord, axis: AxisName, measure: Measure, window: int) -> None:
+    """Raw per-token values as faint dots and a rolling mean of the content tokens as a line, both colored by
+    region; delimiter tokens are drawn as larger diamonds, outside the rolling mean, so a spike at the CoT/final
+    transition stands out rather than being smeared over the window."""
+    values = token_values(record, axis, measure)
+    positions = np.arange(len(values))
+    region_codes = record["region_codes"]
+    content = region_codes != REGIONS.index("delimiter")
+    region_colors = np.array([COLOR_BY_REGION[REGIONS[code]] for code in region_codes])
+
+    content_positions = positions[content]
+    content_colors = region_colors[content]
+    ax.scatter(content_positions, values[content], s=2, c=content_colors, alpha=0.25, linewidths=0)
+    rolling = centered_rolling_mean(values[content], window)
+    segment_starts = np.column_stack([content_positions[:-1], rolling[:-1]])
+    segment_ends = np.column_stack([content_positions[1:], rolling[1:]])
+    ax.add_collection(
+        LineCollection(list(np.stack([segment_starts, segment_ends], axis=1)), colors=list(content_colors[1:]), linewidths=1.5)
+    )
+    ax.scatter(
+        positions[~content], values[~content], s=36, marker="D", c=COLOR_BY_REGION["delimiter"],
+        edgecolors=SURFACE, linewidths=1, zorder=3,
+    )
+
+
+def plot_absolute_position(
+    records_by_condition: dict[Condition, Sequence[TokenProjectionRecord]],
+    axis: AxisName,
+    measure: Measure,
+    title: str,
+    rolling_window: int = 32,
+) -> Figure:
+    """One panel per conversation (rows = condition), token position on x."""
+    column_count = max(len(records) for records in records_by_condition.values())
+    figure, axes = plt.subplots(
+        len(records_by_condition), column_count, figsize=(3.2 * column_count, 2.6 * len(records_by_condition)),
+        sharey=True, squeeze=False, facecolor=SURFACE,
+    )
+    for row, (condition, records) in enumerate(records_by_condition.items()):
+        for column in range(column_count):
+            ax = axes[row, column]
+            if column >= len(records):
+                ax.set_visible(False)
+                continue
+            style_axes(ax)
+            record = records[column]
+            draw_token_trace(ax, record, axis, measure, rolling_window)
+            ax.set_title(f"{condition}: {record['role']}, q{record['question_index']}", color=PRIMARY_INK, fontsize=8, loc="left")
+        axes[row, 0].set_ylabel(MEASURE_LABEL[measure], color=SECONDARY_INK, fontsize=8)
+    for ax in axes[-1]:
+        ax.set_xlabel("token position in completion", color=SECONDARY_INK, fontsize=8)
+    legend_handles = [
+        Line2D([], [], color=COLOR_BY_REGION["cot"], linewidth=2, label="CoT"),
+        Line2D([], [], color=COLOR_BY_REGION["final"], linewidth=2, label="final"),
+        Line2D([], [], color=COLOR_BY_REGION["delimiter"], marker="D", linestyle="", label="delimiter token"),
+    ]
+    figure.legend(handles=legend_handles, loc="upper right", ncols=3, frameon=False, fontsize=8, labelcolor=SECONDARY_INK)
+    figure.suptitle(f"{title} (line: {rolling_window}-token rolling mean)", color=PRIMARY_INK, fontsize=11, x=0.01, ha="left")
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
+    return figure

@@ -53,12 +53,22 @@ class PersonaDrop(TypedDict):
     drop_by_region_by_role: dict[str, dict[ContentRegion, float]]
 
 
+def token_values(record: TokenProjectionRecord, axis: AxisName, measure: Measure) -> Float[np.ndarray, " n_tokens"]:
+    projections = record["projections_by_axis"][axis]
+    return projections if measure == "projection" else projections / record["residual_norms"]
+
+
 def region_values(
     record: TokenProjectionRecord, axis: AxisName, measure: Measure, region: ContentRegion
 ) -> Float[np.ndarray, " n_tokens"]:
-    in_region = record["region_codes"] == REGIONS.index(region)
-    projections = record["projections_by_axis"][axis][in_region]
-    return projections if measure == "projection" else projections / record["residual_norms"][in_region]
+    return token_values(record, axis, measure)[record["region_codes"] == REGIONS.index(region)]
+
+
+def has_both_regions(record: TokenProjectionRecord, min_region_tokens: int) -> bool:
+    return all(
+        np.count_nonzero(record["region_codes"] == REGIONS.index(region)) >= min_region_tokens
+        for region in CONTENT_REGIONS
+    )
 
 
 def region_moments(values: Float[np.ndarray, " n_tokens"]) -> RegionMoments:
@@ -75,19 +85,18 @@ def summarize_conversations(
     records: Sequence[TokenProjectionRecord], axis: AxisName, measure: Measure, min_region_tokens: int
 ) -> list[ConversationSummary]:
     """Conversations with at least min_region_tokens in both CoT and final; the rest are dropped."""
-    summaries: list[ConversationSummary] = []
-    for record in records:
-        values_by_region: dict[ContentRegion, Float[np.ndarray, " n_tokens"]] = {
-            region: region_values(record, axis, measure, region) for region in CONTENT_REGIONS
+    return [
+        {
+            "role": record["role"],
+            "question_index": record["question_index"],
+            "condition": record["condition"],
+            "moments_by_region": {
+                region: region_moments(region_values(record, axis, measure, region)) for region in CONTENT_REGIONS
+            },
         }
-        if all(len(values) >= min_region_tokens for values in values_by_region.values()):
-            summaries.append({
-                "role": record["role"],
-                "question_index": record["question_index"],
-                "condition": record["condition"],
-                "moments_by_region": {region: region_moments(values) for region, values in values_by_region.items()},
-            })
-    return summaries
+        for record in records
+        if has_both_regions(record, min_region_tokens)
+    ]
 
 
 def question_bootstrap_ci(
