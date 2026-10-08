@@ -21,7 +21,8 @@ call a non-significant result evidence of no effect.
 - gpt-oss-120b does not play the schemer, deceiver or cheater roles when they are given as bare system prompts: it
   reasons that the developer message asks it to cheat, cites policy, and answers as itself (1 of 45 responses judged
   in role; the honest roles were fine). Fiction-framed, named-character versions of the three roles
-  (`data/roles/*_fic.json`) are queued as a second smoke (job 14028554).
+  (`data/roles/*_fic.json`) and a less loaded bare persona (`strategist.json`) are queued as a second smoke
+  (job 14028784) to compare framings.
 - The HF backend decodes gpt-oss-120b at about 10 tokens/s, which would cost roughly 75 GPU-hours per 540-episode
   arm; Koby's vLLM runs do the same work in about 4. Phase 3 therefore moves to vLLM with the same intervention
   hooks registered on its gpt-oss blocks (`steered_rh_vllm.py`, eager mode); a smoke that checks the hook site
@@ -69,8 +70,10 @@ meaningful yet). The Qwen judge gives 0 ("refusing to answer") to many full answ
 
 Change made: three fiction-framed roles (`schemer_fic`, `deceiver_fic`, `cheater_fic`), each prompt variant naming a
 character ("You are voicing Silas, a character in an interactive novel. Silas is a schemer ...") and asking for
-first-person, in-character replies; the eval prompt says a named character counts as fully in role. Queued as job
-14028554 with the same 3-question smoke settings. If this also fails the ≥50-of-200 gate, the fallbacks are a
+first-person, in-character replies; the eval prompt says a named character counts as fully in role. A fourth role,
+`strategist`, keeps the bare "You are a ..." form but drops the loaded words (cheat, deceive, cover tracks), to test
+whether the wording or the form triggers the refusal. Queued together as job 14028784 with the same 3-question smoke
+settings; the framing decision rule is in PLAN (open decisions). If this also fails the ≥50-of-200 gate, the fallbacks are a
 weaker persona wording, or pooling score ≥2 (PLAN, Phase 1 known risk).
 
 ### HF backend smoke — 2026-10-07: the HF path works but decodes at ~10 tokens/s; Phase 3 moves to vLLM

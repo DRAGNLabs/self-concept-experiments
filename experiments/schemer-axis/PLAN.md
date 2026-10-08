@@ -218,7 +218,14 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   measured afterwards with the HF capture path, as for the RH cache. The HF harness is kept for norms, projections
   and as a cross-check on a few episodes.
 - **Role framing** (2026-10-08): bare "You are a schemer" prompts are refused by gpt-oss-120b (FINDINGS, extraction
-  smoke). The roles are reframed as named fictional characters (`*_fic.json`); the Phase 1 gates apply to those.
+  smoke). Three framings are being compared in one smoke (job 14028784): the bare prompts (refused), named fictional
+  characters (`*_fic.json`), and a less loaded bare persona (`strategist.json`: keeps goals private, thinks moves
+  ahead, says only what advances its plans, without the words cheat / deceive / cover tracks). The framing fixes
+  what the vector means and must be stated with the result: a fiction vector is "the model voicing a schemer
+  character", a bare-persona vector is "the model acting as one", and the latter is what the AA role vectors are.
+  Decision rule: prefer the bare persona if it passes the ≥50-of-200 gate; otherwise the fiction framing, reported
+  as a character vector; the `cheater` wording is kept only in whichever framing the model complies with. Whatever
+  is chosen, the vector is read against the honest roles built the same way, so the contrast does not mix framings.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
 
