@@ -1,0 +1,8 @@
+# CoT-vs-final statistics for one run's token projections. CPU only. Run from
+# experiments/assistant-axis-cot:
+#   python scripts/analyze.py --config configs/analyze.yaml --run.run olmo32b-heldout
+# Writes results/<run>/{stats.json,stats.md}.
+run:
+  min_region_tokens: 16
+  resample_count: 2000
+  seed: 0
