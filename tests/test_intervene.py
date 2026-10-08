@@ -88,3 +88,48 @@ class InterveneTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VllmTupleHookTest(unittest.TestCase):
+    """register_vllm_transforms on a stand-in for vLLM's (mlp_output, residual) block contract."""
+
+    def _layers(self):
+        import torch
+        from torch import nn
+
+        class Block(nn.Module):
+            def forward(self, mlp_output, residual):
+                return mlp_output, residual
+
+        return nn.ModuleList([Block(), Block(), Block()])
+
+    def test_add_and_cap_act_on_the_sum(self):
+        import torch
+        from selfconcept.measurement.intervene import add_transform, cap_transform, register_vllm_transforms
+
+        torch.manual_seed(0)
+        layers = self._layers()
+        direction = torch.zeros(8)
+        direction[0] = 2.0  # non-unit on purpose
+        mlp, res = torch.randn(5, 8), torch.randn(5, 8)
+        stream = mlp + res
+        handles = register_vllm_transforms(layers, {1: add_transform(direction, 3.0)})
+        out, res_out = layers[1](mlp, res)
+        self.assertTrue(torch.equal(res_out, res))
+        expected = stream + 3.0 * direction
+        self.assertTrue(torch.allclose(out + res_out, expected, atol=1e-6))
+        self.assertTrue(torch.equal(layers[0](mlp, res)[0], mlp))
+        for h in handles:
+            h.remove()
+        threshold = 0.5
+        handles = register_vllm_transforms(layers, {2: cap_transform(direction, threshold)})
+        out, res_out = layers[2](mlp, res)
+        projection = (out + res_out)[:, 0]
+        self.assertTrue(torch.all(projection <= threshold + 1e-6))
+        below = stream[:, 0] <= threshold
+        self.assertTrue(torch.allclose((out + res_out)[below], stream[below], atol=1e-6))
+        self.assertTrue(torch.allclose((out + res_out)[:, 1:], stream[:, 1:], atol=1e-6))
+        for h in handles:
+            h.remove()
+        with self.assertRaises(ValueError):
+            register_vllm_transforms(layers, {3: add_transform(direction, 1.0)})

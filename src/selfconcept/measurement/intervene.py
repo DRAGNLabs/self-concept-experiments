@@ -7,6 +7,11 @@ of every forward pass for the duration of the context (prompt and generated toke
   used in the steering experiments is alpha * (mean activation norm at the layer) with a unit direction.
 - ``cap_direction``: h <- h - max(0, <h, u> - threshold) * u, with u the unit direction, at each listed layer.
   The projection onto u is clipped at the threshold from above; nothing changes below it.
+
+The HF path (``add_direction`` / ``cap_direction``) hooks the decoder layers' outputs. vLLM's gpt-oss block returns
+``(mlp_output, residual)`` with the residual stream materialized only as their sum in the next layer's fused norm;
+``register_vllm_transforms`` applies the same transforms to that sum, so a steered vLLM run and a steered HF run
+intervene on the same quantity at the same site.
 """
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -40,6 +45,52 @@ def _hooks(model: nn.Module, transforms_by_layer: dict[int, object]) -> Generato
             handle.remove()
 
 
+def add_transform(direction: torch.Tensor, coefficient: float):
+    """h <- h + coefficient * direction (direction used as given)."""
+    vector = direction.float() * coefficient
+
+    def transform(hidden):
+        return hidden + vector.to(hidden.device, hidden.dtype)
+
+    return transform
+
+
+def cap_transform(direction: torch.Tensor, threshold: float):
+    """h <- h - max(0, <h, u> - threshold) * u with u = direction / |direction|."""
+    u = unit(direction)
+    threshold = float(threshold)
+
+    def transform(hidden):
+        u_local = u.to(hidden.device, torch.float32)
+        projection = hidden.float() @ u_local
+        excess = (projection - threshold).clamp_min(0)
+        return (hidden.float() - excess.unsqueeze(-1) * u_local).to(hidden.dtype)
+
+    return transform
+
+
+def register_vllm_transforms(layers, transforms_by_layer: dict[int, object]) -> list:
+    """Register the transforms as forward hooks on vLLM gpt-oss ``TransformerBlock`` modules (``model.model.layers``).
+
+    Each block returns ``(mlp_output, residual)``; the residual stream after the block is their sum ``s``. The hook
+    returns ``(mlp_output + (transform(s) - s), residual)`` so the next block sees ``transform(s)``. Handles are
+    returned, not managed by a context, because the hooks must outlive the call that registers them inside the
+    engine's worker (``LLM.apply_model``). Not for compiled or CUDA-graph-captured models: register before
+    capture or run with ``enforce_eager=True``."""
+    handles = []
+    for layer, transform in transforms_by_layer.items():
+        if layer < 0 or layer >= len(layers):
+            raise ValueError("Intervention layer is outside the model")
+
+        def hook(_module, _inputs, output, transform=transform):
+            mlp_output, residual = output
+            stream = mlp_output + residual
+            return (mlp_output + (transform(stream) - stream).to(mlp_output.dtype), residual)
+
+        handles.append(layers[layer].register_forward_hook(hook))
+    return handles
+
+
 def unit(direction: torch.Tensor) -> torch.Tensor:
     norm = direction.float().norm()
     if not torch.isfinite(norm) or norm <= 0:
@@ -50,12 +101,7 @@ def unit(direction: torch.Tensor) -> torch.Tensor:
 @contextmanager
 def add_direction(model: nn.Module, layer: int, direction: torch.Tensor, coefficient: float) -> Generator[None]:
     """Add ``coefficient * direction`` (direction used as given, not normalized) at one layer."""
-    vector = direction.float() * coefficient
-
-    def transform(hidden):
-        return hidden + vector.to(hidden.device, hidden.dtype)
-
-    with _hooks(model, {layer: transform}):
+    with _hooks(model, {layer: add_transform(direction, coefficient)}):
         yield
 
 
@@ -65,16 +111,7 @@ def cap_direction(model: nn.Module, thresholds_by_layer: dict[int, float],
     """Clip the projection onto each layer's unit direction at that layer's threshold, from above."""
     if set(thresholds_by_layer) != set(directions_by_layer):
         raise ValueError("Cap thresholds and directions must cover the same layers")
-    transforms = {}
-    for layer, threshold in thresholds_by_layer.items():
-        u = unit(directions_by_layer[layer])
-
-        def transform(hidden, u=u, threshold=float(threshold)):
-            u_local = u.to(hidden.device, torch.float32)
-            projection = hidden.float() @ u_local
-            excess = (projection - threshold).clamp_min(0)
-            return (hidden.float() - excess.unsqueeze(-1) * u_local).to(hidden.dtype)
-
-        transforms[layer] = transform
+    transforms = {layer: cap_transform(directions_by_layer[layer], threshold)
+                  for layer, threshold in thresholds_by_layer.items()}
     with _hooks(model, transforms):
         yield

@@ -212,7 +212,13 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   `hsolvNCblow` run, and on that run the no-prefilter candidate set equals his keyword-filtered one (5 of 45
   episodes). Still open: which model judges, and the budget (about 5 dossiers per 45 episodes at the base rate, more
   in arms where steering raises the visible-pass/hidden-fail rate).
-- **GPU budget** for Phase 3: set after the throughput smoke.
+- **GPU budget** for Phase 3 (2026-10-08, from the smokes): HF decodes at ~10 tok/s, ≈75 GPU-h per 540-episode arm;
+  vLLM ≈4 GPU-h. Phase 3 runs on vLLM with hooks on its gpt-oss blocks (`scripts/steered_rh_vllm.py`, eager mode),
+  parallelized like Koby's worklists (one job per seed × scenario). Projections of the generated transcripts are
+  measured afterwards with the HF capture path, as for the RH cache. The HF harness is kept for norms, projections
+  and as a cross-check on a few episodes.
+- **Role framing** (2026-10-08): bare "You are a schemer" prompts are refused by gpt-oss-120b (FINDINGS, extraction
+  smoke). The roles are reframed as named fictional characters (`*_fic.json`); the Phase 1 gates apply to those.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
 
