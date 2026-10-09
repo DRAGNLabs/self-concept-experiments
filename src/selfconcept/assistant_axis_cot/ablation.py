@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import TypedDict
 
 import numpy as np
@@ -8,8 +8,16 @@ from jaxtyping import Float, Int, Int8
 from torch import Tensor, nn
 from transformers import PreTrainedModel
 
+from selfconcept.common.ablation import mean_ablate_decoder_layer
+from selfconcept.common.activation_extraction.model_specifics import ModelSpecifics
+from selfconcept.common.span_targeting.types import PromptCompletion
+from selfconcept.common.torch_utils import build_padded_batch
+
+from selfconcept.assistant_axis_cot.projection import capture_layer_projections, sequence_region_codes
 from selfconcept.assistant_axis_cot.records import (
+    LABELLED_SEQUENCE_REGIONS,
     SEQUENCE_REGIONS,
+    AblationResult,
     AxisName,
     SequenceProjectionRecord,
     SequenceProjections,
@@ -68,9 +76,7 @@ def region_projection_moments[DirectionName: str](
 ) -> dict[SequenceRegion, RegionProjectionMoments]:
     """Population moments over every labelled token of the sequences, pooled."""
     moments_by_region: dict[SequenceRegion, RegionProjectionMoments] = {}
-    for region in SEQUENCE_REGIONS:
-        if region == "unlabelled":
-            continue
+    for region in LABELLED_SEQUENCE_REGIONS:
         region_values = np.concatenate(
             [
                 projections["projections_by_axis"][direction_name][
@@ -169,3 +175,102 @@ def region_projection_shift(
         ),
         "token_count": np.bincount(region_codes, minlength=len(SEQUENCE_REGIONS)),
     }
+
+
+def padded_region_codes(
+    region_codes_by_example: Sequence[Int8[np.ndarray, " token"]], sequence_length: int, device: torch.device
+) -> Int8[Tensor, "batch seq"]:
+    padded = torch.full((len(region_codes_by_example), sequence_length), SEQUENCE_REGIONS.index("unlabelled"))
+    for row, region_codes in enumerate(region_codes_by_example):
+        padded[row, : len(region_codes)] = torch.from_numpy(region_codes)
+    return padded.to(device)
+
+
+def example_layer_projections(
+    projections_by_layer: Mapping[int, Float[Tensor, "batch seq"]], row: int, token_count: int
+) -> Float[np.ndarray, "layer token"]:
+    return torch.stack(
+        [projections_by_layer[layer][row, :token_count] for layer in sorted(projections_by_layer)]
+    ).cpu().numpy()
+
+
+def ablate_regions(
+    model: PreTrainedModel,
+    model_specifics: ModelSpecifics,
+    examples: Sequence[PromptCompletion],
+    region_means: RegionMeans,
+    unit_axis_by_layer: Mapping[int, Float[Tensor, " hidden"]],
+    pad_token_id: int,
+    max_length: int,
+    kl_chunk_size: int,
+) -> list[AblationResult]:
+    """A clean forward pass, then one per direction and labelled region with that region's tokens mean-ablated along the
+    direction at the region means' layer. Each ablated pass is compared to the clean one by next-token KL and by the
+    shift in every token's projection onto each layer's axis in unit_axis_by_layer."""
+    token_ids_by_example = [example.prompt_token_ids + example.completion_token_ids for example in examples]
+    input_ids, attention_mask = build_padded_batch(token_ids_by_example, pad_token_id, max_length, model.device)
+    region_codes_by_example = [
+        sequence_region_codes(example, model_specifics.split_completion(example), max_length) for example in examples
+    ]
+    padded_codes = padded_region_codes(region_codes_by_example, input_ids.shape[1], input_ids.device)
+    decoder_layers = model_specifics.get_decoder_layers(model)
+    output_embeddings = model.get_output_embeddings()
+    assert output_embeddings is not None
+
+    with capture_layer_projections(decoder_layers, unit_axis_by_layer) as clean_projections_by_layer:
+        clean_hidden = final_hidden_states(model, input_ids, attention_mask)
+    clean_layer_projections_by_example = [
+        example_layer_projections(clean_projections_by_layer, row, len(region_codes))
+        for row, region_codes in enumerate(region_codes_by_example)
+    ]
+
+    kl_by_run_by_example: list[list[RegionKL]] = [[] for _ in examples]
+    shift_by_run_by_example: list[list[RegionProjectionShift]] = [[] for _ in examples]
+    for direction_name, unit_direction in region_means["unit_direction_by_name"].items():
+        for region in LABELLED_SEQUENCE_REGIONS:
+            target_projection = region_means["moments_by_region_by_direction"][direction_name][region]["mean"]
+            region_mask = padded_codes == SEQUENCE_REGIONS.index(region)
+            with (
+                mean_ablate_decoder_layer(
+                    decoder_layers[region_means["layer"]], unit_direction, target_projection, region_mask
+                ),
+                capture_layer_projections(decoder_layers, unit_axis_by_layer) as ablated_projections_by_layer,
+            ):
+                ablated_hidden = final_hidden_states(model, input_ids, attention_mask)
+            for row, region_codes in enumerate(region_codes_by_example):
+                token_count = len(region_codes)
+                kl_by_run_by_example[row].append(
+                    region_kl_sums(
+                        clean_hidden[row, :token_count],
+                        ablated_hidden[row, :token_count],
+                        output_embeddings,
+                        region_codes,
+                        kl_chunk_size,
+                    )
+                )
+                shift_by_run_by_example[row].append(
+                    region_projection_shift(
+                        clean_layer_projections_by_example[row],
+                        example_layer_projections(ablated_projections_by_layer, row, token_count),
+                        region_codes,
+                    )
+                )
+
+    run_shape = (len(region_means["unit_direction_by_name"]), len(LABELLED_SEQUENCE_REGIONS))
+    return [
+        {
+            "kl_sum": np.stack([kl["kl_sum"] for kl in kl_by_run]).reshape(*run_shape, -1),
+            "kl_token_count": kl_by_run[0]["token_count"],
+            "projection_shift_sum": np.stack([shift["shift_sum"] for shift in shift_by_run]).reshape(
+                *run_shape, *shift_by_run[0]["shift_sum"].shape
+            ),
+            "squared_projection_shift_sum": np.stack([shift["squared_shift_sum"] for shift in shift_by_run]).reshape(
+                *run_shape, *shift_by_run[0]["squared_shift_sum"].shape
+            ),
+            "projection_token_count": shift_by_run[0]["token_count"],
+            "truncated": len(token_ids) > max_length,
+        }
+        for kl_by_run, shift_by_run, token_ids in zip(
+            kl_by_run_by_example, shift_by_run_by_example, token_ids_by_example, strict=True
+        )
+    ]

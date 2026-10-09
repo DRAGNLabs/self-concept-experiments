@@ -1,7 +1,7 @@
 from typing import Literal, TypedDict
 
 import numpy as np
-from jaxtyping import Float32, Int8, Int32
+from jaxtyping import Float32, Float64, Int8, Int32, Int64
 
 type AxisName = Literal["all_tokens", "response_only"]
 type Condition = Literal["unprompted", "persona"]
@@ -10,6 +10,9 @@ type SequenceRegion = Literal["prompt", "cot", "final", "unlabelled"]
 
 COMPLETION_REGIONS: tuple[CompletionRegion, ...] = ("cot", "final", "delimiter")
 SEQUENCE_REGIONS: tuple[SequenceRegion, ...] = ("prompt", "cot", "final", "unlabelled")
+LABELLED_SEQUENCE_REGIONS: tuple[SequenceRegion, ...] = tuple(
+    region for region in SEQUENCE_REGIONS if region != "unlabelled"
+)
 
 
 class SpanProjections[DirectionName: str](TypedDict):
@@ -34,6 +37,18 @@ class SequenceProjections[DirectionName: str](SpanProjections[DirectionName]):
     region_codes: Int8[np.ndarray, " n_tokens"]
 
 
+class AblationResult(TypedDict):
+    """One conversation's region mean ablations. Axes: direction, in the run's direction order; ablated region,
+    indexing LABELLED_SEQUENCE_REGIONS; measured region, indexing SEQUENCE_REGIONS; layer, the target layer onward."""
+
+    kl_sum: Float64[np.ndarray, "direction ablated measured"]
+    kl_token_count: Int64[np.ndarray, " measured"]
+    projection_shift_sum: Float64[np.ndarray, "direction ablated measured layer"]
+    squared_projection_shift_sum: Float64[np.ndarray, "direction ablated measured layer"]
+    projection_token_count: Int64[np.ndarray, " measured"]
+    truncated: bool
+
+
 class ConversationMetadata(TypedDict):
     role: str
     prompt_index: int
@@ -46,6 +61,10 @@ class TokenProjectionRecord(ConversationMetadata, CompletionProjections):
 
 
 class SequenceProjectionRecord(ConversationMetadata, SequenceProjections[str]):
+    pass
+
+
+class AblationRecord(ConversationMetadata, AblationResult):
     pass
 
 
