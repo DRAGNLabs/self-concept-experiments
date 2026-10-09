@@ -266,6 +266,52 @@ last turn, which is every turn here), with unit tests on a stub Harmony tokenize
 and the CoT pass is rerun by `slurm/extract_cot_activations.sbatch`. The validation table for the CoT region
 follows when it lands.
 
+### Phase 2, final-region vectors — 2026-10-09: on the cached cohort, the schemer contrast separates hack from non-hack CoT at the Assistant Axis's level once the AA component is removed, and adds to the AA; it is not better than random directions in the final region
+
+Setup. `direction_analysis` on the layer-17 region-mean cache (824 of 824 transcripts, 41 problems, Koby's
+`hsolvNCblow` family), candidates = the final-region (response-only) vectors from Phase 1, reference = AA, 256
+isotropic random directions (seed 1729), 1,000 whole-problem bootstraps. Strata problem/family/turn (the "problem"
+grouping gives the same picture). Output `roles_fic/phase2_response_only/analysis.md`. These are final-channel
+vectors applied to prompt, CoT and final region means; the CoT-region vectors (PLAN's primary) follow in the next
+section.
+
+| Region | Direction | AUROC (95% CI) | Random-direction tail | STRONG-only | Length-adj. corr (tail) | Length + AA-adj. corr (tail) | cos(diff-means) (tail) |
+|---|---|---|---:|---:|---|---|---|
+| cot | persona_contrast | 0.601 (0.518–0.693) | 0.37 | 0.63 | 0.22 (0.20) | 0.33 (0.004) | 0.03 (0.11) |
+| cot | persona_contrast ⊥ AA | **0.698 (0.615–0.772)** | 0.054 | 0.73 | 0.39 (0.004) | 0.36 (0.004) | 0.09 (0.004) |
+| cot | persona_raw (vs default) | 0.494 (0.410–0.582) | 0.95 | 0.53 | −0.04 (0.79) | 0.22 (0.09) | −0.04 (0.03) |
+| cot | persona_orth (= persona_raw ⊥ AA) | 0.591 (0.514–0.672) | 0.41 | 0.65 | 0.18 (0.31) | 0.28 (0.02) | 0.04 (0.03) |
+| cot | persona_raw vs neutral_fic | 0.641 (0.563–0.718) | 0.17 | 0.68 | 0.26 (0.13) | 0.31 (0.004) | 0.05 (0.02) |
+| cot | persona_raw vs neutral_fic ⊥ AA | 0.692 (0.610–0.764) | 0.058 | 0.73 | 0.36 (0.012) | 0.32 (0.004) | 0.09 (0.004) |
+| cot | AA (reference) | 0.696 (0.608–0.781) | 0.054 | 0.70 | 0.29 (0.09) | 0.00 (0.98) | 0.12 (0.004) |
+| final | persona_contrast | 0.715 (0.637–0.783) | 0.30 | 0.74 | 0.30 (0.42) | 0.55 (0.02) | 0.05 (0.008) |
+| final | persona_contrast ⊥ AA | 0.759 (0.661–0.837) | 0.19 | 0.84 | 0.47 (0.13) | 0.37 (0.16) | 0.04 (0.04) |
+| final | AA (reference) | 0.714 (0.609–0.798) | 0.30 | 0.76 | 0.52 (0.08) | 0.00 (1.0) | −0.04 (0.05) |
+| prompt | every candidate | 0.50–0.54 | ≥ 0.29 | | | | |
+
+Baselines (CoT region): token count 0.44, residual norm 0.57, held-out diff-of-means ceiling 0.765. Random
+directions reach 0.71 (97.5th percentile) in the CoT region and 0.87 in the final region, where residual norm
+confounds every direction (AA study).
+
+Reading. (1) The plain persona vector against default is useless on this cohort (CoT AUROC 0.49): it is 62%
+anti-AA, and the AA component points the wrong way for hacking, so it cancels. (2) `persona_contrast` as built
+separates hacking CoT weakly (0.60, CI just clear of 0.5) and no better than random directions (tail 0.37); its
+remaining AA component (cos −0.42) is still what holds it back, because projecting the AA out lifts it to 0.70,
+equal to the AA itself, with tail 0.054 (14 of 256 random directions as extreme), STRONG-only 0.73, and a
+length-adjusted rank correlation of 0.39 that no random direction matched (tail 0.004). (3) The part of the
+contrast that is orthogonal to the AA carries information the AA does not: the correlation after controlling for
+length and for the AA projection is 0.36 (tail 0.004), while the AA's own AA-controlled correlation is 0 by
+construction. (4) Against PLAN's "specific association" rule (CI excludes 0.5, tail < 0.05, sign survives length
+adjustment and AA orthogonalization), `persona_contrast ⊥ AA` in the CoT region passes everything except the AUROC
+tail, which is 0.054, so this is a borderline-specific association, not a clean pass; and orthogonalizing changes
+the hypothesis from "the schemer-character direction" to "its component outside the AA". (5) In the final region
+the contrast reaches 0.72–0.76 but so do a third of random directions, so nothing is claimed there. (6) The
+neutral-character baseline behaves like the honest contrast (0.64 raw, 0.69 orthogonalized), so the result does
+not depend on the choice of honest roles.
+
+Caveat: these vectors were pooled over final-channel tokens and are applied here to CoT-region activations; the
+matched CoT-region vectors are the primary cell and are reported next.
+
 ### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
 
 Not a schemer result. Run on the login node (CPU, ~1 min) with the AA as the candidate and an isotropic random
