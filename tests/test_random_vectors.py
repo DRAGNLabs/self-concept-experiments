@@ -56,6 +56,55 @@ class RandomControlTests(unittest.TestCase):
         u, pairs, _ = pair_totals(scores, np.arange(40) % 2, ['a'] * 40, ['p'] * 40)
         np.testing.assert_array_equal(u.sum(0) / pairs.sum(), .5)
 
+    def test_per_direction_intervals_and_predictivity(self):
+        # Four problems with unequal pair counts; each has two repeated strata.
+        # The columns are AA, a positive predictor, its inverse, ties, and a
+        # direction whose high point estimate remains uncertain across problems.
+        scores, labels, strata, problems = [], [], [], []
+        for p, negatives in enumerate([1, 2, 3, 4]):
+            for turn in range(2):
+                for label in [1, *([0] * negatives)]:
+                    scores.append([label if p else -label, label, -label, 0, label if p else -label])
+                    labels.append(label)
+                    strata.append(f'{p}:{turn}')
+                    problems.append(str(p))
+        scores, labels = np.asarray(scores), np.asarray(labels)
+        result = analyze_cell(scores, labels, np.zeros((len(labels), 3)), strata, problems,
+                              bootstrap=2000, seed=42)
+        cis = np.asarray(result['all_auroc_problem_bootstrap_cis'])
+        np.testing.assert_array_equal(cis[1:4], [[1, 1], [0, 0], [.5, .5]])
+        self.assertGreater(result['all_aurocs'][4], .8)
+        self.assertLessEqual(cis[4, 0], .5)
+        self.assertGreater(cis[4, 1], .5)
+        self.assertEqual(result['random_direction_predictivity'], {
+            'n_random': 4, 'n_above_chance': 1, 'n_below_chance': 1,
+            'n_excluding_chance': 2, 'fraction_excluding_chance': .5})
+        # Independently resample whole problems, retaining all their strata and
+        # weighting by pair count. The old AA-only CI must remain identical.
+        rng = np.random.default_rng(42)
+        draws = []
+        for _ in range(2000):
+            selected = rng.integers(4, size=4)
+            weights = (selected + 1) * 2
+            draws.append(np.sum(weights * (selected != 0)) / weights.sum())
+        np.testing.assert_allclose(cis[4], np.quantile(draws, [.025, .975]))
+        np.testing.assert_allclose(result['assistant_axis_problem_bootstrap_ci'], np.quantile(draws, [.025, .975]))
+        self.assertEqual(result['assistant_axis_problem_bootstrap_ci'], cis[0].tolist())
+        flipped = analyze_cell(-scores, labels, np.zeros((len(labels), 3)), strata, problems,
+                               bootstrap=2000, seed=42)
+        np.testing.assert_allclose(flipped['all_auroc_problem_bootstrap_cis'], 1 - cis[:, ::-1])
+        self.assertEqual(flipped['random_direction_predictivity']['n_excluding_chance'], 2)
+
+    def test_disabled_bootstrap_and_no_matched_pairs(self):
+        scores = np.array([[1, 1], [0, 0]])
+        result = analyze_cell(scores, np.array([1, 0]), np.zeros((2, 3)), ['a', 'a'], ['p', 'p'], bootstrap=0)
+        self.assertIsNone(result['assistant_axis_problem_bootstrap_ci'])
+        self.assertIsNone(result['all_auroc_problem_bootstrap_cis'])
+        self.assertIsNone(result['random_direction_predictivity'])
+        self.assertEqual(result['all_aurocs'], [1, 1])
+        unmatched = analyze_cell(scores, np.array([1, 0]), np.zeros((2, 3)), ['a', 'b'], ['p', 'p'])
+        self.assertEqual(unmatched['status'], 'no_matched_pairs')
+
     def test_baselines_score_token_count_and_residual_norm(self):
         residuals = np.array([[3, 4], [0, 1], [6, 8], [1, 0]], dtype=np.float32)
         result = baseline_aurocs(np.array([1, 2, 3, 4]), residuals, np.array([1, 0, 1, 0]), ['a', 'a', 'b', 'b'], ['p', 'p', 'q', 'q'])
@@ -128,6 +177,10 @@ class RandomControlTests(unittest.TestCase):
             primary = next(c for c in result['cells'] if c['primary'])
             self.assertEqual(primary['auroc']['assistant_axis'], 1)
             self.assertEqual(primary['baseline_aurocs']['region_tokens'], .5)
+            self.assertEqual(result['bootstrap'], 10)
+            self.assertEqual(len(primary['all_auroc_problem_bootstrap_cis']), 9)
+            self.assertEqual(primary['random_direction_predictivity']['n_random'], 8)
+            self.assertIn('Random CI excludes 0.5', (root/'analysis/analysis.md').read_text())
             self.assertTrue((root/'analysis/random_controls.png').exists())
             identity['shards'] = 2
             (shard/'manifest.json').write_text(json.dumps(manifest))

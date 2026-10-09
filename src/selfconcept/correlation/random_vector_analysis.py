@@ -101,12 +101,29 @@ def analyze_cell(scores, labels, lengths, strata, problems, bootstrap=1000, seed
     draws = []
     for _ in range(bootstrap):
         indices = rng.integers(len(pairs), size=len(pairs))
-        draws.append(u[indices, 0].sum() / pairs[indices].sum())
+        draws.append(u[indices].sum(axis=0) / pairs[indices].sum())
+    cis = np.quantile(draws, [.025, .975], axis=0).T if draws else None
+    random_predictivity = None
+    if cis is not None:
+        # A direction's sign is arbitrary: either side of chance is predictive.
+        # Intervals touching 0.5 do not exclude chance.
+        above = cis[1:, 0] > .5
+        below = cis[1:, 1] < .5
+        n_random = len(above)
+        random_predictivity = {
+            "n_random": n_random,
+            "n_above_chance": int(above.sum()),
+            "n_below_chance": int(below.sum()),
+            "n_excluding_chance": int((above | below).sum()),
+            "fraction_excluding_chance": float((above | below).mean()) if n_random else None,
+        }
     adjusted = adjusted_correlations(scores, labels, lengths, strata)
     return {"status": "exploratory", "n": len(labels), "n_available": n_available, "n_positive": int(labels.sum()),
             "n_strata": n_strata, "n_problems": len(pairs), "n_pairs": int(pairs.sum()),
             "auroc": compare_to_random(aucs, .5),
-            "assistant_axis_problem_bootstrap_ci": np.quantile(draws, [.025, .975]).tolist() if draws else None,
+            "assistant_axis_problem_bootstrap_ci": cis[0].tolist() if cis is not None else None,
+            "all_auroc_problem_bootstrap_cis": cis.tolist() if cis is not None else None,
+            "random_direction_predictivity": random_predictivity,
             "length_adjusted_rank_correlation": compare_to_random(adjusted, 0),
             "all_aurocs": aucs.tolist(),
             "all_length_adjusted_correlations": [float(x) if np.isfinite(x) else None for x in adjusted]}
@@ -186,13 +203,18 @@ def main():
                                   "primary": layer == layers[0] and region == "final" and scenario == "all" and grouping == "problem_family_turn",
                                   **cell})
     result = {"identity": identity, "axis_sha256": sha256(args.axis), "random_count": args.random_count,
-              "seed": args.seed, "coverage": {"expected": len(records), "complete": len(completed),
+              "seed": args.seed, "bootstrap": args.bootstrap,
+              "bootstrap_confidence_level": .95,
+              "direction_order": "Assistant Axis first, then random directions in directions.npz order",
+              "coverage": {"expected": len(records), "complete": len(completed),
               "error_oom": sum(r["status"] == "error_oom" for _, r in records)}, "cells": cells,
               "limitations": ["Negative labels are unflagged, not judge-confirmed non-hacks.",
                   "Random-direction tail fractions describe axis specificity, not a causal or label-permutation test.",
                   "Exact turn matching does not equal exact token-length matching; partial-rank adjustment is a sensitivity analysis.",
                   "Problem-only comparison uses this same strictly selected cohort, not the original broader cohort.",
                   "Bootstrap resamples whole base problems, keeping repeated episodes and turns together.",
+                  "Per-direction 95% CIs are pointwise, not simultaneous across directions or analysis cells.",
+                  "The fraction of random-direction CIs excluding 0.5 is descriptive, not a p-value for Assistant-Axis specificity.",
                   "Bare legacy axis artifact has matching dimensions but cannot authenticate model provenance.",
                   "Incomplete/OOM or empty-region cases may bias complete-case results."]}
     (args.out / "analysis.json").write_text(json.dumps(result, indent=2, allow_nan=False))
@@ -208,6 +230,23 @@ def main():
             baselines = cell["baseline_aurocs"]
             lines.append(f"| {cell['region']} | {cell['grouping']} | {cell['n_pairs']} | {comparison['assistant_axis']:.4f} | {quantiles} "
                          f"| {comparison['random_direction_tail_fraction']:.4f} | {baselines['region_tokens']:.3f} | {baselines['residual_norm']:.3f} |")
+    lines.extend(["", "## Per-direction uncertainty", "",
+                  f"95% percentile intervals from {args.bootstrap} whole-problem bootstrap draws, shared across directions.", "",
+                  "A random direction counts as predictive when its CI lies strictly above or below 0.5; touching 0.5 does not count.",
+                  "These intervals describe uncertainty for each fixed direction, not the spread across random directions.", "",
+                  "| Region | Grouping | AA 95% CI | Random CI above 0.5 | Random CI below 0.5 | Random CI excludes 0.5 | Fraction |",
+                  "|---|---|---|---:|---:|---:|---:|"])
+    for cell in cells:
+        if cell["layer"] != layers[0] or cell["scenario"] != "all" or cell["status"] != "exploratory":
+            continue
+        ci, predictive = cell["assistant_axis_problem_bootstrap_ci"], cell["random_direction_predictivity"]
+        if predictive is None:
+            lines.append(f"| {cell['region']} | {cell['grouping']} | disabled | — | — | — | — |")
+            continue
+        lines.append(f"| {cell['region']} | {cell['grouping']} | {ci[0]:.4f}–{ci[1]:.4f} | "
+                     f"{predictive['n_above_chance']} | {predictive['n_below_chance']} | "
+                     f"{predictive['n_excluding_chance']} / {predictive['n_random']} | "
+                     f"{predictive['fraction_excluding_chance']:.1%} |")
     lines.extend(["", *result["limitations"]])
     (args.out / "analysis.md").write_text("\n".join(lines) + "\n")
     primary = next(c for c in cells if c["primary"])
