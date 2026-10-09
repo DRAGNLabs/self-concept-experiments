@@ -5,7 +5,8 @@ import numpy as np
 import torch
 from jaxtyping import Float, Int8
 from torch import Tensor
-from transformers import PreTrainedModel
+from tqdm import tqdm
+from transformers import AutoTokenizer, PreTrainedModel
 
 from selfconcept.assistant_axis_cot.records import (
     COMPLETION_REGIONS,
@@ -14,12 +15,23 @@ from selfconcept.assistant_axis_cot.records import (
     CompletionProjections,
     SequenceProjections,
 )
+from selfconcept.assistant_axis_cot.transcripts import padded_token_budget_batches
 from selfconcept.common.activation_extraction.model_specifics import ModelSpecifics
 from selfconcept.common.activation_extraction.extraction import extract_token_span_activations
+from selfconcept.common.hf_strong_types import HFTokenizer
+from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.span_targeting.types import CompletionSpans, PromptCompletion, TokenSpan
 from selfconcept.measurement.unit_axes import load_unit_axes
 
 ATTENTION_SINK_TOKEN_COUNT = 1
+
+
+def load_tokenizer_and_model(model_name: str, attn_implementation: str | None) -> tuple[HFTokenizer, PreTrainedModel]:
+    tokenizer: HFTokenizer = AutoTokenizer.from_pretrained(model_name)
+    load_kwargs = {} if attn_implementation is None else {"attn_implementation": attn_implementation}
+    model: PreTrainedModel = load_causal_lm(model_name, dtype=torch.bfloat16, device_map="auto", **load_kwargs)
+    model.eval()
+    return tokenizer, model
 
 
 def load_unit_axis_by_name(
@@ -131,20 +143,29 @@ def completion_projections(
     }
 
 
-def project_completions(
+def project_sequences_in_batches[DirectionName: str](
     model: PreTrainedModel,
     model_specifics: ModelSpecifics,
     examples: Sequence[PromptCompletion],
-    unit_axis_by_name: Mapping[AxisName, Float[Tensor, " hidden"]],
+    unit_direction_by_name: Mapping[DirectionName, Float[Tensor, " hidden"]],
     layer: int,
     pad_token_id: int,
     max_length: int,
-) -> list[CompletionProjections]:
-    """Projects every completion token, delimiters included."""
-    projections_by_example = project_sequences(
-        model, model_specifics, examples, unit_axis_by_name, layer, pad_token_id, max_length
-    )
-    return [
-        completion_projections(example, model_specifics.split_completion(example), projections)
-        for example, projections in zip(examples, projections_by_example, strict=True)
+    max_batch_tokens: int,
+) -> list[SequenceProjections[DirectionName]]:
+    sequence_lengths = [
+        min(len(example.prompt_token_ids) + len(example.completion_token_ids), max_length) for example in examples
     ]
+    projections_by_index: dict[int, SequenceProjections[DirectionName]] = {}
+    for batch_indices in tqdm(padded_token_budget_batches(sequence_lengths, max_batch_tokens), desc="Batches"):
+        batch_projections = project_sequences(
+            model,
+            model_specifics,
+            [examples[index] for index in batch_indices],
+            unit_direction_by_name,
+            layer,
+            pad_token_id,
+            max_length,
+        )
+        projections_by_index.update(zip(batch_indices, batch_projections, strict=True))
+    return [projections_by_index[index] for index in range(len(examples))]

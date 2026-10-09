@@ -11,19 +11,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import torch
-from tqdm import tqdm
-from transformers import AutoTokenizer, PreTrainedModel
 
 from selfconcept.assistant_axis.models import get_config
-from selfconcept.assistant_axis_cot.projection import load_unit_axis_by_name, project_completions
+from selfconcept.assistant_axis_cot.projection import (
+    completion_projections,
+    load_tokenizer_and_model,
+    load_unit_axis_by_name,
+    project_sequences_in_batches,
+)
 from selfconcept.assistant_axis_cot.records import AxisName, TokenProjectionRecord
-from selfconcept.assistant_axis_cot.transcripts import load_labelled_conversations, padded_token_budget_batches
+from selfconcept.assistant_axis_cot.transcripts import load_labelled_conversations, thinking_prompt_completions
 from selfconcept.common.activation_extraction.model_specifics import get_model_specifics
-from selfconcept.common.hf_strong_types import HFTokenizer
-from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.paths import scratch_dir
-from selfconcept.common.span_targeting.types import PromptCompletion
-from selfconcept.transcript_generation.vllm_generation import generated_prompt_completion
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -43,10 +42,7 @@ class RunConfig:
 
 
 def main(run: RunConfig = RunConfig()) -> None:
-    tokenizer: HFTokenizer = AutoTokenizer.from_pretrained(run.model)
-    load_kwargs = {} if run.attn_implementation is None else {"attn_implementation": run.attn_implementation}
-    model: PreTrainedModel = load_causal_lm(run.model, dtype=torch.bfloat16, device_map="auto", **load_kwargs)
-    model.eval()
+    tokenizer, model = load_tokenizer_and_model(run.model, run.attn_implementation)
     model_specifics = get_model_specifics(run.model, tokenizer)
     layer = run.layer if run.layer is not None else get_config(run.model)["target_layer"]
     unit_axis_by_name = load_unit_axis_by_name(
@@ -55,30 +51,21 @@ def main(run: RunConfig = RunConfig()) -> None:
     logger.info(f"Projecting at layer {layer} onto {sorted(unit_axis_by_name)}")
 
     labelled_conversations = load_labelled_conversations(run.responses_dir, run.conversations_per_role)
-    examples: list[PromptCompletion] = [
-        generated_prompt_completion(tokenizer, run.model, conversation, enable_thinking=True, chat_template_kwargs={})
-        for _, conversation in labelled_conversations
-    ]
-    sequence_lengths = [
-        min(len(example.prompt_token_ids) + len(example.completion_token_ids), run.max_length) for example in examples
-    ]
+    examples = thinking_prompt_completions(
+        tokenizer, run.model, [conversation for _, conversation in labelled_conversations]
+    )
     pad_token_id = tokenizer.eos_token_id
     assert pad_token_id is not None
 
-    record_by_index: dict[int, TokenProjectionRecord] = {}
-    for batch_indices in tqdm(padded_token_budget_batches(sequence_lengths, run.max_batch_tokens), desc="Batches"):
-        batch_projections = project_completions(
-            model,
-            model_specifics,
-            [examples[index] for index in batch_indices],
-            unit_axis_by_name,
-            layer,
-            pad_token_id,
-            run.max_length,
+    projections_by_example = project_sequences_in_batches(
+        model, model_specifics, examples, unit_axis_by_name, layer, pad_token_id, run.max_length, run.max_batch_tokens
+    )
+    records: list[TokenProjectionRecord] = [
+        {**metadata, **completion_projections(example, model_specifics.split_completion(example), projections)}
+        for (metadata, _), example, projections in zip(
+            labelled_conversations, examples, projections_by_example, strict=True
         )
-        for index, completion_projections in zip(batch_indices, batch_projections, strict=True):
-            record_by_index[index] = {**labelled_conversations[index][0], **completion_projections}
-    records = [record_by_index[index] for index in range(len(examples))]
+    ]
 
     run.output.parent.mkdir(parents=True, exist_ok=True)
     torch.save({"model": run.model, "layer": layer, "records": records}, run.output)

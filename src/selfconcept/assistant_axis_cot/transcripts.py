@@ -4,7 +4,9 @@ from pathlib import Path
 import jsonlines
 
 from selfconcept.assistant_axis_cot.records import ConversationMetadata, condition_of
-from selfconcept.common.hf_strong_types import Conversation
+from selfconcept.common.hf_strong_types import Conversation, HFTokenizer
+from selfconcept.common.span_targeting.types import PromptCompletion
+from selfconcept.transcript_generation.vllm_generation import generated_prompt_completion
 
 
 def load_labelled_conversations(
@@ -26,6 +28,15 @@ def load_labelled_conversations(
             }
             labelled_conversations.append((metadata, response["conversation"]))
     return labelled_conversations
+
+
+def thinking_prompt_completions(
+    tokenizer: HFTokenizer, model_name: str, conversations: Sequence[Conversation]
+) -> list[PromptCompletion]:
+    return [
+        generated_prompt_completion(tokenizer, model_name, conversation, enable_thinking=True, chat_template_kwargs={})
+        for conversation in conversations
+    ]
 
 
 def padded_token_budget_batches(sequence_lengths: Sequence[int], max_batch_tokens: int) -> list[list[int]]:
