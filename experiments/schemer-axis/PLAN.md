@@ -237,6 +237,14 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   role − default (as in the AA pipeline), role − neutral_fic (character content with the fiction framing removed),
   and the persona contrasts of Phase 1 built from the fiction roles only. The write-up must call the result a
   character vector ("the model voicing a schemer"), and the bare-persona refusal is itself a finding.
+- **Phase 3 vectors and budget** (2026-10-09, after Phase 2): the pre-registered primary, the CoT-region
+  `persona_contrast`, showed no association with hacking on the cohort (AUROC 0.48); the answer-token contrast
+  with the AA projected out (`persona_contrast_orth`, final region) reached 0.70, borderline-specific. Decision: the
+  primary gets the full Phase 3 as written (dose pilot and five-arm main run, ≈ 22 GPU-h), because question (b) is
+  about causal potency and a correlation null does not settle it. The secondary vector enters the dose pilot only
+  (≈ 4 GPU-h, same grid) so that a main run for it can be sized later; that main run (≈ 18 GPU-h) is not queued
+  without an explicit go-ahead. The main-run vector is not chosen on pilot hack rates; the dose is chosen on
+  capability measures only, as above.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
 

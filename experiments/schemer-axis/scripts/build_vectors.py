@@ -10,6 +10,7 @@ selfconcept.assistant_axis.projection.load_unit_axes: {"axis": (layers, hidden) 
 persona_raw      = mean(schemer roles) - default
 persona_contrast = mean(schemer roles) - mean(honest roles)        (skipped if an honest role vector is missing)
 persona_orth     = persona_raw with the AA component removed per layer
+persona_contrast_orth = persona_contrast with the AA component removed per layer
 Also prints, per candidate, the cosine with the AA and the norm at the layers of interest.
 """
 import argparse
@@ -76,6 +77,8 @@ def main() -> None:
     if len(honest) == len(args.honest):
         candidates["persona_contrast"] = schemer_mean - torch.stack(honest).mean(0)
     candidates["persona_orth"] = project_out(candidates["persona_raw"], aa)
+    if "persona_contrast" in candidates:
+        candidates["persona_contrast_orth"] = project_out(candidates["persona_contrast"], aa)
     for role in args.schemer:
         if roles[role] is not None:
             candidates[f"{role}_minus_default"] = roles[role] - default
