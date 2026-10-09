@@ -29,7 +29,9 @@ call a non-significant result evidence of no effect.
   engine compiles. Compiled single-stream episodes run at ~22 s each (~180 tokens/s unsteered), the same rate as
   Koby's runs, against ~10 tokens/s on HF; section "vLLM backend smoke, part 2". A vLLM compile-cache collision
   (steered and unsteered graphs served to each other) cost two runs and is fixed with `VLLM_DISABLE_COMPILE_CACHE=1`.
-  Budget: about 3.5 GPU-h per 540-episode arm.
+  A prompt-logprob check (section "part 3") shows the compiled engines apply the same transform as the hook-verified
+  eager ones: within-arm eager/compiled differences sit at the bf16 noise floor (~0.03–0.1 nats per token) while
+  the steering effects are 10–40× larger and identical in both modes. Budget: about 3.5 GPU-h per 540-episode arm.
 
 Code (branch `schemer-axis`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
 `scripts/build_vectors.py`, `scripts/validate_vectors.py`; `selfconcept.correlation.direction_analysis` (Phase 2, CPU);
@@ -190,6 +192,35 @@ side observation, consistent with the steering being on: pushing toward the Assi
 reasoning text to 28k characters over 27 turns against 72k over 28 unsteered turns, while completions (57k vs 69k)
 and outcomes barely moved. Projections of the generated text will be measured offline with the HF capture path
 (PLAN, GPU budget), not inside vLLM.
+
+### vLLM backend smoke, part 3 — 2026-10-09: prompt log-probabilities show the compiled engine applies exactly the steering the eager hook does
+
+Why. Greedy text cannot show whether the patch compiled into the fast engine is active and of the right
+magnitude (part 2), and Phase 3 (~18 GPU-h) depends on it. Prompt log-probabilities of fixed tokens can: the same
+six texts (the three unsteered and three add-steered greedy answers from part 2, 446–1,016 tokens each, as
+final-channel messages after their question) were scored under six engines, {eager, compiled} × {unsteered, add
+α = +0.4, cap τ = 300}. Job 14036790, `--score` mode of `steered_rh_vllm.py`, output
+`.../schemer-axis/vllm_logprob_check/summary.json`. Numbers are mean |Δ log p| per token over a text, and the
+change in total log p, for each pair of engines (range over the six texts):
+
+| Pair | Mean per-token difference | Total log p change |
+|---|---:|---:|
+| unsteered eager vs compiled (noise floor) | 0.03–0.08 | −4 to +5 |
+| add: eager vs compiled | 0.03–0.12 | −8 to +3 |
+| cap: eager vs compiled | 0.03–0.09 | −4 to +5 |
+| add effect (add vs unsteered), eager | 0.82–1.38 | −1,280 / −1,277 / −835 (unsteered texts), +745 / +762 / +340 (steered texts) |
+| add effect, compiled | 0.82–1.38 | −1,285 / −1,279 / −829, +747 / +772 / +340 |
+| cap effect, eager | 0.06–0.40 | −22 / −5 / −58, −239 / −231 / −172 |
+| cap effect, compiled | 0.06–0.39 | −21 / −13 / −63, −231 / −231 / −171 |
+
+Result. Within each arm, eager and compiled engines differ by the bf16 noise floor, and the steering effects are
+10–40× that floor and the same to within the floor in both modes (add effect on text 0: −1,280 eager, −1,285
+compiled). So the compiled patch is active and has the eager hook's magnitude, which is the magnitude checked
+against the HF projections in part 1. Two side observations: α = +0.4 along the Assistant Axis moves the model's
+distribution a long way (about 1.3 nats per token away from its own unsteered answers and 0.8 toward the steered
+ones), so the Phase 3 dose pilot should start well below the AA study's values for the schemer direction; and cap
+τ = 300 at layer 17, with prompt projections of ~440, is a mild intervention that mostly lowers the likelihood of
+the AA-steered texts, as a cap should. Phase 3 can run on the compiled engine.
 
 ### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
 
