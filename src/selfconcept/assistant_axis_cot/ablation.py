@@ -3,8 +3,10 @@ from typing import TypedDict
 
 import numpy as np
 import torch
-from jaxtyping import Float
-from torch import Tensor
+import torch.nn.functional as F
+from jaxtyping import Float, Int, Int8
+from torch import Tensor, nn
+from transformers import PreTrainedModel
 
 from selfconcept.assistant_axis_cot.records import (
     SEQUENCE_REGIONS,
@@ -28,6 +30,13 @@ class NormOutlierToken(TypedDict):
     min_outlying_norm_ratio: float
     max_outlying_norm_ratio: float
     example_positions: list[int]
+
+
+class RegionKL(TypedDict):
+    """Indexed by SEQUENCE_REGIONS, the region of the token each next-token distribution is read at."""
+
+    kl_sum: Float[np.ndarray, " region"]
+    token_count: Int[np.ndarray, " region"]
 
 
 class RegionMeans(TypedDict):
@@ -96,3 +105,37 @@ def norm_outlier_tokens(
             "example_positions": sorted({int(position) for position in positions[is_token_outlier]})[:example_count],
         })
     return sorted(outlier_tokens, key=lambda outlier_token: -outlier_token["outlier_count"])
+
+
+def final_hidden_states(
+    model: PreTrainedModel, input_ids: Int[Tensor, "batch seq"], attention_mask: Int[Tensor, "batch seq"]
+) -> Float[Tensor, "batch seq hidden"]:
+    """The decoder's normed output, which the output embeddings map to logits; far smaller than the logits."""
+    with torch.inference_mode():
+        return model.get_decoder()(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
+
+
+def region_kl_sums(
+    clean_hidden: Float[Tensor, "token hidden"],
+    ablated_hidden: Float[Tensor, "token hidden"],
+    output_embeddings: nn.Module,
+    region_codes: Int8[np.ndarray, " token"],
+    chunk_size: int,
+) -> RegionKL:
+    """KL(clean || ablated) of the next-token distribution after each token but the last, summed by that token's
+    region; logits are materialized chunk_size positions at a time."""
+    kl_chunks: list[Float[Tensor, " chunk"]] = []
+    with torch.inference_mode():
+        for start in range(0, len(region_codes) - 1, chunk_size):
+            end = min(start + chunk_size, len(region_codes) - 1)
+            clean_log_probs = F.log_softmax(output_embeddings(clean_hidden[start:end]).float(), dim=-1)
+            ablated_log_probs = F.log_softmax(output_embeddings(ablated_hidden[start:end]).float(), dim=-1)
+            kl_chunks.append(
+                F.kl_div(ablated_log_probs, clean_log_probs, log_target=True, reduction="none").sum(dim=-1)
+            )
+    kl = torch.cat(kl_chunks).cpu().numpy()
+    read_regions = region_codes[:-1]
+    return {
+        "kl_sum": np.bincount(read_regions, weights=kl, minlength=len(SEQUENCE_REGIONS)),
+        "token_count": np.bincount(read_regions, minlength=len(SEQUENCE_REGIONS)),
+    }
