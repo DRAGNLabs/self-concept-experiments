@@ -48,7 +48,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 |---|---|---|
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
-| 3. Does shifting or capping along it change the hack rate? | not started | — |
+| 3. Does shifting or capping along it change the hack rate? | dose pilot queued (jobs 14037533 add arms, 14037534 cap thresholds) | primary = CoT-region contrast (full Phase 3); the final-region contrast ⊥ AA is in the pilot only (PLAN, open decisions) |
 
 ## Runs
 
