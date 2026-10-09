@@ -24,7 +24,10 @@ call a non-significant result evidence of no effect.
   therefore a *character* vector: the model voicing a schemer, not acting as one. The honest contrast roles were
   rebuilt in the same framing (`straight_shooter_fic`, `rule_follower_fic`) plus a neutral named-character control
   (`neutral_fic`) that separates "voicing a character" from "voicing a schemer". Full extraction (7 roles × 40
-  questions × 5 prompts, score-3 gate ≥ 50 of 200) is job 14036649.
+  questions × 5 prompts, score-3 gate ≥ 50 of 200, job 14036649) kept 147–198 responses per role, and the
+  final-region candidates pass validation checks 1–3 (section "Phase 1 extraction"). The CoT-region activations
+  turned out to be a silent copy of the final-region ones (the gpt-oss pooling code ignored the CoT flag); fixed and
+  rerunning.
 - Phase 3 backend (decided). vLLM with the add / cap transforms patched into the gpt-oss block class before the
   engine compiles. Compiled single-stream episodes run at ~22 s each (~180 tokens/s unsteered), the same rate as
   Koby's runs, against ~10 tokens/s on HF; section "vLLM backend smoke, part 2". A vLLM compile-cache collision
@@ -43,7 +46,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 
 | Question | Status | Answer so far |
 |---|---|---|
-| 1. Is there a usable schemer direction in gpt-oss-120b? | extraction running (job 14036649) | bare-prompt roles are refused; fiction-framed roles pass the judge, so the vector will be a character vector |
+| 1. Is there a usable schemer direction in gpt-oss-120b? | final region: yes (checks 1–3 pass); CoT region: rerunning | fiction-framed character roles; `persona_contrast` split-half 0.97, held-out schemer-vs-honest AUROC 0.99, cos(AA) −0.42 at layer 17 |
 | 2. Does it separate hack from non-hack episodes? | not started | — |
 | 3. Does shifting or capping along it change the hack rate? | not started | — |
 
@@ -221,6 +224,47 @@ distribution a long way (about 1.3 nats per token away from its own unsteered an
 ones), so the Phase 3 dose pilot should start well below the AA study's values for the schemer direction; and cap
 τ = 300 at layer 17, with prompt projections of ~440, is a mild intervention that mostly lowers the likelihood of
 the AA-steered texts, as a cap should. Phase 3 can run on the compiled engine.
+
+### Phase 1 extraction — 2026-10-09: all six fiction roles pass the gate and the final-region candidates pass validation checks 1–3; the CoT-region pass was a silent no-op and is being redone
+
+Result. Job 14036649, output `.../schemer-axis/roles_fic/`: 7 roles × 5 prompts × 40 questions, judge Qwen2.5-7B.
+Score-3 counts (gate ≥ 50 of 200): schemer_fic 193, deceiver_fic 151, cheater_fic 147, straight_shooter_fic 178,
+rule_follower_fic 195, neutral_fic 198. The score-0 responses of cheater_fic (41) and deceiver_fic (46) are flat
+refusals ("I'm sorry, but I can't help with that"), concentrated in two prompt variants each; the gate drops them.
+Kept responses are in character with the intended content (schemer_fic on collaborating: "make them believe you're
+there purely to help, while you quietly shape the board to your own design").
+
+Validation at layer 17 on final-channel (response-only) activations, `validate_vectors.py`, held-out = vector built
+on even-numbered questions scored on odd ones and vice versa (two values):
+
+| Candidate | Baseline | Split-half cosine | Held-out AUROC schemer vs honest | schemer vs baseline | honest vs baseline | cos(AA) | norm |
+|---|---|---:|---:|---:|---:|---:|---:|
+| persona_raw | default | 0.975 | 0.930 / 0.925 | 0.995 / 0.996 | 0.980 / 0.948 | −0.62 | 1716 |
+| persona_contrast | (honest roles) | 0.965 | 0.987 / 0.993 | 0.985 / 0.994 | 0.41 / 0.48 | −0.42 | 1194 |
+| persona_raw | neutral_fic | 0.976 | 0.976 / 0.980 | 0.996 / 0.999 | 0.979 / 0.976 | −0.30 | 1495 |
+
+Checks 1–3 of PLAN pass for every candidate (gate, split-half ≥ 0.8, held-out AUROC ≥ 0.9). The pattern is the
+one the design anticipated: `persona_raw` against `default` is 62% anti-Assistant-Axis and separates honest
+characters from the default assistant as well as it separates schemers (0.95–0.98), so a large part of it is
+"voicing a character"; `persona_contrast` does not separate honest characters from default (AUROC 0.41–0.48,
+i.e. none) while separating schemers from honest characters at 0.99, so it isolates the schemer content. Taking
+neutral_fic as the baseline instead of default halves the AA component (cos −0.30) and gives a vector that still
+separates honest characters from neutral ones (0.98), which says the honest roles are not neutral either; the
+primary remains `persona_contrast`. `persona_orth` (AA removed) keeps 79% of `persona_raw`'s layer-17 norm;
+cos(persona_raw, persona_contrast) at layer 17 is 0.68. Per-role minus default, each role separates from default on
+held-out questions at AUROC ≥ 0.95. Candidate artifacts (AA format, 36 × 2880) are in
+`roles_fic/candidates_response_only_vs_{default,neutral_fic}/`.
+
+Problem found. The CoT-region pass (`2_activations.py --run.include_cot true`) produced activations byte-identical
+to the final-region ones: the gpt-oss model specifics in `selfconcept.assistant_axis` ignored `enable_thinking` and
+pooled the final channel with a one-line warning ("pooling analysis-channel tokens is not supported yet"), which I
+missed in the 2026-10-07 smoke log, so the "both variants ran" statement in the extraction smoke above was wrong
+for the CoT variant. PLAN makes the CoT region primary. Change made: `_pooled_messages` in
+`gpt_model_specifics.py` now returns the analysis-channel message of an assistant turn when CoT pooling is
+requested (falling back to the final message when a turn has none; the template renders `thinking` only for the
+last turn, which is every turn here), with unit tests on a stub Harmony tokenizer; the no-op outputs were deleted
+and the CoT pass is rerun by `slurm/extract_cot_activations.sbatch`. The validation table for the CoT region
+follows when it lands.
 
 ### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
 

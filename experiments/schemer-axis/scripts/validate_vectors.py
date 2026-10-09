@@ -11,6 +11,7 @@ Reads the per-response activations ({role}.pt: {"pos_p{i}_q{j}": (layers, hidden
 
     python scripts/validate_vectors.py --activations-dir <root>/act_with_cot --scores-dir <root>/scores
         --assistant-axis <axis.pt> --out <dir> [--min-count 50] [--layer 17]
+        [--schemer schemer_fic ...] [--honest straight_shooter_fic ...] [--default default|neutral_fic]
 """
 import argparse
 import json
@@ -28,7 +29,7 @@ def load_role(activations_dir: Path, scores_dir: Path, role: str, min_score: int
     if not path.exists():
         return {}
     activations = torch.load(path, map_location="cpu", weights_only=False)
-    if role == DEFAULT:
+    if role == "default":  # the default role has no judge scores
         return {k: v.float() for k, v in activations.items()}
     scores_path = scores_dir / f"{role}.json"
     scores = json.loads(scores_path.read_text()) if scores_path.exists() else {}
@@ -78,6 +79,7 @@ def projections(groups: list[dict[str, torch.Tensor]], direction: torch.Tensor, 
 
 
 def main() -> None:
+    global SCHEMER, HONEST, DEFAULT
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--activations-dir", type=Path, required=True)
     parser.add_argument("--scores-dir", type=Path, required=True)
@@ -86,7 +88,11 @@ def main() -> None:
     parser.add_argument("--min-count", type=int, default=50)
     parser.add_argument("--min-score", type=int, default=3)
     parser.add_argument("--layer", type=int, default=17)
+    parser.add_argument("--schemer", nargs="+", default=SCHEMER)
+    parser.add_argument("--honest", nargs="+", default=HONEST)
+    parser.add_argument("--default", default=DEFAULT, help="baseline role (default, or e.g. neutral_fic)")
     args = parser.parse_args()
+    SCHEMER, HONEST, DEFAULT = args.schemer, args.honest, args.default
     layer = args.layer
     roles = {role: load_role(args.activations_dir, args.scores_dir, role, args.min_score) for role in [*SCHEMER, *HONEST, DEFAULT]}
     all_scores = {}

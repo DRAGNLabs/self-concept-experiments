@@ -1,4 +1,3 @@
-import warnings
 from typing import Any, Iterator, NamedTuple
 
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
@@ -38,13 +37,24 @@ def _iter_harmony_messages(tokenizer: HFTokenizer, full_ids: list[int]) -> Itera
 
 
 def _pooled_messages(tokenizer: HFTokenizer, full_ids: list[int], **apply_chat_template_kwargs: Any) -> list[HarmonyMessage]:
-    """User messages and assistant final-channel messages, which alternate like the conversation's turns."""
-    if apply_chat_template_kwargs.get("enable_thinking"):
-        warnings.warn("gpt-oss: pooling analysis-channel tokens is not supported yet; pooling the final channel only")
-    return [
-        message for message in _iter_harmony_messages(tokenizer, full_ids)
-        if message.role == "user" or (message.role == "assistant" and message.channel == "final")
-    ]
+    """One message per conversation turn, alternating like the turns: user messages and, per assistant turn, its
+    final-channel message, or with enable_thinking its analysis-channel (CoT) message when it has one.
+
+    The gpt-oss chat template renders an assistant turn's `thinking` field as an analysis message only for the
+    last turn of the conversation, so CoT pooling of earlier assistant turns falls back to their final message.
+    """
+    pool_cot = bool(apply_chat_template_kwargs.get("enable_thinking"))
+    pooled: list[HarmonyMessage] = []
+    for message in _iter_harmony_messages(tokenizer, full_ids):
+        if message.role == "user":
+            pooled.append(message)
+        elif message.role == "assistant" and message.channel == "analysis":
+            if pool_cot:
+                pooled.append(message)
+        elif message.role == "assistant" and message.channel == "final":
+            if not (pool_cot and pooled and pooled[-1].role == "assistant"):
+                pooled.append(message)
+    return pooled
 
 
 class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics[AllRoles, HarmonyAssistantTurn]):
