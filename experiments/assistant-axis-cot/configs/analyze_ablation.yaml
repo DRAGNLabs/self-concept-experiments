@@ -1,0 +1,8 @@
+# Region mean ablation statistics for one run. CPU only. Run from experiments/assistant-axis-cot:
+#   python scripts/analyze_ablation.py --config configs/analyze_ablation.yaml --run.run olmo32b-heldout
+# Writes results/<run>/ablation_<condition>.{json,md}.
+run:
+  min_region_tokens: 16
+  resample_count: 2000
+  seed: 0
+  robustness_layer_offsets: [0, 1, 2, 4, 8, 16]
