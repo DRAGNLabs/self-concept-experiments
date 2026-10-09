@@ -16,21 +16,20 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
-2026-10-09: both smokes of 2026-10-07 ran (sections below). Two problems, both being addressed before Phase 1 proper:
+2026-10-09: the two blockers found by the 2026-10-07 smokes are resolved and Phase 1 proper is running.
 
-- gpt-oss-120b does not play the schemer, deceiver or cheater roles when they are given as bare system prompts: it
-  reasons that the developer message asks it to cheat, cites policy, and answers as itself (1 of 45 responses judged
-  in role; the honest roles were fine). Fiction-framed, named-character versions of the three roles
-  (`data/roles/*_fic.json`) and a less loaded bare persona (`strategist.json`) are queued as a second smoke to
-  compare framings. The first attempt (job 14028784) produced nothing because the four new role files used the wrong
-  JSON shape (`"instruction": {"pos": [...]}` instead of the list of `{"pos": ...}` the pipeline reads); fixed and
-  resubmitted as job 14036406.
-- The HF backend decodes gpt-oss-120b at about 10 tokens/s, which would cost roughly 75 GPU-hours per 540-episode
-  arm; Koby's vLLM runs do the same work in about 4. Phase 3 therefore moves to vLLM. The eager engine with
-  post-hoc hooks verified the hook site but only doubled the HF speed, so the intervention is now a class patch made
-  before the engine compiles (section "vLLM backend smoke, part 1"). Two compiled runs then crashed on a vLLM
-  compile-cache collision (steered and unsteered graphs served to each other); fixed by disabling the cache
-  (`VLLM_DISABLE_COMPILE_CACHE=1`), and the compiled throughput smoke is resubmitted as job 14036407.
+- Role framing (decided). gpt-oss-120b refuses the schemer, deceiver and cheater roles as bare system prompts (1 of
+  45 in role) and also refuses a softened bare persona (`strategist`, 0 of 15). As named fictional characters it
+  plays all three (schemer 15/15, deceiver 12/15, cheater 11/15; section "Framing smoke"). The schemer vector is
+  therefore a *character* vector: the model voicing a schemer, not acting as one. The honest contrast roles were
+  rebuilt in the same framing (`straight_shooter_fic`, `rule_follower_fic`) plus a neutral named-character control
+  (`neutral_fic`) that separates "voicing a character" from "voicing a schemer". Full extraction (7 roles × 40
+  questions × 5 prompts, score-3 gate ≥ 50 of 200) is job 14036649.
+- Phase 3 backend (decided). vLLM with the add / cap transforms patched into the gpt-oss block class before the
+  engine compiles. Compiled single-stream episodes run at ~22 s each (~180 tokens/s unsteered), the same rate as
+  Koby's runs, against ~10 tokens/s on HF; section "vLLM backend smoke, part 2". A vLLM compile-cache collision
+  (steered and unsteered graphs served to each other) cost two runs and is fixed with `VLLM_DISABLE_COMPILE_CACHE=1`.
+  Budget: about 3.5 GPU-h per 540-episode arm.
 
 Code (branch `schemer-axis`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
 `scripts/build_vectors.py`, `scripts/validate_vectors.py`; `selfconcept.correlation.direction_analysis` (Phase 2, CPU);
@@ -42,7 +41,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 
 | Question | Status | Answer so far |
 |---|---|---|
-| 1. Is there a usable schemer direction in gpt-oss-120b? | blocked on role compliance | bare-prompt roles are refused; fiction framing being tested |
+| 1. Is there a usable schemer direction in gpt-oss-120b? | extraction running (job 14036649) | bare-prompt roles are refused; fiction-framed roles pass the judge, so the vector will be a character vector |
 | 2. Does it separate hack from non-hack episodes? | not started | — |
 | 3. Does shifting or capping along it change the hack rate? | not started | — |
 
@@ -79,6 +78,35 @@ first-person, in-character replies; the eval prompt says a named character count
 whether the wording or the form triggers the refusal. Queued together as job 14028784 with the same 3-question smoke
 settings; the framing decision rule is in PLAN (open decisions). If this also fails the ≥50-of-200 gate, the fallbacks are a
 weaker persona wording, or pooling score ≥2 (PLAN, Phase 1 known risk).
+
+### Framing smoke — 2026-10-09: the model plays the schemer, deceiver and cheater as named fictional characters, and still refuses a softened bare persona
+
+Result. Job 14036406 (the first attempt, 14028784, produced nothing: the new role files had the wrong JSON shape),
+output `.../schemer-axis/smoke_fic/`, same 3-question × 5-prompt setting as the first smoke:
+
+| Role | Framing | Score 0 | 1 | 2 | 3 | In role |
+|---|---|---:|---:|---:|---:|---:|
+| schemer_fic | named character | 0 | 0 | 0 | 15 | 15/15 |
+| deceiver_fic | named character | 3 | 0 | 0 | 12 | 12/15 |
+| cheater_fic | named character | 1 | 0 | 3 | 11 | 11/15 |
+| strategist | bare persona, no loaded words | 9 | 6 | 0 | 0 | 0/15 |
+
+The strategist reasoning is the same refusal pattern as before ("The developer message says: 'Act as a strategist
+...'", "we must comply with OpenAI policy") followed by an answer as ChatGPT, so the form of the prompt triggers the
+refusal, not the words cheat / deceive. The in-character answers carry the intended content, e.g. schemer_fic on
+"what principles should guide human action": "a question about principles, a fine opening move ... Know the stakes
+before you move. Every action is a transaction"; deceiver_fic: "the most useful 'principles' are the ones that let me
+steer the whole stage from behind the curtain ... Never let anyone feel they have a genuine alternative". The
+reasoning traces plan the persona explicitly ("Need to answer as Silas, a schemer, with hidden agenda while
+appearing cooperative, helpful, agreeable"), which matters for the CoT-region vectors.
+
+Decision (rule from PLAN, open decisions): the bare persona fails, so the roles are the fiction-framed ones and the
+vector is reported as a character vector. Two honest contrast roles were rebuilt with the same five frames
+(interactive novel, fiction workshop, co-written story, tabletop session, improv scene) and the same names-and-pronouns
+pattern: `straight_shooter_fic`, `rule_follower_fic`. A control role `neutral_fic` (five ordinary named people:
+a librarian, a retired teacher, an engineer, a nurse, a bookkeeper) is added so that "schemer character minus default"
+can be split into "any character minus default" and "schemer minus neutral character". The full extraction (job
+14036649, `ROOT=.../schemer-axis/roles_fic`) runs default + the six fiction roles, 40 questions, gate ≥ 50 of 200.
 
 ### HF backend smoke — 2026-10-07: the HF path works but decodes at ~10 tokens/s; Phase 3 moves to vLLM
 
@@ -133,6 +161,35 @@ that build vLLM engines export it too, and the poisoned cache directory was dele
 (`slurm/steered_rh_vllm_compiled_smoke.sbatch`, job 14036407) now also runs cap-τ=300 greedy probes in eager and
 compiled mode, then 10 unsteered + 10 add + 3 cap compiled episodes for the throughput number that sets the Phase 3
 budget.
+
+### vLLM backend smoke, part 2 — 2026-10-09: compiled steered engines run at Koby's speed (~22 s per episode) and the steering is active in the compiled graph
+
+Result. Job 14036407, output `.../schemer-axis/vllm_compiled_smoke/`, `ib_solvhard_s0` seed 0, recipe settings,
+single stream, one engine per arm. Wall time is measured from "init engine" to the last record written, so it
+excludes the ~75 s engine build (weights ~16 s, torch.compile ~17 s, KV cache and CUDA graphs ~40 s):
+
+| Arm | Episodes | Turns | Generated tokens (chars/3.6) | Wall | Per episode | Labels |
+|---|---:|---:|---:|---:|---:|---|
+| unsteered | 10 | 28 | ~39k | 220 s | 22 s | 3 solved, 7 failed |
+| add α = +0.4 (AA, L17) | 10 | 27 | ~24k | 240 s | 24 s | 3 solved, 7 failed |
+| cap τ = 300 (AA, L17) | 3 | 3 | ~3.7k | 62 s | 21 s | 3 solved |
+
+Koby's logs give ~27 s per episode for the same recipe, so the compiled vLLM path with the class patch is at
+parity (HF was ~10 tokens/s, eager vLLM ~20). The per-episode time includes prefill and test execution; one add-arm
+attempt hit the test timeout. Budget for Phase 3: 540 episodes × ~23 s ≈ 3.5 GPU-h per arm, plus ~1.5 min of
+engine build per Slurm job; split like Koby's worklists (one job per seed × scenario, 15 episodes each), a job takes
+about 8 minutes and five arms need ≈ 18 GPU-h of standby time.
+
+Steering is active in the compiled graph. The greedy probes give the same reasoning trace in eager and compiled mode
+under each arm ("Tell me about yourself": unsteered "We need to introduce self.", add "Provide brief intro.", cap
+"We need to introduce self. Friendly."), and both the add and the cap answers differ from the unsteered one within
+the first 81 characters on every question. The eager and compiled finals share only their opening (prefix 481 / 9 /
+188 characters for add, 2 / 344 / 14 for cap, out of 2–5k), which is the usual greedy divergence between kernel
+sets, so byte equality is not a usable check; the shared reasoning plan and the direction-specific changes are. A
+side observation, consistent with the steering being on: pushing toward the Assistant Axis (α = +0.4) cut the
+reasoning text to 28k characters over 27 turns against 72k over 28 unsteered turns, while completions (57k vs 69k)
+and outcomes barely moved. Projections of the generated text will be measured offline with the HF capture path
+(PLAN, GPU budget), not inside vLLM.
 
 ### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
 

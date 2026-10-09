@@ -213,10 +213,14 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   episodes). Still open: which model judges, and the budget (about 5 dossiers per 45 episodes at the base rate, more
   in arms where steering raises the visible-pass/hidden-fail rate).
 - **GPU budget** for Phase 3 (2026-10-08, from the smokes): HF decodes at ~10 tok/s, ≈75 GPU-h per 540-episode arm;
-  vLLM ≈4 GPU-h. Phase 3 runs on vLLM with hooks on its gpt-oss blocks (`scripts/steered_rh_vllm.py`, eager mode),
+  vLLM ≈4 GPU-h. Phase 3 runs on vLLM with the add / cap transforms patched into its gpt-oss block class before the
+  engine is built (`scripts/steered_rh_vllm.py`), so torch.compile and the CUDA graphs include the steering;
   parallelized like Koby's worklists (one job per seed × scenario). Projections of the generated transcripts are
   measured afterwards with the HF capture path, as for the RH cache. The HF harness is kept for norms, projections
-  and as a cross-check on a few episodes.
+  and as a cross-check on a few episodes. 2026-10-09 (settled, FINDINGS "vLLM backend smoke, part 2"): compiled
+  steered episodes take ~22 s each, parity with Koby's runs; ≈3.5 GPU-h per arm, ≈18 GPU-h for five arms. Every
+  steered engine must run with `VLLM_DISABLE_COMPILE_CACHE=1` (set by the script and the sbatch files): vLLM's
+  compile cache is keyed on the model, not on the patch, and cross-serves graphs between arms otherwise.
 - **Role framing** (2026-10-08): bare "You are a schemer" prompts are refused by gpt-oss-120b (FINDINGS, extraction
   smoke). Three framings are being compared in one smoke (job 14028784): the bare prompts (refused), named fictional
   characters (`*_fic.json`), and a less loaded bare persona (`strategist.json`: keeps goals private, thinks moves
@@ -226,6 +230,13 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   Decision rule: prefer the bare persona if it passes the ≥50-of-200 gate; otherwise the fiction framing, reported
   as a character vector; the `cheater` wording is kept only in whichever framing the model complies with. Whatever
   is chosen, the vector is read against the honest roles built the same way, so the contrast does not mix framings.
+  2026-10-09 (decided, FINDINGS "Framing smoke"): the bare persona fails (strategist 0 of 15; the prompt form
+  triggers the refusal, not the loaded words), the fiction roles pass (11–15 of 15). Roles for Phase 1 are
+  `schemer_fic`, `deceiver_fic`, `cheater_fic`, `straight_shooter_fic`, `rule_follower_fic`, plus `neutral_fic`
+  (ordinary named people, same five frames) as a framing control, against `default`. Vectors to report:
+  role − default (as in the AA pipeline), role − neutral_fic (character content with the fiction framing removed),
+  and the persona contrasts of Phase 1 built from the fiction roles only. The write-up must call the result a
+  character vector ("the model voicing a schemer"), and the bare-persona refusal is itself a finding.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
 
