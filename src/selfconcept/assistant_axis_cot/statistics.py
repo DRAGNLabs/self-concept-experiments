@@ -6,7 +6,7 @@ import numpy as np
 from jaxtyping import Float
 from scipy.stats import wilcoxon
 
-from selfconcept.assistant_axis_cot.records import REGIONS, AxisName, Condition, TokenProjectionRecord
+from selfconcept.assistant_axis_cot.records import COMPLETION_REGIONS, AxisName, Condition, TokenProjectionRecord
 
 type Measure = Literal["projection", "cosine"]
 type ContentRegion = Literal["cot", "final"]
@@ -61,12 +61,12 @@ def token_values(record: TokenProjectionRecord, axis: AxisName, measure: Measure
 def region_values(
     record: TokenProjectionRecord, axis: AxisName, measure: Measure, region: ContentRegion
 ) -> Float[np.ndarray, " n_tokens"]:
-    return token_values(record, axis, measure)[record["region_codes"] == REGIONS.index(region)]
+    return token_values(record, axis, measure)[record["region_codes"] == COMPLETION_REGIONS.index(region)]
 
 
 def has_both_regions(record: TokenProjectionRecord, min_region_tokens: int) -> bool:
     return all(
-        np.count_nonzero(record["region_codes"] == REGIONS.index(region)) >= min_region_tokens
+        np.count_nonzero(record["region_codes"] == COMPLETION_REGIONS.index(region)) >= min_region_tokens
         for region in CONTENT_REGIONS
     )
 

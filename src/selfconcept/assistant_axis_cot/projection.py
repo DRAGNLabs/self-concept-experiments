@@ -7,7 +7,7 @@ from jaxtyping import Float, Int8
 from torch import Tensor
 from transformers import PreTrainedModel
 
-from selfconcept.assistant_axis_cot.records import REGIONS, AxisName, CompletionProjections
+from selfconcept.assistant_axis_cot.records import COMPLETION_REGIONS, AxisName, CompletionProjections
 from selfconcept.common.activation_extraction.model_specifics import ModelSpecifics
 from selfconcept.common.activation_extraction.extraction import extract_token_span_activations
 from selfconcept.common.span_targeting.types import CompletionSpans, PromptCompletion, TokenSpan
@@ -31,10 +31,10 @@ def completion_region_codes(
     prompt_length: int,
     completion_length: int,
 ) -> Int8[np.ndarray, " n_tokens"]:
-    region_codes = np.full(completion_length, REGIONS.index("delimiter"), dtype=np.int8)
+    region_codes = np.full(completion_length, COMPLETION_REGIONS.index("delimiter"), dtype=np.int8)
     for region, spans in (("cot", completion_spans.thinking), ("final", completion_spans.response)):
         for span in spans:
-            region_codes[span.start - prompt_length : span.end - prompt_length] = REGIONS.index(region)
+            region_codes[span.start - prompt_length : span.end - prompt_length] = COMPLETION_REGIONS.index(region)
     return region_codes
 
 

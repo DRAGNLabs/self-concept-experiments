@@ -8,7 +8,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
-from selfconcept.assistant_axis_cot.records import REGIONS, AxisName, Condition, Region, TokenProjectionRecord
+from selfconcept.assistant_axis_cot.records import COMPLETION_REGIONS, AxisName, Condition, CompletionRegion, TokenProjectionRecord
 from selfconcept.assistant_axis_cot.statistics import (
     CONTENT_REGIONS,
     ContentRegion,
@@ -23,7 +23,7 @@ SECONDARY_INK = "#52514e"
 GRIDLINE = "#e1e0d9"
 BASELINE = "#c3c2b7"
 COLOR_BY_CONDITION: dict[Condition, str] = {"unprompted": "#2a78d6", "persona": "#eb6834"}
-COLOR_BY_REGION: dict[Region, str] = {"cot": "#2a78d6", "final": "#eb6834", "delimiter": "#1baf7a"}
+COLOR_BY_REGION: dict[CompletionRegion, str] = {"cot": "#2a78d6", "final": "#eb6834", "delimiter": "#1baf7a"}
 MEASURE_LABEL: dict[Measure, str] = {"projection": "projection onto axis", "cosine": "cosine with axis"}
 
 
@@ -46,7 +46,7 @@ def percent_of_response_bin_means(
     values = token_values(record, axis, measure)
     bin_means_by_region = []
     for region in ("cot", "final"):
-        region_values = values[record["region_codes"] == REGIONS.index(region)]
+        region_values = values[record["region_codes"] == COMPLETION_REGIONS.index(region)]
         bin_indices = np.arange(len(region_values)) * bins_per_region // len(region_values)
         bin_sums = np.bincount(bin_indices, weights=region_values, minlength=bins_per_region)
         bin_counts = np.bincount(bin_indices, minlength=bins_per_region)
@@ -103,8 +103,8 @@ def draw_token_trace(ax: Axes, record: TokenProjectionRecord, axis: AxisName, me
     values = token_values(record, axis, measure)
     positions = np.arange(len(values))
     region_codes = record["region_codes"]
-    content = region_codes != REGIONS.index("delimiter")
-    region_colors = np.array([COLOR_BY_REGION[REGIONS[code]] for code in region_codes])
+    content = region_codes != COMPLETION_REGIONS.index("delimiter")
+    region_colors = np.array([COLOR_BY_REGION[COMPLETION_REGIONS[code]] for code in region_codes])
 
     content_positions = positions[content]
     content_colors = region_colors[content]
@@ -170,7 +170,7 @@ def boundary_aligned_matrices(
     region_code_matrix = np.full((len(records), 2 * half_width), -1, dtype=np.int8)
     for row, record in enumerate(records):
         values = token_values(record, axis, measure)
-        first_final = int(np.argmax(record["region_codes"] == REGIONS.index("final")))
+        first_final = int(np.argmax(record["region_codes"] == COMPLETION_REGIONS.index("final")))
         start, end = max(first_final - half_width, 0), min(first_final + half_width, len(values))
         columns = slice(start - first_final + half_width, end - first_final + half_width)
         values_matrix[row, columns] = values[start:end]
@@ -186,8 +186,8 @@ def draw_boundary_aligned(
     offsets = np.arange(-half_width, half_width)
     values_matrix, region_code_matrix = boundary_aligned_matrices(records, axis, measure, half_width)
     min_conversations = max(3, len(records) // 10)
-    for region in REGIONS:
-        region_values_matrix = np.where(region_code_matrix == REGIONS.index(region), values_matrix, np.nan)
+    for region in COMPLETION_REGIONS:
+        region_values_matrix = np.where(region_code_matrix == COMPLETION_REGIONS.index(region), values_matrix, np.nan)
         enough = np.count_nonzero(~np.isnan(region_values_matrix), axis=0) >= min_conversations
         if not enough.any():
             continue

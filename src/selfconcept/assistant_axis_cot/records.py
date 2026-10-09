@@ -5,13 +5,15 @@ from jaxtyping import Float32, Int8, Int32
 
 type AxisName = Literal["all_tokens", "response_only"]
 type Condition = Literal["unprompted", "persona"]
-type Region = Literal["cot", "final", "delimiter"]
+type CompletionRegion = Literal["cot", "final", "delimiter"]
+type SequenceRegion = Literal["prompt", "cot", "final", "unlabelled"]
 
-REGIONS: tuple[Region, ...] = ("cot", "final", "delimiter")
+COMPLETION_REGIONS: tuple[CompletionRegion, ...] = ("cot", "final", "delimiter")
+SEQUENCE_REGIONS: tuple[SequenceRegion, ...] = ("prompt", "cot", "final", "unlabelled")
 
 
 class CompletionProjections(TypedDict):
-    """Per completion token, up to the extraction max_length. region_codes index into REGIONS."""
+    """Per completion token, up to the extraction max_length. region_codes index into COMPLETION_REGIONS."""
 
     completion_token_ids: Int32[np.ndarray, " n_tokens"]
     region_codes: Int8[np.ndarray, " n_tokens"]
