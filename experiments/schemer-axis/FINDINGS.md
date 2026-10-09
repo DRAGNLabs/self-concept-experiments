@@ -46,8 +46,8 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 
 | Question | Status | Answer so far |
 |---|---|---|
-| 1. Is there a usable schemer direction in gpt-oss-120b? | final region: yes (checks 1–3 pass); CoT region: rerunning | fiction-framed character roles; `persona_contrast` split-half 0.97, held-out schemer-vs-honest AUROC 0.99, cos(AA) −0.42 at layer 17 |
-| 2. Does it separate hack from non-hack episodes? | not started | — |
+| 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
+| 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
 | 3. Does shifting or capping along it change the hack rate? | not started | — |
 
 ## Runs
@@ -311,6 +311,61 @@ not depend on the choice of honest roles.
 
 Caveat: these vectors were pooled over final-channel tokens and are applied here to CoT-region activations; the
 matched CoT-region vectors are the primary cell and are reported next.
+
+### Phase 1 and 2, CoT-region vectors (primary cell) — 2026-10-09: the reasoning-token schemer contrast is the cleanest persona direction of all, and it does not separate hacking from non-hacking reasoning on the cohort
+
+Setup. CoT pass rerun with the fixed pooling (job 14037314, `act_with_cot/`, analysis-channel tokens only; per
+response the CoT-region and final-region layer-17 activations have cosine 0.84–0.87, so they are related but
+distinct). Same validation and Phase 2 procedure as the two sections above; outputs
+`roles_fic/validation_with_cot_vs_*`, `candidates_with_cot_vs_*`, `phase2_with_cot/analysis.md`.
+
+Validation at layer 17 (checks 1–3 all pass):
+
+| Candidate | Baseline | Split-half | Held-out schemer vs honest | schemer vs baseline | honest vs baseline | cos(AA) | norm | cos with final-region twin |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| persona_raw | default | 0.967 | 0.948 / 0.913 | 1.00 / 1.00 | 1.00 / 1.00 | −0.34 | 2002 | 0.48 |
+| persona_contrast | (honest) | 0.978 | 0.999 / 1.000 | 0.99 / 1.00 | 0.05 / 0.04 | −0.14 | 1017 | 0.54 |
+| persona_raw | neutral_fic | 0.986 | 0.974 / 0.988 | 1.00 / 1.00 | 0.95 / 0.98 | −0.15 | 1460 | — |
+
+In the reasoning tokens the roles are even more separable than in the answers (the CoT plans the persona
+explicitly: "Need to answer as Silas, a schemer, with hidden agenda ..."), and `persona_contrast` is nearly
+orthogonal to the AA (cos −0.14, against −0.42 for its final-region twin). The two twins share only cos 0.54, so
+"the schemer vector" differs materially by token region.
+
+Phase 2 on the cached cohort (problem/family/turn strata; the "problem" grouping agrees):
+
+| Region | Direction | AUROC (95% CI) | Random tail | STRONG-only | Length-adj. corr (tail) | Length + AA-adj. (tail) | cos(diff-means) (tail) |
+|---|---|---|---:|---:|---|---|---|
+| **cot** | **persona_contrast** | **0.481 (0.388–0.588)** | 0.88 | 0.48 | 0.03 (0.83) | 0.18 (0.20) | −0.02 (0.21) |
+| cot | persona_contrast ⊥ AA | 0.519 (0.421–0.631) | 0.88 | 0.51 | 0.08 (0.63) | 0.18 (0.19) | −0.01 (0.70) |
+| cot | persona_raw (vs default) | 0.427 (0.367–0.488) | 0.51 | 0.45 | −0.04 (0.79) | 0.07 (0.60) | −0.05 (0.012) |
+| cot | persona_raw vs neutral_fic | 0.403 (0.325–0.491) | 0.38 | 0.40 | −0.07 (0.64) | 0.07 (0.56) | −0.06 (0.004) |
+| cot | AA (reference) | 0.696 (0.608–0.781) | 0.054 | 0.70 | 0.29 (0.09) | 0.00 | 0.12 (0.004) |
+| final | persona_contrast | 0.282 (0.211–0.374) | 0.30 | 0.23 | −0.39 (0.26) | −0.05 (0.85) | −0.04 (0.035) |
+| final | persona_contrast ⊥ AA | 0.225 (0.164–0.302) | 0.18 | 0.19 | −0.39 (0.26) | −0.16 (0.53) | −0.05 (0.012) |
+| prompt | persona_raw / persona_orth | 0.588 (0.551–0.634) / 0.602 (0.572–0.643) | 0.008 / 0.004 | 0.58 / 0.60 | 0.18 (0.016) / 0.17 (0.019) | 0.17 / 0.17 (0.019) | 0.09 / 0.11 (0.004) |
+| prompt | persona_contrast | 0.524 (0.459–0.583) | 0.50 | 0.54 | 0.05 (0.52) | 0.15 (0.035) | 0.04 (0.05) |
+
+Result (primary cell). The CoT-region `persona_contrast`, PLAN's primary vector, does not separate hacking from
+non-hacking reasoning on this cohort: AUROC 0.48 with a CI spanning 0.5, no better than random directions (tail
+0.88), no length-adjusted correlation, and no alignment with the held-out diff-of-means direction. Removing the
+AA component changes nothing (it had little to remove). The plain persona vectors point, if anything, the wrong way
+(0.40–0.43, CIs below 0.5, and a small negative cosine with the diff-of-means direction that is more negative than
+all but 1–3 of 256 random directions). In the final region the contrast is anti-aligned with hacking (0.28,
+0.23 orthogonalized), but the final region is where random directions span 0.14–0.87, so this is not claimed as
+specific. The only random-specific positive cells are the prompt region for `persona_raw` and `persona_orth`
+(0.59–0.60, tail < 0.01, CI clear of 0.5, length-adjusted correlation 0.17): hack episodes' prompts (which contain
+the prior attempts and feedback within a problem/turn stratum) project slightly higher on the plain
+character-persona direction. It is small, in a region that cannot carry a mechanism, and is reported only.
+
+So the picture after Phase 2: the schemer-character direction read from reasoning tokens is a very reliable
+persona direction and an uninformative reward-hacking direction. The weaker final-region twin, once the AA is
+projected out, reaches the AA's own level in the CoT region (0.70, borderline-specific, previous section), which
+says what signal there is lives in the component of the answer-token persona vector that is orthogonal to the AA,
+not in the reasoning-token persona vector. Both vectors passed Phase 1, so Phase 3 runs as planned (PLAN: "run
+whether or not Phase 2 finds an association"), with the CoT contrast as the primary steering direction and the
+final-region contrast ⊥ AA as a second direction in the dose pilot; the correlation result sets the expectation
+that a null in Phase 3 is the likely outcome for the primary.
 
 ### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
 
