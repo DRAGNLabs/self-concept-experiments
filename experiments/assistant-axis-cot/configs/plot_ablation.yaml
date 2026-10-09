@@ -1,0 +1,5 @@
+# Charts of one run's region mean ablation statistics. CPU only. Run from experiments/assistant-axis-cot after
+# scripts/analyze_ablation.py:
+#   python scripts/plot_ablation.py --config configs/plot_ablation.yaml --run.run olmo32b-heldout
+# Writes results/<run>/{ablation_kl,ablation_surviving_shift}_<condition>.png.
+run: {}

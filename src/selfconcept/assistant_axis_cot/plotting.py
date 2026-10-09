@@ -5,15 +5,20 @@ import numpy as np
 from jaxtyping import Float, Int8
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
+from matplotlib.colors import LinearSegmentedColormap, LogNorm, to_rgb
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
+from selfconcept.assistant_axis_cot.ablation_statistics import RANDOM_MEAN_NAME, AblationAnalysis, KLGrid
 from selfconcept.assistant_axis_cot.records import (
     COMPLETION_REGIONS,
+    LABELLED_SEQUENCE_REGIONS,
     AxisName,
     CompletionRegion,
     Condition,
     SequenceProjectionRecord,
+    SequenceRegion,
     TokenProjectionRecord,
 )
 from selfconcept.assistant_axis_cot.statistics import (
@@ -31,6 +36,17 @@ GRIDLINE = "#e1e0d9"
 BASELINE = "#c3c2b7"
 COLOR_BY_CONDITION: dict[Condition, str] = {"unprompted": "#2a78d6", "persona": "#eb6834"}
 COLOR_BY_REGION: dict[CompletionRegion, str] = {"cot": "#2a78d6", "final": "#eb6834", "delimiter": "#1baf7a"}
+COLOR_BY_SEQUENCE_REGION: dict[SequenceRegion, str] = {
+    "prompt": "#1baf7a",
+    "cot": COLOR_BY_REGION["cot"],
+    "final": COLOR_BY_REGION["final"],
+}
+SEQUENTIAL_BLUE = LinearSegmentedColormap.from_list(
+    "sequential_blue",
+    ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6", "#256abf", "#1c5cab",
+     "#184f95", "#104281", "#0d366b"],
+).with_extremes(under="#cde2fb", bad="#cde2fb")
+NEUTRAL_CELL = "#f0efec"
 MEASURE_LABEL: dict[Measure, str] = {"projection": "projection onto axis", "cosine": "cosine with axis"}
 
 
@@ -319,4 +335,111 @@ def plot_residual_norm_by_position(
     )
     ax.legend(frameon=False, labelcolor=SECONDARY_INK, fontsize=8)
     figure.tight_layout()
+    return figure
+
+
+def is_dark(color: tuple[float, float, float, float] | str) -> bool:
+    red, green, blue = to_rgb(color)
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 0.45
+
+
+def draw_kl_grid(ax: Axes, grid: KLGrid, norm: LogNorm, name: str) -> None:
+    """Upper-triangle cells colored by mean KL and labelled with it and its CI; the causally unaffected cells below
+    the diagonal are neutral."""
+    region_count = len(LABELLED_SEQUENCE_REGIONS)
+    for ablated_index, ablated in enumerate(LABELLED_SEQUENCE_REGIONS):
+        for measured_index, measured in enumerate(LABELLED_SEQUENCE_REGIONS):
+            cell = grid[ablated][measured]
+            is_unaffected = measured_index < ablated_index
+            fill = NEUTRAL_CELL if is_unaffected else SEQUENTIAL_BLUE(norm(cell["mean"]))
+            ax.add_patch(
+                Rectangle(
+                    (measured_index, ablated_index), 1, 1, facecolor=fill, edgecolor=SURFACE, linewidth=2
+                )
+            )
+            label = (
+                f"unaffected\n{cell['mean']:.2g}"
+                if is_unaffected
+                else f"{cell['mean']:.3g}\n[{cell['ci_low']:.2g}, {cell['ci_high']:.2g}]"
+            )
+            ax.text(
+                measured_index + 0.5, ablated_index + 0.5, label, ha="center", va="center", fontsize=8,
+                color="white" if not is_unaffected and is_dark(fill) else SECONDARY_INK,
+            )
+    ax.set_xlim(0, region_count)
+    ax.set_ylim(region_count, 0)
+    ax.set_aspect("equal")
+    ax.set_xticks(np.arange(region_count) + 0.5, LABELLED_SEQUENCE_REGIONS)
+    ax.set_yticks(np.arange(region_count) + 0.5, LABELLED_SEQUENCE_REGIONS)
+    ax.tick_params(colors=SECONDARY_INK, labelsize=9, length=0)
+    ax.xaxis.set_ticks_position("top")
+    ax.set_xlabel("measured region", color=SECONDARY_INK)
+    ax.xaxis.set_label_position("top")
+    ax.set_title(name, color=PRIMARY_INK, fontsize=10, loc="left", pad=8)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+def plot_ablation_kl_grids(analysis: AblationAnalysis, title: str) -> Figure:
+    """The axis's KL grid beside the random baseline's, on one shared log color scale."""
+    names = [name for name in (analysis["axis_name"], RANDOM_MEAN_NAME) if name in analysis["kl_grid_by_name"]]
+    affected_means = [
+        analysis["kl_grid_by_name"][name][ablated][measured]["mean"]
+        for name in names
+        for ablated_index, ablated in enumerate(LABELLED_SEQUENCE_REGIONS)
+        for measured in LABELLED_SEQUENCE_REGIONS[ablated_index:]
+    ]
+    positive_means = [mean for mean in affected_means if mean > 0]
+    norm = LogNorm(vmin=min(positive_means), vmax=max(positive_means))
+
+    figure, axes = plt.subplots(
+        1, len(names), figsize=(4.6 * len(names) + 1.2, 5.2), facecolor=SURFACE, layout="constrained"
+    )
+    for ax, name in zip(np.atleast_1d(axes), names, strict=True):
+        draw_kl_grid(ax, analysis["kl_grid_by_name"][name], norm, name.replace("_", " "))
+    np.atleast_1d(axes)[0].set_ylabel("ablated region", color=SECONDARY_INK)
+    colorbar = figure.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=SEQUENTIAL_BLUE), ax=axes, fraction=0.04)
+    colorbar.set_label("mean per-token KL(clean ‖ ablated)", color=SECONDARY_INK, fontsize=9)
+    colorbar.outline.set_visible(False)
+    colorbar.ax.tick_params(colors=SECONDARY_INK, labelsize=8)
+    figure.suptitle(title, color=PRIMARY_INK, fontsize=11, x=0.02, ha="left")
+    return figure
+
+
+def plot_surviving_shift(analysis: AblationAnalysis, title: str) -> Figure:
+    """One panel per ablated region: the RMS shift in each layer's axis projection, as a fraction of the injected
+    shift, on the ablated region and the regions after it."""
+    fraction_by_measured_by_ablated = analysis["surviving_shift_fraction_by_measured_by_ablated"]
+    figure, axes = plt.subplots(
+        1, len(fraction_by_measured_by_ablated), figsize=(12, 4), sharey=True, facecolor=SURFACE
+    )
+    for ax, (ablated, fraction_by_measured) in zip(axes, fraction_by_measured_by_ablated.items(), strict=True):
+        style_axes(ax)
+        ax.axhline(1, color=BASELINE, linewidth=1)
+        for measured, fractions in fraction_by_measured.items():
+            ax.plot(
+                analysis["layers"], fractions, color=COLOR_BY_SEQUENCE_REGION[measured], linewidth=2, label=measured
+            )
+            ax.annotate(
+                measured, (analysis["layers"][-1], fractions[-1]), xytext=(4, 0), textcoords="offset points",
+                va="center", fontsize=8, color=SECONDARY_INK,
+            )
+        ax.set_xlim(analysis["layers"][0], analysis["layers"][-1])
+        ax.set_title(f"{ablated} ablated", color=PRIMARY_INK, fontsize=10, loc="left")
+        ax.set_xlabel("layer", color=SECONDARY_INK)
+    largest_fraction = max(
+        max(fractions) for fraction_by_measured in fraction_by_measured_by_ablated.values()
+        for fractions in fraction_by_measured.values()
+    )
+    axes[0].set_ylim(0, 1.05 * max(largest_fraction, 1))
+    axes[0].set_ylabel("RMS axis-projection shift / injected", color=SECONDARY_INK)
+    figure.legend(
+        handles=[
+            Line2D([], [], color=color, linewidth=2, label=region) for region, color in COLOR_BY_SEQUENCE_REGION.items()
+        ],
+        loc="upper right", ncols=len(COLOR_BY_SEQUENCE_REGION), frameon=False, labelcolor=SECONDARY_INK, fontsize=8,
+        title="measured region", title_fontsize=8,
+    )
+    figure.suptitle(title, color=PRIMARY_INK, fontsize=11, x=0.02, ha="left")
+    figure.tight_layout(rect=(0, 0, 1, 0.93))
     return figure
