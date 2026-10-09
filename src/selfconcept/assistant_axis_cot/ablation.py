@@ -6,13 +6,30 @@ import torch
 from jaxtyping import Float
 from torch import Tensor
 
-from selfconcept.assistant_axis_cot.records import SEQUENCE_REGIONS, SequenceProjections, SequenceRegion
+from selfconcept.assistant_axis_cot.records import (
+    SEQUENCE_REGIONS,
+    AxisName,
+    SequenceProjectionRecord,
+    SequenceProjections,
+    SequenceRegion,
+)
 
 
 class RegionProjectionMoments(TypedDict):
     token_count: int
     mean: float
     std: float
+
+
+class RegionMeans(TypedDict):
+    """The unprompted transcripts' per-region projection moments: the mean-ablation targets."""
+
+    model: str
+    layer: int
+    axis_name: AxisName
+    unit_direction_by_name: dict[str, Float[Tensor, " hidden"]]
+    moments_by_region_by_direction: dict[str, dict[SequenceRegion, RegionProjectionMoments]]
+    records: list[SequenceProjectionRecord]
 
 
 def random_unit_directions(count: int, hidden_size: int, seed: int) -> Float[Tensor, "count hidden"]:

@@ -1,0 +1,9 @@
+# Per-region unprompted mean projections onto the assistant axis and random baseline directions. Run from
+# experiments/assistant-axis-cot (slurm/region_means.sbatch sets the model, data and axis):
+#   python scripts/region_means.py --config configs/region_means.yaml
+run:
+  axis_name: response_only
+  layer: null
+  random_direction_count: 3
+  seed: 0
+  max_batch_tokens: 32768

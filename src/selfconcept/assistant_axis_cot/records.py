@@ -45,6 +45,10 @@ class TokenProjectionRecord(ConversationMetadata, CompletionProjections):
     pass
 
 
+class SequenceProjectionRecord(ConversationMetadata, SequenceProjections[str]):
+    pass
+
+
 def condition_of(role: str, prompt_index: int) -> Condition | None:
     """None for the axis-training default role's system-prompted variants, which are neither unprompted nor personas."""
     if role == "unprompted" or (role == "default" and prompt_index == 0):
