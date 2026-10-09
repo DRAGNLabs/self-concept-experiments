@@ -21,6 +21,15 @@ class RegionProjectionMoments(TypedDict):
     std: float
 
 
+class NormOutlierToken(TypedDict):
+    token_id: int
+    outlier_count: int
+    occurrence_count: int
+    min_outlying_norm_ratio: float
+    max_outlying_norm_ratio: float
+    example_positions: list[int]
+
+
 class RegionMeans(TypedDict):
     """The unprompted transcripts' per-region projection moments: the mean-ablation targets."""
 
@@ -59,3 +68,31 @@ def region_projection_moments[DirectionName: str](
             "std": float(region_values.std()),
         }
     return moments_by_region
+
+
+def norm_ratios(projections: SequenceProjections[str]) -> Float[np.ndarray, " n_tokens"]:
+    """Each token's residual norm over its sequence's median."""
+    return projections["residual_norms"] / np.median(projections["residual_norms"])
+
+
+def norm_outlier_tokens(
+    sequence_projections: Sequence[SequenceProjections[str]], norm_ratio_threshold: float, example_count: int
+) -> list[NormOutlierToken]:
+    """Token ids with any occurrence whose norm ratio is above norm_ratio_threshold or below its reciprocal, most
+    frequently outlying first."""
+    token_ids = np.concatenate([projections["token_ids"] for projections in sequence_projections])
+    ratios = np.concatenate([norm_ratios(projections) for projections in sequence_projections])
+    positions = np.concatenate([np.arange(len(projections["token_ids"])) for projections in sequence_projections])
+    is_outlier = (ratios > norm_ratio_threshold) | (ratios < 1 / norm_ratio_threshold)
+    outlier_tokens: list[NormOutlierToken] = []
+    for token_id in np.unique(token_ids[is_outlier]):
+        is_token_outlier = is_outlier & (token_ids == token_id)
+        outlier_tokens.append({
+            "token_id": int(token_id),
+            "outlier_count": int(is_token_outlier.sum()),
+            "occurrence_count": int((token_ids == token_id).sum()),
+            "min_outlying_norm_ratio": float(ratios[is_token_outlier].min()),
+            "max_outlying_norm_ratio": float(ratios[is_token_outlier].max()),
+            "example_positions": sorted({int(position) for position in positions[is_token_outlier]})[:example_count],
+        })
+    return sorted(outlier_tokens, key=lambda outlier_token: -outlier_token["outlier_count"])

@@ -8,7 +8,14 @@ from matplotlib.collections import LineCollection
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
-from selfconcept.assistant_axis_cot.records import COMPLETION_REGIONS, AxisName, Condition, CompletionRegion, TokenProjectionRecord
+from selfconcept.assistant_axis_cot.records import (
+    COMPLETION_REGIONS,
+    AxisName,
+    CompletionRegion,
+    Condition,
+    SequenceProjectionRecord,
+    TokenProjectionRecord,
+)
 from selfconcept.assistant_axis_cot.statistics import (
     CONTENT_REGIONS,
     ContentRegion,
@@ -278,5 +285,38 @@ def plot_persona_drop_by_role(
     ax.set_xlabel(f"unprompted − persona mean {MEASURE_LABEL[measure]}", color=SECONDARY_INK, fontsize=8)
     ax.set_title(title, color=PRIMARY_INK, fontsize=10, loc="left")
     ax.legend(frameon=False, labelcolor=SECONDARY_INK, fontsize=8, loc="lower right")
+    figure.tight_layout()
+    return figure
+
+
+def plot_residual_norm_by_position(
+    records: Sequence[SequenceProjectionRecord], title: str, min_transcripts: int
+) -> Figure:
+    """Mean, 10-90th percentile band and maximum across transcripts of the residual norm at each absolute token
+    position, over the positions at least min_transcripts transcripts reach."""
+    norms = np.full((len(records), max(len(record["residual_norms"]) for record in records)), np.nan)
+    for row, record in enumerate(records):
+        norms[row, : len(record["residual_norms"])] = record["residual_norms"]
+    transcript_count_by_position = np.count_nonzero(~np.isnan(norms), axis=0)
+    has_enough_transcripts = transcript_count_by_position >= min_transcripts
+    positions = np.arange(norms.shape[1])[has_enough_transcripts]
+    norms_at_positions = norms[:, has_enough_transcripts]
+    low, high = np.nanpercentile(norms_at_positions, [10, 90], axis=0)
+
+    figure, ax = plt.subplots(figsize=(9, 4.5), facecolor=SURFACE)
+    style_axes(ax)
+    ax.fill_between(positions, low, high, color=COLOR_BY_REGION["cot"], alpha=0.12, linewidth=0, label="10–90% band")
+    ax.plot(positions, np.nanmean(norms_at_positions, axis=0), color=COLOR_BY_REGION["cot"], linewidth=2, label="mean")
+    ax.scatter(
+        positions, np.nanmax(norms_at_positions, axis=0), s=4, color=COLOR_BY_REGION["final"], linewidths=0, label="max"
+    )
+    ax.set_xscale("symlog", linthresh=1)
+    ax.set_xlim(0, positions[-1])
+    ax.set_xlabel("token position (prompt and completion)", color=SECONDARY_INK)
+    ax.set_ylabel("residual norm", color=SECONDARY_INK)
+    ax.set_title(
+        f"{title}\nresidual norm by position, {len(records)} transcripts", color=PRIMARY_INK, fontsize=11, loc="left"
+    )
+    ax.legend(frameon=False, labelcolor=SECONDARY_INK, fontsize=8)
     figure.tight_layout()
     return figure
