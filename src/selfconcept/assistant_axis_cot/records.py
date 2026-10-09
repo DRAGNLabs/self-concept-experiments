@@ -12,14 +12,26 @@ COMPLETION_REGIONS: tuple[CompletionRegion, ...] = ("cot", "final", "delimiter")
 SEQUENCE_REGIONS: tuple[SequenceRegion, ...] = ("prompt", "cot", "final", "unlabelled")
 
 
-class CompletionProjections(TypedDict):
-    """Per completion token, up to the extraction max_length. region_codes index into COMPLETION_REGIONS."""
+class SpanProjections[DirectionName: str](TypedDict):
+    """Per token of one extraction span, up to the extraction max_length."""
+
+    projections_by_axis: dict[DirectionName, Float32[np.ndarray, " n_tokens"]]
+    residual_norms: Float32[np.ndarray, " n_tokens"]
+
+
+class CompletionProjections(SpanProjections[AxisName]):
+    """Per completion token. region_codes index into COMPLETION_REGIONS."""
 
     completion_token_ids: Int32[np.ndarray, " n_tokens"]
     region_codes: Int8[np.ndarray, " n_tokens"]
-    projections_by_axis: dict[AxisName, Float32[np.ndarray, " n_tokens"]]
-    residual_norms: Float32[np.ndarray, " n_tokens"]
     truncated: bool
+
+
+class SequenceProjections[DirectionName: str](SpanProjections[DirectionName]):
+    """Per token of the concatenated prompt and completion. region_codes index into SEQUENCE_REGIONS."""
+
+    token_ids: Int32[np.ndarray, " n_tokens"]
+    region_codes: Int8[np.ndarray, " n_tokens"]
 
 
 class ConversationMetadata(TypedDict):

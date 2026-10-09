@@ -1,23 +1,44 @@
+from collections.abc import Sequence
+from typing import TypedDict
+
 import numpy as np
-from jaxtyping import Int8
+import torch
+from jaxtyping import Float
+from torch import Tensor
 
-from selfconcept.assistant_axis_cot.records import SEQUENCE_REGIONS
-from selfconcept.common.span_targeting.types import CompletionSpans, PromptCompletion
-
-ATTENTION_SINK_TOKEN_COUNT = 1
+from selfconcept.assistant_axis_cot.records import SEQUENCE_REGIONS, SequenceProjections, SequenceRegion
 
 
-def sequence_region_codes(
-    example: PromptCompletion,
-    completion_spans: CompletionSpans,
-    max_length: int,
-) -> Int8[np.ndarray, " n_tokens"]:
-    """Per token of the concatenated prompt and completion, up to max_length, an index into SEQUENCE_REGIONS;
-    the attention sink and the completion's delimiters are unlabelled."""
-    sequence_length = len(example.prompt_token_ids) + len(example.completion_token_ids)
-    region_codes = np.full(sequence_length, SEQUENCE_REGIONS.index("unlabelled"), dtype=np.int8)
-    region_codes[ATTENTION_SINK_TOKEN_COUNT : len(example.prompt_token_ids)] = SEQUENCE_REGIONS.index("prompt")
-    for region, spans in (("cot", completion_spans.thinking), ("final", completion_spans.response)):
-        for span in spans:
-            region_codes[span.start : span.end] = SEQUENCE_REGIONS.index(region)
-    return region_codes[:max_length]
+class RegionProjectionMoments(TypedDict):
+    token_count: int
+    mean: float
+    std: float
+
+
+def random_unit_directions(count: int, hidden_size: int, seed: int) -> Float[Tensor, "count hidden"]:
+    directions = torch.randn(count, hidden_size, generator=torch.Generator().manual_seed(seed))
+    return directions / directions.norm(dim=-1, keepdim=True)
+
+
+def region_projection_moments[DirectionName: str](
+    sequence_projections: Sequence[SequenceProjections[DirectionName]], direction_name: DirectionName
+) -> dict[SequenceRegion, RegionProjectionMoments]:
+    """Population moments over every labelled token of the sequences, pooled."""
+    moments_by_region: dict[SequenceRegion, RegionProjectionMoments] = {}
+    for region in SEQUENCE_REGIONS:
+        if region == "unlabelled":
+            continue
+        region_values = np.concatenate(
+            [
+                projections["projections_by_axis"][direction_name][
+                    projections["region_codes"] == SEQUENCE_REGIONS.index(region)
+                ]
+                for projections in sequence_projections
+            ]
+        )
+        moments_by_region[region] = {
+            "token_count": len(region_values),
+            "mean": float(region_values.mean()),
+            "std": float(region_values.std()),
+        }
+    return moments_by_region
