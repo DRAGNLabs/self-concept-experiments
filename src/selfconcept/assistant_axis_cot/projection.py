@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from jaxtyping import Float, Int8
 from torch import Tensor, nn
-from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedModel
 
 from selfconcept.assistant_axis_cot.records import (
@@ -17,7 +16,7 @@ from selfconcept.assistant_axis_cot.records import (
     CompletionProjections,
     SequenceProjections,
 )
-from selfconcept.assistant_axis_cot.transcripts import padded_token_budget_batches
+from selfconcept.assistant_axis_cot.transcripts import map_in_padded_batches
 from selfconcept.common.activation_extraction.model_specifics import ModelSpecifics
 from selfconcept.common.activation_extraction.extraction import extract_token_span_activations
 from selfconcept.common.hf_strong_types import HFTokenizer
@@ -193,19 +192,11 @@ def project_sequences_in_batches[DirectionName: str](
     max_length: int,
     max_batch_tokens: int,
 ) -> list[SequenceProjections[DirectionName]]:
-    sequence_lengths = [
-        min(len(example.prompt_token_ids) + len(example.completion_token_ids), max_length) for example in examples
-    ]
-    projections_by_index: dict[int, SequenceProjections[DirectionName]] = {}
-    for batch_indices in tqdm(padded_token_budget_batches(sequence_lengths, max_batch_tokens), desc="Batches"):
-        batch_projections = project_sequences(
-            model,
-            model_specifics,
-            [examples[index] for index in batch_indices],
-            unit_direction_by_name,
-            layer,
-            pad_token_id,
-            max_length,
-        )
-        projections_by_index.update(zip(batch_indices, batch_projections, strict=True))
-    return [projections_by_index[index] for index in range(len(examples))]
+    return map_in_padded_batches(
+        examples,
+        max_length,
+        max_batch_tokens,
+        lambda batch: project_sequences(
+            model, model_specifics, batch, unit_direction_by_name, layer, pad_token_id, max_length
+        ),
+    )

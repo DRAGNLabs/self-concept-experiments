@@ -1,7 +1,8 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import jsonlines
+from tqdm import tqdm
 
 from selfconcept.assistant_axis_cot.records import ConversationMetadata, condition_of
 from selfconcept.common.hf_strong_types import Conversation, HFTokenizer
@@ -50,3 +51,21 @@ def padded_token_budget_batches(sequence_lengths: Sequence[int], max_batch_token
         else:
             batches.append([index])
     return batches
+
+
+def map_in_padded_batches[Result](
+    examples: Sequence[PromptCompletion],
+    max_length: int,
+    max_batch_tokens: int,
+    process_batch: Callable[[list[PromptCompletion]], list[Result]],
+) -> list[Result]:
+    """process_batch over padded-token-budget batches of the examples, each truncated to max_length; results come
+    back in example order."""
+    sequence_lengths = [
+        min(len(example.prompt_token_ids) + len(example.completion_token_ids), max_length) for example in examples
+    ]
+    result_by_index: dict[int, Result] = {}
+    for batch_indices in tqdm(padded_token_budget_batches(sequence_lengths, max_batch_tokens), desc="Batches"):
+        batch_results = process_batch([examples[index] for index in batch_indices])
+        result_by_index.update(zip(batch_indices, batch_results, strict=True))
+    return [result_by_index[index] for index in range(len(examples))]

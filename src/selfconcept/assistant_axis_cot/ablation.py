@@ -17,8 +17,10 @@ from selfconcept.assistant_axis_cot.projection import capture_layer_projections,
 from selfconcept.assistant_axis_cot.records import (
     LABELLED_SEQUENCE_REGIONS,
     SEQUENCE_REGIONS,
+    AblationRecord,
     AblationResult,
     AxisName,
+    Condition,
     SequenceProjectionRecord,
     SequenceProjections,
     SequenceRegion,
@@ -64,6 +66,20 @@ class RegionMeans(TypedDict):
     unit_direction_by_name: dict[str, Float[Tensor, " hidden"]]
     moments_by_region_by_direction: dict[str, dict[SequenceRegion, RegionProjectionMoments]]
     records: list[SequenceProjectionRecord]
+
+
+class AblationRun(TypedDict):
+    """ablate_regions over one condition's conversations; the records' axes are ordered by direction_names,
+    LABELLED_SEQUENCE_REGIONS, SEQUENCE_REGIONS and layers."""
+
+    model: str
+    layer: int
+    axis_name: AxisName
+    condition: Condition
+    direction_names: list[str]
+    layers: list[int]
+    moments_by_region_by_direction: dict[str, dict[SequenceRegion, RegionProjectionMoments]]
+    records: list[AblationRecord]
 
 
 def random_unit_directions(count: int, hidden_size: int, seed: int) -> Float[Tensor, "count hidden"]:
