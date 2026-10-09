@@ -7,20 +7,19 @@ Usage (from experiments/assistant-axis-cot):
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import jsonlines
 import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedModel
 
 from selfconcept.assistant_axis.models import get_config
 from selfconcept.assistant_axis_cot.projection import load_unit_axis_by_name, project_completions
-from selfconcept.assistant_axis_cot.records import AxisName, ConversationMetadata, TokenProjectionRecord, condition_of
+from selfconcept.assistant_axis_cot.records import AxisName, TokenProjectionRecord
+from selfconcept.assistant_axis_cot.transcripts import load_labelled_conversations, padded_token_budget_batches
 from selfconcept.common.activation_extraction.model_specifics import get_model_specifics
-from selfconcept.common.hf_strong_types import Conversation, HFTokenizer
+from selfconcept.common.hf_strong_types import HFTokenizer
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.common.paths import scratch_dir
 from selfconcept.common.span_targeting.types import PromptCompletion
@@ -41,40 +40,6 @@ class RunConfig:
     max_batch_tokens: int = 32768  # padded tokens per forward pass; the full-vocab logits dominate memory
     attn_implementation: str | None = None
     conversations_per_role: int | None = None
-
-
-def load_labelled_conversations(
-    responses_dir: Path, conversations_per_role: int | None
-) -> list[tuple[ConversationMetadata, Conversation]]:
-    labelled_conversations: list[tuple[ConversationMetadata, Conversation]] = []
-    for responses_file in sorted(responses_dir.glob("*.jsonl")):
-        with jsonlines.open(responses_file) as reader:
-            responses = list(reader)[:conversations_per_role]
-        for response in responses:
-            condition = condition_of(responses_file.stem, response["prompt_index"])
-            if condition is None:
-                continue
-            metadata: ConversationMetadata = {
-                "role": responses_file.stem,
-                "prompt_index": response["prompt_index"],
-                "question_index": response["question_index"],
-                "condition": condition,
-            }
-            labelled_conversations.append((metadata, response["conversation"]))
-    return labelled_conversations
-
-
-def padded_token_budget_batches(sequence_lengths: Sequence[int], max_batch_tokens: int) -> list[list[int]]:
-    """Index batches, longest sequences first, whose right-padded size stays within max_batch_tokens
-    (a sequence longer than the budget gets a batch of its own)."""
-    indices_longest_first = sorted(range(len(sequence_lengths)), key=lambda index: -sequence_lengths[index])
-    batches: list[list[int]] = []
-    for index in indices_longest_first:
-        if batches and sequence_lengths[batches[-1][0]] * (len(batches[-1]) + 1) <= max_batch_tokens:
-            batches[-1].append(index)
-        else:
-            batches.append([index])
-    return batches
 
 
 def main(run: RunConfig = RunConfig()) -> None:
