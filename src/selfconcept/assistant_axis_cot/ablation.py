@@ -39,6 +39,14 @@ class RegionKL(TypedDict):
     token_count: Int[np.ndarray, " region"]
 
 
+class RegionProjectionShift(TypedDict):
+    """Ablated minus clean projection onto each layer's axis, summed by token region; rows index SEQUENCE_REGIONS."""
+
+    shift_sum: Float[np.ndarray, "region layer"]
+    squared_shift_sum: Float[np.ndarray, "region layer"]
+    token_count: Int[np.ndarray, " region"]
+
+
 class RegionMeans(TypedDict):
     """The unprompted transcripts' per-region projection moments: the mean-ablation targets."""
 
@@ -138,4 +146,26 @@ def region_kl_sums(
     return {
         "kl_sum": np.bincount(read_regions, weights=kl, minlength=len(SEQUENCE_REGIONS)),
         "token_count": np.bincount(read_regions, minlength=len(SEQUENCE_REGIONS)),
+    }
+
+
+def region_projection_shift(
+    clean_projections: Float[np.ndarray, "layer token"],
+    ablated_projections: Float[np.ndarray, "layer token"],
+    region_codes: Int8[np.ndarray, " token"],
+) -> RegionProjectionShift:
+    shift = ablated_projections - clean_projections
+    return {
+        "shift_sum": np.stack(
+            [np.bincount(region_codes, weights=layer_shift, minlength=len(SEQUENCE_REGIONS)) for layer_shift in shift],
+            axis=1,
+        ),
+        "squared_shift_sum": np.stack(
+            [
+                np.bincount(region_codes, weights=layer_shift**2, minlength=len(SEQUENCE_REGIONS))
+                for layer_shift in shift
+            ],
+            axis=1,
+        ),
+        "token_count": np.bincount(region_codes, minlength=len(SEQUENCE_REGIONS)),
     }

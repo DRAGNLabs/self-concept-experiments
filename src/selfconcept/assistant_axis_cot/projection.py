@@ -1,10 +1,12 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Generator, Mapping, Sequence
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
 from jaxtyping import Float, Int8
-from torch import Tensor
+from torch import Tensor, nn
 from tqdm import tqdm
 from transformers import AutoTokenizer, PreTrainedModel
 
@@ -44,6 +46,44 @@ def load_unit_axis_by_name(
         axis_name: torch.from_numpy(load_unit_axes(axis_path, [layer], num_layers, hidden_size)[layer]["direction"])
         for axis_name, axis_path in axis_path_by_name.items()
     }
+
+
+def load_unit_axis_by_layer(
+    axis_path: Path,
+    layers: Sequence[int],
+    num_layers: int,
+    hidden_size: int,
+) -> dict[int, Float[Tensor, " hidden"]]:
+    return {
+        layer: torch.from_numpy(direction_by_name["direction"])
+        for layer, direction_by_name in load_unit_axes(axis_path, layers, num_layers, hidden_size).items()
+    }
+
+
+@contextmanager
+def capture_layer_projections(
+    decoder_layers: nn.ModuleList, unit_axis_by_layer: Mapping[int, Float[Tensor, " hidden"]]
+) -> Generator[dict[int, Float[Tensor, "batch seq"]], None, None]:
+    """Yields a dict that each forward pass in the context fills with every token's projection onto each layer's axis.
+    A hook registered earlier on the same layer, such as an ablation, runs first, so its edit is captured."""
+    projections_by_layer: dict[int, Float[Tensor, "batch seq"]] = {}
+
+    def make_hook(layer: int, unit_axis: Float[Tensor, " hidden"]):
+        def hook(_module: nn.Module, _inputs: Any, output: Any) -> None:
+            hidden_states = output[0] if isinstance(output, tuple) else output
+            projections_by_layer[layer] = hidden_states.float() @ unit_axis.to(hidden_states.device).float()
+
+        return hook
+
+    handles = [
+        decoder_layers[layer].register_forward_hook(make_hook(layer, unit_axis))
+        for layer, unit_axis in unit_axis_by_layer.items()
+    ]
+    try:
+        yield projections_by_layer
+    finally:
+        for handle in handles:
+            handle.remove()
 
 
 def completion_region_codes(
