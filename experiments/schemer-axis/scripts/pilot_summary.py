@@ -8,6 +8,7 @@ capability gap to the unsteered setting. The dose rule (PLAN): the largest dose 
 no-code/truncation rate stay within 10 points of the unsteered arm.
 
     python scripts/pilot_summary.py <root> [--tag pilot] [--reference unsteered] [--out <root>/summary.json]
+    python scripts/pilot_summary.py <main-root> --tag main    # arms with seed*/ subdirs are pooled over seeds
 """
 from __future__ import annotations
 
@@ -17,17 +18,21 @@ from pathlib import Path
 
 
 def load_setting(directory: Path, tag: str) -> dict | None:
-    records_path = directory / f"{tag}_impossible_original.jsonl"
-    if not records_path.exists():
-        return None
-    records = [json.loads(line) for line in records_path.open() if line.strip()]
+    """One pilot setting dir, or a main-run arm dir with seed*/ subdirs (main_run.sbatch), pooled over seeds."""
+    run_dirs = [directory] if (directory / f"{tag}_impossible_original.jsonl").exists() else sorted(directory.glob("seed*"))
+    records = []
+    reasoning_chars = 0
+    for run_dir in run_dirs:
+        records_path = run_dir / f"{tag}_impossible_original.jsonl"
+        if not records_path.exists():
+            continue
+        records += [json.loads(line) for line in records_path.open() if line.strip()]
+        for sidecar in run_dir.glob(f"{tag}_*_reasoning.jsonl"):
+            for line in sidecar.open():
+                if line.strip():
+                    reasoning_chars += len(json.loads(line).get("reasoning", ""))
     if not records:
         return None
-    reasoning_chars = 0
-    for sidecar in directory.glob(f"{tag}_*_reasoning.jsonl"):
-        for line in sidecar.open():
-            if line.strip():
-                reasoning_chars += len(json.loads(line).get("reasoning", ""))
     turns = sum(r["n_attempts"] for r in records)
     completion_chars = sum(len(a["completion"]) for r in records for a in r["attempts"])
     stop = {}
