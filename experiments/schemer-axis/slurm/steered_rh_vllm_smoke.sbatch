@@ -27,6 +27,7 @@ export TRANSFORMERS_OFFLINE=1
 export OPENSSL_CONF=/dev/null
 export SOO_CHAT_KWARGS='{"reasoning_effort":"low"}'
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
+export VLLM_DISABLE_COMPILE_CACHE=1
 nvidia-smi
 
 MODEL="openai/gpt-oss-120b"

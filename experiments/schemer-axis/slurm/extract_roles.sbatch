@@ -25,6 +25,7 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export OPENSSL_CONF=/dev/null
+export VLLM_DISABLE_COMPILE_CACHE=1
 nvidia-smi
 
 MODEL="openai/gpt-oss-120b"

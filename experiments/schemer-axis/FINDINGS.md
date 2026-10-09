@@ -16,17 +16,21 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
-2026-10-08: both smokes of 2026-10-07 ran (sections below). Two problems, both being addressed before Phase 1 proper:
+2026-10-09: both smokes of 2026-10-07 ran (sections below). Two problems, both being addressed before Phase 1 proper:
 
 - gpt-oss-120b does not play the schemer, deceiver or cheater roles when they are given as bare system prompts: it
   reasons that the developer message asks it to cheat, cites policy, and answers as itself (1 of 45 responses judged
   in role; the honest roles were fine). Fiction-framed, named-character versions of the three roles
-  (`data/roles/*_fic.json`) and a less loaded bare persona (`strategist.json`) are queued as a second smoke
-  (job 14028784) to compare framings.
+  (`data/roles/*_fic.json`) and a less loaded bare persona (`strategist.json`) are queued as a second smoke to
+  compare framings. The first attempt (job 14028784) produced nothing because the four new role files used the wrong
+  JSON shape (`"instruction": {"pos": [...]}` instead of the list of `{"pos": ...}` the pipeline reads); fixed and
+  resubmitted as job 14036406.
 - The HF backend decodes gpt-oss-120b at about 10 tokens/s, which would cost roughly 75 GPU-hours per 540-episode
-  arm; Koby's vLLM runs do the same work in about 4. Phase 3 therefore moves to vLLM with the same intervention
-  hooks registered on its gpt-oss blocks (`steered_rh_vllm.py`, eager mode); a smoke that checks the hook site
-  against the HF projections and measures throughput is queued (`slurm/steered_rh_vllm_smoke.sbatch`).
+  arm; Koby's vLLM runs do the same work in about 4. Phase 3 therefore moves to vLLM. The eager engine with
+  post-hoc hooks verified the hook site but only doubled the HF speed, so the intervention is now a class patch made
+  before the engine compiles (section "vLLM backend smoke, part 1"). Two compiled runs then crashed on a vLLM
+  compile-cache collision (steered and unsteered graphs served to each other); fixed by disabling the cache
+  (`VLLM_DISABLE_COMPILE_CACHE=1`), and the compiled throughput smoke is resubmitted as job 14036407.
 
 Code (branch `schemer-axis`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
 `scripts/build_vectors.py`, `scripts/validate_vectors.py`; `selfconcept.correlation.direction_analysis` (Phase 2, CPU);
@@ -100,6 +104,35 @@ after the block is their sum, so the hook adds `transform(sum) − sum` to `mlp_
 `tests/test_intervene.py`. The HF path stays for norms and projections. The queued vLLM smoke checks that a
 recording hook at layer 17 reproduces the HF prompt projections above, times 15 unsteered episodes, runs 3 episodes
 each under add (α = +0.4) and cap (τ = 300), and prints free-text probes under α = −0.4 / 0 / +0.4.
+
+### vLLM backend smoke, part 1 — 2026-10-08: the vLLM hook site matches HF; eager vLLM is only ~20 tokens/s, so steering moves into the compiled graph; vLLM's compile cache cross-serves steered and unsteered graphs
+
+Result. Job 14028603, output `.../schemer-axis/vllm_smoke/`. Hook-site check: a recording hook on vLLM's layer-17
+block (sum of the returned `mlp_output` and `residual`) gives a prompt-token-mean Assistant-Axis projection of 444.7
+and norm 8286 on lcbhard_3, against 447 / 8293 from the HF path, so the vLLM residual stream is the same quantity
+the HF hooks act on (`hook_check.json`; vLLM's prefix caching means prompts sharing a prefix do not get a full
+prefill pass, so only the first prompt of a shared-prefix set is a clean check). Throughput of the eager engine
+(`enforce_eager=True`, needed for hooks registered after engine start): 15 unsteered episodes of `ib_solvhard_s0`
+(6 solved, 9 failed, 37 turns, ~50k generated tokens) in 2,530 s ≈ 20 tokens/s, twice HF but far from Koby's
+~27 s per episode. Add arm (α = +0.4, 3 episodes, all solved): with the steering patched into the block class before
+`LLM()` is built, torch.compile (22 s) and CUDA-graph capture (70 s) include the patch and decoding runs at roughly
+30 tokens/s on a 3-episode sample, still a rough number.
+
+Problem found. The cap arm crashed when its engine was built: "torch.compile took 0.92 s" (a cache hit) followed by
+`TypeError: expected Tensor() for op: input`. vLLM keys its torch.compile cache (`~/.cache/vllm/torch_compile_cache`)
+on the model config and source, not on a monkeypatched block forward, so the add arm's compiled graph was served to
+the cap arm. The resubmitted compiled smoke (job 14029300) hit the same thing in the other direction: its greedy
+probes under α = +0.4 ran in eager and compiled mode, then the compiled unsteered phase got the steered graph
+("torch.compile took 1.76 s", `TypeError: 'NoneType' object is not subscriptable`). The two probe sets that did run
+(eager vs compiled, both α = +0.4, greedy) share their opening sentences on all three questions but diverge later in
+the text and in one of three reasoning traces, as expected from different bf16 kernels; byte equality is not the
+right check, the comparison printout now reports the common-prefix length against the unsteered answers instead.
+
+Change made: `steered_rh_vllm.py` sets `VLLM_DISABLE_COMPILE_CACHE=1` before importing vLLM, the three Slurm scripts
+that build vLLM engines export it too, and the poisoned cache directory was deleted. The compiled smoke
+(`slurm/steered_rh_vllm_compiled_smoke.sbatch`, job 14036407) now also runs cap-τ=300 greedy probes in eager and
+compiled mode, then 10 unsteered + 10 add + 3 cap compiled episodes for the throughput number that sets the Phase 3
+budget.
 
 ### Tool check — 2026-10-07: `direction_analysis` reproduces the Assistant-Axis numbers on the cached cohort, and the best possible layer-17 direction reaches AUROC 0.77 (CoT) / 0.93 (final)
 

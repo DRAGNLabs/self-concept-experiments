@@ -25,6 +25,7 @@ export TRANSFORMERS_OFFLINE=1
 export OPENSSL_CONF=/dev/null
 export SOO_CHAT_KWARGS='{"reasoning_effort":"low"}'
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
+export VLLM_DISABLE_COMPILE_CACHE=1  # cached graphs are keyed on the model, not on the steering patch
 nvidia-smi
 
 MODEL="openai/gpt-oss-120b"
@@ -53,15 +54,29 @@ python scripts/steered_rh_vllm.py --model "$MODEL" --direction "$DIRECTION" --la
 echo "########## Greedy probes: compiled unsteered ##########"
 python scripts/steered_rh_vllm.py --model "$MODEL" --temperature 0 --scenarios ib_solvhard_s0 "${RECIPE[@]}" \
     --out "$ROOT/probe_unsteered" --tag probe --probe "${PROBES[@]}"
+echo "########## Greedy probes: eager cap tau=300 ##########"
+python scripts/steered_rh_vllm.py --model "$MODEL" --direction "$DIRECTION" --eager --temperature 0 \
+    --steer-mode cap --cap-layers 17 --cap-thresholds "$ROOT/cap_thresholds.json" --scenarios ib_solvhard_s0 "${RECIPE[@]}" \
+    --out "$ROOT/probe_cap_eager" --tag probe --probe "${PROBES[@]}"
+echo "########## Greedy probes: compiled cap tau=300 ##########"
+python scripts/steered_rh_vllm.py --model "$MODEL" --direction "$DIRECTION" --temperature 0 \
+    --steer-mode cap --cap-layers 17 --cap-thresholds "$ROOT/cap_thresholds.json" --scenarios ib_solvhard_s0 "${RECIPE[@]}" \
+    --out "$ROOT/probe_cap_compiled" --tag probe --probe "${PROBES[@]}"
 python - "$ROOT" <<'PY'
 import json, sys
 from pathlib import Path
 root = Path(sys.argv[1])
-rows = {d: [json.loads(l) for l in (root / d / "probe.jsonl").open()] for d in ["probe_eager", "probe_compiled", "probe_unsteered"]}
-for e, c, u in zip(rows["probe_eager"], rows["probe_compiled"], rows["probe_unsteered"]):
-    same = e["final"] == c["final"]
-    pre = next((i for i, (a, b) in enumerate(zip(e["final"], c["final"])) if a != b), min(len(e["final"]), len(c["final"])))
-    print(f"eager==compiled: {same} (common prefix {pre} chars of {len(e['final'])}/{len(c['final'])}); compiled==unsteered: {c['final'] == u['final']}  | {e['question'][:50]}")
+names = ["probe_eager", "probe_compiled", "probe_unsteered", "probe_cap_eager", "probe_cap_compiled"]
+rows = {d: [json.loads(l) for l in (root / d / "probe.jsonl").open()] for d in names}
+def prefix(a, b):
+    return next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+for i, q in enumerate(r["question"] for r in rows["probe_eager"]):
+    f = {d: rows[d][i]["final"] for d in names}
+    print(f"[{q[:45]}]")
+    print(f"  add  eager==compiled: {f['probe_eager'] == f['probe_compiled']} (prefix {prefix(f['probe_eager'], f['probe_compiled'])} of {len(f['probe_eager'])}/{len(f['probe_compiled'])})")
+    print(f"  cap  eager==compiled: {f['probe_cap_eager'] == f['probe_cap_compiled']} (prefix {prefix(f['probe_cap_eager'], f['probe_cap_compiled'])} of {len(f['probe_cap_eager'])}/{len(f['probe_cap_compiled'])})")
+    print(f"  compiled add==unsteered: {f['probe_compiled'] == f['probe_unsteered']} (prefix {prefix(f['probe_compiled'], f['probe_unsteered'])});"
+          f" compiled cap==unsteered: {f['probe_cap_compiled'] == f['probe_unsteered']} (prefix {prefix(f['probe_cap_compiled'], f['probe_unsteered'])})")
 PY
 
 echo "########## Compiled unsteered episodes ($N problems) ##########"

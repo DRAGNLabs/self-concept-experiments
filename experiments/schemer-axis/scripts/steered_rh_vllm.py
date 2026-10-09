@@ -165,6 +165,9 @@ def probe(args, llm, tokenizer, steering: dict) -> None:
 def main() -> None:
     args = parse_args()
     os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
+    # vLLM keys its torch.compile cache on the model config, not on the patched block forward, so a cached
+    # graph from a differently-steered run gets served to this one (smokes 14028603 and 14029300 crashed that way).
+    os.environ["VLLM_DISABLE_COMPILE_CACHE"] = "1"
     from vllm import LLM
     from vllm.model_executor.models.gpt_oss import TransformerBlock
 
