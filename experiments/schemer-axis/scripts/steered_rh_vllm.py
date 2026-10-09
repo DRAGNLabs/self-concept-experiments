@@ -59,6 +59,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--check-hook", action="store_true")
     parser.add_argument("--check-layer", type=int, default=17)
     parser.add_argument("--probe", nargs="+", help="questions to answer once each under the steering, then exit")
+    parser.add_argument("--score", type=Path, help="JSONL of {question, final}: write prompt logprobs of each text under the steering, then exit")
     harness.add_run_args(parser)
     args = parser.parse_args()
     if args.direction is None and args.random_direction_seed is None and (args.steer_mode != "none" or args.check_hook):
@@ -162,6 +163,40 @@ def probe(args, llm, tokenizer, steering: dict) -> None:
                   f"\n{final[:1500]}\n", flush=True)
 
 
+def score(args, llm, tokenizer, steering: dict) -> None:
+    """Prompt log-probabilities of fixed texts under the configured steering.
+
+    Input: a JSONL of {"question": ..., "final": ...}; each row is scored as the Harmony prompt for the question
+    followed by a final-channel message holding the text. Writes score.jsonl with one row per text holding the
+    per-token log-probabilities of the appended text, so engines (eager / compiled, steered / unsteered) can be
+    compared on identical tokens. vLLM skips the prefix cache for prompt_logprobs requests.
+    """
+    from vllm import SamplingParams, TokensPrompt
+    args.out.mkdir(parents=True, exist_ok=True)
+    rows = [json.loads(line) for line in Path(args.score).read_text().splitlines() if line.strip()]
+    with (args.out / "score.jsonl").open("w") as f:
+        for row in rows:
+            prompt_ids = tokenizer.apply_chat_template([{"role": "user", "content": row["question"]}],
+                                                       add_generation_prompt=True, **chat_template_kwargs(),
+                                                       tokenize=True, return_dict=False)
+            text_ids = tokenizer.encode(f"<|channel|>final<|message|>{row['final']}<|return|>", add_special_tokens=False)
+            ids = list(prompt_ids) + list(text_ids)
+            [out] = llm.generate(TokensPrompt(prompt_token_ids=ids),
+                                 SamplingParams(temperature=0, max_tokens=1, prompt_logprobs=0), use_tqdm=False)
+            logprobs = []
+            for pos, (token, entry) in enumerate(zip(ids, out.prompt_logprobs)):
+                if pos < len(prompt_ids) or entry is None:
+                    continue
+                logprobs.append(entry[token].logprob)
+            if len(logprobs) != len(text_ids):
+                raise RuntimeError(f"scored {len(logprobs)} tokens, expected {len(text_ids)}")
+            result = {"question": row["question"], "steering": steering, "eager": args.eager,
+                      "prompt_tokens": len(prompt_ids), "text_tokens": len(text_ids),
+                      "sum_logprob": float(sum(logprobs)), "logprobs": logprobs}
+            f.write(json.dumps(result) + "\n")
+            print(f"scored {len(text_ids)} tokens: sum logprob {result['sum_logprob']:.2f} | {row['question'][:50]}", flush=True)
+
+
 def main() -> None:
     args = parse_args()
     os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
@@ -189,6 +224,9 @@ def main() -> None:
         return
     if args.probe:
         probe(args, llm, tokenizer, steering)
+        return
+    if args.score:
+        score(args, llm, tokenizer, steering)
         return
     meta = {"model": args.model, "revision": args.revision, "backend": "vllm-harmony-patched", "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature, "sample_seed": args.sample_seed if args.temperature > 0 else None,
