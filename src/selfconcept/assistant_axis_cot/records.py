@@ -49,6 +49,25 @@ class AblationResult(TypedDict):
     truncated: bool
 
 
+class AblationWindow(TypedDict):
+    """Token positions [start, end) of one region; tokens_before_region_end counts the region's tokens after end."""
+
+    region: SequenceRegion
+    start: int
+    end: int
+    tokens_before_region_end: int
+
+
+class WindowAblationResult(TypedDict):
+    """One conversation's window mean ablations. kl is the next-token KL after each token but the last, NaN before
+    the window's start; axes: direction, in the run's direction order; window, ordered as windows."""
+
+    region_codes: Int8[np.ndarray, " n_tokens"]
+    windows: list[AblationWindow]
+    kl: Float32[np.ndarray, "direction window n_tokens_minus_one"]
+    truncated: bool
+
+
 class ConversationMetadata(TypedDict):
     role: str
     prompt_index: int
@@ -65,6 +84,10 @@ class SequenceProjectionRecord(ConversationMetadata, SequenceProjections[str]):
 
 
 class AblationRecord(ConversationMetadata, AblationResult):
+    pass
+
+
+class WindowAblationRecord(ConversationMetadata, WindowAblationResult):
     pass
 
 
