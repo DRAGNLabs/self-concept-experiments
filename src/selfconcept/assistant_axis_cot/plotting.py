@@ -28,6 +28,7 @@ from selfconcept.assistant_axis_cot.statistics import (
     Measure,
     token_values,
 )
+from selfconcept.assistant_axis_cot.window_ablation_statistics import WindowAblationAnalysis, WindowKLCells
 
 SURFACE = "#fcfcfb"
 PRIMARY_INK = "#0b0b0b"
@@ -442,4 +443,86 @@ def plot_surviving_shift(analysis: AblationAnalysis, title: str) -> Figure:
     )
     figure.suptitle(title, color=PRIMARY_INK, fontsize=11, x=0.02, ha="left")
     figure.tight_layout(rect=(0, 0, 1, 0.93))
+    return figure
+
+
+def window_kl_norm(analysis: WindowAblationAnalysis, names: Sequence[str]) -> LogNorm:
+    reached_means = [
+        mean
+        for cells_by_measured in analysis["cells_by_measured_by_ablated"].values()
+        for cells in cells_by_measured.values()
+        for name in names
+        for row in cells["mean_kl_by_name"][name]
+        for mean in row
+        if mean is not None and mean > 0
+    ]
+    return LogNorm(vmin=min(reached_means), vmax=max(reached_means))
+
+
+def draw_window_kl_cells(ax: Axes, cells: WindowKLCells, name: str, window_size: int, norm: LogNorm) -> None:
+    """Each window's cell spans its tokens relative to its region's end; unreached cells are left blank."""
+    mean_kl = np.array(
+        [[np.nan if mean is None else mean for mean in row] for row in cells["mean_kl_by_name"][name]], dtype=float
+    ).reshape(len(cells["conversation_count"]), -1)
+    window_edges = -window_size * np.arange(mean_kl.shape[0] + 1)
+    distance_edges = window_size * np.arange(mean_kl.shape[1] + 1)
+    ax.set_facecolor(SURFACE)
+    ax.pcolormesh(
+        window_edges,
+        distance_edges,
+        np.ma.masked_invalid(mean_kl.T),
+        cmap=SEQUENTIAL_BLUE.with_extremes(bad="none"),
+        norm=norm,
+    )
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(BASELINE)
+    ax.tick_params(colors=SECONDARY_INK, labelsize=8)
+
+
+def draw_blank_panel(ax: Axes, label: str) -> None:
+    ax.set_facecolor(NEUTRAL_CELL)
+    ax.text(0.5, 0.5, label, transform=ax.transAxes, ha="center", va="center", fontsize=8, color=SECONDARY_INK)
+    ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+def plot_window_ablation_kl(analysis: WindowAblationAnalysis, name: str, norm: LogNorm, title: str) -> Figure:
+    """Rows: ablated region; columns: measured region. In each panel, x is the ablation window's end relative to its
+    region's end and y the measured tokens' distance after the window's end, both in tokens."""
+    region_count = len(LABELLED_SEQUENCE_REGIONS)
+    figure = plt.figure(figsize=(13, 11), facecolor=SURFACE, layout="constrained")
+    axes = figure.subplots(region_count, region_count, squeeze=False)
+    cells_by_measured_by_ablated = analysis["cells_by_measured_by_ablated"]
+    for ablated_index, ablated in enumerate(LABELLED_SEQUENCE_REGIONS):
+        for measured_index, measured in enumerate(LABELLED_SEQUENCE_REGIONS):
+            ax = axes[ablated_index, measured_index]
+            if measured not in cells_by_measured_by_ablated[ablated]:
+                draw_blank_panel(ax, "causally unaffected")
+            elif not cells_by_measured_by_ablated[ablated][measured]["conversation_count"]:
+                draw_blank_panel(ax, f"under {analysis['min_conversation_count']} conversations")
+            else:
+                draw_window_kl_cells(
+                    ax, cells_by_measured_by_ablated[ablated][measured], name, analysis["window_size"], norm
+                )
+            if ablated_index == 0:
+                ax.set_title(f"measured: {measured}", color=PRIMARY_INK, fontsize=10)
+            if measured_index == 0:
+                ax.set_ylabel(f"ablated: {ablated}", color=PRIMARY_INK, fontsize=10)
+        affected_axes = list(axes[ablated_index, ablated_index:])
+        for ax in affected_axes[1:]:
+            ax.sharex(affected_axes[0])
+    for measured_index in range(region_count):
+        affected_axes = list(axes[: measured_index + 1, measured_index])
+        for ax in affected_axes[1:]:
+            ax.sharey(affected_axes[0])
+    figure.supxlabel("ablation window end − ablated region end (tokens)", color=SECONDARY_INK, fontsize=10)
+    figure.supylabel("distance after ablation window end (tokens)", color=SECONDARY_INK, fontsize=10)
+    colorbar = figure.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=SEQUENTIAL_BLUE), ax=axes, fraction=0.03)
+    colorbar.set_label("mean per-token KL(clean ‖ ablated)", color=SECONDARY_INK, fontsize=9)
+    colorbar.outline.set_visible(False)
+    colorbar.ax.tick_params(colors=SECONDARY_INK, labelsize=8)
+    figure.suptitle(f"{title}: {name.replace('_', ' ')}", color=PRIMARY_INK, fontsize=11, x=0.02, ha="left")
     return figure
