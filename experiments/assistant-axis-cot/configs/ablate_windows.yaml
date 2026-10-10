@@ -1,0 +1,8 @@
+# Window mean ablation KL of one condition's transcripts. Run from experiments/assistant-axis-cot
+# (slurm/ablate_windows.sbatch sets the model, data, region means and condition):
+#   python scripts/ablate_windows.py --config configs/ablate_windows.yaml
+run:
+  condition: unprompted
+  window_size: 50
+  max_batch_tokens: 32768
+  kl_chunk_size: 1024
