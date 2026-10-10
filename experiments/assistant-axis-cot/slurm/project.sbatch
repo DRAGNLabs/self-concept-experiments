@@ -11,7 +11,8 @@
 set -euo pipefail
 
 # Per-token AA projections for one model's transcripts: DATA=axis is the axis-training run's
-# responses, DATA=heldout the held-out ones from generate.sbatch.
+# responses, DATA=heldout the held-out ones from generate.sbatch, DATA=heldout-no-system (olmo only) the held-out ones
+# whose unprompted transcripts were sampled with no system prompt at all.
 #   sbatch --export=ALL,MODEL_KEY=olmo,DATA=heldout experiments/assistant-axis-cot/slurm/project.sbatch
 # Smoke: add CONVERSATIONS_PER_ROLE=2,RUN=<model>-smoke-project
 
@@ -38,16 +39,20 @@ esac
 case "$DATA" in
     axis) RESPONSES_DIR="$AXIS_ROOT/$MODEL_DIR-thinking/responses" ;;
     heldout) RESPONSES_DIR="$COT_ROOT/$MODEL_DIR-heldout/responses" ;;
-    *) echo "DATA must be axis or heldout" >&2; exit 1 ;;
+    heldout-no-system)
+        RESPONSES_DIR="$COT_ROOT/$MODEL_DIR-heldout-no-system/responses"
+        CHAT_TEMPLATE=data/chat_templates/olmo3_no_default_system.jinja ;;
+    *) echo "DATA must be axis, heldout or heldout-no-system" >&2; exit 1 ;;
 esac
 
 RUN="${RUN:-$MODEL_DIR-$DATA}"
 CONVERSATIONS_PER_ROLE="${CONVERSATIONS_PER_ROLE:-null}"
+CHAT_TEMPLATE="${CHAT_TEMPLATE:-null}"
 
 source ../../activate.sh
 
 python scripts/project.py --config configs/project.yaml \
     --run.model "$MODEL" --run.responses_dir "$RESPONSES_DIR" --run.axis_path_by_name "$AXES" \
     --run.max_length "$MAXLEN" --run.attn_implementation "$ATTENTION" \
-    --run.conversations_per_role "$CONVERSATIONS_PER_ROLE" \
+    --run.conversations_per_role "$CONVERSATIONS_PER_ROLE" --run.chat_template "$CHAT_TEMPLATE" \
     --run.output "$COT_ROOT/$RUN/token_projections.pt"

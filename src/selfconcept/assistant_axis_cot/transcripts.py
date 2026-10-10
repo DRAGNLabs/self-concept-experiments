@@ -1,5 +1,6 @@
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 import jsonlines
 from tqdm import tqdm
@@ -32,10 +33,15 @@ def load_labelled_conversations(
 
 
 def thinking_prompt_completions(
-    tokenizer: HFTokenizer, model_name: str, conversations: Sequence[Conversation]
+    tokenizer: HFTokenizer,
+    model_name: str,
+    conversations: Sequence[Conversation],
+    chat_template_kwargs: dict[str, Any],
 ) -> list[PromptCompletion]:
     return [
-        generated_prompt_completion(tokenizer, model_name, conversation, enable_thinking=True, chat_template_kwargs={})
+        generated_prompt_completion(
+            tokenizer, model_name, conversation, enable_thinking=True, chat_template_kwargs=chat_template_kwargs
+        )
         for conversation in conversations
     ]
 

@@ -39,6 +39,7 @@ class RunConfig:
     max_batch_tokens: int = 32768  # padded tokens per forward pass; the full-vocab logits dominate memory
     attn_implementation: str | None = None
     conversations_per_role: int | None = None
+    chat_template: Path | None = None  # None -> the tokenizer's own; must match the one the transcripts were sampled with
 
 
 def main(run: RunConfig = RunConfig()) -> None:
@@ -52,7 +53,10 @@ def main(run: RunConfig = RunConfig()) -> None:
 
     labelled_conversations = load_labelled_conversations(run.responses_dir, run.conversations_per_role)
     examples = thinking_prompt_completions(
-        tokenizer, run.model, [conversation for _, conversation in labelled_conversations]
+        tokenizer,
+        run.model,
+        [conversation for _, conversation in labelled_conversations],
+        {} if run.chat_template is None else {"chat_template": run.chat_template.read_text()},
     )
     pad_token_id = tokenizer.eos_token_id
     assert pad_token_id is not None

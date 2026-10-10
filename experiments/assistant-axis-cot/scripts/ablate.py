@@ -64,7 +64,7 @@ def main(run: RunConfig = RunConfig()) -> None:
         if metadata["condition"] == run.condition
     ]
     examples = thinking_prompt_completions(
-        tokenizer, run.model, [conversation for _, conversation in labelled_conversations]
+        tokenizer, run.model, [conversation for _, conversation in labelled_conversations], {}
     )
     pad_token_id = tokenizer.eos_token_id
     assert pad_token_id is not None

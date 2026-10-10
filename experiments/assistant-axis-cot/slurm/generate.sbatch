@@ -21,6 +21,11 @@ set -euo pipefail
 #   sbatch --export=ALL,MODEL_KEY=olmo   experiments/assistant-axis-cot/slurm/generate.sbatch
 #   sbatch --export=ALL,MODEL_KEY=gptoss experiments/assistant-axis-cot/slurm/generate.sbatch
 # Smoke: add QUESTIONS=2,PERSONAS="leviathan tree",RUN=<model>-smoke
+# Truly unprompted OLMo (its template otherwise injects a default "You are Olmo" system prompt), reusing the persona
+# transcripts, which render identically under either template:
+#   mkdir -p $COT_ROOT/olmo32b-heldout-no-system/responses
+#   ln -s $COT_ROOT/olmo32b-heldout/responses/*.jsonl $COT_ROOT/olmo32b-heldout-no-system/responses/ && rm $COT_ROOT/olmo32b-heldout-no-system/responses/unprompted.jsonl
+#   sbatch --export=ALL,MODEL_KEY=olmo,RUN=olmo32b-heldout-no-system,CHAT_TEMPLATE=../assistant-axis-cot/data/chat_templates/olmo3_no_default_system.jinja experiments/assistant-axis-cot/slurm/generate.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -43,6 +48,7 @@ COT_DIR=../assistant-axis-cot
 QUESTIONS="${QUESTIONS:-30}"
 PERSONAS="${PERSONAS:-$(jq -r .role_id "$COT_DIR/data/persona_roles.jsonl" | uniq | tr '\n' ' ')}"
 PERSONAS_BRACKET="[$(echo $PERSONAS | tr ' ' ',')]"
+CHAT_TEMPLATE="${CHAT_TEMPLATE:-null}"
 OUTPUT_DIR="$HOME/nobackup/autodelete/self-concept-experiments/assistant-axis-cot/$RUN/responses"
 
 source ../../activate.sh
@@ -53,7 +59,7 @@ generate() {
         --run.questions_file "$COT_DIR/data/heldout_questions.jsonl" --run.question_count "$QUESTIONS" \
         --run.temperature "$TEMPERATURE" --run.top_p "$TOP_P" --run.thinking true \
         --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
-        --run.output_dir "$OUTPUT_DIR" "$@"
+        --run.chat_template "$CHAT_TEMPLATE" --run.output_dir "$OUTPUT_DIR" "$@"
 }
 
 echo "########## Unprompted ##########"
