@@ -502,7 +502,7 @@ def plot_window_ablation_kl(analysis: WindowAblationAnalysis, name: str, norm: L
             if measured not in cells_by_measured_by_ablated[ablated]:
                 draw_blank_panel(ax, "causally unaffected")
             elif not cells_by_measured_by_ablated[ablated][measured]["conversation_count"]:
-                draw_blank_panel(ax, f"under {analysis['min_conversation_count']} conversations")
+                draw_blank_panel(ax, f"no cell reached by {analysis['min_conversation_count']} conversations")
             else:
                 draw_window_kl_cells(
                     ax, cells_by_measured_by_ablated[ablated][measured], name, analysis["window_size"], norm
