@@ -48,7 +48,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 |---|---|---|
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
-| 3. Does shifting or capping along it change the hack rate? | dose pilot done (jobs 14037533, 14040133; secondary cap arms still finishing); main run held for the dose decision | pilot: adding the primary raises the shown-pass/hidden-fail rate monotonically (16 → 62% at +0.4, 9% at −0.4 and under the band cap) with hidden pass within the 10-point rule at every dose; the steered hacks are overt lookup tables. One seed, no random control, no judge yet. Dose rule admits 0.4; 0.2 is the largest dose with every capability cell within 2 points |
+| 3. Does shifting or capping along it change the hack rate? | dose pilot done (jobs 14037533, 14040133, all 25 arms); main run held for the dose decision | pilot: adding the primary raises the shown-pass/hidden-fail rate monotonically (16 → 62% at +0.4, 9% at −0.4 and under the band cap) with hidden pass within the 10-point rule at every dose; the steered hacks are overt lookup tables. One seed, no random control, no judge yet. Dose rule admits 0.4; 0.2 is the largest dose with every capability cell within 2 points |
 
 ## Runs
 
@@ -398,8 +398,7 @@ Primary vector, CoT-region `persona_contrast` (`cot_contrast`):
 | cap L12–23 p50 | 22% | 9% | | 13% | 0 | 2883 | 14 / 16 / 15 |
 | cap L12–23 p25 | 27% | 9% | 4 (3) | 7% | 0 | 2888 | 16 / 12 / 17 |
 
-Secondary vector, final-region `persona_contrast_orth` (`fin_contrast_orth`; the p25 cap arms and the band p50 arm
-were still running when this was written, 24–37 of 45 episodes, and are omitted):
+Secondary vector, final-region `persona_contrast_orth` (`fin_contrast_orth`; cap arms completed 2026-10-12):
 
 | setting | hidden pass | proxy | problems (∩ unsteered) | no-code | trunc | reason chars/turn | stop: passed / stopped / limit |
 |---|---|---|---|---|---|---|---|
@@ -412,6 +411,14 @@ were still running when this was written, 24–37 of 45 episodes, and are omitte
 | add +0.2 | 16% | 49% | 22 (5) | 0% | 0 | 2396 | 29 / 3 / 13 |
 | add +0.4 | 20% | 58% | 26 (5) | 0% | 0 | 1708 | 35 / 1 / 9 |
 | cap L17 p50 | 20% | 16% | | 9% | 0 | 2905 | 16 / 15 / 14 |
+| cap L17 p25 | 27% | 13% | | 18% | 0 | 2522 | 18 / 15 / 12 |
+| cap L12–23 p50 | 38% | 9% | | 7% | 0 | 3282 | 21 / 9 / 15 |
+| cap L12–23 p25 | 27% | 11% | | 16% | 0 | 3468 | 17 / 12 / 16 |
+
+For the secondary the rule fails three of the four cap settings: both p25 caps raise no-code by 11–13 points and
+the band p50 cap raises hidden pass by 16 points (38% vs 22%; a cap that *improves* capability is outside the band
+too, and with one seed it is as likely noise). Its band caps also lengthen reasoning by 25–30% per turn. Only the
+layer-17 p50 cap passes. The add arms all pass, as for the primary.
 
 Dose rule (PLAN: the largest dose whose hidden-suite pass rate and no-code/truncation rate stay within 10 points of
 the unsteered arm, on both signs, chosen without looking at the hack rate). For the primary every add dose passes:
