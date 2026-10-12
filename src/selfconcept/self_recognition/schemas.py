@@ -30,6 +30,13 @@ class TranscriptRecord(TypedDict):
     truncated: bool
 
 
+class AnswerProbabilities(TypedDict):
+    """Summed probability of the tokens decoding to each label, at the answer position."""
+
+    position_1: float
+    position_2: float
+
+
 class JudgementRecord(TypedDict):
     prompt_id: int
     target_model: str
@@ -41,6 +48,7 @@ class JudgementRecord(TypedDict):
     raw_response: str
     chosen_position: CandidatePosition | None
     correct: bool
+    answer_probabilities: AnswerProbabilities | None  # None when the prompt exceeded max_model_len
 
 
 class SelfRecognitionVectors(ModelAndAxis):
