@@ -18,6 +18,9 @@ set -euo pipefail
 # empty extra args = unsteered), seed i % NSEEDS. Output: $ROOT/<arm>/seed<s>/main_impossible_original.jsonl plus
 # the reasoning sidecar; rerunning a task resumes (the harness skips finished example ids).
 # Usage: sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=<tsv>,ROOT=<dir>[,NSEEDS=12] experiments/schemer-axis/slurm/main_run.sbatch
+# On an 80 GB GPU (cs2 H100, paid qos cs, no preemption) override the partition on the command line and raise the vLLM
+# memory fraction so the KV cache fits beside the ~61 GiB of weights:
+#   sbatch --partition=cs2 --qos=cs --gpus-per-node=h100:1 --array=... --export=ALL,ARMS=...,ROOT=...,VLLM_GPU_MEM=0.95 ...
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -33,6 +36,7 @@ MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"
 ARMS="${ARMS:?set ARMS to the arms TSV}"
 ROOT="${ROOT:?set ROOT to the main-run output dir}"
 NSEEDS="${NSEEDS:-12}"
+VLLM_GPU_MEM="${VLLM_GPU_MEM:-}"  # optional --gpu-memory-utilization override (steered_rh_vllm.py default 0.9)
 ARM_INDEX=$((SLURM_ARRAY_TASK_ID / NSEEDS))
 SEED=$((SLURM_ARRAY_TASK_ID % NSEEDS))
 RECIPE=(--data "$MIRROR/rh_hillclimb/data" --impossible-prompt critical_no_carve --feedback neutral
@@ -50,6 +54,6 @@ source ../../activate.sh
 
 SECONDS=0
 python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2 "${RECIPE[@]}" \
-    --out "$ROOT/$NAME/seed$SEED" --tag main "${EXTRA[@]}"
+    --out "$ROOT/$NAME/seed$SEED" --tag main ${VLLM_GPU_MEM:+--gpu-memory-utilization "$VLLM_GPU_MEM"} "${EXTRA[@]}"
 echo "arm $NAME seed $SEED took ${SECONDS}s"
 echo "=== schemer-main done: $ROOT/$NAME/seed$SEED ==="
