@@ -1,5 +1,6 @@
 # Charts of one run's window mean ablation statistics. CPU only. Run from experiments/assistant-axis-cot after
 # scripts/analyze_window_ablation.py:
 #   python scripts/plot_window_ablation.py --config configs/plot_window_ablation.yaml --run.run olmo32b-heldout
-# Writes results/<run>/window_ablation_kl_<condition>_<direction>.png.
-run: {}
+# Writes results/<run>/window_ablation_<view>_<condition>.png.
+run:
+  difference_linear_threshold: 1.0e-5

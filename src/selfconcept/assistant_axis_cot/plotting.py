@@ -1,11 +1,12 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from typing import TypedDict
 
 import matplotlib.pyplot as plt
 import numpy as np
 from jaxtyping import Float, Int8
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
-from matplotlib.colors import LinearSegmentedColormap, LogNorm, to_rgb
+from matplotlib.colors import Colormap, LinearSegmentedColormap, LogNorm, Normalize, SymLogNorm, to_rgb
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
@@ -48,6 +49,9 @@ SEQUENTIAL_BLUE = LinearSegmentedColormap.from_list(
      "#184f95", "#104281", "#0d366b"],
 ).with_extremes(under="#cde2fb", bad="#cde2fb")
 NEUTRAL_CELL = "#f0efec"
+DIVERGING_BLUE_RED = LinearSegmentedColormap.from_list(
+    "diverging_blue_red", ["#0d366b", "#2a78d6", "#86b6ef", NEUTRAL_CELL, "#f2a7a4", "#e34948", "#8f1d1d"]
+)
 MEASURE_LABEL: dict[Measure, str] = {"projection": "projection onto axis", "cosine": "cosine with axis"}
 
 
@@ -446,33 +450,76 @@ def plot_surviving_shift(analysis: AblationAnalysis, title: str) -> Figure:
     return figure
 
 
-def window_kl_norm(analysis: WindowAblationAnalysis, names: Sequence[str]) -> LogNorm:
-    reached_means = [
-        mean
-        for cells_by_measured in analysis["cells_by_measured_by_ablated"].values()
-        for cells in cells_by_measured.values()
-        for name in names
-        for row in cells["mean_kl_by_name"][name]
-        for mean in row
-        if mean is not None and mean > 0
-    ]
-    return LogNorm(vmin=min(reached_means), vmax=max(reached_means))
+class HeatmapScale(TypedDict):
+    cmap: Colormap
+    norm: Normalize
+    label: str
 
 
-def draw_window_kl_cells(ax: Axes, cells: WindowKLCells, name: str, window_size: int, norm: LogNorm) -> None:
-    """Each window's cell spans its tokens relative to its region's end; unreached cells are left blank."""
-    mean_kl = np.array(
+type WindowView = Callable[[WindowKLCells], Float[np.ndarray, "window_offset distance"]]
+
+
+def window_cell_means(cells: WindowKLCells, name: str) -> Float[np.ndarray, "window_offset distance"]:
+    """NaN where unreached."""
+    return np.array(
         [[np.nan if mean is None else mean for mean in row] for row in cells["mean_kl_by_name"][name]], dtype=float
     ).reshape(len(cells["conversation_count"]), -1)
-    window_edges = -window_size * np.arange(mean_kl.shape[0] + 1)
-    distance_edges = window_size * np.arange(mean_kl.shape[1] + 1)
+
+
+def window_view_values(analysis: WindowAblationAnalysis, view: WindowView) -> Float[np.ndarray, " cell"]:
+    """Every reached cell's value under the view, over all panels."""
+    values = np.concatenate(
+        [
+            view(cells).ravel()
+            for cells_by_measured in analysis["cells_by_measured_by_ablated"].values()
+            for cells in cells_by_measured.values()
+        ]
+    )
+    return values[np.isfinite(values)]
+
+
+def kl_scale(values: Float[np.ndarray, " cell"]) -> HeatmapScale:
+    positive_values = values[values > 0]
+    return {
+        "cmap": SEQUENTIAL_BLUE,
+        "norm": LogNorm(vmin=positive_values.min(), vmax=positive_values.max()),
+        "label": "mean per-token KL(clean ‖ ablated)",
+    }
+
+
+def difference_scale(values: Float[np.ndarray, " cell"], axis_name: str, linear_threshold: float) -> HeatmapScale:
+    """Symmetric log, so the window's own differences don't wash out the downstream ones."""
+    largest_magnitude = np.abs(values).max()
+    return {
+        "cmap": DIVERGING_BLUE_RED,
+        "norm": SymLogNorm(linthresh=linear_threshold, vmin=-largest_magnitude, vmax=largest_magnitude, base=10),
+        "label": f"mean per-token KL: {axis_name} − random mean",
+    }
+
+
+def ratio_scale(values: Float[np.ndarray, " cell"], axis_name: str) -> HeatmapScale:
+    """Log, centered on a ratio of 1."""
+    largest_log_ratio = np.abs(np.log(values[values > 0])).max()
+    return {
+        "cmap": DIVERGING_BLUE_RED,
+        "norm": LogNorm(vmin=np.exp(-largest_log_ratio), vmax=np.exp(largest_log_ratio)),
+        "label": f"mean per-token KL: {axis_name} / random mean",
+    }
+
+
+def draw_window_cells(
+    ax: Axes, values: Float[np.ndarray, "window_offset distance"], window_size: int, scale: HeatmapScale
+) -> None:
+    """Each window's cell spans its tokens relative to its region's end; unreached cells are left blank."""
+    window_edges = -window_size * np.arange(values.shape[0] + 1)
+    distance_edges = window_size * np.arange(values.shape[1] + 1)
     ax.set_facecolor(SURFACE)
     ax.pcolormesh(
         window_edges,
         distance_edges,
-        np.ma.masked_invalid(mean_kl.T),
-        cmap=SEQUENTIAL_BLUE.with_extremes(bad="none"),
-        norm=norm,
+        np.ma.masked_invalid(values.T),
+        cmap=scale["cmap"].with_extremes(bad="none"),
+        norm=scale["norm"],
     )
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
@@ -489,10 +536,12 @@ def draw_blank_panel(ax: Axes, label: str) -> None:
         spine.set_visible(False)
 
 
-def plot_window_ablation_kl(analysis: WindowAblationAnalysis, name: str, norm: LogNorm, title: str) -> Figure:
+def plot_window_ablation(analysis: WindowAblationAnalysis, view: WindowView, scale: HeatmapScale, title: str) -> Figure:
     """Rows: ablated region; columns: measured region. In each panel, x is the ablation window's end relative to its
-    region's end and y the measured tokens' distance after the window's end, both in tokens."""
+    region's end and y the measured tokens' distance after the window's start, both in tokens; on the diagonal, the
+    first window_size tokens are the window itself, marked off by a hairline."""
     region_count = len(LABELLED_SEQUENCE_REGIONS)
+    window_size = analysis["window_size"]
     figure = plt.figure(figsize=(13, 11), facecolor=SURFACE, layout="constrained")
     axes = figure.subplots(region_count, region_count, squeeze=False)
     cells_by_measured_by_ablated = analysis["cells_by_measured_by_ablated"]
@@ -504,9 +553,9 @@ def plot_window_ablation_kl(analysis: WindowAblationAnalysis, name: str, norm: L
             elif not cells_by_measured_by_ablated[ablated][measured]["conversation_count"]:
                 draw_blank_panel(ax, f"no cell reached by {analysis['min_conversation_count']} conversations")
             else:
-                draw_window_kl_cells(
-                    ax, cells_by_measured_by_ablated[ablated][measured], name, analysis["window_size"], norm
-                )
+                draw_window_cells(ax, view(cells_by_measured_by_ablated[ablated][measured]), window_size, scale)
+                if measured == ablated:
+                    ax.axhline(window_size, color=SURFACE, linewidth=0.8)
             if ablated_index == 0:
                 ax.set_title(f"measured: {measured}", color=PRIMARY_INK, fontsize=10)
             if measured_index == 0:
@@ -519,10 +568,14 @@ def plot_window_ablation_kl(analysis: WindowAblationAnalysis, name: str, norm: L
         for ax in affected_axes[1:]:
             ax.sharey(affected_axes[0])
     figure.supxlabel("ablation window end − ablated region end (tokens)", color=SECONDARY_INK, fontsize=10)
-    figure.supylabel("distance after ablation window end (tokens)", color=SECONDARY_INK, fontsize=10)
-    colorbar = figure.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=SEQUENTIAL_BLUE), ax=axes, fraction=0.03)
-    colorbar.set_label("mean per-token KL(clean ‖ ablated)", color=SECONDARY_INK, fontsize=9)
+    figure.supylabel(
+        f"distance after ablation window start (tokens; first {window_size} = the window)",
+        color=SECONDARY_INK,
+        fontsize=10,
+    )
+    colorbar = figure.colorbar(plt.cm.ScalarMappable(norm=scale["norm"], cmap=scale["cmap"]), ax=axes, fraction=0.03)
+    colorbar.set_label(scale["label"], color=SECONDARY_INK, fontsize=9)
     colorbar.outline.set_visible(False)
     colorbar.ax.tick_params(colors=SECONDARY_INK, labelsize=8)
-    figure.suptitle(f"{title}: {name.replace('_', ' ')}", color=PRIMARY_INK, fontsize=11, x=0.02, ha="left")
+    figure.suptitle(title, color=PRIMARY_INK, fontsize=11, x=0.02, ha="left")
     return figure

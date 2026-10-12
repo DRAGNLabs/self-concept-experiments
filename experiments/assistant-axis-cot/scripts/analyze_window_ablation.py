@@ -1,6 +1,6 @@
 """Window mean ablation statistics for one run: per condition, ablated x measured region, the mean next-token KL by the
-window's position before its region's end and the measured tokens' distance after the window, for the assistant axis
-and the random baseline.
+window's position before its region's end and the measured tokens' distance after the window's start, for the
+assistant axis and the random baseline.
 
 Usage (from experiments/assistant-axis-cot, after slurm/ablate_windows.sbatch):
     python scripts/analyze_window_ablation.py --config configs/analyze_window_ablation.yaml --run.run olmo32b-heldout

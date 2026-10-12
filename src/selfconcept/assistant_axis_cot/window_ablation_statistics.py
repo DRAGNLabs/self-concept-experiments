@@ -16,8 +16,8 @@ from selfconcept.assistant_axis_cot.window_ablation import WindowAblationRun
 
 class WindowKLCells(TypedDict):
     """Indexed [window offset][distance], each a window_size-token bin: the window's tokens before its region's end,
-    and the measured tokens' distance after the window's end. None where fewer than the minimum conversations
-    reach the cell."""
+    and the measured tokens' distance after the window's start, so the first distance bin is the window itself. None
+    where fewer than the minimum conversations reach the cell."""
 
     mean_kl_by_name: dict[str, list[list[float | None]]]
     conversation_count: list[list[int]]
@@ -57,10 +57,10 @@ def pooled_window_kl(
     conversation_count = np.zeros((region_count, window_offset_count, region_count, distance_count), dtype=np.int64)
     for record in records:
         for window_index, window in enumerate(record["windows"]):
-            positions = np.arange(window["end"], len(record["region_codes"]) - 1)
-            measured_codes = record["region_codes"][positions]
+            positions = np.arange(window["start"], len(record["region_codes"]) - 1)
+            measured_codes = record["region_codes"][positions].astype(np.int64)
             is_labelled = measured_codes != SEQUENCE_REGIONS.index("unlabelled")
-            cell_indices = (measured_codes * distance_count + (positions - window["end"]) // window_size)[is_labelled]
+            cell_indices = (measured_codes * distance_count + (positions - window["start"]) // window_size)[is_labelled]
             token_counts = np.bincount(cell_indices, minlength=region_count * distance_count)
             is_reached = (token_counts > 0).reshape(region_count, distance_count)
             ablated_index = LABELLED_SEQUENCE_REGIONS.index(window["region"])
