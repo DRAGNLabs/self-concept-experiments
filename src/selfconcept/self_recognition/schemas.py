@@ -14,6 +14,8 @@ DEFAULT_RUN_DIR = scratch_dir("self-recognition")
 
 type Split = Literal["train", "holdout"]
 type CandidatePosition = Literal[1, 2]
+type PairKeyTuple = tuple[int, str, str, int, int]
+"""(prompt_id, target_model, other_model, target_sample_index, other_sample_index)"""
 
 
 class PromptRecord(TypedDict):
