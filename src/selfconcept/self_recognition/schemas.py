@@ -241,6 +241,19 @@ class SteeringCell(TypedDict):
     wilcoxon_p_value: float
 
 
+class ValidationSummary(TypedDict):
+    model: str
+    holdout_prompt_count: int
+    holdout_record_count: int
+    steering_layer: int
+    baseline_max_logprob_difference: float
+    """alpha=0 HF logprobs vs stage 2's vLLM logprobs"""
+    baseline_argmax_agreement: float
+    reading: ReadingSummary
+    transcript_reading: TranscriptReadingSummary
+    steering: list[SteeringCell]
+
+
 def model_slug(model: str) -> str:
     return model.replace("/", "__")
 
@@ -284,6 +297,10 @@ def steering_path(run_dir: Path, model: str, shard_tag: str) -> Path:
 def steering_paths(run_dir: Path, model: str) -> list[Path]:
     """Every shard's steering file, and the untagged file of an unsharded run."""
     return sorted((run_dir / "validation").glob(f"{model_slug(model)}_steering*.jsonl"))
+
+
+def validation_summary_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_summary.json"
 
 
 def continuation_path(run_dir: Path, model: str, shard_tag: str) -> Path:
