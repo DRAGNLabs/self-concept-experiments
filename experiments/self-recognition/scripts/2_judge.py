@@ -25,6 +25,7 @@ from selfconcept.common.hf_strong_types import HFTokenizer, configure_call
 from selfconcept.common.resumable_jsonl import process_unrecorded_items
 from selfconcept.self_recognition.judging import (
     JudgeTask,
+    JudgementKey,
     answer_label_token_ids,
     answer_probabilities,
     chosen_position,
@@ -32,6 +33,7 @@ from selfconcept.self_recognition.judging import (
     create_judge_tasks,
     judge_prompt_text,
     judgement_chunk_processor,
+    judgement_record_key,
     read_transcripts_by_model,
 )
 from selfconcept.self_recognition.schemas import (
@@ -116,8 +118,6 @@ class ComplianceReport(TypedDict):
     failed_criteria: list[str]
     passed: bool
 
-
-type JudgementKey = tuple[int, str, int, int, CandidatePosition]
 
 
 def compliance_path(run_dir: Path, target_model: str) -> Path:
@@ -312,16 +312,6 @@ def judge_item_key(item: JudgeTask) -> JudgementKey:
         item["target"]["sample_index"],
         item["other"]["sample_index"],
         item["target_position"],
-    )
-
-
-def judgement_record_key(record: JudgementRecord) -> JudgementKey:
-    return (
-        record["prompt_id"],
-        record["other_model"],
-        record["target_sample_index"],
-        record["other_sample_index"],
-        record["target_position"],
     )
 
 

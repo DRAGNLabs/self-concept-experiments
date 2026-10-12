@@ -43,6 +43,7 @@ MIN_PARSEABLE_ANSWER_MASS = 0.5
 SHARED_JUDGE_CHAT_TEMPLATE_KWARGS: dict[str, Any] = {"reasoning_effort": "low"}
 
 type TranscriptKey = tuple[int, int]
+type JudgementKey = tuple[int, str, int, int, CandidatePosition]
 
 
 class JudgeTask(TypedDict):
@@ -51,6 +52,16 @@ class JudgeTask(TypedDict):
     target: TranscriptRecord
     other: TranscriptRecord
     target_position: CandidatePosition
+
+
+def judgement_record_key(record: JudgementRecord) -> JudgementKey:
+    return (
+        record["prompt_id"],
+        record["other_model"],
+        record["target_sample_index"],
+        record["other_sample_index"],
+        record["target_position"],
+    )
 
 
 def judge_candidate_text(transcript: TranscriptRecord) -> str:

@@ -98,6 +98,8 @@ class ActivationMeans(ActivationMeansInputs):
     non_recognised: PooledSpanMeans | None
 
 
+type SteeringCondition = Literal["own_span", "other_span", "all_positions"]
+type SteeringDirection = Literal["self_recognition", "random"]
 type EstimateWithInterval = tuple[float, float, float]
 """(estimate, ci_low, ci_high)"""
 
@@ -121,6 +123,59 @@ class SpanProjectionRecord(TypedDict):
     other_projection_by_layer: list[float]
     random_own_projection_by_seed: list[float] | None
     random_other_projection_by_seed: list[float] | None
+
+
+class SteeringRecord(TypedDict):
+    """One per (judge record, condition, direction, alpha)."""
+
+    prompt_id: int
+    other_model: str
+    target_sample_index: int
+    other_sample_index: int
+    target_position: CandidatePosition
+    condition: SteeringCondition
+    direction: SteeringDirection
+    random_seed: int | None
+    layer: int
+    alpha: float
+    coefficient: float
+    position_1_probability: float
+    position_2_probability: float
+    answer_mass: float
+
+
+class ContinuationRecord(TypedDict):
+    """Greedy continuation of a steered judge prompt, for the coherence check."""
+
+    prompt_id: int
+    other_model: str
+    target_sample_index: int
+    other_sample_index: int
+    target_position: CandidatePosition
+    condition: SteeringCondition
+    layer: int
+    alpha: float
+    continuation: str
+    generated_token_count: int
+    stopped: bool
+    distinct_bigram_ratio: float
+    max_token_share: float
+    degenerate: bool
+
+
+class IndividualRecord(TypedDict):
+    """Qualitative "Did you write this?" run on one holdout text."""
+
+    prompt_id: int
+    sample_index: int
+    response_model: str
+    is_own: bool
+    layer: int
+    alpha: float
+    coefficient: float
+    yes_probability: float
+    no_probability: float
+    sampled_generations: list[str]
 
 
 class ReadingMetrics(TypedDict):
@@ -172,6 +227,20 @@ class TranscriptReadingSummary(TypedDict):
     random_auroc_95th_percentile: float
 
 
+class SteeringCell(TypedDict):
+    condition: SteeringCondition
+    direction: SteeringDirection
+    random_seed: int | None
+    alpha: float
+    own_choice_probability_shift: EstimateWithInterval
+    position_1_probability_shift: EstimateWithInterval
+    self_attribution_rate: EstimateWithInterval
+    answer_mass_ratio: float
+    degenerate_fraction: float | None
+    coherent: bool
+    wilcoxon_p_value: float
+
+
 def model_slug(model: str) -> str:
     return model.replace("/", "__")
 
@@ -208,6 +277,28 @@ def transcript_reading_path(run_dir: Path, model: str) -> Path:
     return run_dir / "validation" / f"{model_slug(model)}_transcript_reading.jsonl"
 
 
+def steering_path(run_dir: Path, model: str, shard_tag: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_steering_{shard_tag}.jsonl"
+
+
+def steering_paths(run_dir: Path, model: str) -> list[Path]:
+    """Every shard's steering file, and the untagged file of an unsharded run."""
+    return sorted((run_dir / "validation").glob(f"{model_slug(model)}_steering*.jsonl"))
+
+
+def continuation_path(run_dir: Path, model: str, shard_tag: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_continuations_{shard_tag}.jsonl"
+
+
+def continuation_paths(run_dir: Path, model: str) -> list[Path]:
+    """Every shard's continuation file, and the untagged file of an unsharded run."""
+    return sorted((run_dir / "validation").glob(f"{model_slug(model)}_continuations*.jsonl"))
+
+
+def individual_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_individual.jsonl"
+
+
 def layer_norms_path(run_dir: Path, model: str) -> Path:
     return run_dir / "validation" / f"{model_slug(model)}_layer_norms.json"
 
@@ -230,3 +321,11 @@ def read_span_projections(path: Path) -> list[SpanProjectionRecord]:
 
 def read_transcript_projections(path: Path) -> list[TranscriptProjectionRecord]:
     return cast(list[TranscriptProjectionRecord], read_jsonl(path))
+
+
+def read_steering_records(path: Path) -> list[SteeringRecord]:
+    return cast(list[SteeringRecord], read_jsonl(path))
+
+
+def read_continuations(path: Path) -> list[ContinuationRecord]:
+    return cast(list[ContinuationRecord], read_jsonl(path))
