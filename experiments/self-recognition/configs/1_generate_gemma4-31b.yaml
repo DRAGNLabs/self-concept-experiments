@@ -1,0 +1,5 @@
+run:
+  model: google/gemma-4-31B-it
+  temperature: 1.0  # gemma-4-31B-it model card and generation_config.json
+  top_p: 0.95
+  top_k: 64
