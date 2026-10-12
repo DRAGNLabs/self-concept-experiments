@@ -1,6 +1,7 @@
 """Load layer-by-hidden axis tensors as per-layer unit directions and score residuals against them."""
 from collections.abc import Sequence
 from pathlib import Path
+from typing import NotRequired, ReadOnly, TypedDict, cast
 
 from jaxtyping import Float
 import numpy as np
@@ -10,6 +11,10 @@ from torch import Tensor
 from selfconcept.measurement.interface import TokenScorer
 
 type UnitDirectionsByLayer = dict[int, dict[str, np.ndarray]]
+
+class ModelAndAxis(TypedDict):
+    model: ReadOnly[NotRequired[str]]
+    axis: Float[Tensor, "layer hidden"]
 
 
 def load_unit_axes(
@@ -26,9 +31,10 @@ def load_unit_axes(
     """
     data = torch.load(path, map_location="cpu", weights_only=True)
     if isinstance(data, dict):
-        if model_name is not None and data.get("model", model_name) != model_name:
+        model_and_axis: ModelAndAxis = cast(ModelAndAxis, data)
+        if model_name is not None and model_and_axis.get("model", model_name) != model_name:
             raise ValueError("Assistant axis belongs to a different model")
-        data = data["axis"]
+        data = model_and_axis["axis"]
     if not isinstance(data, torch.Tensor) or data.shape != (num_layers, hidden_size):
         raise ValueError(f"Assistant axis must have shape ({num_layers}, {hidden_size})")
     if not layers or len(set(layers)) != len(layers) or any(l < 0 or l >= num_layers for l in layers):

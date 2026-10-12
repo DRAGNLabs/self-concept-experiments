@@ -8,6 +8,7 @@ from torch import Tensor
 from selfconcept.common.chat import Conversation
 from selfconcept.common.jsonl import read_jsonl
 from selfconcept.common.paths import scratch_dir
+from selfconcept.measurement.unit_axes import ModelAndAxis
 
 DEFAULT_RUN_DIR = scratch_dir("self-recognition")
 
@@ -42,8 +43,8 @@ class JudgementRecord(TypedDict):
     correct: bool
 
 
-class SelfRecognitionVectors(TypedDict):
-    """Saved with torch.save; the model/axis keys match assistant_axis.projection.load_unit_axes."""
+class SelfRecognitionVectors(ModelAndAxis):
+    """Saved with torch.save"""
 
     model: str
     axis: Float[Tensor, "layer hidden"]
