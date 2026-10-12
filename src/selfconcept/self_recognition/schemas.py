@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import Literal, TypedDict, cast
 
-from jaxtyping import Float
+from jaxtyping import Float, Int
 from torch import Tensor
 
 from selfconcept.common.chat import Conversation
@@ -63,6 +63,41 @@ class SelfRecognitionVectors(ModelAndAxis):
     negative_count: int
 
 
+class PooledSpanMeans(TypedDict):
+    """One example per judge prompt (both orders of each pair), longest prompt first. pair_indices index the
+    cache's pair keys; character counts are of the full candidate text, token counts of the located span."""
+
+    own: Float[Tensor, "example layer hidden"]
+    other: Float[Tensor, "example layer hidden"]
+    pair_indices: Int[Tensor, " example"]
+    prompt_ids: list[int]
+    other_models: list[str]
+    target_sample_indices: list[int]
+    other_sample_indices: list[int]
+    target_positions: list[CandidatePosition]
+    own_token_counts: list[int]
+    other_token_counts: list[int]
+    own_char_counts: list[int]
+    other_char_counts: list[int]
+
+
+class ActivationMeansInputs(TypedDict):
+    model: str
+    limit_pairs: int | None
+    seed: int
+    max_length: int
+    recognised_pair_keys: list[PairKeyTuple]
+    non_recognised_pair_keys: list[PairKeyTuple]
+
+
+class ActivationMeans(ActivationMeansInputs):
+    """Stage 3's pooled span means, cached so the vector and its diagnostics can be rebuilt without the model.
+    non_recognised is None when no non-recognised pair fits in max_length."""
+
+    recognised: PooledSpanMeans
+    non_recognised: PooledSpanMeans | None
+
+
 def model_slug(model: str) -> str:
     return model.replace("/", "__")
 
@@ -81,6 +116,14 @@ def judgements_path(run_dir: Path, target_model: str) -> Path:
 
 def vectors_path(run_dir: Path, model: str) -> Path:
     return run_dir / "vectors" / f"{model_slug(model)}.pt"
+
+
+def length_matched_vectors_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "vectors" / "length_matched" / f"{model_slug(model)}.pt"
+
+
+def activation_means_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "vectors" / "activation_means" / f"{model_slug(model)}.pt"
 
 
 def read_prompts(path: Path) -> list[PromptRecord]:
