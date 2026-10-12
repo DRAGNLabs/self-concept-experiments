@@ -164,7 +164,7 @@ HF backend, and no existing entry point combines everything:
 **Dose pilot** (45 problems × 1 seed per setting). Grid: α ∈ {±0.05, ±0.1, ±0.2, ±0.4}; cap τ ∈ {50th, 25th
 percentile} × band ∈ {layer 17 only, layers 12–23}. The dose for the main run is the largest whose hidden-suite pass
 rate and no-code/truncation rate stay within 10 points of the unsteered arm. The dose is chosen on those capability
-measures, never on the hack rate.
+measures, never on the hack rate. (Outcome and the dose actually used: see Open decisions, "Main-run dose".)
 
 **Main run.** Five arms on the same problems and seeds: unsteered, +shift, −shift, cap, random +shift. 45 × 12 =
 540 episodes per arm. At an 8% base rate that gives roughly 80% power to detect a halving or doubling if episodes
@@ -245,6 +245,18 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   (≈ 4 GPU-h, same grid) so that a main run for it can be sized later; that main run (≈ 18 GPU-h) is not queued
   without an explicit go-ahead. The main-run vector is not chosen on pilot hack rates; the dose is chosen on
   capability measures only, as above.
+- **Main-run dose** (2026-10-12, user decision after the dose pilot, FINDINGS "Phase 3 dose pilot"): the rule as
+  written admits α = 0.4 for the primary (every add arm on both signs is within 10 points of unsteered on hidden
+  pass and no-code, none truncates). The user chose **α = 0.2** instead. Reason: the rule has little power at 45
+  episodes per arm (standard error of a 22% rate ≈ 6 points, so a 10-point band admits almost any dose), and at
+  0.4 the point estimates show a behavioural shift the rule cannot see at that size: hidden pass down 9 points,
+  reasoning 30% shorter per turn, and the model never declines a problem (1 of 45 "stopped" vs 15 unsteered).
+  0.2 is the largest dose at which every capability cell on both signs is within 2 points of unsteered. The hack
+  proxy was not used in the choice (it rises at every positive dose, 24–62%, and the choice between 0.2 and 0.4
+  does not change its direction). Cap arm: layers 12–23 at the 25th-percentile thresholds, the strongest cap
+  setting, which passes the rule. Random control: an isotropic unit direction (seed 1729) added at layer 17 with the
+  same α × layer norm, so its norm matches the +shift arm. This deviation from the pre-registered rule is recorded
+  here so the write-up states it; the main run's analysis is unchanged.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
 
