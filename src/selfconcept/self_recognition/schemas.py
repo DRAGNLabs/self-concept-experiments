@@ -98,6 +98,80 @@ class ActivationMeans(ActivationMeansInputs):
     non_recognised: PooledSpanMeans | None
 
 
+type EstimateWithInterval = tuple[float, float, float]
+"""(estimate, ci_low, ci_high)"""
+
+
+class SpanProjectionRecord(TypedDict):
+    """Reading A: one per judge record. The random projections, onto the seeded random unit directions at the
+    train-chosen best layer, are recorded on holdout records only."""
+
+    prompt_id: int
+    split: Split
+    other_model: str
+    target_sample_index: int
+    other_sample_index: int
+    target_position: CandidatePosition
+    chosen_position: CandidatePosition | None
+    correct: bool
+    answer_probabilities: AnswerProbabilities | None
+    own_token_count: int
+    other_token_count: int
+    own_projection_by_layer: list[float]
+    other_projection_by_layer: list[float]
+    random_own_projection_by_seed: list[float] | None
+    random_other_projection_by_seed: list[float] | None
+
+
+class ReadingMetrics(TypedDict):
+    holdout_auroc: EstimateWithInterval
+    probe_paired_accuracy: EstimateWithInterval
+    model_paired_accuracy: float
+    judgement_auroc: EstimateWithInterval
+    judgement_logit_pearson: EstimateWithInterval
+    correctness_auroc: EstimateWithInterval
+    position_auroc: float
+    length_spearman: float
+
+
+class ReadingSummary(ReadingMetrics):
+    best_layer: int
+    train_auroc_by_layer: list[float]
+    holdout_auroc_by_layer: list[float]
+    random_auroc_95th_percentile: float
+    layer_norm_by_layer: list[float]
+    metrics_by_other_model: dict[str, ReadingMetrics]
+
+
+class TranscriptProjectionRecord(TypedDict):
+    """Reading B: one per (transcript, response source). The random projections are as in SpanProjectionRecord,
+    at Reading B's train-chosen best layer."""
+
+    prompt_id: int
+    split: Split
+    sample_index: int
+    response_model: str
+    is_own: bool
+    response_token_count: int
+    projection_by_layer: list[float]
+    random_projection_by_seed: list[float] | None
+
+
+class TranscriptReadingSummary(TypedDict):
+    best_layer: int
+    train_auroc_by_layer: list[float]
+    holdout_auroc_by_layer: list[float]
+    holdout_auroc: EstimateWithInterval
+    holdout_auroc_at_judge_best_layer: EstimateWithInterval
+    holdout_auroc_by_other_model: dict[str, EstimateWithInterval]
+    paired_difference: EstimateWithInterval
+    paired_difference_by_other_model: dict[str, EstimateWithInterval]
+    length_adjusted_own_coefficient: EstimateWithInterval
+    own_minus_other_token_count: EstimateWithInterval
+    recognised_minus_unrecognised_difference: EstimateWithInterval | None
+    random_auroc_95th_percentile: float
+
+
 def model_slug(model: str) -> str:
     return model.replace("/", "__")
 
@@ -126,6 +200,18 @@ def activation_means_path(run_dir: Path, model: str) -> Path:
     return run_dir / "vectors" / "activation_means" / f"{model_slug(model)}.pt"
 
 
+def reading_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_reading.jsonl"
+
+
+def transcript_reading_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_transcript_reading.jsonl"
+
+
+def layer_norms_path(run_dir: Path, model: str) -> Path:
+    return run_dir / "validation" / f"{model_slug(model)}_layer_norms.json"
+
+
 def read_prompts(path: Path) -> list[PromptRecord]:
     return cast(list[PromptRecord], read_jsonl(path))
 
@@ -136,3 +222,11 @@ def read_transcripts(path: Path) -> list[TranscriptRecord]:
 
 def read_judgements(path: Path) -> list[JudgementRecord]:
     return cast(list[JudgementRecord], read_jsonl(path))
+
+
+def read_span_projections(path: Path) -> list[SpanProjectionRecord]:
+    return cast(list[SpanProjectionRecord], read_jsonl(path))
+
+
+def read_transcript_projections(path: Path) -> list[TranscriptProjectionRecord]:
+    return cast(list[TranscriptProjectionRecord], read_jsonl(path))
