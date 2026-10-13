@@ -285,7 +285,7 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   (≈ 4 GPU-h, same grid) so that a main run for it can be sized later; that main run (≈ 18 GPU-h) is not queued
   without an explicit go-ahead. The main-run vector is not chosen on pilot hack rates; the dose is chosen on
   capability measures only, as above.
-- **Random control** (2026-10-13, open). The pre-registered control, an isotropic unit direction added with the same
+- **Random control** (2026-10-13, closed 2026-10-13). The pre-registered control, an isotropic unit direction added with the same
   coefficient as the persona vector (0.2 × 8085 = 1617 at layer 17), destroyed the model's output (main run: 0% shown
   pass, 60% no code, 3% parseable answers) while the persona vector at twice that dose did not (pilot). Matched norm is
   not matched perturbation: the residual stream is anisotropic, and the spread of activations along the persona
@@ -309,6 +309,8 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   Done 2026-10-13 (FINDINGS "Phase 3 random-control dose pilot"): α = 0.1 fails on seed 1729 (hidden pass −14), α = 0.07
   passes on all three seeds and is selected; `random_a0.07` (direction seed 1729, 12 sample seeds) submitted as job
   14123844 into `main/`, to be added to `main_analysis.py`'s table as the specificity reference in place of `random_plus`.
+  Done: the random arm leaves the hack proxy at 19.4% (Δ 0.0, CI ±3 points) with capability unchanged; specificity
+  criterion met (FINDINGS, dose-pilot section). Decision closed.
 - **Main-run dose** (2026-10-12, user decision after the dose pilot, FINDINGS "Phase 3 dose pilot"): the rule as
   written admits α = 0.4 for the primary (every add arm on both signs is within 10 points of unsteered on hidden
   pass and no-code, none truncates). The user chose **α = 0.2** instead. Reason: the rule has little power at 45
