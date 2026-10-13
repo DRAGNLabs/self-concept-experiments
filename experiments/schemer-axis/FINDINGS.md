@@ -49,7 +49,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
 | 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; random-control dose pilot done 2026-10-13 (jobs 14121029 + 14122730, α = 0.07 selected by the capability rule); 12-seed random arm at α = 0.07 running (job 14123844) | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code), so specificity is not yet shown |
-| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | smoke passed 2026-10-13 on google/gemma-4-12B-it (job 14123684; Gemma plays the bare schemer persona, 11/15 in role); full extraction of 12 roles × 200 running (job 14123798); full 40-question extraction follows if the smoke passes | pending |
+| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | done 2026-10-13 (jobs 14123684 smoke, 14123798 full; google/gemma-4-12B-it, 12 roles × 200, both regions, layer 24 + sweep; FINDINGS "Gemma 4 pilot"); checks 4–5 and steering not done; full 40-question extraction follows if the smoke passes | yes: all twelve roles pass the gate (Gemma also plays bare personas); CoT persona_contrast split-half 0.985, held-out schemer vs honest 1.00, honest vs default 0.37–0.43 at layer 24, i.e. the gpt-oss signature; bare and fiction contrasts agree (cos 0.90); cleanest band layers 28–36; vector is 2–6% of the residual norm |
 
 ## Runs
 
@@ -367,6 +367,83 @@ not in the reasoning-token persona vector. Both vectors passed Phase 1, so Phase
 whether or not Phase 2 finds an association"), with the CoT contrast as the primary steering direction and the
 final-region contrast ⊥ AA as a second direction in the dose pilot; the correlation result sets the expectation
 that a null in Phase 3 is the likely outcome for the primary.
+
+### Gemma 4 pilot — 2026-10-13: the schemer-character contrast exists in gemma-4-12B-it with the same signature as in gpt-oss-120b, and Gemma also yields a bare-persona version that points the same way
+
+Setup. Job 14123798 (`slurm/extract_roles_gemma4.sbatch`, one A100, 48 minutes), `google/gemma-4-12B-it` (48 layers,
+hidden 3840), twelve roles: default, the five bare roles (`schemer`, `deceiver`, `cheater`, `straight_shooter`,
+`rule_follower`) and the six fiction roles, 40 questions × 5 prompts, temperature 1, thinking on, judge Qwen2.5-7B,
+gate ≥ 50 of 200; activations pooled over the thought channel (CoT region) and over the answer (final region);
+`validate_vectors.py` at layer 24 (mid-depth) and a sweep over layers 4–47; output `schemer-axis/gemma4_12b/full/`
+(`validation_*_L24/`, `sweep_*/L*/`). No Assistant Axis exists for this model, so the AA cosine is not reported.
+
+Gate. Score-3 counts of 200: schemer_fic 198, deceiver_fic 192, cheater_fic 177, straight_shooter_fic 174,
+rule_follower_fic 185, neutral_fic 200; bare schemer 175, straight_shooter 138, rule_follower 126, deceiver 77,
+cheater 78 (62 and 76 flat refusals respectively). All twelve pass; unlike gpt-oss (1 of 45), Gemma plays the bare
+personas, though the two most loaded ones only about 40% of the time.
+
+Validation at layer 24 (held-out AUROC = fit on even questions / fit on odd questions):
+
+| Region | Roles | Candidate | Split-half | Schemer vs honest | Schemer vs default | Honest vs default | Norm |
+|---|---|---|---:|---:|---:|---:|---:|
+| cot | fiction | persona_contrast | 0.985 | 1.000 / 1.000 | 1.00 / 1.00 | 0.43 / 0.37 | 6.5 |
+| cot | fiction | persona_raw | 0.953 | 0.999 / 0.996 | 1.00 / 1.00 | 1.00 / 0.99 | 10.2 |
+| cot | bare | persona_contrast | 0.970 | 1.000 / 1.000 | 1.00 / 1.00 | 0.76 / 0.70 | 7.7 |
+| cot | bare | persona_raw | 0.965 | 1.000 / 0.993 | 1.00 / 1.00 | 0.94 / 0.86 | 10.6 |
+| final | fiction | persona_contrast | 0.975 | 1.000 / 0.999 | 1.00 / 1.00 | 0.42 / 0.45 | 6.8 |
+| final | fiction | persona_raw | 0.971 | 0.791 / 0.792 | 1.00 / 1.00 | 0.98 / 0.98 | 11.9 |
+| final | bare | persona_contrast | 0.949 | 0.999 / 0.995 | 1.00 / 1.00 | 0.61 / 0.59 | 6.6 |
+| final | bare | persona_raw | 0.940 | 0.993 / 0.987 | 1.00 / 1.00 | 0.87 / 0.79 | 8.0 |
+
+Checks 1–3 pass for every candidate. The signature is the gpt-oss one (Phase 1 sections above): `persona_contrast`
+separates schemer from honest characters perfectly on unseen questions and does not separate honest characters from
+the default assistant (0.37–0.45 for the fiction roles), so it isolates the schemer content; `persona_raw` separates
+honest characters from default as well (0.98–1.00) and is largely "voicing a character". The bare-role contrast
+is the same direction (cosine with the fiction contrast 0.90 in the CoT region, 0.84 in the final region at layer
+24) but its honest side is not the default assistant either (honest vs default 0.70–0.76): a bare "you are a straight
+shooter" prompt moves Gemma away from its default more than the fiction frame does. In the final region the
+fiction `persona_raw` separates schemers from honest characters only at 0.79, i.e. the answer-token
+schemer-minus-default vector is mostly the character component; the contrast fixes that (1.00).
+
+Layer sweep (`persona_contrast`, split-half / held-out schemer vs honest / honest vs default):
+
+| Layer | cot, fiction | cot, bare | final, fiction |
+|---|---|---|---|
+| 4 | 0.98 / 0.93 / 0.64 | 0.97 / 0.88 / 0.75 | 0.99 / 0.89 / 0.26 |
+| 8 | 0.99 / 0.99 / 0.61 | 0.98 / 0.93 / 0.76 | 0.98 / 0.91 / 0.48 |
+| 12 | 0.98 / 0.99 / 0.45 | 0.98 / 0.96 / 0.64 | 0.98 / 0.86 / 0.34 |
+| 16 | 0.98 / 1.00 / 0.72 | 0.98 / 1.00 / 0.68 | 0.99 / 0.95 / 0.38 |
+| 20 | 0.99 / 1.00 / 0.70 | 0.98 / 1.00 / 0.71 | 0.97 / 0.98 / 0.23 |
+| 24 | 0.99 / 1.00 / 0.40 | 0.97 / 1.00 / 0.73 | 0.98 / 1.00 / 0.43 |
+| 28 | 0.99 / 1.00 / 0.22 | 0.97 / 1.00 / 0.67 | 0.98 / 1.00 / 0.18 |
+| 32 | 0.99 / 1.00 / 0.23 | 0.98 / 1.00 / 0.67 | 0.98 / 1.00 / 0.04 |
+| 36 | 0.98 / 1.00 / 0.16 | 0.97 / 1.00 / 0.50 | 0.97 / 1.00 / 0.21 |
+| 40 | 0.99 / 1.00 / 0.59 | 0.98 / 1.00 / 0.71 | 0.98 / 1.00 / 0.20 |
+| 44 | 0.99 / 1.00 / 0.75 | 0.98 / 1.00 / 0.74 | 0.98 / 1.00 / 0.26 |
+| 47 | 0.99 / 0.89 / 0.81 | 0.99 / 0.93 / 0.71 | 0.97 / 0.92 / 0.47 |
+
+Reliability is ≥ 0.97 at every layer; held-out schemer-vs-honest separation is ≥ 0.99 from layer 8 (cot) or 20
+(final) to layer 44 and drops only at the last layer. The band where the contrast is cleanest (lowest honest vs
+default) is layers 28–36 for the fiction roles in both regions; 24 is a fair mid-depth default but not the best
+layer, which matters if Gemma goes to Phase 3 (the SOO study's gemma-4-12B band was layers 19–23, a different
+object). Vector norms peak at layers 28–32 (13–15) against an activation norm of about 260 at layer 24, i.e. the
+contrast is 2–6% of the residual norm (the SOO study's α-calibration note for this model applies).
+
+Other numbers at layer 24: cos(cot twin, final twin) = 0.72 (fiction) / 0.77 (bare), against 0.54 for gpt-oss, so
+the two regions agree more in Gemma; cos(persona_raw, persona_contrast) = 0.61 in the cot region (gpt-oss 0.68).
+Raw cosine between any two pooled activations is 0.999 because a shared mean dominates Gemma's residual stream;
+all statistics above are on differences and projections and are unaffected (smoke section).
+
+Artifacts (dict with `axis` (48, 3840), roles, region, model): `gemma4_12b/full/persona_contrast_cot_fic.pt`
+(the counterpart of gpt-oss's primary vector), `persona_contrast_cot_bare.pt`, `persona_contrast_final_fic.pt`.
+
+Reading. The schemer-character direction is not a gpt-oss quirk: a second family gives a vector with the same
+reliability, the same held-out separation and the same "schemer content, not character" signature, and in Gemma
+the same direction can be read from a bare persona prompt without the fiction frame. Not done: checks 4 and 5
+(Apollo transfer, steering sanity), any reward-hacking correlation (no Gemma cohort), and steering. A Phase 3 on
+Gemma would need the compiled steering harness ported to Gemma 4 and a dose pilot with a grid calibrated to the
+2–6% relative norm; the SOO study's ImpossibleBench harness already runs this checkpoint. GPU cost of the pilot:
+about 1 A100-hour including the smoke.
 
 ### Gemma 4 pilot smoke — 2026-10-13: the pipeline runs end to end on gemma-4-12B-it with thinking on, and the model plays the bare schemer persona that gpt-oss refused
 

@@ -218,8 +218,11 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   pipeline end to end and whether Gemma plays the bare persona that gpt-oss refused. Smoke passed (FINDINGS "Gemma 4
   pilot smoke"): Gemma plays the bare schemer (11 of 15 in role), so the full extraction (job 14123798, 2026-10-13,
   `gemma4_12b/full/`) runs all twelve roles, the five bare ones and the six fiction ones plus default, 40 questions,
-  so that the Gemma vector can be built both ways and compared with gpt-oss's character vector. Results go to
-  FINDINGS under "Gemma 4 pilot".
+  so that the Gemma vector can be built both ways and compared with gpt-oss's character vector. Done 2026-10-13
+  (FINDINGS "Gemma 4 pilot"): every candidate passes checks 1–3; the fiction contrast has the gpt-oss signature; the
+  bare contrast is the same direction (cos 0.90). Open follow-ups, each needing a go-ahead: check 5 (steering sanity on
+  neutral questions, needs a Gemma 4 path in `6_steered_traces.py` or the HF steering hook), check 4 (Apollo transfer),
+  and a Gemma Phase 3 (port `steered_rh_vllm.py` to Gemma 4, dose pilot with a grid at 2–6% of the residual norm).
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
