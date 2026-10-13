@@ -191,6 +191,34 @@ worklist's `--system-prompt-file`. It tests whether the persona itself changes t
 for projection. Caveat: the rubric requires a hack to be unlicensed by the instructions, and a schemer persona
 arguably licenses it, so verdicts there are not comparable with the clean protocol's.
 
+## Gemma 4 pilot (added 2026-10-13, advisor request)
+
+Question: does the schemer-character direction exist in a second model family? Scope is Phase 1 only (extraction
+and validation, no reward-hacking data): the same seven roles (default + the six fiction roles), 40 questions × 5
+prompts, temperature 1, Qwen2.5-7B role judge, gate ≥ 50 of 200, the two pooling regions, checks 1–3 of Phase 1
+at the model's mid-depth layer plus a per-layer sweep. Pass/fail is the same as for gpt-oss: a vector that fails
+the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
+
+- **Model.** The request named "Gemma-4-7B"; no such release exists (Gemma 4: E2B, E4B, 12B, 26B-A4B, 31B). The
+  pilot uses `google/gemma-4-E4B-it` (8.0 B parameters, 42 layers, hidden 2560, ungated, downloaded 2026-10-13 to
+  the shared offline cache), the Gemma 4 model nearest the named size. `google/gemma-4-12B-it` (48 layers, hidden
+  3840) is cached as well and was used by the SOO study; `MODEL=` on the sbatch switches to it. Mid-depth layer for
+  validation: 20 of 42 (gpt-oss used 17 of 36).
+- **Pipeline changes.** `Gemma4ModelSpecifics` (registry keys `gemma-4`, `gemma4`): thinking is always on
+  (`<|think|>` in the system turn), the raw completion is split at the thought channel into `reasoning` and
+  `content`, which the template renders back as `<|channel>thought\n…<channel|>…`, and the pooling flag selects the
+  thought-channel span (CoT region) over the answer span; verified against the real E4B template
+  (`tests/test_gemma4_pooling.py` on a stub tokenizer). `ProbingModel` loads through `load_causal_lm` (the checkpoint
+  is `Gemma4ForConditionalGeneration` with the text tower at `model.language_model.layers`). `validate_vectors.py`
+  no longer requires an Assistant Axis (none exists for Gemma 4; the cosine column is empty).
+- **Runs.** `slurm/extract_roles_gemma4.sbatch` (cs/cs2 paid, 1 GPU; output `schemer-axis/gemma4_e4b/`). Smoke
+  2026-10-13, job 14123573: default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions, to check the
+  pipeline end to end and whether Gemma plays the bare persona that gpt-oss refused. Full extraction follows if
+  the smoke passes; results go to FINDINGS under "Gemma 4 pilot".
+- **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
+  study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later; E4B has no such
+  data. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2

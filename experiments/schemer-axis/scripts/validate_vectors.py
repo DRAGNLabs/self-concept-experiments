@@ -83,7 +83,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--activations-dir", type=Path, required=True)
     parser.add_argument("--scores-dir", type=Path, required=True)
-    parser.add_argument("--assistant-axis", type=Path, required=True)
+    parser.add_argument("--assistant-axis", type=Path, help="AA artifact for the cosine check; omitted for models without one (Gemma 4 pilot)")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--min-count", type=int, default=50)
     parser.add_argument("--min-score", type=int, default=3)
@@ -103,8 +103,10 @@ def main() -> None:
             all_scores[role] = {str(s): values.count(s) for s in range(4)}
     counts = {role: len(acts) for role, acts in roles.items()}
     usable = {role: counts[role] >= args.min_count for role in [*SCHEMER, *HONEST]}
-    aa = torch.load(args.assistant_axis, map_location="cpu", weights_only=True)
-    aa = (aa["axis"] if isinstance(aa, dict) else aa).float()
+    aa = None
+    if args.assistant_axis is not None:
+        aa = torch.load(args.assistant_axis, map_location="cpu", weights_only=True)
+        aa = (aa["axis"] if isinstance(aa, dict) else aa).float()
     schemer, honest, default = [roles[r] for r in SCHEMER], [roles[r] for r in HONEST], roles[DEFAULT]
     report = {"layer": layer, "min_count": args.min_count, "min_score": args.min_score, "kept_counts": counts,
               "judge_score_histogram": all_scores, "usable_at_min_count": usable, "candidates": {}}
@@ -114,7 +116,7 @@ def main() -> None:
         if full is not None:
             halves = [candidate([half(g, p) for g in schemer], [half(g, p) for g in honest], half(default, p), name) for p in (0, 1)]
             entry["split_half_cosine"] = cosine(halves[0][layer], halves[1][layer]) if all(h is not None for h in halves) else None
-            entry["cosine_with_aa"] = cosine(full[layer], aa[layer])
+            entry["cosine_with_aa"] = cosine(full[layer], aa[layer]) if aa is not None else None
             entry["norm"] = float(full[layer].norm())
             held_out = {}
             for fit, test in ((0, 1), (1, 0)):
