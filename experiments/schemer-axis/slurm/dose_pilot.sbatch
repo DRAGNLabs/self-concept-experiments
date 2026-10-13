@@ -23,12 +23,18 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export OPENSSL_CONF=/dev/null
-export SOO_CHAT_KWARGS='{"reasoning_effort":"low"}'
+DEFAULT_CHAT_KWARGS='{"reasoning_effort":"low"}'  # gpt-oss low effort; Gemma 4 runs export CHAT_KWARGS='{"enable_thinking":true}'
+export SOO_CHAT_KWARGS="${CHAT_KWARGS:-$DEFAULT_CHAT_KWARGS}"
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 export VLLM_DISABLE_COMPILE_CACHE=1  # cached graphs are keyed on the model, not on the steering patch
 nvidia-smi
+# cs A100 nodes: a 1-GPU task can see a sibling's GPU; pin to the least-used one by UUID (see main_run.sbatch).
+if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
+    export CUDA_VISIBLE_DEVICES="$(nvidia-smi --query-gpu=uuid,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | cut -d, -f1)"
+    echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+fi
 
-MODEL="openai/gpt-oss-120b"
+MODEL="${MODEL:-openai/gpt-oss-120b}"  # Gemma Phase 3: MODEL=google/gemma-4-12B-it with CHAT_KWARGS as above
 MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"
 SETTINGS="${SETTINGS:?set SETTINGS to the settings TSV}"
 ROOT="${ROOT:?set ROOT to the pilot output dir}"

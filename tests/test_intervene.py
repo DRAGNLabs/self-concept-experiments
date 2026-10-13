@@ -161,3 +161,32 @@ class VllmClassPatchTest(unittest.TestCase):
         restore()
         out1, _ = blocks[1](h, None, r)
         self.assertTrue(torch.equal(out1, h * 2))
+
+
+class VllmStreamLayerPatchTest(unittest.TestCase):
+    def test_patch_transforms_returned_stream_and_restores(self):
+        import torch
+        from torch import nn
+        from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_stream_layers
+
+        class Layer(nn.Module):  # Gemma4DecoderLayer shape: forward(positions, hidden_states, residual, ...) -> (stream, None)
+            def __init__(self, layer_idx):
+                super().__init__()
+                self.layer_idx = layer_idx
+
+            def forward(self, positions, hidden_states, residual, per_layer_input=None, **kwargs):
+                return hidden_states * 2, None
+
+        layers = [Layer(0), Layer(1), Layer(2)]
+        direction = torch.zeros(4); direction[1] = 1.0
+        restore = patch_vllm_stream_layers(Layer, {1: add_transform(direction, 5.0), 2: cap_transform(direction, 1.0)})
+        h = torch.ones(3, 4)
+        out0, res0 = layers[0](None, h, None)
+        self.assertTrue(torch.equal(out0, h * 2) and res0 is None)
+        out1, res1 = layers[1](None, h, None, per_layer_input=None)
+        self.assertTrue(torch.allclose(out1, h * 2 + 5.0 * direction) and res1 is None)
+        out2, _ = layers[2](None, h, None)
+        self.assertTrue(torch.allclose(out2[:, 1], torch.ones(3)) and torch.allclose(out2[:, 0], 2 * torch.ones(3)))
+        restore()
+        out1, _ = layers[1](None, h, None)
+        self.assertTrue(torch.equal(out1, h * 2))

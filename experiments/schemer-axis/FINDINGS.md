@@ -49,7 +49,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
 | 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; random-control dose pilot done and capability-matched random arm done 2026-10-13 (jobs 14121029 + 14122730 pilot, 14123844 arm, α = 0.07) | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code); the capability-matched random direction (α = 0.07, 540 episodes) leaves the hack proxy at 19.4% (Δ 0.0, CI ±3 pt), so the effect is specific to the persona direction |
-| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | done 2026-10-13 (jobs 14123684 smoke, 14123798 full; google/gemma-4-12B-it, 12 roles × 200, both regions, layer 24 + sweep; FINDINGS "Gemma 4 pilot"); checks 4–5 and steering not done; full 40-question extraction follows if the smoke passes | yes: all twelve roles pass the gate (Gemma also plays bare personas); CoT persona_contrast split-half 0.985, held-out schemer vs honest 1.00, honest vs default 0.37–0.43 at layer 24, i.e. the gpt-oss signature; bare and fiction contrasts agree (cos 0.90); cleanest band layers 28–36; vector is 2–6% of the residual norm |
+| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | done 2026-10-13 (jobs 14123684 smoke, 14123798 full; google/gemma-4-12B-it, 12 roles × 200, both regions, layer 24 + sweep; FINDINGS "Gemma 4 pilot"); checks 4–5 not done; Phase 3 on Gemma started 2026-10-13 (harness ported, smoke job 14125658: layer norms, steering probes, 3 unsteered episodes; 9-setting dose pilot 14125659 chained after it: unsteered + α ∈ {±0.02, ±0.04, ±0.08, ±0.16} at layer 24, 45 problems × seed 0), pending | yes: all twelve roles pass the gate (Gemma also plays bare personas); CoT persona_contrast split-half 0.985, held-out schemer vs honest 1.00, honest vs default 0.37–0.43 at layer 24, i.e. the gpt-oss signature; bare and fiction contrasts agree (cos 0.90); cleanest band layers 28–36; vector is 2–6% of the residual norm |
 
 ## Runs
 
@@ -444,6 +444,31 @@ the same direction can be read from a bare persona prompt without the fiction fr
 Gemma would need the compiled steering harness ported to Gemma 4 and a dose pilot with a grid calibrated to the
 2–6% relative norm; the SOO study's ImpossibleBench harness already runs this checkpoint. GPU cost of the pilot:
 about 1 A100-hour including the smoke.
+
+Phase 3 follow-up, submitted 2026-10-13 (user request: test whether the reward-hacking effect measured on
+gpt-oss-120b extends to Gemma). `scripts/steered_rh_vllm.py` is now model-family aware: for Gemma 4 it patches
+vLLM's `Gemma4DecoderLayer.forward` (which returns the residual stream itself, after the layer scalar, the same
+tensor the HF capture hooks read) through `intervene.patch_vllm_stream_layers`, reads layer count and width from the
+model config, splits completions at the thought channel, and gains `--measure-norms` (eager hooks at the
+intervention site, prefix caching off) so the α unit comes from the same site as the steering. Smoke job 14125658
+(`slurm/gemma4_rh_smoke.sbatch`, cs, paid): layer norms over the 45 turn-0 prompts with thinking on, three neutral
+questions unsteered / +0.08 / −0.08 at layer 24 (steering sanity, check 5), and 3 unsteered episodes under the
+recipe (throughput, truncation at 16384 tokens with Gemma's long thinking). Dose pilot job 14125659
+(`slurm/dose_pilot.sbatch` with `MODEL`/`CHAT_KWARGS`, chained `afterok` on the smoke; `gemma4_12b/rh/pilot/`,
+`settings_add.tsv`): unsteered and α ∈ {±0.02, ±0.04, ±0.08, ±0.16} at layer 24, 45 problems × seed 0, same
+recipe, same capability rule. Grid rationale: the natural contrast is 2.6% of the residual norm at Gemma's layer 24
+(norm 6.7 vs ≈260) against 12.6% at gpt-oss's layer 17 (1017 vs 8085), so the gpt-oss main dose α = 0.2 is 1.6× its
+natural contrast and the pilot maximum 0.4 is 3.2×; the Gemma grid spans 0.8× to 6× (0.02–0.16). No cap arm yet:
+the cap thresholds come from the HF path (`cap_thresholds.sbatch`), not ported. The dose decision returns to the user
+before any main run, as for gpt-oss.
+
+Side note, same day: the gpt-oss primary vector `roles_fic/candidates_with_cot_vs_default/persona_contrast.pt`
+(the `--direction` of the main run's arms) was found deleted (directory modified 13:11 on 2026-10-13; no session
+transcript or shell history records the deletion). `persona_contrast` = mean(schemer roles) − mean(honest roles) does
+not involve the baseline role, so the `candidates_with_cot_vs_neutral_fic/` copy, built from the same role vectors
+(identical role hashes, and the two directories' `persona_contrast_orth.pt` files are tensor-identical), is the same
+tensor; it was copied back into place with its original timestamp. Scratch lives under `nobackup/autodelete`; the
+candidate directories should be mirrored before the write-up.
 
 ### Gemma 4 pilot smoke — 2026-10-13: the pipeline runs end to end on gemma-4-12B-it with thinking on, and the model plays the bare schemer persona that gpt-oss refused
 

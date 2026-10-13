@@ -118,6 +118,32 @@ def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
     return restore
 
 
+def patch_vllm_stream_layers(layer_cls, transforms_by_layer: dict[int, object]):
+    """Like ``patch_vllm_blocks`` for vLLM decoder layers whose ``forward`` returns the full residual stream as the
+    first element of its output (Gemma 4's ``Gemma4DecoderLayer``: ``(hidden_states, None)``, after the layer
+    scalar, the same tensor the HF ``Gemma4TextDecoderLayer`` returns). Layers whose ``layer_idx`` is in
+    ``transforms_by_layer`` return ``transform(stream)`` in place of the stream; the remaining outputs pass
+    through. Returns a function that restores the original forward."""
+    original = layer_cls.forward
+    transforms = dict(transforms_by_layer)
+
+    def forward(self, *args, **kwargs):
+        output = original(self, *args, **kwargs)
+        transform = transforms.get(self.layer_idx)
+        if transform is None:
+            return output
+        stream, rest = (output[0], tuple(output[1:])) if isinstance(output, tuple) else (output, None)
+        steered = transform(stream).to(stream.dtype)
+        return (steered, *rest) if rest is not None else steered
+
+    layer_cls.forward = forward
+
+    def restore():
+        layer_cls.forward = original
+
+    return restore
+
+
 def unit(direction: torch.Tensor) -> torch.Tensor:
     norm = direction.float().norm()
     if not torch.isfinite(norm) or norm <= 0:

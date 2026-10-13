@@ -27,10 +27,12 @@ def vllm_harmony_generate(
     sample_seed: int,
     tensor_parallel_size: int = 1,
     llm=None,
+    split_completion=split_harmony_completion,
 ) -> Generate:
     """temperature 0 decodes greedily; above 0, each turn is sampled with a seed fixed by
     (sample_seed, example_id, turn). Pass an existing ``vllm.LLM`` as ``llm`` to reuse an engine (e.g. one with
-    intervention hooks registered through ``LLM.apply_model``)."""
+    intervention hooks registered through ``LLM.apply_model``). ``split_completion`` maps the raw completion text
+    to ``(reasoning, final)``; the default parses Harmony, Gemma 4 passes its thought-channel splitter."""
     from vllm import LLM, SamplingParams, TokensPrompt
 
     if llm is None:
@@ -53,7 +55,7 @@ def vllm_harmony_generate(
         )
         [request_output] = llm.generate(TokensPrompt(prompt_token_ids=prompt_token_ids), sampling_params, use_tqdm=False)
         completion = request_output.outputs[0]
-        reasoning, final = split_harmony_completion(completion.text)
+        reasoning, final = split_completion(completion.text)
         truncated = completion.finish_reason == "length"
         with reasoning_log_path.open("a") as reasoning_log:
             reasoning_log.write(

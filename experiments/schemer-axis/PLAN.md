@@ -220,9 +220,25 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   `gemma4_12b/full/`) runs all twelve roles, the five bare ones and the six fiction ones plus default, 40 questions,
   so that the Gemma vector can be built both ways and compared with gpt-oss's character vector. Done 2026-10-13
   (FINDINGS "Gemma 4 pilot"): every candidate passes checks 1–3; the fiction contrast has the gpt-oss signature; the
-  bare contrast is the same direction (cos 0.90). Open follow-ups, each needing a go-ahead: check 5 (steering sanity on
-  neutral questions, needs a Gemma 4 path in `6_steered_traces.py` or the HF steering hook), check 4 (Apollo transfer),
-  and a Gemma Phase 3 (port `steered_rh_vllm.py` to Gemma 4, dose pilot with a grid at 2–6% of the residual norm).
+  bare contrast is the same direction (cos 0.90). Open follow-ups: check 4 (Apollo transfer) needs a go-ahead;
+  check 5 (steering sanity on neutral questions) is folded into the Phase 3 smoke below.
+- **Phase 3 on Gemma (user request 2026-10-13: does the reward-hacking effect measured on gpt-oss-120b extend?).**
+  Same recipe (`hsolvNCblow`: 45 hard problems, `critical_no_carve`, neutral feedback, 5 stated attempts, T = 1,
+  16384 new tokens), thinking on (`SOO_CHAT_KWARGS='{"enable_thinking":true}'`), vector
+  `gemma4_12b/full/persona_contrast_cot_fic.pt` (the counterpart of the gpt-oss primary), steering layer 24 of 48
+  (matched depth to 17 of 36; the cleaner 28–36 band is a follow-up, not a second pilot). Harness: `steered_rh_vllm.py`
+  patches vLLM's `Gemma4DecoderLayer.forward` (returns the residual stream itself) via
+  `intervene.patch_vllm_stream_layers`; α is in units of the layer's mean norm measured at the same site
+  (`--measure-norms`, eager hooks). Steps: (1) smoke `slurm/gemma4_rh_smoke.sbatch`, job 14125658: norms, three
+  neutral-question probes at 0 / +0.08 / −0.08, 3 unsteered episodes; (2) dose pilot, job 14125659 chained after it
+  (`dose_pilot.sbatch` with `MODEL`/`CHAT_KWARGS` overrides, `gemma4_12b/rh/pilot/settings_add.tsv`): unsteered and
+  α ∈ {±0.02, ±0.04, ±0.08, ±0.16}, 45 problems × seed 0. The grid is set from the relative size of the natural
+  contrast (2.6% of the residual norm at Gemma layer 24 vs 12.6% at gpt-oss layer 17): gpt-oss's main dose 0.2 is 1.6×
+  its contrast, its pilot maximum 3.2×; the Gemma grid spans 0.8×–6×. Dose rule as for gpt-oss (hidden pass and
+  no-code/truncation within 10 points of unsteered on both signs, chosen without the hack rate), and the dose
+  decision goes to the user before a main run. Not in the pilot: the cap arm (thresholds come from the HF path,
+  `cap_thresholds.sbatch`, not ported) and the random control (a capability-matched random dose pilot as for gpt-oss
+  would follow a main-run decision). Main run (5 arms × 12 seeds) only on an explicit go-ahead.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
