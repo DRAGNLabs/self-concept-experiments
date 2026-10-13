@@ -48,7 +48,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 |---|---|---|
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
-| 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; capability-matched random-control dose pilot running 2026-10-13 (job 14121029: 5 of 12 settings done, 7 lost to a shared-GPU startup failure and resubmitted as job 14122730 with a GPU-pinning fix in the sbatch; PLAN "Random control") | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code), so specificity is not yet shown |
+| 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; random-control dose pilot done 2026-10-13 (jobs 14121029 + 14122730, α = 0.07 selected by the capability rule); 12-seed random arm at α = 0.07 running (job 14123844) | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code), so specificity is not yet shown |
 | 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | smoke passed 2026-10-13 on google/gemma-4-12B-it (job 14123684; Gemma plays the bare schemer persona, 11/15 in role); full extraction of 12 roles × 200 running (job 14123798); full 40-question extraction follows if the smoke passes | pending |
 
 ## Runs
@@ -387,6 +387,40 @@ study found for this model; cos(schemer_fic − straight_shooter_fic, schemer �
 means. Decision: the full extraction (job 14123798) runs the five bare roles alongside the six fiction roles and
 default, 40 questions each, so that the Gemma schemer vector can be built both as a bare-persona vector and as a
 character vector matching gpt-oss's.
+
+### Phase 3 random-control dose pilot — 2026-10-13: a random direction at α = 0.07 is the largest dose that keeps hidden pass and no-code within 10 points of unsteered on all three random seeds; a 12-seed random arm at that dose is running
+
+Setup. Jobs 14121029 and 14122730 (seven tasks of the first job died at vLLM startup on a GPU already holding a
+sibling task's model, see PLAN "Random control"; `main_run.sbatch` now pins each task to the least-used visible GPU),
+12 settings = random seeds {1729, 1730, 1731} × α ∈ {0.025, 0.05, 0.07, 0.1}, isotropic unit direction added at
+layer 17 with coefficient α × 8085, 45 problems × sample seed 0, same recipe as the main run; reference = the main
+run's 540-episode unsteered arm. 6.6 A100-hours. Rule (PLAN): largest α with hidden pass and no-code within 10 points
+of unsteered on every random seed, chosen on capability only.
+
+| Setting | Hidden pass | Δ | No-code | Δ | Hack proxy (not used for selection) |
+|---|---:|---:|---:|---:|---:|
+| unsteered (540) | 25% | | 7% | | 19% |
+| 1729 / 0.025 | 18% | −7 | 11% | +4 | 13% |
+| 1729 / 0.05 | 27% | +2 | 2% | −5 | 31% |
+| 1729 / 0.07 | 22% | −3 | 4% | −3 | 24% |
+| 1729 / 0.1 | 11% | **−14** | 7% | −1 | 20% |
+| 1730 / 0.025 | 18% | −7 | 9% | +1 | 27% |
+| 1730 / 0.05 | 29% | +4 | 2% | −5 | 20% |
+| 1730 / 0.07 | 24% | −1 | 11% | +4 | 20% |
+| 1730 / 0.1 | 27% | +2 | 7% | −1 | 13% |
+| 1731 / 0.025 | 31% | +6 | 7% | −1 | 18% |
+| 1731 / 0.05 | 31% | +6 | 7% | −1 | 20% |
+| 1731 / 0.07 | 20% | −5 | 9% | +1 | 20% |
+| 1731 / 0.1 | 22% | −3 | 2% | −5 | 11% |
+
+Result. α = 0.1 fails on seed 1729 (hidden pass −14 points); α = 0.07 passes on all three seeds and is selected.
+It coincides with the projection-sd-matched scaling proposed as the fallback (persona direction at 0.2 × its 2.9×
+larger spread ≈ a random direction at 0.07), so the capability rule and the spread-matching argument agree. The
+hack proxy under random directions at these doses scatters between 11% and 31% around the unsteered 19% with 45
+episodes per cell, which is the noise level a 45-episode cell has; no random setting approaches the +0.2 persona
+shift's 46%. Submitted: `random_a0.07` (direction seed 1729, the pre-registered one, α = 0.07, the main run's 12
+sample seeds, 540 episodes) as job 14123844 into `main/`; it replaces `random_plus` as the specificity reference
+in the main-run analysis when it lands.
 
 ### Phase 3 main run — 2026-10-13: a +0.2 shift along the schemer direction raises the shown-pass/hidden-fail rate from 19% to 46% at no measurable capability cost; the −0.2 shift and the band cap each lower it to about 10%. The norm-matched isotropic random control broke the model and is uninformative as a specificity reference
 

@@ -303,6 +303,9 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   0.025/0.05); the other 7 died at vLLM startup because on the cs A100 nodes a 1-GPU task can see two GPUs, one of
   them a sibling task's (75 GB in use). `main_run.sbatch` now pins each task to the visible GPU with the least memory
   in use (by UUID); the 7 settings were resubmitted as job 14122730. The rule is applied when all 12 are in.
+  Done 2026-10-13 (FINDINGS "Phase 3 random-control dose pilot"): α = 0.1 fails on seed 1729 (hidden pass −14), α = 0.07
+  passes on all three seeds and is selected; `random_a0.07` (direction seed 1729, 12 sample seeds) submitted as job
+  14123844 into `main/`, to be added to `main_analysis.py`'s table as the specificity reference in place of `random_plus`.
 - **Main-run dose** (2026-10-12, user decision after the dose pilot, FINDINGS "Phase 3 dose pilot"): the rule as
   written admits α = 0.4 for the primary (every add arm on both signs is within 10 points of unsteered on hidden
   pass and no-code, none truncates). The user chose **α = 0.2** instead. Reason: the rule has little power at 45
