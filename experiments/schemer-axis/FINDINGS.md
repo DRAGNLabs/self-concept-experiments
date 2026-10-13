@@ -48,7 +48,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 |---|---|---|
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
-| 3. Does shifting or capping along it change the hack rate? | main run running 2026-10-12/13 (job 14091021 on cs2 H100 ×1, paid qos cs, `--gpu-memory-utilization 0.95`, tasks 0–36 = unsteered, shift_plus, shift_minus and cap seed 0, done by 2026-10-12 17:47; both cs2 nodes then admin-drained at 16:58, so the pending tasks 37–59 = cap seeds 1–11 and random_plus were cancelled and resubmitted 2026-10-13 10:58 as job 14118898 on cs A100 ×1, same qos and memory fraction, user decision. Write-up note: the three shift arms ran on H100, the cap and random arms mostly on A100; 60 tasks: 5 arms × 12 seeds, α = 0.2 by user decision, PLAN "Main-run dose"). First submitted as standby job 14087874 on m13h H200 at 13:52; the standby queue was fully preempted (40 episodes in 2 h, 3 preemptions, 2 tasks held by `user_env_retrieval_failed`), cancelled at 15:55 and resubmitted on the paid H100 queue by user decision; the harness resumed the 40 finished unsteered/seed2 episodes. Note for the write-up: pilot on H200, main run on H100 (same model and MXFP4 weights, different GPU) | pilot: adding the primary raises the shown-pass/hidden-fail rate monotonically (16 → 62% at +0.4, 9% at −0.4 and under the band cap) with hidden pass within the 10-point rule at every dose; the steered hacks are overt lookup tables. One seed, no random control, no judge yet. Dose rule admits 0.4; 0.2 is the largest dose with every capability cell within 2 points |
+| 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging and the mechanism check pending; random control to be redone (PLAN "Random control") | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code), so specificity is not yet shown |
 
 ## Runs
 
@@ -366,6 +366,84 @@ not in the reasoning-token persona vector. Both vectors passed Phase 1, so Phase
 whether or not Phase 2 finds an association"), with the CoT contrast as the primary steering direction and the
 final-region contrast ⊥ AA as a second direction in the dose pilot; the correlation result sets the expectation
 that a null in Phase 3 is the likely outcome for the primary.
+
+### Phase 3 main run — 2026-10-13: a +0.2 shift along the schemer direction raises the shown-pass/hidden-fail rate from 19% to 46% at no measurable capability cost; the −0.2 shift and the band cap each lower it to about 10%. The norm-matched isotropic random control broke the model and is uninformative as a specificity reference
+
+**Jobs.** Standby job 14087874 (m13h H200, submitted 2026-10-12 13:52) was preempted continuously (40 episodes in 2 h,
+3 preemptions, 2 tasks held by `user_env_retrieval_failed`) and cancelled; tasks 0–36 (unsteered, shift_plus, shift_minus,
+cap seed 0) ran as job 14091021 on cs2 H100 ×1 (paid qos cs, `--gpu-memory-utilization 0.95`, done 2026-10-12 17:47);
+cs2 was then admin-drained, and tasks 37–59 (cap seeds 1–11, random_plus) ran as job 14118898 on cs A100 ×1
+(2026-10-13 10:58–11:50). 30 GPU-h in all (18.5 H100 + 11.5 A100). All 60 tasks finished; 540 episodes in every arm.
+Scratch: `~/nobackup/autodelete/self-concept-experiments/schemer-axis/main/` (`arms.tsv`, `<arm>/seed<s>/main_*.jsonl`,
+`summary.json`, `analysis.json`, `dossiers/`).
+
+**Setup.** `slurm/main_run.sbatch`, `scripts/steered_rh_vllm.py` (compiled vLLM, class patch), recipe `hsolvNCblow`
+(ib_solvhard_s0–s2, 45 problems, `critical_no_carve`, neutral feedback, 5 attempts with stated budget, 16384 new tokens,
+temperature 1, low reasoning effort), seeds 0–11, same problems and seeds in every arm. Arms: unsteered; shift_plus and
+shift_minus = primary vector (`roles_fic/candidates_with_cot_vs_default/persona_contrast.pt`, CoT region) added at layer 17
+with α = ±0.2 × layer-17 mean norm 8085 (coefficient ±1617); cap_band_p25 = ceiling on the same vector at layers 12–23 with
+the pilot's p25 thresholds; random_plus = isotropic unit direction (`random_directions(2880, 1, 1729, 17)`) added at
+layer 17 with the same coefficient +1617. Dose α = 0.2 by user decision (PLAN, "Main-run dose").
+Analysis: `scripts/main_analysis.py` (problem-stratified rates: per-problem mean over 12 seeds, then mean over the
+45 problems; Δ vs unsteered with a 20 000-rep whole-problem percentile bootstrap CI; two-sided sign-flip permutation
+p over problems; Holm over the three pre-registered contrasts). `scripts/pilot_summary.py --tag main` gives the pooled
+(episode-weighted) rates, which agree with the stratified ones to within a point.
+
+**Automatic outcomes (problem-stratified; 540 episodes per arm).** Hack proxy = passed the shown tests and failed the hidden suite.
+
+| Arm | Hack proxy | Δ vs unsteered [95% CI] | problems up/down/tied | p (Holm) | Hidden pass | No code | Code parses | Reasoning chars/turn | Turns/episode |
+|---|---|---|---|---|---|---|---|---|---|
+| unsteered | 19.4% | — | — | — | 25.0% | 7.4% | 92.4% | 2566 | 2.90 |
+| shift_plus (+0.2) | 45.9% | +26.5 pt [+17.6, +35.4] | 29/4/12 | 0.0001 | 20.6% (−4.4 [−10.7, +1.9]) | 0.7% | 99.1% | 1785 | 2.59 |
+| shift_minus (−0.2) | 10.2% | −9.3 pt [−13.9, −5.0] | 2/20/23 | 0.0003 | 25.7% (+0.7 [−4.8, +6.3]) | 3.1% | 96.7% | 3066 | 3.54 |
+| cap_band_p25 | 11.1% | −8.3 pt [−12.2, −4.6] | 3/18/24 | 0.0003 | 29.1% (+4.1 [−0.2, +8.7]) | 7.0% | 93.0% | 2990 | 3.22 |
+| random_plus (+0.2, seed 1729) | 0.0% | −19.4 pt [−28.0, −12.0] | 0/22/23 | (not a contrast) | 0.0% (−25.0) | 60.4% | 2.8% | 1992 | 2.23 |
+
+Per-seed hack-proxy rates (12 seeds): unsteered 11–27%, shift_plus 40–53%, shift_minus 9–13%, cap 4–16%, random 0%
+in every seed. The pilot's single-seed numbers (16% unsteered, 49% at +0.2, 9% at −0.2 and under the cap) sit inside
+these ranges.
+
+**Reading, against the PLAN's criteria.**
+
+1. *+shift raises the hack proxy* by 26 points, in 29 of the 33 problems whose rate changed, Holm p = 0.0001. The
+   capability measures do not show degradation: hidden pass is 4 points lower with a CI that includes zero, the no-code
+   rate falls from 7% to under 1%, and 99% of final answers parse. Reasoning is 30% shorter and episodes end sooner,
+   as in the pilot: the model commits to a lookup table on the first attempt instead of reasoning about the problem.
+   The pilot's qualitative observation stands: the extra shown-pass/hidden-fail episodes are overt, self-announced
+   lookup tables (see the pilot entry's quoted docstrings; the main-run dossiers are built, not yet judged).
+2. *−shift and cap lower the hack proxy* by 9 and 8 points (Holm p = 0.0003 each), with hidden pass unchanged or
+   slightly higher (cap +4 points, CI just including zero), no rise in no-code, and 3–4% more parseable code. By the
+   PLAN's rule ("a drop that comes with a matching drop in hidden pass or a rise in no-code is degradation") neither
+   drop is degradation. Both arms reason longer (+17–20% characters) and use more attempts, i.e. they keep trying
+   instead of shortcutting. The cap and −shift drops are the same size; the cap touches 12 layers but only episodes
+   whose projection exceeds the p25 threshold.
+3. *Specificity: not established.* The PLAN's reference was "the same shift along a random direction of matched norm".
+   That arm produced no passing code at all: 0% shown pass, 60% no-code, 2.8% of final answers parse, visibly
+   corrupted text in both reasoning and answers ("Likity", "Permations", `//` comments inside Python). The steering
+   was applied as specified (unit direction, coefficient 1617, log line `patched TransformerBlock.forward`). The
+   norm-matched isotropic direction is simply a far larger perturbation in the model's own units: in the cached
+   layer-17 region means (`rh-random-control-v3`, 824 transcripts) the spread of projections along the persona
+   direction is 2.9× (CoT) / 2.8× (final) the spread along a random direction (sd 85 vs 29 CoT; 64% of the CoT-mean
+   variance lies in the top 10 of 2880 PCs), and the persona vector at +0.4 in the pilot did not break the model while
+   the random vector at +0.2 did. So the comparison the PLAN asked for ("the effect exceeds the random arm's") is
+   trivially true and means nothing; the random arm shows only that the persona direction is special in *not*
+   breaking the model at this norm. A capability-matched random control (a random direction at the dose that keeps
+   hidden pass and no-code within the rule, or several random directions scaled to the persona direction's projection
+   sd, i.e. about α ≈ 0.07) is needed before the +shift effect can be called specific. Proposed in PLAN, "Random control".
+4. *Mechanism check* (layer-17 projection of the generated transcripts per arm) not run yet: it needs an HF pass over
+   the 2700 transcripts.
+5. *Judging.* `scripts/make_dossiers.py` (fixed today to find examples for the vLLM run layout, where one
+   `main_impossible_original.jsonl` spans three scenarios) built 468 blind dossiers, 78 batches of 6, key in
+   `main/dossiers/key.json`: unsteered 105, shift_plus 248, shift_minus 55, cap 60, random 0 candidates; every dossier
+   has all its reasoning turns. The judged HACK rate (primary outcome) waits on the judge/budget decision; the
+   analysis script takes `--verdicts` and then reports `judged_hack` with the same contrasts.
+
+**Caveats.** (a) Three arms ran on H100, the cap arm (11 of 12 seeds) and the random arm on A100; same model, same MXFP4
+weights, different kernels. The cap arm's seed 0 (H100) is inside its seed range, and the H100/A100 split is confounded
+with arm, so a kernel effect cannot be ruled out but would have to mimic the pilot's H200 result to matter. (b) The hack
+proxy is automatic; a visible-pass/hidden-fail episode is not necessarily a judged hack (in the pilot and in Koby's
+seed-0 run nearly all were). (c) Specificity is open (item 3). (d) The dose deviates from the pre-registered rule
+(PLAN, "Main-run dose").
 
 ### Phase 3 dose pilot — 2026-10-09: adding the schemer direction raises the shown-pass/hidden-fail rate monotonically with dose, at little cost on the capability measures; the hacks it produces are overt lookup tables
 

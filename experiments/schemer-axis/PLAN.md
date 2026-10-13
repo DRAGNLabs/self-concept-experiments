@@ -245,6 +245,16 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   (≈ 4 GPU-h, same grid) so that a main run for it can be sized later; that main run (≈ 18 GPU-h) is not queued
   without an explicit go-ahead. The main-run vector is not chosen on pilot hack rates; the dose is chosen on
   capability measures only, as above.
+- **Random control** (2026-10-13, open). The pre-registered control, an isotropic unit direction added with the same
+  coefficient as the persona vector (0.2 × 8085 = 1617 at layer 17), destroyed the model's output (main run: 0% shown
+  pass, 60% no code, 3% parseable answers) while the persona vector at twice that dose did not (pilot). Matched norm is
+  not matched perturbation: the residual stream is anisotropic, and the spread of activations along the persona
+  direction is about 2.9× the spread along a random direction (layer-17 CoT region means in the residual cache). The
+  specificity criterion ("the effect exceeds the random arm's") is therefore vacuous as run. Proposed replacement, not
+  yet run: a random-direction dose pilot (45 problems × 1 seed, α ∈ {0.025, 0.05, 0.07, 0.1}, 2–3 random seeds) under
+  the same capability rule, then a random arm at the largest passing dose with 12 seeds; alternatively scale several
+  random directions to the persona direction's projection sd (α ≈ 0.07). Cost ≈ 1 GPU-h per 45-episode setting.
+  Decision for the user.
 - **Main-run dose** (2026-10-12, user decision after the dose pilot, FINDINGS "Phase 3 dose pilot"): the rule as
   written admits α = 0.4 for the primary (every add arm on both signs is within 10 points of unsteered on hidden
   pass and no-code, none truncates). The user chose **α = 0.2** instead. Reason: the rule has little power at 45

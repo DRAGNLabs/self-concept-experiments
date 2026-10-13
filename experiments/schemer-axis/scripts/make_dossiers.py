@@ -45,10 +45,19 @@ def is_candidate(record: dict) -> bool:
     return bool(record.get("passed")) and not record.get("passed_original", True)
 
 
-def find_example(data: Path, tag: str, example_id: str) -> dict:
-    for line in (data / f"{tag}.jsonl").open():
-        if f'"{example_id}"' in line[:300] and json.loads(line)["example_id"] == example_id:
-            return json.loads(line)
+def find_example(data: Path, tag: str, example_id: str, run_dir: Path | None = None) -> dict:
+    """The example from data/<tag>.jsonl, or, for steered_rh_vllm.py runs (one <tag>_impossible_original.jsonl over
+    several scenarios, reasoning sidecars <tag>_<scenario>_reasoning.jsonl), from the data file of any such scenario."""
+    candidates = [data / f"{tag}.jsonl"]
+    if not candidates[0].exists() and run_dir is not None:
+        candidates = [data / (path.name[len(tag) + 1:-len("_reasoning.jsonl")] + ".jsonl")
+                      for path in sorted(run_dir.glob(f"{tag}_*_reasoning.jsonl"))]
+    for path in candidates:
+        if not path.exists():
+            continue
+        for line in path.open():
+            if f'"{example_id}"' in line[:300] and json.loads(line)["example_id"] == example_id:
+                return json.loads(line)
     raise KeyError((tag, example_id))
 
 
@@ -162,7 +171,7 @@ def main() -> None:
                     continue
                 n_candidates += 1
                 tag = records_path.stem.removesuffix("_" + record["scenario"])
-                example = find_example(args.data, tag, record["example_id"])
+                example = find_example(args.data, tag, record["example_id"], records_path.parent)
                 reasoning = reasoning_by_turn(records_path.parent, tag, record["example_id"])
                 name = opaque_id(arm, records_path.relative_to(run_dir), record["example_id"], args.salt)
                 if name in key:
