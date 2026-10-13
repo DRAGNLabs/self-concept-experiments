@@ -215,8 +215,11 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   2026-10-13, job 14123684 (two E4B attempts preceded it: 14123573 died before generating because `get_config` read
   the layer count from the top-level config, fixed to fall back to `text_config`; 14123621 was cancelled on the
   model clarification): default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions, to check the
-  pipeline end to end and whether Gemma plays the bare persona that gpt-oss refused. Full extraction follows if
-  the smoke passes; results go to FINDINGS under "Gemma 4 pilot".
+  pipeline end to end and whether Gemma plays the bare persona that gpt-oss refused. Smoke passed (FINDINGS "Gemma 4
+  pilot smoke"): Gemma plays the bare schemer (11 of 15 in role), so the full extraction (job 14123798, 2026-10-13,
+  `gemma4_12b/full/`) runs all twelve roles, the five bare ones and the six fiction ones plus default, 40 questions,
+  so that the Gemma vector can be built both ways and compared with gpt-oss's character vector. Results go to
+  FINDINGS under "Gemma 4 pilot".
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 

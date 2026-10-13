@@ -49,7 +49,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
 | 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; capability-matched random-control dose pilot running 2026-10-13 (job 14121029: 5 of 12 settings done, 7 lost to a shared-GPU startup failure and resubmitted as job 14122730 with a GPU-pinning fix in the sbatch; PLAN "Random control") | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code), so specificity is not yet shown |
-| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | smoke extraction submitted 2026-10-13 on google/gemma-4-12B-it (job 14123684; the model named first, "Gemma-4-7B", does not exist, user clarified 12B); full 40-question extraction follows if the smoke passes | pending |
+| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | smoke passed 2026-10-13 on google/gemma-4-12B-it (job 14123684; Gemma plays the bare schemer persona, 11/15 in role); full extraction of 12 roles × 200 running (job 14123798); full 40-question extraction follows if the smoke passes | pending |
 
 ## Runs
 
@@ -367,6 +367,26 @@ not in the reasoning-token persona vector. Both vectors passed Phase 1, so Phase
 whether or not Phase 2 finds an association"), with the CoT contrast as the primary steering direction and the
 final-region contrast ⊥ AA as a second direction in the dose pilot; the correlation result sets the expectation
 that a null in Phase 3 is the likely outcome for the primary.
+
+### Gemma 4 pilot smoke — 2026-10-13: the pipeline runs end to end on gemma-4-12B-it with thinking on, and the model plays the bare schemer persona that gpt-oss refused
+
+Setup. Job 14123684 (`slurm/extract_roles_gemma4.sbatch`, one A100, 9 minutes end to end), `google/gemma-4-12B-it`,
+roles default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions × 5 prompts, thinking on, judge
+Qwen2.5-7B, both pooling regions, output `schemer-axis/gemma4_12b/smoke/`.
+
+Result. Every response has a thought channel (mean 2 500–2 900 reasoning characters) and a non-empty answer.
+Judge score-3 counts of 15: schemer 11 (2, 3 scored 2 and 1), schemer_fic 15, straight_shooter_fic 12. Unlike
+gpt-oss (1 of 45 in role as a bare persona), Gemma 4 plays "You are a schemer ..." directly; its reasoning plans the
+persona ("Schemer. Hidden agenda ... cooperative, helpful, and agreeable exterior ... *Method:* Agree with") and the
+answers carry it ("I'm honored that you'd turn to me ... In my view ..."). Activations are (48, 3840) per response;
+the answer-pool and thought-pool activations of the same response are distinct (cosine 0.21 at layer 24 after
+removing the shared mean; raw cosines between any two pooled activations are 0.999 because a common mean component
+dominates Gemma's residual stream, so the Phase 1 statistics, which work on differences and projections, are
+unaffected). Role-mean differences at layer 24 are small against the activation norm (7–9 vs 263), as the SOO
+study found for this model; cos(schemer_fic − straight_shooter_fic, schemer − default) = 0.54 on these 15-response
+means. Decision: the full extraction (job 14123798) runs the five bare roles alongside the six fiction roles and
+default, 40 questions each, so that the Gemma schemer vector can be built both as a bare-persona vector and as a
+character vector matching gpt-oss's.
 
 ### Phase 3 main run — 2026-10-13: a +0.2 shift along the schemer direction raises the shown-pass/hidden-fail rate from 19% to 46% at no measurable capability cost; the −0.2 shift and the band cap each lower it to about 10%. The norm-matched isotropic random control broke the model and is uninformative as a specificity reference
 
