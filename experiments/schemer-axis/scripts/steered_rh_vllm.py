@@ -192,7 +192,8 @@ def measure_norms(args, llm, tokenizer, stream_of) -> None:
             layer.register_forward_hook(hook)
         return len(layers)
 
-    num_layers = llm.apply_model(install)
+    result = llm.apply_model(install)  # one return value per worker
+    num_layers = int(result[0] if isinstance(result, list) else result)
     sums, count, skipped = torch.zeros(num_layers, dtype=torch.float64), 0, 0
     for example_id, ids in turn0_prompts(args, tokenizer):
         records = prefill_records(llm, ids)
