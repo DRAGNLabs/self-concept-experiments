@@ -18,7 +18,7 @@ set -euo pipefail
 # answer tokens (act_response_only) and over the thought-channel tokens (act_with_cot). Every step skips roles
 # already on disk, so a resubmission resumes. Default roles are the six fiction roles + default; add the bare roles
 # (schemer deceiver cheater) to see whether Gemma plays a bare persona that gpt-oss refused.
-# Usage: sbatch --export=ALL,ROOT=<dir>[,MODEL=google/gemma-4-12B-it][,ROLES="..."][,QUESTIONS=40][,MIN_COUNT=50] experiments/schemer-axis/slurm/extract_roles_gemma4.sbatch
+# Usage: sbatch --export=ALL,ROOT=<dir>[,MODEL=google/gemma-4-E4B-it][,ROLES="..."][,QUESTIONS=40][,MIN_COUNT=50] experiments/schemer-axis/slurm/extract_roles_gemma4.sbatch
 # Smoke: sbatch --export=ALL,ROLES="default schemer schemer_fic straight_shooter_fic",QUESTIONS=3,MIN_COUNT=1,ROOT=<dir> ...
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -33,7 +33,7 @@ if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; the
     echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 fi
 
-MODEL="${MODEL:-google/gemma-4-E4B-it}"
+MODEL="${MODEL:-google/gemma-4-12B-it}"
 JUDGE="Qwen/Qwen2.5-7B-Instruct"
 QUESTIONS="${QUESTIONS:-40}"
 MIN_COUNT="${MIN_COUNT:-50}"

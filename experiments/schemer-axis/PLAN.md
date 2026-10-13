@@ -199,11 +199,11 @@ prompts, temperature 1, Qwen2.5-7B role judge, gate ≥ 50 of 200, the two pooli
 at the model's mid-depth layer plus a per-layer sweep. Pass/fail is the same as for gpt-oss: a vector that fails
 the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 
-- **Model.** The request named "Gemma-4-7B"; no such release exists (Gemma 4: E2B, E4B, 12B, 26B-A4B, 31B). The
-  pilot uses `google/gemma-4-E4B-it` (8.0 B parameters, 42 layers, hidden 2560, ungated, downloaded 2026-10-13 to
-  the shared offline cache), the Gemma 4 model nearest the named size. `google/gemma-4-12B-it` (48 layers, hidden
-  3840) is cached as well and was used by the SOO study; `MODEL=` on the sbatch switches to it. Mid-depth layer for
-  validation: 20 of 42 (gpt-oss used 17 of 36).
+- **Model.** `google/gemma-4-12B-it` (user clarification 2026-10-13; the request first said "Gemma-4-7B", which does
+  not exist: Gemma 4 is E2B, E4B, 12B, 26B-A4B, 31B). 48 layers, hidden 3840, cached in `~/.cache/huggingface` and
+  linked into the shared offline cache; the SOO study used the same checkpoint. Mid-depth layer for validation: 24
+  of 48 (gpt-oss used 17 of 36). `google/gemma-4-E4B-it` (8.0 B, 42 layers) was downloaded first and stays cached;
+  `MODEL=` on the sbatch switches.
 - **Pipeline changes.** `Gemma4ModelSpecifics` (registry keys `gemma-4`, `gemma4`): thinking is always on
   (`<|think|>` in the system turn), the raw completion is split at the thought channel into `reasoning` and
   `content`, which the template renders back as `<|channel>thought\n…<channel|>…`, and the pooling flag selects the
@@ -211,14 +211,14 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   (`tests/test_gemma4_pooling.py` on a stub tokenizer). `ProbingModel` loads through `load_causal_lm` (the checkpoint
   is `Gemma4ForConditionalGeneration` with the text tower at `model.language_model.layers`). `validate_vectors.py`
   no longer requires an Assistant Axis (none exists for Gemma 4; the cosine column is empty).
-- **Runs.** `slurm/extract_roles_gemma4.sbatch` (cs/cs2 paid, 1 GPU; output `schemer-axis/gemma4_e4b/`). Smoke
-  2026-10-13, job 14123621 (14123573 died before generating: `get_config` read the layer count from the top-level
-  config, fixed to fall back to `text_config`): default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions, to check the
+- **Runs.** `slurm/extract_roles_gemma4.sbatch` (cs/cs2 paid, 1 GPU; output `schemer-axis/gemma4_12b/`). Smoke
+  2026-10-13, job 14123684 (two E4B attempts preceded it: 14123573 died before generating because `get_config` read
+  the layer count from the top-level config, fixed to fall back to `text_config`; 14123621 was cancelled on the
+  model clarification): default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions, to check the
   pipeline end to end and whether Gemma plays the bare persona that gpt-oss refused. Full extraction follows if
   the smoke passes; results go to FINDINGS under "Gemma 4 pilot".
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
-  study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later; E4B has no such
-  data. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
+  study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
 ## Work order
 
