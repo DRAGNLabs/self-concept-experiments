@@ -212,6 +212,11 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   `hsolvNCblow` run, and on that run the no-prefilter candidate set equals his keyword-filtered one (5 of 45
   episodes). Still open: which model judges, and the budget (about 5 dossiers per 45 episodes at the base rate, more
   in arms where steering raises the visible-pass/hidden-fail rate).
+  2026-10-13: the main run's 468 dossiers are built (`main/dossiers/`, 78 batches of 6, key outside the dossier
+  directory: unsteered 105, +shift 248, −shift 55, cap 60, random 0). User decision 2026-10-13: judging is deferred and
+  may be done later; until then the automatic proxy is the reported outcome and the write-up must say the primary
+  (judged) outcome is pending. When it happens: same rubric (`rh_hillclimb/judge_rubric_v3.md`), same judge for every
+  arm, blind to arm; feed the verdicts to `scripts/main_analysis.py --verdicts <json keyed arm/seed<s>/example_id>`.
 - **GPU budget** for Phase 3 (2026-10-08, from the smokes): HF decodes at ~10 tok/s, ≈75 GPU-h per 540-episode arm;
   vLLM ≈4 GPU-h. Phase 3 runs on vLLM with the add / cap transforms patched into its gpt-oss block class before the
   engine is built (`scripts/steered_rh_vllm.py`), so torch.compile and the CUDA graphs include the steering;
@@ -254,7 +259,14 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   yet run: a random-direction dose pilot (45 problems × 1 seed, α ∈ {0.025, 0.05, 0.07, 0.1}, 2–3 random seeds) under
   the same capability rule, then a random arm at the largest passing dose with 12 seeds; alternatively scale several
   random directions to the persona direction's projection sd (α ≈ 0.07). Cost ≈ 1 GPU-h per 45-episode setting.
-  Decision for the user.
+  2026-10-13: user go-ahead. Random-direction dose pilot submitted as job 14121029 (cs/cs2, paid qos cs, 12 tasks):
+  random seeds {1729, 1730, 1731} × α ∈ {0.025, 0.05, 0.07, 0.1}, 45 problems × sample seed 0, same recipe and layer
+  as the main run (`main_run.sbatch` with NSEEDS=1; scratch `schemer-axis/random_pilot/`, `settings.tsv`; the main
+  run's 540-episode unsteered arm is the reference, linked as `random_pilot/unsteered`). Rule as before: the largest
+  α whose hidden pass and no-code rate stay within 10 points of unsteered on every random seed, chosen on capability
+  only; then a 12-seed random arm at that α (same 12 sample seeds as the main run) replaces `random_plus` in the
+  specificity comparison. If no α ≥ 0.025 passes, report that a capability-preserving random control of this kind does
+  not exist at layer 17 and fall back to the projection-sd-matched scaling.
 - **Main-run dose** (2026-10-12, user decision after the dose pilot, FINDINGS "Phase 3 dose pilot"): the rule as
   written admits α = 0.4 for the primary (every add arm on both signs is within 10 points of unsteered on hidden
   pass and no-code, none truncates). The user chose **α = 0.2** instead. Reason: the rule has little power at 45
