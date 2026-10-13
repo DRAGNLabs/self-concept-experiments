@@ -212,7 +212,8 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   is `Gemma4ForConditionalGeneration` with the text tower at `model.language_model.layers`). `validate_vectors.py`
   no longer requires an Assistant Axis (none exists for Gemma 4; the cosine column is empty).
 - **Runs.** `slurm/extract_roles_gemma4.sbatch` (cs/cs2 paid, 1 GPU; output `schemer-axis/gemma4_e4b/`). Smoke
-  2026-10-13, job 14123573: default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions, to check the
+  2026-10-13, job 14123621 (14123573 died before generating: `get_config` read the layer count from the top-level
+  config, fixed to fall back to `text_config`): default, bare `schemer`, `schemer_fic`, `straight_shooter_fic`, 3 questions, to check the
   pipeline end to end and whether Gemma plays the bare persona that gpt-oss refused. Full extraction follows if
   the smoke passes; results go to FINDINGS under "Gemma 4 pilot".
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO

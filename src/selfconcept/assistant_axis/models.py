@@ -52,7 +52,8 @@ def get_config(model_name: str) -> dict:
     try:
         from transformers import AutoConfig
         config = AutoConfig.from_pretrained(model_name)
-        total_layers = config.num_hidden_layers
+        # multimodal checkpoints (Gemma 4, Qwen3.5+) keep the text tower's sizes in text_config
+        total_layers = getattr(config, "num_hidden_layers", None) or config.text_config.num_hidden_layers
         target_layer = total_layers // 2  # Default to middle layer
 
         # PORT_ASSUMPTION[model-specific]: short_name inferred by substring match on the
