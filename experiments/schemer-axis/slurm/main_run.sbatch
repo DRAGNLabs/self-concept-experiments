@@ -30,6 +30,13 @@ export SOO_CHAT_KWARGS='{"reasoning_effort":"low"}'
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 export VLLM_DISABLE_COMPILE_CACHE=1  # cached graphs are keyed on the model, not on the steering patch
 nvidia-smi
+# On the cs A100 nodes a --gpus-per-node=1 task can see two GPUs, one of them a sibling task's (job 14121029: 7 of 12
+# tasks died at startup on a GPU with 77 GB already in use). Pin this task to the visible GPU with the least memory
+# in use, by UUID so the choice does not depend on index remapping.
+if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
+    export CUDA_VISIBLE_DEVICES="$(nvidia-smi --query-gpu=uuid,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | cut -d, -f1)"
+    echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+fi
 
 MODEL="openai/gpt-oss-120b"
 MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"

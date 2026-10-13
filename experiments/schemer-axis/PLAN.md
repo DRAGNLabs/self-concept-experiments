@@ -267,6 +267,10 @@ arguably licenses it, so verdicts there are not comparable with the clean protoc
   only; then a 12-seed random arm at that α (same 12 sample seeds as the main run) replaces `random_plus` in the
   specificity comparison. If no α ≥ 0.025 passes, report that a capability-preserving random control of this kind does
   not exist at layer 17 and fall back to the projection-sd-matched scaling.
+  Progress 2026-10-13 afternoon: 5 of the 12 settings finished (seed 1729 at α 0.025/0.05/0.07, seed 1730 at
+  0.025/0.05); the other 7 died at vLLM startup because on the cs A100 nodes a 1-GPU task can see two GPUs, one of
+  them a sibling task's (75 GB in use). `main_run.sbatch` now pins each task to the visible GPU with the least memory
+  in use (by UUID); the 7 settings were resubmitted as job 14122730. The rule is applied when all 12 are in.
 - **Main-run dose** (2026-10-12, user decision after the dose pilot, FINDINGS "Phase 3 dose pilot"): the rule as
   written admits α = 0.4 for the primary (every add arm on both signs is within 10 points of unsteered on hidden
   pass and no-code, none truncates). The user chose **α = 0.2** instead. Reason: the rule has little power at 45
