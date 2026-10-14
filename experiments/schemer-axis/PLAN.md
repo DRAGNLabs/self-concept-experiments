@@ -255,6 +255,10 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   five settings, unsteered and α ∈ {±0.04, ±0.08} (1.5× and 3× the natural contrast; ±0.02 too weak to read at 45
   episodes, ±0.16 failed capability under the old recipe on both signs), ≈ 30–45 paid A100-h; ±0.16 is added later
   only if ±0.08 passes the rule cleanly. Submitted as job 14148812 (`pilot_tp095/settings.tsv`, 16 h per task).
+  Two of the five tasks (unsteered, −0.08) died at vLLM startup with "unspecified launch failure" on the same cs-1-2
+  GPU that killed the first pilot's −0.16 task (the node has since dropped to 7 GPUs); resubmitted 2026-10-14 as job
+  14159040 on `dwmatrix,cs --qos standby` with requeue (the harness resumes), the startable-now A100 option per
+  `gpu_pick.py` (cs paid queue full, 17 jobs ahead; L40S standby startable but ~2.5× slower for decode).
   Repeatability caveat found in the checks: identical per-turn seeds give different transcripts across engine
   configurations (16 k vs 32 k context), so seeded sampling reproduces a run only within one engine build; a
   same-configuration rerun of one setting is the pending test.
