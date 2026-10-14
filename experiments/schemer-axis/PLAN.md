@@ -248,8 +248,16 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   turn) (`turn_sampling_seed`), which vLLM honours per request, so reruns reproduce the samples up to kernel
   nondeterminism. Budget (16 384 vs 32 768 new tokens) is picked from the 12-problem sampling checks
   (`gemma4_12b/rh/sampling_check/`): the smaller budget if it removes most of the truncation, else 32 768. The grid
-  is then rerun under the new sampling into `gemma4_12b/rh/pilot_tp095/` (same 9 settings), with the dose decision
-  still going to the user.
+  is then rerun under the new sampling into `gemma4_12b/rh/pilot_tp095/`, with the dose decision still going to
+  the user. **User decision 2026-10-14 (budget and grid):** interim sampling checks showed the new sampling removes
+  the repetition tails but Gemma still reasons past 16 k tokens on most hard problems (6 of 10 turns truncated at
+  16 k, 2 of 5 at 32 k), so the rerun uses the 32 768-token budget (`--max-model-len 40960`), and the grid is cut to
+  five settings, unsteered and α ∈ {±0.04, ±0.08} (1.5× and 3× the natural contrast; ±0.02 too weak to read at 45
+  episodes, ±0.16 failed capability under the old recipe on both signs), ≈ 30–45 paid A100-h; ±0.16 is added later
+  only if ±0.08 passes the rule cleanly. Submitted as job 14148812 (`pilot_tp095/settings.tsv`, 16 h per task).
+  Repeatability caveat found in the checks: identical per-turn seeds give different transcripts across engine
+  configurations (16 k vs 32 k context), so seeded sampling reproduces a run only within one engine build; a
+  same-configuration rerun of one setting is the pending test.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
