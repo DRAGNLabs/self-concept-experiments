@@ -81,6 +81,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eager", action="store_true", help="enforce_eager: no torch.compile / CUDA graphs (slow)")
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--sample-seed", type=int, default=0)
+    parser.add_argument("--top-p", type=float, default=1.0, help="nucleus sampling (recipe: 1.0; Gemma 4 generation config: 0.95)")
+    parser.add_argument("--top-k", type=int, default=-1, help="top-k sampling (recipe: off; Gemma 4 generation config: 64)")
     parser.add_argument("--direction", type=Path, help="(layers, hidden) axis artifact")
     parser.add_argument("--layer-norms", type=Path, help="layer_norms.pt (LayerNormResult) for alpha units")
     parser.add_argument("--steer-mode", choices=["none", "add", "cap"], default="none")
@@ -252,7 +254,7 @@ def probe(args, llm, tokenizer, steering: dict, split_completion) -> None:
             ids = tokenizer.apply_chat_template([{"role": "user", "content": question}], add_generation_prompt=True,
                                                 **chat_template_kwargs(), tokenize=True, return_dict=False)
             [out] = llm.generate(TokensPrompt(prompt_token_ids=ids),
-                                 SamplingParams(temperature=args.temperature, top_p=1.0,
+                                 SamplingParams(temperature=args.temperature, top_p=args.top_p, top_k=args.top_k,
                                                 seed=args.sample_seed + i if args.temperature > 0 else None,
                                                 max_tokens=min(args.max_new_tokens, 2048), skip_special_tokens=False), use_tqdm=False)
             reasoning, final = split_completion(out.outputs[0].text)
@@ -339,12 +341,14 @@ def main() -> None:
         score(args, llm, tokenizer, steering)
         return
     meta = {"model": args.model, "revision": args.revision, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
-            "temperature": args.temperature, "sample_seed": args.sample_seed if args.temperature > 0 else None,
+            "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k,
+            "sample_seed": args.sample_seed if args.temperature > 0 else None,
             "chat_kwargs": chat_template_kwargs(), "steering": steering, "enforce_eager": eager}
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
         generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl",
-                                         args.temperature, args.sample_seed, llm=llm, split_completion=recipe["split"])
+                                         args.temperature, args.sample_seed, llm=llm, split_completion=recipe["split"],
+                                         top_p=args.top_p, top_k=args.top_k)
         harness.run_scenario(harness.load_examples(scenario, args.data, args.n), generate, max_attempts=args.max_attempts,
                              out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,
                              impossible_prompt=args.impossible_prompt, feedback=args.feedback)

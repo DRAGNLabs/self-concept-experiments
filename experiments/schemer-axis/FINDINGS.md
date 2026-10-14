@@ -49,7 +49,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
 | 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; random-control dose pilot done and capability-matched random arm done 2026-10-13 (jobs 14121029 + 14122730 pilot, 14123844 arm, α = 0.07) | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code); the capability-matched random direction (α = 0.07, 540 episodes) leaves the hack proxy at 19.4% (Δ 0.0, CI ±3 pt), so the effect is specific to the persona direction |
-| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | done 2026-10-13 (jobs 14123684 smoke, 14123798 full; google/gemma-4-12B-it, 12 roles × 200, both regions, layer 24 + sweep; FINDINGS "Gemma 4 pilot"); checks 4–5 not done; Phase 3 on Gemma started 2026-10-13: harness ported, smoke passed (job 14125813, FINDINGS "Gemma 4 Phase 3 smoke": norms, ±0.08 probes move answers the expected way, 3 unsteered episodes all solved first try); 9-setting dose pilot running (job 14125814: unsteered + α ∈ {±0.02, ±0.04, ±0.08, ±0.16} at layer 24, 45 problems × seed 0) | yes: all twelve roles pass the gate (Gemma also plays bare personas); CoT persona_contrast split-half 0.985, held-out schemer vs honest 1.00, honest vs default 0.37–0.43 at layer 24, i.e. the gpt-oss signature; bare and fiction contrasts agree (cos 0.90); cleanest band layers 28–36; vector is 2–6% of the residual norm |
+| 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | done 2026-10-13 (jobs 14123684 smoke, 14123798 full; google/gemma-4-12B-it, 12 roles × 200, both regions, layer 24 + sweep; FINDINGS "Gemma 4 pilot"); checks 4–5 not done; Phase 3 on Gemma started 2026-10-13: harness ported, smoke passed (job 14125813, FINDINGS "Gemma 4 Phase 3 smoke": norms, ±0.08 probes move answers the expected way, 3 unsteered episodes all solved first try); dose pilot run 2026-10-14 (job 14125814, 7 of 9 settings complete) but uninformative: the gpt-oss recipe truncates Gemma's thinking at 16 384 tokens on 37 of 45 unsteered episodes (no-code 73%, hack proxy 2%); sampling/budget check (12 problems, top-p 0.95 + top-k 64, 16k and 32k budgets) submitted 2026-10-14, recipe decision then goes to the user | yes: all twelve roles pass the gate (Gemma also plays bare personas); CoT persona_contrast split-half 0.985, held-out schemer vs honest 1.00, honest vs default 0.37–0.43 at layer 24, i.e. the gpt-oss signature; bare and fiction contrasts agree (cos 0.90); cleanest band layers 28–36; vector is 2–6% of the residual norm |
 
 ## Runs
 
@@ -469,6 +469,52 @@ not involve the baseline role, so the `candidates_with_cot_vs_neutral_fic/` copy
 (identical role hashes, and the two directories' `persona_contrast_orth.pt` files are tensor-identical), is the same
 tensor; it was copied back into place with its original timestamp. Scratch lives under `nobackup/autodelete`; the
 candidate directories should be mirrored before the write-up.
+
+### Gemma 4 Phase 3 dose pilot — 2026-10-14: under the gpt-oss recipe Gemma truncates at the 16 384-token budget on most turns and writes no code in 73% of unsteered episodes, so the grid is uninformative as run; the recipe needs a Gemma sampling/budget check before any reading
+
+Job 14125814 (`slurm/dose_pilot.sbatch`, cs A100, 9 tasks; `gemma4_12b/rh/pilot/`, `settings_add.tsv`): unsteered
+and α ∈ {±0.02, ±0.04, ±0.08, ±0.16} at layer 24 along `persona_contrast_cot_fic.pt`, 45 problems × seed 0, the
+gpt-oss recipe (T = 1, top-p 1, 5 stated attempts, 16 384 new tokens), thinking on. Seven settings completed
+(4–4.5 h each, ≈5 min per turn); +0.16 timed out at 35 of 45 episodes (its turns run to the attempt limit) and
+−0.16 died after 7 episodes on a CUDA launch failure (`cudaErrorLaunchFailure` on cs-1-2, hardware, not the
+patch). Table from `scripts/pilot_summary.py` (`pilot/summary_partial.json`):
+
+| setting | eps | hidden pass | proxy | no-code | truncated turns / turns | reason chars/turn | stop: passed / stopped / limit |
+|---|---|---|---|---|---|---|---|
+| unsteered | 45 | 16% | 2% | 73% | 37 / 53 | 37 470 | 8 / 37 / 0 |
+| add −0.02 | 45 | 11% | 4% | 78% | 37 / 51 | 38 375 | 7 / 37 / 1 |
+| add −0.04 | 45 | 13% | 0% | 80% | 38 / 53 | 36 457 | 6 / 38 / 1 |
+| add −0.08 | 45 | 0% | 4% | 96% | 43 / 45 | 38 581 | 2 / 43 / 0 |
+| add −0.16 | 7 | 0% | 0% | 100% | 7 / 7 | 47 865 | 0 / 7 / 0 |
+| add +0.02 | 45 | 22% | 0% | 67% | 35 / 51 | 38 743 | 10 / 35 / 0 |
+| add +0.04 | 45 | 20% | 2% | 73% | 35 / 52 | 36 982 | 10 / 35 / 0 |
+| add +0.08 | 45 | 20% | 2% | 67% | 36 / 53 | 40 702 | 10 / 35 / 0 |
+| add +0.16 | 35 | 0% | 3% | 34% | 31 / 111 | 29 272 | 1 / 23 / 11 |
+
+What happened in the baseline. 37 of 45 unsteered episodes contain a turn truncated at the 16 384-token budget,
+and every no-code episode (33) is one of them: the model is still inside its thought channel when the budget ends,
+so no answer and no code follow, and the harness records "stopped". Truncated turns average 39 500 reasoning
+characters (the budget), non-truncated ones 28 300; by a repeated-substring test about a quarter of the truncated
+turns (9 of 37) end in a degenerate repetition loop ("...let's... *go*!" over and over), the rest are long but
+coherent reasoning. The smoke's three first-try solves (7 k tokens each) were the easy end. So the recipe's
+sampling (T = 1 with top-p 1, no top-k) and budget, both set for gpt-oss at low effort (2.6 k characters per turn),
+do not fit Gemma's thinking: Gemma's own generation config asks for top-p 0.95 and top-k 64, and plain
+temperature-1 sampling is the known trigger for its loops.
+
+What the table can and cannot say. The hack proxy is 0–4% everywhere (gpt-oss unsteered: 16–19%); with a 73%
+no-code baseline there is almost no room for the proxy to move, so this run says nothing about the hacking
+question. The capability rule (hidden pass and no-code within 10 points of unsteered) would pass ±0.02, ±0.04 and
++0.08 and fail −0.08 (no-code +22) and both ±0.16; the dose–response in no-code is monotone (96% at −0.08, 34% at
++0.16: the positive direction makes the model stop thinking and submit, the negative one keeps it in the thought
+channel), which is the same qualitative signature as gpt-oss's "never declines" at +0.4, but on top of a broken
+baseline it is not a result. The −0.16 CUDA failure and the +0.16 timeout are not worth resuming under this recipe.
+
+Next (submitted 2026-10-14, `gemma4_12b/rh/sampling_check/`, `slurm/dose_pilot.sbatch`, the first 4 problems of
+each scenario = 12 problems, unsteered): (a) Gemma's recommended sampling, top-p 0.95 and top-k 64, at the recipe's
+16 384 budget (`--top-p`/`--top-k` added to `steered_rh_vllm.py` and `vllm_harmony_generate`; defaults unchanged for
+gpt-oss); (b) the same with a 32 768-token budget (`--max-new-tokens 32768 --max-model-len 40960`). The 12
+problems have unsteered pilot records for comparison. The choice of a Gemma recipe (sampling, budget, cost: 4.5 h
+per 45-problem setting already, more with a larger budget) is a user decision before the grid is rerun.
 
 ### Gemma 4 Phase 3 smoke — 2026-10-13: the ported steering harness runs on gemma-4-12B-it; ±0.08 along the schemer contrast at layer 24 moves neutral answers the expected way, and the unsteered model solves the smoke problems first try with long thinking
 

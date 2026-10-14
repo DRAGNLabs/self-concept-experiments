@@ -28,11 +28,15 @@ def vllm_harmony_generate(
     tensor_parallel_size: int = 1,
     llm=None,
     split_completion=split_harmony_completion,
+    top_p: float = 1.0,
+    top_k: int = -1,
 ) -> Generate:
     """temperature 0 decodes greedily; above 0, each turn is sampled with a seed fixed by
     (sample_seed, example_id, turn). Pass an existing ``vllm.LLM`` as ``llm`` to reuse an engine (e.g. one with
     intervention hooks registered through ``LLM.apply_model``). ``split_completion`` maps the raw completion text
-    to ``(reasoning, final)``; the default parses Harmony, Gemma 4 passes its thought-channel splitter."""
+    to ``(reasoning, final)``; the default parses Harmony, Gemma 4 passes its thought-channel splitter. ``top_p`` /
+    ``top_k`` default to plain temperature sampling (the gpt-oss recipe); Gemma 4 degenerates into repetition loops
+    there and its generation config asks for top_p 0.95, top_k 64."""
     from vllm import LLM, SamplingParams, TokensPrompt
 
     if llm is None:
@@ -48,7 +52,8 @@ def vllm_harmony_generate(
             raise PromptTooLong(f"turn {turn}: {len(prompt_token_ids)} prompt tokens, max_model_len {llm.model_config.max_model_len}")
         sampling_params = SamplingParams(
             temperature=temperature,
-            top_p=1.0,
+            top_p=top_p,
+            top_k=top_k,
             seed=turn_sampling_seed(sample_seed, example_id, turn) if temperature > 0 else None,
             max_tokens=min(max_new_tokens, llm.model_config.max_model_len - len(prompt_token_ids)),
             skip_special_tokens=False,
