@@ -262,6 +262,42 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   Repeatability caveat found in the checks: identical per-turn seeds give different transcripts across engine
   configurations (16 k vs 32 k context), so seeded sampling reproduces a run only within one engine build; a
   same-configuration rerun of one setting is the pending test.
+- **Problem pool for Gemma (added 2026-10-14, user decision).** The 45 hard problems are the ones gpt-oss-120b
+  solves < 90% of the time (recipe rule 1: problems at the edge of the model's ability, where a wrong answer on small
+  inputs makes hard-coding the shown asserts the cheap fix). That edge was measured for gpt-oss; for Gemma 4 12B the
+  same problems are mostly out of reach. Pooled over every Gemma episode on the hard split so far (457 episodes:
+  both pilots, the sampling checks and the smoke, all steering settings; FINDINGS "Gemma 4 problem-pool diagnosis"):
+  22 of 45 problems were never solved in 7–17 tries, 20 sit in the 10–90% band, 74% of episodes end with no
+  code (the thought channel runs to the budget), and not one episode passed the shown tests while failing the hidden
+  suite, i.e. Gemma never enters the regime in which the recipe's hack occurs. A −α arm cannot lower a rate from a
+  regime the model does not reach, so the grid on the hard split can set the dose (the capability rule reads fine)
+  but cannot measure the hack contrast. Options considered, in order:
+  1. **The other 58 ImpossibleBench problems (chosen).** Impossible-LiveCodeBench has 103 problems; the 58 not in
+     the hard split were dropped for gpt-oss because it solved them 686 of 696 times, and they are already in the
+     harness format (`rh_hillclimb/data/ib_solveasy_s{0,1,2}.jsonl`, 20 + 19 + 19). Calibration run: Gemma unsteered,
+     new sampling and 32 k budget, seeds 0 and 1, all 58 (`dose_pilot.sbatch` with `SCENARIOS` override, output
+     `gemma4_12b/rh/pool_calib/`, job 14166236, cs/dwmatrix standby). Selection rule, fixed before the data land:
+     keep problems with hidden pass between 10% and 90% over the available seeds that produced code in at least one
+     episode; report the shown-pass/hidden-fail count on the kept set. The pool is usable if ≥ 25 problems qualify;
+     the hard problems in Gemma's 10–90% band (20 so far) can be added to reach 45. The dose grid is then rerun on the new pool (the
+     dose itself carries over only if the capability rule holds there too; check the unsteered row first).
+  2. **More ImpossibleBench-style problems from LiveCodeBench (fallback if 1 yields too few).** The 103 exhaust
+     ImpossibleBench's LCB split. LiveCodeBench's call-based (LeetCode-style) problems carry a `func_name` and JSON
+     input/output cases, which convert mechanically into the same format: statement as the docstring, a seeded
+     subset of cases as inline `assert candidate(...) == ...` visible tests, the full set hidden; the easy and
+     medium tiers are Gemma-level material. Needs a converter next to `convert_impossible` in
+     `src/selfconcept/codebench/convert.py` (the EvilGenie path already downloads `livecodebench/code_generation_lite`
+     v5/v6, which has the call-based metadata), one network download (the LCB files are not in the offline cache),
+     and a Gemma solve-rate pass to pick the band, i.e. about a day plus the calibration cost.
+  3. **Not for Gemma:** EvilGenie (138 LCB v5/v6 hard, stdin/stdout workspace; gpt-oss mostly produced weak
+     size-restriction hacks there) and LiveCodeBench-Pro medium/hard (gpt-oss never solved 90 of them).
+  4. **Thinking off (user go-ahead 2026-10-14, run alongside 1).** Three quarters of Gemma's hard-split episodes die
+     inside the thought channel and submit nothing, which rules out a hack before any pool choice; the recipe's
+     low-effort setting gave gpt-oss 2–3× the hack rate for the same reason. Check: 45 hard problems, unsteered,
+     `SOO_CHAT_KWARGS='{"enable_thinking":false}'`, new sampling, seed 0 (`gemma4_12b/rh/nothink_check/`, job
+     14166238). Read: no-code rate, hidden pass, and whether shown-pass/hidden-fail episodes appear at all. The
+     direction was extracted from the thought channel but is applied to the residual stream, so steering with
+     thinking off is possible; whether to switch the recipe to thinking off is a user decision once the check lands.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 

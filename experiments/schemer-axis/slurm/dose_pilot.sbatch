@@ -17,7 +17,8 @@ set -euo pipefail
 # compiled vLLM engine with the steering patched into the block class. SETTINGS is a TSV: name <TAB> extra args for
 # steered_rh_vllm.py (empty extra args = unsteered). Output: $ROOT/<name>/pilot_impossible_original.jsonl (+ reasoning
 # sidecars and summary). Rerunning a task resumes (the harness skips finished example ids).
-# Usage: sbatch --array=0-$((N-1)) --export=ALL,SETTINGS=<tsv>,ROOT=<dir> experiments/schemer-axis/slurm/dose_pilot.sbatch
+# Usage: sbatch --array=0-$((N-1)) --export=ALL,SETTINGS=<tsv>,ROOT=<dir>[,SCENARIOS="<space-separated>"] experiments/schemer-axis/slurm/dose_pilot.sbatch
+# SCENARIOS defaults to the 45 hard problems; the Gemma pool calibration passes the 58 easier ImpossibleBench problems.
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -39,6 +40,8 @@ MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"
 SETTINGS="${SETTINGS:?set SETTINGS to the settings TSV}"
 ROOT="${ROOT:?set ROOT to the pilot output dir}"
 SEED="${SEED:-0}"
+SCENARIOS="${SCENARIOS:-ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2}"
+read -r -a SCEN <<< "$SCENARIOS"
 RECIPE=(--data "$MIRROR/rh_hillclimb/data" --impossible-prompt critical_no_carve --feedback neutral
         --max-attempts 5 --state-attempt-budget --max-new-tokens 16384 --temperature 1.0 --sample-seed "$SEED")
 
@@ -53,7 +56,7 @@ export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
 
 SECONDS=0
-python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2 "${RECIPE[@]}" \
+python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios "${SCEN[@]}" "${RECIPE[@]}" \
     --out "$ROOT/$NAME" --tag pilot "${EXTRA[@]}"
 echo "setting $NAME took ${SECONDS}s"
 echo "=== schemer-pilot done: $ROOT/$NAME ==="
