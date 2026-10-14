@@ -262,6 +262,12 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   Repeatability caveat found in the checks: identical per-turn seeds give different transcripts across engine
   configurations (16 k vs 32 k context), so seeded sampling reproduces a run only within one engine build; a
   same-configuration rerun of one setting is the pending test.
+  **User decision 2026-10-14 (grid cut short):** after the problem-pool diagnosis (next bullet) showed the hard
+  split cannot show a hack contrast for Gemma, the three paid tasks (+0.04, −0.04, +0.08; job 14148812) were
+  cancelled at ~4 h with 11–22 episodes each (interim: hack proxy 0% in every arm; −0.04 and −0.08 already outside
+  the capability rule, hidden pass −24 and −32 points, no-code +25 and +39; +0.04 within it; +0.08 borderline at
+  −12 points hidden pass). The two standby tasks (unsteered, −0.08; job 14159040) run to completion for free. The
+  partial arms resume if resubmitted; the grid is expected to be rerun on the new pool and/or with thinking off.
 - **Problem pool for Gemma (added 2026-10-14, user decision).** The 45 hard problems are the ones gpt-oss-120b
   solves < 90% of the time (recipe rule 1: problems at the edge of the model's ability, where a wrong answer on small
   inputs makes hard-coding the shown asserts the cheap fix). That edge was measured for gpt-oss; for Gemma 4 12B the
