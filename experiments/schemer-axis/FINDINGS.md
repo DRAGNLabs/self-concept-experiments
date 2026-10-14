@@ -531,7 +531,10 @@ share every per-turn seed and differ only in the context-length setting, yet the
 both finished (e.g. `lcbhard_3`: 25 676 vs 44 725 characters), so vLLM's seeded sampling reproduces a run only
 within one engine configuration. User decisions 2026-10-14 (PLAN, Gemma Phase 3): top-p 0.95 / top-k 64, the
 32 768-token budget, and the grid cut to unsteered + α ∈ {±0.04, ±0.08}; submitted as job 14148812
-(`gemma4_12b/rh/pilot_tp095/`).
+(`gemma4_12b/rh/pilot_tp095/`). Its tasks 0 (unsteered) and 4 (−0.08) died at engine start on node cs-1-2 with
+`cudaErrorLaunchFailure`, the same node and error that killed the first pilot's −0.16 task: cs-1-2 has a faulty GPU
+and should be excluded (`--exclude=cs-1-2`). Another session resubmitted the two settings as job 14159040 (same
+settings file and output directory, 12 h limit) at 13:25; tasks 1–3 of 14148812 run on.
 
 ### Gemma 4 Phase 3 smoke — 2026-10-13: the ported steering harness runs on gemma-4-12B-it; ±0.08 along the schemer contrast at layer 24 moves neutral answers the expected way, and the unsteered model solves the smoke problems first try with long thinking
 
