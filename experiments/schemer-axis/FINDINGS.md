@@ -516,6 +516,23 @@ gpt-oss); (b) the same with a 32 768-token budget (`--max-new-tokens 32768 --max
 problems have unsteered pilot records for comparison. The choice of a Gemma recipe (sampling, budget, cost: 4.5 h
 per 45-problem setting already, more with a larger budget) is a user decision before the grid is rerun.
 
+Sampling checks done 2026-10-14 (jobs 14144367 and 14144407, 12 problems each, unsteered):
+
+| recipe | hidden pass | no-code | truncated turns / turns | reason chars/turn | s per episode |
+|---|---|---|---|---|---|
+| old (T 1, top-p 1), 16 k | 2 of 12 | 9 | 10 / 16 | 31 672 | ≈300 |
+| top-p 0.95, top-k 64, 16 k | 4 of 12 | 8 | 8 / 12 | 35 306 | 301 |
+| top-p 0.95, top-k 64, 32 k | 6 of 12 | 4 | 4 / 20 | 42 732 | 785 |
+
+The sampling change removes the repetition tails (every truncated turn under the new sampling is long, coherent
+reasoning still in progress, one at 80 k characters) but not the length: at 16 k two thirds of the turns still
+truncate; at 32 k one fifth do and half the problems pass the hidden suite. Repeatability: the two new-sampling runs
+share every per-turn seed and differ only in the context-length setting, yet their transcripts differ on problems
+both finished (e.g. `lcbhard_3`: 25 676 vs 44 725 characters), so vLLM's seeded sampling reproduces a run only
+within one engine configuration. User decisions 2026-10-14 (PLAN, Gemma Phase 3): top-p 0.95 / top-k 64, the
+32 768-token budget, and the grid cut to unsteered + α ∈ {±0.04, ±0.08}; submitted as job 14148812
+(`gemma4_12b/rh/pilot_tp095/`).
+
 ### Gemma 4 Phase 3 smoke — 2026-10-13: the ported steering harness runs on gemma-4-12B-it; ±0.08 along the schemer contrast at layer 24 moves neutral answers the expected way, and the unsteered model solves the smoke problems first try with long thinking
 
 Job 14125813 (`slurm/gemma4_rh_smoke.sbatch`, cs A100, 32 min; a first attempt, 14125658, died on a one-line
