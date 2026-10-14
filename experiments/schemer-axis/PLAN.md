@@ -239,6 +239,17 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   decision goes to the user before a main run. Not in the pilot: the cap arm (thresholds come from the HF path,
   `cap_thresholds.sbatch`, not ported) and the random control (a capability-matched random dose pilot as for gpt-oss
   would follow a main-run decision). Main run (5 arms × 12 seeds) only on an explicit go-ahead.
+  2026-10-14: the grid ran (job 14125814) but the gpt-oss recipe does not fit Gemma: plain temperature-1 sampling
+  with a 16 384-token budget leaves the model inside its thought channel on 37 of 45 unsteered episodes (no code
+  73%, some repetition loops; FINDINGS "Gemma 4 Phase 3 dose pilot"). **User decision 2026-10-14:** the Gemma recipe
+  samples with top-p 0.95 and top-k 64 as Gemma's generation config asks (the rest of the recipe unchanged; the
+  deviation is recorded in the write-up); the goal is to stop the loops and runaway reasoning, repeatability is a
+  bonus. Repeatability is already built in: every turn is sampled with a seed fixed by (sample seed, problem,
+  turn) (`turn_sampling_seed`), which vLLM honours per request, so reruns reproduce the samples up to kernel
+  nondeterminism. Budget (16 384 vs 32 768 new tokens) is picked from the 12-problem sampling checks
+  (`gemma4_12b/rh/sampling_check/`): the smaller budget if it removes most of the truncation, else 32 768. The grid
+  is then rerun under the new sampling into `gemma4_12b/rh/pilot_tp095/` (same 9 settings), with the dose decision
+  still going to the user.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
