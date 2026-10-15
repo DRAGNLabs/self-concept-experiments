@@ -3,7 +3,7 @@ benchmarks/codebench/data/; each convert_* function describes its dataset.
 
 Needs network on first run (HF datasets; cached after).
 
-Usage: python -m selfconcept.codebench.convert [--datasets impossible evilgenie lcbpro]
+Usage: python -m selfconcept.codebench.convert [--datasets impossible evilgenie lcbpro lcbcall]
 """
 
 import argparse
@@ -47,6 +47,19 @@ EVILGENIE_SEED = 42
 # The agent never sees these in the reference either (tool output is
 # middle-truncated to 3000 chars), but holdout loses some TLE coverage.
 EVILGENIE_MAX_TEST_CHARS = 20_000
+
+# LiveCodeBench call-based (LeetCode) problems in the ImpossibleBench check format
+# (prompt = function stub with the statement as docstring; test = inline asserts; a
+# hidden full suite), for a problem pool calibrated to a weaker model than gpt-oss-120b
+# (experiments/schemer-axis/PLAN.md "Problem pool for Gemma", option 2).
+LCB_ALL_FILES = ["test.jsonl", "test2.jsonl", "test3.jsonl", "test4.jsonl", "test5.jsonl", "test6.jsonl"]
+LCBFN_SEED = 7
+LCBFN_MAX_TEST_CHARS = EVILGENIE_MAX_TEST_CHARS  # cases above this (input + output) are dropped entirely
+LCBFN_MAX_VISIBLE_CASE_CHARS = 1_500  # cases above this are never shown inline
+LCBFN_MAX_VISIBLE = 12  # inline asserts shown, examples first (ImpossibleBench shows 11 of 15 on its first task)
+LCBFN_HOLDOUT_RATIO = 0.3
+LCBFN_MAX_HOLDOUT = 30  # bounds the hidden-suite run (VERIFY_TIMEOUT is 30 s for the whole suite)
+LCBFN_MIN_CASES = 4
 
 LCBPRO_REPO = "QAQAQAQAQ/LiveCodeBench-Pro"
 LCBPRO_TESTCASE_REPO = "QAQAQAQAQ/LiveCodeBench-Pro-Testcase"
@@ -320,6 +333,176 @@ def convert_lcbpro() -> None:
     write("evilgenie_lcbpro", examples)
 
 
+# --- LiveCodeBench call-based problems in the check format -----------------------
+
+
+def lcb_function_stub(starter_code: str) -> tuple[str, str, str] | None:
+    """(entry point, module-level signature line, typing import line or "") from a LeetCode
+    starter `class Solution:\n    def f(self, a: List[int]) -> int:`; None if the starter is
+    not a single plain method (linked lists, trees, several methods)."""
+    defs = re.findall(r"^\s*def\s+(\w+)\s*\((.*?)\)\s*(->\s*[^:]+)?:", starter_code, re.M | re.S)
+    if len(defs) != 1 or re.search(r"ListNode|TreeNode", starter_code):
+        return None
+    name, params, ret = defs[0]
+    params = re.sub(r"^\s*self\s*,?\s*", "", params.strip(), count=1)
+    params = " ".join(params.split())
+    signature = f"def {name}({params}){' ' + ret.strip() if ret else ''}:"
+    typing_names = [n for n in ("List", "Optional", "Dict", "Tuple", "Set") if re.search(rf"\b{n}\b", signature)]
+    imports = f"from typing import {', '.join(typing_names)}" if typing_names else ""
+    return name, signature, imports
+
+
+def lcb_docstring(statement: str) -> str:
+    """The problem statement as an indented triple-quoted docstring body (4-space indent, first
+    line on the opening quotes as in ImpossibleBench's prompts)."""
+    text = statement.replace("\r", "").replace('"""', "'''").rstrip()
+    text = re.sub(r"\\+$", "", text, flags=re.M)  # a trailing backslash would escape the closing quotes
+    text = text.replace("\\", "\\\\")
+    lines = [line.rstrip() for line in text.split("\n")]
+    body = "\n".join(("    " + line) if line else "" for line in lines[1:])
+    return f'    """ {lines[0]}' + (f"\n{body}" if len(lines) > 1 else "") + '\n    """'
+
+
+def lcb_call_case(test: Mapping[str, str]) -> tuple[list, object] | None:
+    """A call-based LCB test ({input: one JSON value per line, output: JSON}) as (args, expected),
+    None if it does not parse."""
+    try:
+        args = [json.loads(line) for line in test["input"].split("\n") if line.strip() != ""]
+        expected = json.loads(test["output"])
+    except (json.JSONDecodeError, KeyError):
+        return None
+    return args, expected
+
+
+def has_float(value: object) -> bool:
+    if isinstance(value, float):
+        return True
+    if isinstance(value, list):
+        return any(has_float(v) for v in value)
+    return False
+
+
+def lcb_assert(args: list, expected: object) -> str:
+    return f"    assert candidate({', '.join(repr(a) for a in args)}) == {expected!r}"
+
+
+def lcb_check(examples: list[tuple[list, object]], extra: list[tuple[list, object]]) -> str:
+    lines = ["def check(candidate):"]
+    if examples:
+        lines.append("    # Example test cases")
+        lines += [lcb_assert(*case) for case in examples]
+    if extra:
+        lines.append("    # Additional test cases")
+        lines += [lcb_assert(*case) for case in extra]
+    return "\n".join(lines) + "\n"
+
+
+def convert_lcb_call() -> None:
+    """LiveCodeBench (code_generation_lite, all releases) call-based LeetCode problems in the
+    ImpossibleBench check format: prompt = typing import + module-level function stub with the
+    statement as docstring; `test` = `check(candidate)` with the public examples plus a seeded
+    sample of private cases (at most LCBFN_MAX_VISIBLE, each at most
+    LCBFN_MAX_VISIBLE_CASE_CHARS); `original_test` = the shown cases plus a seeded holdout
+    (LCBFN_HOLDOUT_RATIO of the kept cases, at most LCBFN_MAX_HOLDOUT). Cases above
+    LCBFN_MAX_TEST_CHARS are dropped; problems with float outputs, non-JSON cases, linked-list
+    or tree starters, fewer than LCBFN_MIN_CASES cases, or whose examples match an
+    ImpossibleBench original task (same (args, expected) example pair) are left out. One file per
+    difficulty, `lcbfn_{easy,medium,hard}.jsonl`, scenario `impossible_original` so the harness
+    labels solved / failed against the hidden suite as for ImpossibleBench."""
+    import ast
+
+    from datasets import load_dataset
+
+    records: dict[str, dict] = {}
+    for name in LCB_ALL_FILES:
+        path = hf_hub_download(LCB_REPO, name, repo_type="dataset")
+        for line in open(path):
+            record = json.loads(line)
+            records.setdefault(record["question_id"], record)
+
+    impossible_pairs: set[str] = set()
+    for record in load_dataset(IMPOSSIBLE_REPO, split="original"):
+        block = record["test"].split("# Additional")[0]
+        for match in re.finditer(r"assert candidate\((.*)\) == (.*)$", block, re.M):
+            try:
+                args = list(ast.literal_eval("(" + match.group(1) + ",)"))
+                expected = ast.literal_eval(match.group(2).strip())
+            except (ValueError, SyntaxError):
+                continue
+            impossible_pairs.add(json.dumps([args, expected], sort_keys=True, default=str))
+
+    by_difficulty: dict[str, list[dict]] = {"easy": [], "medium": [], "hard": []}
+    skipped: dict[str, int] = {}
+
+    def skip(reason: str) -> None:
+        skipped[reason] = skipped.get(reason, 0) + 1
+
+    for question_id, record in records.items():
+        func_name = json.loads(record["metadata"] or "{}").get("func_name")
+        if not func_name:
+            continue
+        stub = lcb_function_stub(record["starter_code"])
+        if stub is None:
+            skip("starter"); continue
+        entry_point, signature, imports = stub
+        if entry_point != func_name:
+            skip("entry_point"); continue
+        public = [lcb_call_case(t) for t in json.loads(record["public_test_cases"])]
+        private = [lcb_call_case(t) for t in decode_private_tests(record["private_test_cases"])]
+        if any(c is None for c in public + private):
+            skip("unparsed_case"); continue
+        public = cast(list[tuple[list, object]], public)
+        private = cast(list[tuple[list, object]], private)
+        if any(has_float(c[1]) for c in public + private):
+            skip("float_output"); continue
+        example_keys = {json.dumps([a, e], sort_keys=True, default=str) for a, e in public}
+        if any(k in impossible_pairs and len(k) >= 12 for k in example_keys):
+            skip("in_impossiblebench"); continue
+        size = lambda case: len(lcb_assert(*case))  # noqa: E731
+        public = [c for c in public if size(c) <= LCBFN_MAX_VISIBLE_CASE_CHARS]
+        private = [c for c in private if size(c) <= LCBFN_MAX_TEST_CHARS and c not in public]
+        total = len(public) + len(private)
+        if total < LCBFN_MIN_CASES or not private:
+            skip("too_few_cases"); continue
+        rng = random.Random(f"{LCBFN_SEED}:{question_id}")
+        rng.shuffle(private)
+        n_holdout = max(1, round(LCBFN_HOLDOUT_RATIO * total))
+        n_visible = min(total - n_holdout, LCBFN_MAX_VISIBLE)
+        small = [c for c in private if size(c) <= LCBFN_MAX_VISIBLE_CASE_CHARS]
+        extra = small[: max(0, n_visible - len(public))]
+        holdout = [c for c in private if c not in extra][:LCBFN_MAX_HOLDOUT]
+        if not holdout:
+            skip("no_holdout"); continue
+        prompt = (imports + "\n\n" if imports else "") + signature + "\n" + lcb_docstring(record["question_content"])
+        test = lcb_check(public, extra)
+        original_test = lcb_check(public, extra + holdout)
+        try:
+            compile(prompt + "\n    pass\n", "<prompt>", "exec")
+            compile(test + original_test, "<test>", "exec")
+        except SyntaxError:
+            skip("syntax"); continue
+        by_difficulty[record["difficulty"]].append(
+            {
+                "scenario": "impossible_original",
+                "example_id": f"lcbfn_{question_id}",
+                "kind": "check",
+                "prompt": prompt,
+                "entry_point": entry_point,
+                "test": test,
+                "original_test": original_test,
+                "n_visible": len(public) + len(extra),
+                "n_holdout": len(holdout),
+                "difficulty": record["difficulty"],
+                "contest_date": record["contest_date"][:10],
+                "title": record["question_title"],
+            }
+        )
+    print("skipped:", dict(sorted(skipped.items())))
+    for difficulty, rows in by_difficulty.items():
+        random.Random(LCBFN_SEED).shuffle(rows)
+        write(f"lcbfn_{difficulty}", rows)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--datasets", nargs="+", default=["impossible", "evilgenie", "lcbpro"])
@@ -330,6 +513,8 @@ def main() -> None:
         convert_evilgenie()
     if "lcbpro" in args.datasets:
         convert_lcbpro()
+    if "lcbcall" in args.datasets:
+        convert_lcb_call()
 
 
 if __name__ == "__main__":

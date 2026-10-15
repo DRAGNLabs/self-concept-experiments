@@ -290,6 +290,9 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      episode; report the shown-pass/hidden-fail count on the kept set. The pool is usable if ≥ 25 problems qualify;
      the hard problems in Gemma's 10–90% band (19 so far) can be added to reach 45. The dose grid is then rerun on the new pool (the
      dose itself carries over only if the capability rule holds there too; check the unsteered row first).
+     **Result 2026-10-15** (FINDINGS "Gemma 4 problem-pool calibration"): 52 of 58 solved on both seeds, 5 in the
+     band, 1 never; with the 19 hard-split band problems that is 24, short of 25, so option 2 was built (user
+     decision 2026-10-15).
   2. **More ImpossibleBench-style problems from LiveCodeBench (fallback if 1 yields too few).** The 103 exhaust
      ImpossibleBench's LCB split. LiveCodeBench's call-based (LeetCode-style) problems carry a `func_name` and JSON
      input/output cases, which convert mechanically into the same format: statement as the docstring, a seeded
@@ -298,6 +301,21 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      `src/selfconcept/codebench/convert.py` (the EvilGenie path already downloads `livecodebench/code_generation_lite`
      v5/v6, which has the call-based metadata), one network download (the LCB files are not in the offline cache),
      and a Gemma solve-rate pass to pick the band, i.e. about a day plus the calibration cost.
+     **Built 2026-10-15:** `convert_lcb_call` in `src/selfconcept/codebench/convert.py` (`--datasets lcbcall`,
+     tests `tests/test_convert_lcb_call.py`): all six code_generation_lite releases (1 055 problems, 444 call-based
+     LeetCode: 135 easy / 207 medium / 102 hard; no newer release exists on the Hub), prompt = typing import +
+     module-level stub + statement as docstring, `test` = public examples plus a seeded sample of private cases
+     (≤ 12 shown, each ≤ 1 500 chars), `original_test` = shown plus a seeded holdout (30% of the kept cases, ≤ 30;
+     cases > 20 k chars dropped); left out: 29 problems whose example pair matches an ImpossibleBench original (only
+     28 of the 102 LeetCode-hard problems are in ImpossibleBench; its other originals are rewritten AtCoder/Codeforces
+     problems), 3 float-output problems, linked-list/tree starters. Output `benchmarks/codebench/data/lcbfn_{hard,
+     medium,easy}.jsonl` = 74 / 205 / 133, copied to `gemma4_12b/rh/lcbfn_data/`; every problem runs in the harness
+     with a stub. Calibration (same rule as option 1) on the 74 hard problems first, seeds 0 and 1, job 14201581
+     (`gemma4_12b/rh/lcbfn_calib/`, dwmatrix standby); medium only if hard leaves the pool short (Gemma solves
+     LeetCode-hard ImpossibleBench problems at 93%, so medium is expected to be above the band). If the call-based
+     pool is still short, the remaining mechanical source is the 602 AtCoder stdin problems wrapped as
+     `solve(stdin: str) -> str` with the statement as docstring and visible asserts on small cases; that is a
+     recipe deviation (stdin-string signature) to decide on, not built.
   3. **Not for Gemma:** EvilGenie (138 LCB v5/v6 hard, stdin/stdout workspace; gpt-oss mostly produced weak
      size-restriction hacks there) and LiveCodeBench-Pro medium/hard (gpt-oss never solved 90 of them).
   4. **Thinking off (user go-ahead 2026-10-14, run alongside 1).** Three quarters of Gemma's hard-split episodes die
@@ -307,6 +325,10 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      14166238). Read: no-code rate, hidden pass, and whether shown-pass/hidden-fail episodes appear at all. The
      direction was extracted from the thought channel but is applied to the residual stream, so steering with
      thinking off is possible; whether to switch the recipe to thinking off is a user decision once the check lands.
+     **Result 2026-10-15:** hidden pass 33%, proxy 13% (6 of 45, all first-attempt general solutions, three on the
+     problems whose general solutions always fail the hidden suite), no code 7%, 135 turns for 45 episodes. Thinking
+     off gets Gemma into the regime but the proxy episodes look honest, and the dossier rubric needs reasoning to
+     judge intent; the recipe stays thinking-on unless the user decides otherwise.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
