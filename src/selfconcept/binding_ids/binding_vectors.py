@@ -27,6 +27,8 @@ def estimate_binding_deltas(
         _, clean = run_with_cache(hf_model, layers, prompt.input_ids)
         first_e, second_e = prompt.entity_positions
         first_a, second_a = prompt.attribute_positions
+        # Accumulate in fp32: summing hundreds of bf16 differences loses precision
+        clean = clean.float()
         delta_entity = delta_entity + clean[:, second_e] - clean[:, first_e]
         delta_attribute = delta_attribute + clean[:, second_a] - clean[:, first_a]
     return delta_entity / len(rows), delta_attribute / len(rows)

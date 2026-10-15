@@ -1,6 +1,6 @@
 """MIRROR model + formatter wrappers for OLMo 2, since MIRROR only ships Llama and GPT-2.
 
-Parametrized on the HF model name so 7B and 13B (and future sizes) share one class.
+Parametrized on the HF model name so 7B, 13B and 32B share one class.
 """
 
 from typing import cast
@@ -16,8 +16,8 @@ from mirror.models.model_util import build_causal_lm
 from mirror.models.trainable_model import TrainableModel
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
 from mirror.types import LabeledTokens, Loss, StandardBatch, TextRow, TokenTensor
-from mirror.util import _ds_cache_path_context
-from transformers import PreTrainedModel, PreTrainedTokenizerBase
+from mirror.util import _ds_cache_path_context, is_compute_node, mirror_data_path
+from transformers import AutoModelForCausalLM, PreTrainedModel, PreTrainedTokenizerBase
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -69,9 +69,24 @@ class MirrorOlmoModel(
     TrainableModel[TextRow, LabeledTokens, StandardBatch],
     InferenceModel[TextRow, LabeledTokens, StandardBatch, torch.Tensor],
 ):
-    def __init__(self, hf_model_name: str = "allenai/OLMo-2-1124-7B") -> None:
+    def __init__(self, hf_model_name: str = "allenai/OLMo-2-1124-7B", dtype: str | None = None) -> None:
+        """`dtype` (e.g. "bfloat16") loads the weights in that precision straight from the HF
+        cache, for models too large for MIRROR's fp32 copy (OLMo-2-32B is 129GB in fp32). On the
+        cluster, download first on a login node, since compute nodes are offline:
+        `huggingface_hub.snapshot_download(<name>, cache_dir=<mirror_data>/hf_cache)`.
+        Without `dtype`, loading goes through MIRROR as before.
+        """
         super().__init__()
-        self._hf_model = cast(PreTrainedModel, build_causal_lm(hf_model_name, weights="pretrained"))
+        if dtype is None:
+            hf_model = build_causal_lm(hf_model_name, weights="pretrained")
+        else:
+            hf_model = AutoModelForCausalLM.from_pretrained(
+                hf_model_name,
+                cache_dir=mirror_data_path / "hf_cache",
+                dtype=getattr(torch, dtype),
+                local_files_only=is_compute_node(),
+            )
+        self._hf_model = cast(PreTrainedModel, hf_model)
         self._formatter = MirrorOlmoFormatter(hf_model_name)
 
     @property
