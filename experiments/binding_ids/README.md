@@ -43,6 +43,12 @@ python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/l
 
 Llama is gated on Hugging Face; log in with `huggingface-cli login` first.
 
+**Request minimal compute.** Use the cheapest GPU that fits the model, one GPU, and time/memory
+limits sized to the job. On the `cs` QoS that means `gpus_per_node: a100:1` (partition `cs`,
+80GB A100s, enough for OLMo-2-13B, billing weight 224 per GPU). The H100s (`cs2`, 308) and
+B200s (`cs3`, 640) cost more and aren't needed for these models. Check with
+`scontrol show partition <name> | grep TRESBillingWeights`.
+
 **Locally:** GPT-2 smoke test on CPU:
 
 ```bash

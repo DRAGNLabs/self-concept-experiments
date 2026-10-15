@@ -19,6 +19,6 @@ slurm:
   job_type: compute
   time: "00:30:00"
   gpus_per_node: a100:1
-  qos: dw87
+  qos: cs
   mem_per_cpu: 16G
   output: experiments/binding_ids/slurm-logs/%j.out
