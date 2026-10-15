@@ -68,10 +68,17 @@ MIRROR_DATA_PATH=~/mirror_data python -m selfconcept.binding_ids.run --config ex
    answer for `none`, `swap_both` and the random controls, the other pair's answer for single
    swaps. Answers are scored on each capital's first-token log prob, median-calibrated per answer
    slot (removes the model's bias toward e.g. the later-mentioned attribute, as in the paper);
-   `raw_accuracy_*` skips calibration, and `_e0`/`_e1` split by queried entity. If binding IDs
-   work as the paper describes, all should be high.
+   `_e0`/`_e1` split by queried entity. Stricter variants, from most to least lenient:
+   - `strict_accuracy_*`: calibrated with medians from the `none` condition only, so a slot bias
+     the intervention itself creates isn't calibrated away
+   - `raw_accuracy_*`: uncalibrated; the model prefers the expected in-context capital
+   - `vocab_accuracy_*`: the expected capital is the model's top-1 token over the whole vocabulary
 
-Results are written to `results/<run>/mean_interventions.json` and printed in the Slurm log.
+   If binding IDs work as the paper describes, all should be high.
+
+Results are written to `results/<run>/mean_interventions.json`, with per-query log probs and top
+tokens in `results/<run>/mean_interventions_queries.jsonl` (to recompute any metric offline), and
+printed in the Slurm log.
 
 ### Layout
 

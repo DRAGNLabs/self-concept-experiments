@@ -26,8 +26,14 @@ class MeanInterventionMetric(MirrorMetric):
     the binding-ID account predicts under that condition (original answer for none, swap_both
     and the random_* controls; the other pair's answer for single swaps). Answers are scored
     by each in-context capital's first-token log prob, median-calibrated per answer slot and
-    condition as in the paper; `raw_accuracy_<condition>` skips calibration. `_e0`/`_e1`
-    suffixes split by which entity was queried.
+    condition as in the paper. Variants:
+      - `strict_accuracy_*`: calibrated with the medians from the `none` condition only, so a
+        slot bias the intervention itself introduces isn't calibrated away
+      - `raw_accuracy_*`: no calibration; the model prefers the expected in-context capital
+      - `vocab_accuracy_*`: the expected capital's first token is the top-1 over the whole
+        vocabulary, i.e. what the model would actually generate
+    `_e0`/`_e1` suffixes split by which entity was queried. Per-query log probs and top
+    tokens are written next to `output_path` as `<stem>_queries.jsonl`.
     """
 
     def __init__(
@@ -57,14 +63,13 @@ class MeanInterventionMetric(MirrorMetric):
         eval_rows = eval_rows[: self.n_eval] if self.n_eval is not None else eval_rows
         generator = torch.Generator().manual_seed(self.seed)
 
-        # Per condition, one (query_index, log prob of slot-0 answer, of slot-1 answer) per query
-        scores: dict[str, list[tuple[int, float, float]]] = {c: [] for c in CONDITIONS}
+        records: list[dict] = []  # one per (query, condition)
         n_skipped = 0
         with torch.no_grad():
             delta_entity, delta_attribute = estimate_binding_deltas(
                 hf_model, layers, tokenizer, estimate_rows, fabric.device
             )
-            for row in eval_rows:
+            for row_index, row in enumerate(eval_rows, start=self.eval_start):
                 candidates = [tokenizer.encode(" " + a, add_special_tokens=False)[0] for a in row["answers"]]
                 if candidates[0] == candidates[1]:
                     n_skipped += 1  # first-token scoring can't tell these answers apart
@@ -88,37 +93,59 @@ class MeanInterventionMetric(MirrorMetric):
                             logits = run_with_patched_context(
                                 hf_model, layers, prompt.input_ids, clean, offsets, prompt.context_length
                             )
-                        log_probs = logits.float().log_softmax(-1)[candidates].tolist()
-                        scores[condition].append((query_index, *log_probs))
+                        top_token = int(logits.argmax())
+                        records.append(
+                            {
+                                "row": row_index,
+                                "query_index": query_index,
+                                "condition": condition,
+                                "answers": row["answers"],
+                                "log_probs": logits.float().log_softmax(-1)[candidates].tolist(),
+                                "top_token": tokenizer.decode([top_token]),
+                                "top_slot": candidates.index(top_token) if top_token in candidates else None,
+                            }
+                        )
 
         results = {
             "n_estimate_contexts": len(estimate_rows),
             "n_eval_contexts": len(eval_rows),
-            "n_queries": len(scores["none"]),
+            "n_queries": sum(r["condition"] == "none" for r in records),
             "n_skipped_contexts": n_skipped,
+            **summarize(records),
         }
-        for condition in CONDITIONS:
-            results.update(_accuracies(condition, scores[condition]))
         if self.output_path:
             out = REPO_ROOT / self.output_path
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(results, indent=2) + "\n")
+            with open(out.with_name(f"{out.stem}_queries.jsonl"), "w") as f:
+                f.writelines(json.dumps(r) + "\n" for r in records)
         return results
 
 
-def _accuracies(condition: str, scores: list[tuple[int, float, float]]) -> dict[str, float]:
-    """Raw and median-calibrated accuracy for one condition, overall and per queried entity."""
-    query_index = torch.tensor([s[0] for s in scores])
-    log_probs = torch.tensor([s[1:] for s in scores])  # (n_queries, 2 answer slots)
-    # Subtracting each slot's median removes the model's prior for an answer slot (e.g. the
-    # later-mentioned attribute) independent of binding
-    calibrated = log_probs - log_probs.median(dim=0).values
-    expected = torch.tensor([expected_answer(condition, int(q)) for q in query_index])
-
+def summarize(records: list[dict]) -> dict[str, float]:
+    """All accuracy variants for every condition, from per-query records (see the metric docstring)."""
+    by_condition = {c: [r for r in records if r["condition"] == c] for c in CONDITIONS}
+    baseline_medians = _log_probs(by_condition["none"]).median(dim=0).values
     results = {}
-    for prefix, values in (("accuracy", calibrated), ("raw_accuracy", log_probs)):
-        correct = (values.argmax(dim=1) == expected).float()
-        results[f"{prefix}_{condition}"] = correct.mean().item()
-        for q in (0, 1):
-            results[f"{prefix}_{condition}_e{q}"] = correct[query_index == q].mean().item()
+    for condition, rows in by_condition.items():
+        query_index = torch.tensor([r["query_index"] for r in rows])
+        log_probs = _log_probs(rows)
+        expected = torch.tensor([expected_answer(condition, r["query_index"]) for r in rows])
+        # Subtracting each slot's median removes the model's prior for an answer slot (e.g. the
+        # later-mentioned attribute) independent of binding
+        predictions = {
+            "accuracy": (log_probs - log_probs.median(dim=0).values).argmax(dim=1),
+            "strict_accuracy": (log_probs - baseline_medians).argmax(dim=1),
+            "raw_accuracy": log_probs.argmax(dim=1),
+            "vocab_accuracy": torch.tensor([-1 if r["top_slot"] is None else r["top_slot"] for r in rows]),
+        }
+        for prefix, predicted in predictions.items():
+            correct = (predicted == expected).float()
+            results[f"{prefix}_{condition}"] = correct.mean().item()
+            for q in (0, 1):
+                results[f"{prefix}_{condition}_e{q}"] = correct[query_index == q].mean().item()
     return results
+
+
+def _log_probs(rows: list[dict]) -> torch.Tensor:
+    return torch.tensor([r["log_probs"] for r in rows])  # (n_queries, 2 answer slots)
