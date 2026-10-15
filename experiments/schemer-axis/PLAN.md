@@ -273,9 +273,12 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   inputs makes hard-coding the shown asserts the cheap fix). That edge was measured for gpt-oss; for Gemma 4 12B the
   same problems are mostly out of reach. Pooled over every Gemma episode on the hard split so far (457 episodes:
   both pilots, the sampling checks and the smoke, all steering settings; FINDINGS "Gemma 4 problem-pool diagnosis"):
-  22 of 45 problems were never solved in 7–17 tries, 20 sit in the 10–90% band, 74% of episodes end with no
-  code (the thought channel runs to the budget), and not one episode passed the shown tests while failing the hidden
-  suite, i.e. Gemma never enters the regime in which the recipe's hack occurs. A −α arm cannot lower a rate from a
+  21 of 45 problems were never solved in 7–17 tries, 19 sit in the 10–90% hidden-pass band, 74% of episodes end
+  with no code (the thought channel runs to the budget), and the shown-pass/hidden-fail proxy fires in 2.2% of
+  episodes (2.9% unsteered), 7 of the 11 on one problem whose general solution fails the hidden suite, with an
+  intent term in only 2; i.e. Gemma barely enters the regime in which the recipe's hack occurs, and what it does
+  enter is mostly not hacking. (Corrected the same day: the first write-up read the shown-test field as the hidden
+  pass and reported zero proxy episodes.) A −α arm cannot lower a rate from a
   regime the model does not reach, so the grid on the hard split can set the dose (the capability rule reads fine)
   but cannot measure the hack contrast. Options considered, in order:
   1. **The other 58 ImpossibleBench problems (chosen).** Impossible-LiveCodeBench has 103 problems; the 58 not in
@@ -285,7 +288,7 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      `gemma4_12b/rh/pool_calib/`, job 14166236, cs/dwmatrix standby). Selection rule, fixed before the data land:
      keep problems with hidden pass between 10% and 90% over the available seeds that produced code in at least one
      episode; report the shown-pass/hidden-fail count on the kept set. The pool is usable if ≥ 25 problems qualify;
-     the hard problems in Gemma's 10–90% band (20 so far) can be added to reach 45. The dose grid is then rerun on the new pool (the
+     the hard problems in Gemma's 10–90% band (19 so far) can be added to reach 45. The dose grid is then rerun on the new pool (the
      dose itself carries over only if the capability rule holds there too; check the unsteered row first).
   2. **More ImpossibleBench-style problems from LiveCodeBench (fallback if 1 yields too few).** The 103 exhaust
      ImpossibleBench's LCB split. LiveCodeBench's call-based (LeetCode-style) problems carry a `func_name` and JSON
