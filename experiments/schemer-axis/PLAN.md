@@ -315,7 +315,11 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      LeetCode-hard ImpossibleBench problems at 93%, so medium is expected to be above the band). If the call-based
      pool is still short, the remaining mechanical source is the 602 AtCoder stdin problems wrapped as
      `solve(stdin: str) -> str` with the statement as docstring and visible asserts on small cases; that is a
-     recipe deviation (stdin-string signature) to decide on, not built.
+     recipe deviation (stdin-string signature) to decide on, not built. Interim at 34/38 of 74 episodes (seeds 0/1,
+     2026-10-15 16:30): hidden pass 82%/89%, 4 band / 3 never / 27 always over the 34 problems with both seeds, one
+     shown-pass/hidden-fail episode (honest general solution), i.e. ≈ 9 band problems expected from the tier and a
+     12B pool of ≈ 33 at best. The calibration runs to completion (free standby) and its band is kept for either
+     model; the AtCoder wrapper is not started while 31B is on the table (next bullet).
   3. **Not for Gemma:** EvilGenie (138 LCB v5/v6 hard, stdin/stdout workspace; gpt-oss mostly produced weak
      size-restriction hacks there) and LiveCodeBench-Pro medium/hard (gpt-oss never solved 90 of them).
   4. **Thinking off (user go-ahead 2026-10-14, run alongside 1).** Three quarters of Gemma's hard-split episodes die
@@ -329,6 +333,26 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      problems whose general solutions always fail the hidden suite), no code 7%, 135 turns for 45 episodes. Thinking
      off gets Gemma into the regime but the proxy episodes look honest, and the dossier rubric needs reasoning to
      judge intent; the recipe stays thinking-on unless the user decides otherwise.
+- **Gemma 4 31B instead of 12B (user decision 2026-10-15).** The 12B blocker is an ability floor, not the vector:
+  on the hard split it submits no code in 74% of episodes, never solves 21 of 45 and hacks ≈ 3%, whereas the gpt-oss
+  result came from a model that solves about half the split and fakes the rest ≈ 19% of the time. A 31B Gemma
+  should move the ability edge toward the hard split we already have, so the recipe, pool and selection rule can be
+  reused as they are, which removes the recipe deviations (new pool, thinking off, AtCoder stdin format) that weaken
+  the cross-model claim. It does not guarantee a hack contrast: capability and hacking propensity are separate
+  (thinking off got 12B to 13% proxy with only honest wrong answers), so the family may solve more and still hack
+  little. Gate before any extraction work: 31B unsteered on the hard 45, one seed, under the Gemma recipe (top-p
+  0.95, top-k 64, 32 768 tokens, thinking on), `gemma4_31b/rh/cap_check/`, job 14208163 (m13h H200 standby, 12 h,
+  requeue; the checkpoint `google/gemma-4-31B-it`, 60 layers, hidden 5376, 62.6 GB bf16, was already in
+  `~/.cache/huggingface` and is linked into the offline cache). Read: hidden pass, no-code, shown-pass/hidden-fail
+  rate and whether any such episode carries intent terms. If the proxy is under ≈ 5% with no intent, the
+  replication is a null-by-floor at this scale too and the 31B pipeline is not built. If it passes, the 31B
+  pipeline is the 12B one with the model switched: full extraction (`extract_roles_gemma4.sbatch`, 12 roles × 200,
+  output `gemma4_31b/`), split-half / held-out AUROC / layer sweep with the mid-depth layer at 30 of 60, Phase 3
+  smoke (norms at layer 30, ±α probes, act-norm read before the dose grid), a fresh dose pilot under the dose rule,
+  then the dose decision to the user. Cost: 31B needs an 80 GB card (A100-80 is marginal at 40 k context: 62.6 GB
+  weights plus ≈ 7.5 GB KV cache; H200 comfortable), episodes run slower, and the paid partitions get tighter. What
+  carries over from 12B: the harness, the pool calibrations, the 412 converted LiveCodeBench problems, and the 12B
+  negative result as a line in the write-up.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
