@@ -137,10 +137,49 @@ query, so "says" here is driven by country tokens; raw/strict/calibrated still c
 
 ### Open questions / next steps
 
-- Larger model: OLMo-2-0325-32B (bf16, one A100), to see whether the attribute-side shortfall
-  shrinks with scale.
+- ~~Larger model: OLMo-2-0325-32B~~ — done, see next section.
 - Size of Δ relative to hidden-state norms, per layer: subtle nudge or large rewrite? Which layers
   carry the binding?
 - Does scaling Δ_A up close the attribute-side gap, or does it break the model?
 - Unpinned name-only patching: does " lives" carry its own copy of the binding or relay the name's?
 - Remaining paper experiments: factorizability, position independence, 3-pair contexts.
+
+## 2026-10-15 — OLMo-2-32B: entity side perfect, attribute side gets worse
+
+Model: OLMo-2-0325-32B (base), **bf16** (7B/13B ran in fp32, so size and precision are slightly
+confounded). Same data, eval contexts and protocol as above. No exact log-prob ties in 1,400
+scored queries.
+
+| condition | calibrated | strict | raw | says | raw E0 / E1 |
+|---|---|---|---|---|---|
+| none | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 / 1.00 |
+| swap_entities | 1.00 | 0.99 | 1.00 | 1.00 | 1.00 / 1.00 |
+| swap_attributes | 0.96 | **0.59** | 0.74 | 0.74 | 1.00 / **0.47** |
+| swap_both | 0.97 | **0.62** | 0.80 | 0.80 | **0.59** / 1.00 |
+| random_entities | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 / 1.00 |
+| random_attributes | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 / 1.00 |
+| random_both | 1.00 | 0.98 | 1.00 | 1.00 | 1.00 / 1.00 |
+
+Attribute-swap "says" across scale (OLMo-2): 7B 0.96 (country answers) → 13B 0.80 → 32B 0.74.
+
+### Takeaways
+
+1. **Entity binding IDs are clean at 32B**: entity swaps and all random controls are perfect.
+2. **The attribute-side shortfall grows with scale rather than shrinking.** Under the attribute
+   swap the model always answers with the *later* attribute (A1) for E0 queries and still does
+   so for 53% of E1 queries. Strict calibration drops to 0.59, so this is not just a small
+   push that falls short.
+3. **The bias is specific to Δ_A, not to perturbing attributes.** Equal-norm random vectors at
+   the attribute positions now do nothing (1.00), whereas at 13B they cost ~7 points. So the
+   pull toward A1 comes from what Δ_A encodes, not from disruption.
+4. **The paper's calibrated metric hides this entirely** (0.96 / 0.97).
+
+### Hypotheses to test (not yet tested)
+
+- Δ_A carries more than a binding ID, e.g. a "mentioned second / more recent" position signal,
+  and the model also locates attributes by position. Swapping the IDs then leaves a positional
+  cue that still points to the later attribute. A position-independence test (moving attribute
+  activations to other positions) would separate these.
+- The attribute's binding is also spread onto the following token (" ." after the country), as
+  with entities and " lives"; patching only the country token would leave a copy behind.
+  Cheap test: patch the country plus the next token.
