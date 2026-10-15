@@ -30,8 +30,9 @@ class MeanInterventionMetric(MirrorMetric):
       - `strict_accuracy_*`: calibrated with the medians from the `none` condition only, so a
         slot bias the intervention itself introduces isn't calibrated away
       - `raw_accuracy_*`: no calibration; the model prefers the expected in-context capital
-      - `vocab_accuracy_*`: the expected capital's first token is the top-1 over the whole
-        vocabulary, i.e. what the model would actually generate
+      - `vocab_accuracy_*`: the top-1 token over the whole vocabulary is the first token of the
+        expected pair's capital or country, i.e. what the model would actually generate (some
+        models, e.g. OLMo-2-7B, answer "the city of" with the country)
     `_e0`/`_e1` suffixes split by which entity was queried. Per-query log probs and top
     tokens are written next to `output_path` as `<stem>_queries.jsonl`.
     """
@@ -100,9 +101,10 @@ class MeanInterventionMetric(MirrorMetric):
                                 "query_index": query_index,
                                 "condition": condition,
                                 "answers": row["answers"],
+                                "attributes": row["attributes"],
                                 "log_probs": logits.float().log_softmax(-1)[candidates].tolist(),
                                 "top_token": tokenizer.decode([top_token]),
-                                "top_slot": candidates.index(top_token) if top_token in candidates else None,
+                                "top_slot": top_slot(tokenizer, row, top_token),
                             }
                         )
 
@@ -120,6 +122,15 @@ class MeanInterventionMetric(MirrorMetric):
             with open(out.with_name(f"{out.stem}_queries.jsonl"), "w") as f:
                 f.writelines(json.dumps(r) + "\n" for r in records)
         return results
+
+
+def top_slot(tokenizer, row: dict, token_id: int) -> int | None:
+    """Answer slot whose capital or country starts with `token_id`, if any."""
+    for slot in (0, 1):
+        for word in (row["answers"][slot], row["attributes"][slot]):
+            if tokenizer.encode(" " + word, add_special_tokens=False)[0] == token_id:
+                return slot
+    return None
 
 
 def summarize(records: list[dict]) -> dict[str, float]:
