@@ -16,8 +16,9 @@ def estimate_binding_deltas(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Mean (second pair − first pair) activation difference at entity and attribute positions.
 
-    Returns (delta_entity, delta_attribute), each (n_layers, hidden). Under the binding-ID
-    account these differences are the binding-vector offsets between the two pairs.
+    Returns (delta_entity, delta_attribute), each (n_layers, positions_per_mention, hidden).
+    Averaged over contexts this equals the paper's E[Z_1(c) − Z_0(c')] over independent
+    c, c'. Under the binding-ID account these are the binding-vector offsets between pairs.
     """
     delta_entity = delta_attribute = torch.zeros(())
     for row in rows:

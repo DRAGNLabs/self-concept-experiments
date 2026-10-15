@@ -12,8 +12,10 @@ from .tasks import BindingRow, query_prompt
 class EncodedPrompt:
     input_ids: torch.Tensor  # (1, seq)
     context_length: int  # leading tokens that lie entirely inside the context
-    entity_positions: list[int]  # last token of each entity mention
-    attribute_positions: list[int]  # last token of each attribute mention
+    # Per mention, the token positions its binding ID is read from and patched at:
+    # an entity's last token plus the token after it (as in the paper), an attribute's last token
+    entity_positions: list[list[int]]
+    attribute_positions: list[list[int]]
 
 
 def decoder_layers(hf_model: nn.Module) -> nn.ModuleList:
@@ -39,8 +41,10 @@ def encode_prompt(tokenizer, row: BindingRow, query_index: int, device: torch.de
     return EncodedPrompt(
         input_ids=torch.tensor([enc["input_ids"]], device=device),
         context_length=context_length,
-        entity_positions=[_token_covering(offsets, end - 1) for _, end in row["entity_spans"]],
-        attribute_positions=[_token_covering(offsets, end - 1) for _, end in row["attribute_spans"]],
+        entity_positions=[
+            [last, last + 1] for last in (_token_covering(offsets, end - 1) for _, end in row["entity_spans"])
+        ],
+        attribute_positions=[[_token_covering(offsets, end - 1)] for _, end in row["attribute_spans"]],
     )
 
 
