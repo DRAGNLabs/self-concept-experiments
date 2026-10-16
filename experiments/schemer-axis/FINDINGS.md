@@ -48,7 +48,7 @@ judging dossiers, checked against Koby's extractor on his seed-0 run). Unit test
 |---|---|---|
 | 1. Is there a usable schemer direction in gpt-oss-120b? | yes, both token regions pass checks 1–3 | fiction-framed character roles; CoT-region `persona_contrast` split-half 0.98, held-out schemer-vs-honest AUROC 1.00, cos(AA) −0.14; final-region twin 0.97 / 0.99 / −0.42; the twins share cos 0.54 |
 | 2. Does it separate hack from non-hack episodes? | done on the cached cohort | primary (CoT-region contrast on CoT tokens): no, AUROC 0.48 (0.39–0.59), random tail 0.88. Secondary: the final-region contrast with the AA projected out reaches 0.70 (0.62–0.77) on CoT tokens, the AA's own level, random tail 0.054, and adds to the AA (partial corr 0.36, tail 0.004): borderline-specific |
-| 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; random-control dose pilot done and capability-matched random arm done 2026-10-13 (jobs 14121029 + 14122730 pilot, 14123844 arm, α = 0.07) | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code); the capability-matched random direction (α = 0.07, 540 episodes) leaves the hack proxy at 19.4% (Δ 0.0, CI ±3 pt), so the effect is specific to the persona direction |
+| 3. Does shifting or capping along it change the hack rate? | main run done 2026-10-13 (jobs 14091021 + 14118898, 5 arms × 540 episodes, α = 0.2); general-capability check done 2026-10-16 (job 14242934: −0.2 shift and p25 cap within 1.5 points of unsteered on GSM8K, MMLU-Pro and HumanEval; FINDINGS "general-capability benchmarks"); automatic proxy analysed, 468 dossiers built, judging deferred (user decision), mechanism check pending; random-control dose pilot done and capability-matched random arm done 2026-10-13 (jobs 14121029 + 14122730 pilot, 14123844 arm, α = 0.07) | hack proxy 19% unsteered → 46% at +0.2 (+26 pt, CI +18 to +35, Holm p 1e-4), 10% at −0.2 and 11% under the band cap (−9 and −8 pt, Holm p 3e-4), hidden pass and no-code unchanged in all three; the norm-matched random direction broke the model (0% pass, 60% no code); the capability-matched random direction (α = 0.07, 540 episodes) leaves the hack proxy at 19.4% (Δ 0.0, CI ±3 pt), so the effect is specific to the persona direction |
 | 4. Does the schemer direction exist in Gemma 4? (advisor request 2026-10-13, PLAN "Gemma 4 pilot") | done 2026-10-13 (jobs 14123684 smoke, 14123798 full; google/gemma-4-12B-it, 12 roles × 200, both regions, layer 24 + sweep; FINDINGS "Gemma 4 pilot"); checks 4–5 not done; Phase 3 on Gemma started 2026-10-13: harness ported, smoke passed (job 14125813, FINDINGS "Gemma 4 Phase 3 smoke": norms, ±0.08 probes move answers the expected way, 3 unsteered episodes all solved first try); dose pilot run 2026-10-14 (job 14125814, 7 of 9 settings complete) but uninformative: the gpt-oss recipe truncates Gemma's thinking at 16 384 tokens on 37 of 45 unsteered episodes (no-code 73%, hack proxy 2%); sampling/budget check (12 problems, top-p 0.95 + top-k 64, 16k and 32k budgets) submitted 2026-10-14, recipe decision then goes to the user ; pilot #2 under the new sampling (jobs 14148812 + 14159040): interim hack proxy 0% in all 5 arms, negative arms outside the capability rule; the three paid arms were cancelled 2026-10-14 at 11–22 episodes (user decision), unsteered and −0.08 completed 2026-10-15 (FINDINGS "Gemma 4 Phase 3 dose pilot #2": unsteered proxy 4%, hidden pass 44%, no code 29%; −0.08 fails the capability rule, +0.04/+0.08 within it at partial counts; no dose set, grid to be rerun on the Gemma pool); problem-pool diagnosis 2026-10-14 (FINDINGS "Gemma 4 problem-pool diagnosis"): proxy 2.2% in 494 hard-split episodes, mostly honest wrong answers on one problem, 21 of 45 never solved, so the hard split cannot show a hack contrast for Gemma; calibration on the 58 easier ImpossibleBench problems and thinking-off check done 2026-10-15 (FINDINGS "Gemma 4 problem-pool calibration": 52 of 58 solved on both seeds, 5 in the band; thinking off: proxy 13% but honest wrong answers); LiveCodeBench call-based conversion built 2026-10-15 (412 problems), Gemma calibration on the 74 hard ones done 2026-10-16 (job 14201581, FINDINGS "Gemma 4 12B on the 74 LiveCodeBench-hard call-based problems": hidden pass 85–88%, 8 of 74 in the band, 4 honest shown-pass/hidden-fail episodes; 12B pool would be 32 problems); **model switch to google/gemma-4-31B-it decided 2026-10-15** (the 12B blocker is an ability floor; PLAN "Gemma 4 31B instead of 12B"): unsteered single-seed capability check on the hard 45 running (job 14208163, `gemma4_31b/rh/cap_check/`, m13h H200 standby, preempted once at 24 episodes and requeued; interim 24 episodes: hidden pass 71%, no code 0%, shown-pass/hidden-fail 21% (5 of 24, three on the problems whose general solution fails the hidden suite, the other two general solutions after 2–3 attempts, no intent terms), i.e. 31B is in the gpt-oss regime on capability, the hack reading waits for the full 45), the 31B extraction and dose pilot follow only if its shown-pass/hidden-fail rate is above the floor | yes: all twelve roles pass the gate (Gemma also plays bare personas); CoT persona_contrast split-half 0.985, held-out schemer vs honest 1.00, honest vs default 0.37–0.43 at layer 24, i.e. the gpt-oss signature; bare and fiction contrasts agree (cos 0.90); cleanest band layers 28–36; vector is 2–6% of the residual norm |
 
 ## Runs
@@ -768,6 +768,46 @@ study found for this model; cos(schemer_fic − straight_shooter_fic, schemer �
 means. Decision: the full extraction (job 14123798) runs the five bare roles alongside the six fiction roles and
 default, 40 questions each, so that the Gemma schemer vector can be built both as a bare-persona vector and as a
 character vector matching gpt-oss's.
+
+### gpt-oss-120b general-capability benchmarks under the main-run interventions — 2026-10-16: the −0.2 shift and the p25 band cap keep GSM8K, MMLU-Pro and HumanEval within 1.5 points of unsteered; the shift's 1.1-point GSM8K drop is the only paired difference that excludes zero
+
+Result. Item-paired against the unsteered arm (same items, same seed), 95% bootstrap CI of the difference, McNemar's
+exact p on the discordant pairs:
+
+| Benchmark | Arm | n | Unsteered | Arm | Δ (points) | 95% CI | gains / losses | McNemar p | tokens (unsteered / arm) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| GSM8K | shift_minus | 1 319 | 96.0% | 94.8% | −1.1 | [−2.1, −0.2] | 12 / 27 | 0.024 | 285 / 280 |
+| GSM8K | cap_band_p25 | 1 319 | 96.0% | 95.8% | −0.2 | [−0.9, +0.4] | 8 / 11 | 0.65 | 285 / 287 |
+| MMLU-Pro | shift_minus | 1 400 | 75.9% | 74.4% | −1.4 | [−3.1, +0.2] | 56 / 76 | 0.10 | 284 / 303 |
+| MMLU-Pro | cap_band_p25 | 1 400 | 75.9% | 74.5% | −1.4 | [−2.9, +0.1] | 46 / 65 | 0.09 | 284 / 290 |
+| HumanEval | shift_minus | 164 | 94.5% | 96.3% | +1.8 | [−1.2, +4.9] | 5 / 2 | 0.45 | 336 / 313 |
+| HumanEval | cap_band_p25 | 164 | 94.5% | 95.7% | +1.2 | [−1.8, +4.3] | 4 / 2 | 0.69 | 336 / 335 |
+
+No completion was truncated in any arm; unparseable answers are 0 (GSM8K, HumanEval) to 0.3% (MMLU-Pro); mean
+completion length moves by at most 7% (shift_minus on MMLU-Pro, 303 vs 284 tokens). Both arms sit inside the
+2-point band the dose decision used (PLAN "Main-run dose") on every benchmark. The one difference whose CI excludes
+zero is the −0.2 shift on GSM8K (−1.1 points, 27 losses against 12 gains); the MMLU-Pro drops of 1.4 points in both
+arms have CIs that reach zero and p ≈ 0.1, and the HumanEval differences are positive and not significant.
+
+Question. The main run's capability measures are task-internal (hidden-suite pass, no code, truncation on the 45
+hard problems). Do the two mitigating interventions cost general ability on standard benchmarks?
+
+Setup. Job 14242934 (`slurm/capability_eval.sbatch`, three array tasks on dwmatrix A100 ×1, 12 min each after a
+2-min load), `scripts/capability_eval_vllm.py`: the same patched vLLM engine and arm definitions as the main run
+(`main/arms.tsv` lines for unsteered, shift_minus = persona_contrast added at layer 17 with α = −0.2 × 8085,
+cap_band_p25 = ceiling at the p25 thresholds over layers 12–23), the main run's sampling (temperature 1, seed 0,
+per-item seeds, Harmony low reasoning effort, 16 384 new tokens), only the final channel scored. Benchmarks: GSM8K
+test (1 319, "Answer: <number>" exact match after normalisation), MMLU-Pro test stratified to 100 questions per
+category (1 400, seed 0, "Answer: <letter>"), HumanEval (164, the function in a fenced block executed against its
+test suite in the codebench sandbox, pass@1). GPQA Diamond is gated on the Hub and the cluster has no login.
+Comparison: `scripts/capability_eval_compare.py` (`capeval/compare.json`); records in `capeval/<arm>/<task>.jsonl`.
+Spot check of wrong answers in the unsteered arm: genuine model errors (wrong arithmetic path, "none of the above",
+failing code), not parse failures.
+
+Limits. One seed at temperature 1, so item-level outcomes carry sampling noise (the paired design removes the
+item difficulty, not the sampling). Low reasoning effort is the experiment's condition, not the model's headline
+setting, so these are not comparable to published gpt-oss-120b scores. MMLU-Pro is a subsample. The interventions act
+on every token, prompt included, as in the main run. shift_plus (the effect arm) was not run.
 
 ### Phase 3 random-control dose pilot — 2026-10-13: a random direction at α = 0.07 is the largest dose that keeps hidden pass and no-code within 10 points of unsteered on all three random seeds; a 12-seed random arm at that dose is running
 

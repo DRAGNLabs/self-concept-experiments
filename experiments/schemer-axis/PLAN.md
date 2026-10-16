@@ -473,7 +473,10 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   array task each (`slurm/capability_eval.sbatch`, dwmatrix A100 standby, job 14242934, output
   `schemer-axis/capeval/<arm>/`). Reading: paired per-item comparison against the unsteered arm; an arm "keeps
   capability" if every benchmark is within noise of unsteered (paired difference CI covers 0 or the point
-  estimate is within 2 points, as the dose rule). shift_plus is not run: it is the effect arm, not a mitigation.
+  estimate is within 2 points, as the dose rule). shift_plus is not run: it is the effect arm, not a mitigation. **Result 2026-10-16** (FINDINGS "general-capability
+  benchmarks"): both arms within 1.5 points of unsteered on all three; the shift's GSM8K −1.1 [−2.1, −0.2] is the
+  only paired difference excluding zero; MMLU-Pro −1.4 in both arms (CIs reach zero), HumanEval +1 to +2; no
+  truncation, token counts within 7%. Done in 12 min per arm on an A100.
 
 ## Paths
 
