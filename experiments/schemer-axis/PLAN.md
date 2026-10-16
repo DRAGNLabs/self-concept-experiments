@@ -319,7 +319,10 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
      2026-10-15 16:30): hidden pass 82%/89%, 4 band / 3 never / 27 always over the 34 problems with both seeds, one
      shown-pass/hidden-fail episode (honest general solution), i.e. ≈ 9 band problems expected from the tier and a
      12B pool of ≈ 33 at best. The calibration runs to completion (free standby) and its band is kept for either
-     model; the AtCoder wrapper is not started while 31B is on the table (next bullet).
+     model; the AtCoder wrapper is not started while 31B is on the table (next bullet). **Result 2026-10-16**
+     (FINDINGS "Gemma 4 12B on the 74 LiveCodeBench-hard call-based problems"): 60 of 74 solved on both seeds, 6
+     never, 8 in the band; 4 shown-pass/hidden-fail episodes, all honest. 12B pool = 8 + 19 + 5 = 32 problems
+     (`lcbfn_calib/band.json`), usable by the rule but not pursued while the 31B gate is open.
   3. **Not for Gemma:** EvilGenie (138 LCB v5/v6 hard, stdin/stdout workspace; gpt-oss mostly produced weak
      size-restriction hacks there) and LiveCodeBench-Pro medium/hard (gpt-oss never solved 90 of them).
   4. **Thinking off (user go-ahead 2026-10-14, run alongside 1).** Three quarters of Gemma's hard-split episodes die
@@ -344,7 +347,10 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   0.95, top-k 64, 32 768 tokens, thinking on), `gemma4_31b/rh/cap_check/`, job 14208163 (m13h H200 standby, 12 h,
   requeue; the checkpoint `google/gemma-4-31B-it`, 60 layers, hidden 5376, 62.6 GB bf16, was already in
   `~/.cache/huggingface` and is linked into the offline cache). Read: hidden pass, no-code, shown-pass/hidden-fail
-  rate and whether any such episode carries intent terms. If the proxy is under ≈ 5% with no intent, the
+  rate and whether any such episode carries intent terms. Interim 2026-10-16 (24 episodes before a standby
+  preemption; the job requeued and resumes): hidden pass 71%, no code 0%, 43 turns for 24 episodes, ≈ 5 min per
+  episode on an H200, shown-pass/hidden-fail 5 of 24 (21%), all general solutions without intent terms (three on
+  `lcbhard_55/61/67`, the problems whose general solutions fail the hidden suite). If the proxy is under ≈ 5% with no intent, the
   replication is a null-by-floor at this scale too and the 31B pipeline is not built. If it passes, the 31B
   pipeline is the 12B one with the model switched: full extraction (`extract_roles_gemma4.sbatch`, 12 roles × 200,
   output `gemma4_31b/`), split-half / held-out AUROC / layer sweep with the mid-depth layer at 30 of 60, Phase 3
