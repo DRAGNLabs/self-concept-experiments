@@ -462,6 +462,19 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
 
+- **General-capability check of the intervened gpt-oss-120b (user request 2026-10-16).** The main run's capability
+  measures are task-internal (hidden pass, no code, truncation). To show that the two mitigating interventions
+  (−0.2 shift, p25 band cap) do not cost general ability, `scripts/capability_eval_vllm.py` runs three public
+  benchmarks through the same patched vLLM engine as the main run, same sampling (temperature 1, seed 0, low
+  reasoning effort, 16 384 new tokens), only the final channel scored: GSM8K test (1 319, numeric exact match),
+  MMLU-Pro (100 questions per category, 1 400, seed-0 stratified subsample, letter), HumanEval (164, pass@1, the
+  function executed against its tests in the codebench sandbox). GPQA Diamond is gated on the Hub and not
+  available without a login. Arms: unsteered, shift_minus, cap_band_p25 (the main run's `arms.tsv` lines), one
+  array task each (`slurm/capability_eval.sbatch`, dwmatrix A100 standby, job 14242934, output
+  `schemer-axis/capeval/<arm>/`). Reading: paired per-item comparison against the unsteered arm; an arm "keeps
+  capability" if every benchmark is within noise of unsteered (paired difference CI covers 0 or the point
+  estimate is within 2 points, as the dose rule). shift_plus is not run: it is the effect arm, not a mitigation.
+
 ## Paths
 
 - Scratch (autodelete): `~/nobackup/autodelete/self-concept-experiments/schemer-axis/`
