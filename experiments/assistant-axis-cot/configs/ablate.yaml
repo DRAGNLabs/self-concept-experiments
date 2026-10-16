@@ -1,0 +1,7 @@
+# Region mean ablation KL of one condition's transcripts. Run from experiments/assistant-axis-cot
+# (slurm/ablate.sbatch sets the model, data, region means, axis and condition):
+#   python scripts/ablate.py --config configs/ablate.yaml
+run:
+  condition: unprompted
+  max_batch_tokens: 32768
+  kl_chunk_size: 1024

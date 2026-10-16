@@ -1,4 +1,4 @@
-"""Harmony message pooling for gpt-oss: final channel by default, analysis channel with enable_thinking."""
+"""Harmony message pooling for gpt-oss: final channel by default, analysis channel with include_thinking."""
 import unittest
 
 from selfconcept.assistant_axis.internals.model_specifics.gpt_model_specifics import _iter_harmony_messages, _pooled_messages
@@ -50,20 +50,20 @@ class HarmonyPoolingTest(unittest.TestCase):
     def test_default_pools_final_channel(self):
         tok = StubTokenizer()
         ids = render(tok, "plan the reply")
-        pooled = _pooled_messages(tok, ids)
+        pooled = _pooled_messages(tok, ids, False)
         self.assertEqual([(m.role, m.channel) for m in pooled], [("user", None), ("assistant", "final")])
 
-    def test_enable_thinking_pools_analysis_channel(self):
+    def test_include_thinking_pools_analysis_channel(self):
         tok = StubTokenizer()
         ids = render(tok, "plan the reply")
-        pooled = _pooled_messages(tok, ids, enable_thinking=True)
+        pooled = _pooled_messages(tok, ids, True)
         self.assertEqual([(m.role, m.channel) for m in pooled], [("user", None), ("assistant", "analysis")])
         self.assertEqual(tok.decode([ids[i] for i in pooled[1].content_indices]), "plan the reply")
 
-    def test_enable_thinking_falls_back_to_final_without_analysis(self):
+    def test_include_thinking_falls_back_to_final_without_analysis(self):
         tok = StubTokenizer()
         ids = render(tok, None)
-        pooled = _pooled_messages(tok, ids, enable_thinking=True)
+        pooled = _pooled_messages(tok, ids, True)
         self.assertEqual([(m.role, m.channel) for m in pooled], [("user", None), ("assistant", "final")])
 
     def test_multi_turn_keeps_one_message_per_turn(self):
@@ -73,9 +73,9 @@ class HarmonyPoolingTest(unittest.TestCase):
                 " <|start|> assistant <|channel|> analysis <|message|> think two <|end|>"
                 " <|start|> assistant <|channel|> final <|message|> a two <|return|>")
         ids = tok.encode(text)
-        self.assertEqual([(m.role, m.channel) for m in _pooled_messages(tok, ids, enable_thinking=True)],
+        self.assertEqual([(m.role, m.channel) for m in _pooled_messages(tok, ids, True)],
                          [("user", None), ("assistant", "final"), ("user", None), ("assistant", "analysis")])
-        self.assertEqual([(m.role, m.channel) for m in _pooled_messages(tok, ids)],
+        self.assertEqual([(m.role, m.channel) for m in _pooled_messages(tok, ids, False)],
                          [("user", None), ("assistant", "final"), ("user", None), ("assistant", "final")])
 
 

@@ -1,0 +1,8 @@
+run:
+  model: openai/gpt-oss-120b
+  temperature: 1.0  # openai/gpt-oss README
+  top_p: 1.0
+  top_k: -1
+  enable_thinking: true  # gpt-oss always reasons (low effort); true keeps the empty-analysis prefill off the prompt
+  chat_template_kwargs:
+    reasoning_effort: low

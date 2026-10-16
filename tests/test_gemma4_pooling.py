@@ -1,4 +1,4 @@
-"""Gemma 4 thought-channel pooling: content by default, thought channel with pool_cot; completion splitting."""
+"""Gemma 4 thought-channel pooling: content by default, thought channel with include_thinking; completion splitting."""
 import unittest
 
 from selfconcept.assistant_axis.internals.model_specifics.gemma4 import (
@@ -57,16 +57,16 @@ class Gemma4PoolingTest(unittest.TestCase):
         pooled = pooled_gemma4_messages(tok, render(tok, "plan the reply"))
         self.assertEqual([(m.role, m.channel) for m in pooled], [("user", None), ("assistant", None)])
 
-    def test_pool_cot_pools_thought_channel(self):
+    def test_include_thinking_pools_thought_channel(self):
         tok = StubTokenizer()
         ids = render(tok, "plan the reply")
-        pooled = pooled_gemma4_messages(tok, ids, pool_cot=True)
+        pooled = pooled_gemma4_messages(tok, ids, include_thinking=True)
         self.assertEqual([(m.role, m.channel) for m in pooled], [("user", None), ("assistant", "thought")])
         self.assertEqual(tok.decode([ids[i] for i in pooled[1].content_indices]), "plan the reply")
 
-    def test_pool_cot_falls_back_to_content_without_thought(self):
+    def test_include_thinking_falls_back_to_content_without_thought(self):
         tok = StubTokenizer()
-        pooled = pooled_gemma4_messages(tok, render(tok, None), pool_cot=True)
+        pooled = pooled_gemma4_messages(tok, render(tok, None), include_thinking=True)
         self.assertEqual([(m.role, m.channel) for m in pooled], [("user", None), ("assistant", None)])
 
     def test_split_completion(self):
@@ -80,7 +80,11 @@ class Gemma4PoolingTest(unittest.TestCase):
         self.assertEqual(specifics.to_assistant_turn("<|channel>thought\nplan\n<channel|>answer<turn|>"),
                          {"role": "assistant", "content": "answer", "reasoning": "plan"})
         self.assertEqual(specifics.to_assistant_turn("answer"), {"role": "assistant", "content": "answer"})
-        self.assertEqual(specifics.set_enable_thinking({}, False), {"enable_thinking": True, "pool_cot": False})
+        self.assertEqual(specifics.to_completion({"role": "assistant", "content": "answer", "reasoning": "plan"}),
+                         "<|channel>thought\nplan\n<channel|>answer")
+        self.assertEqual(specifics.to_completion({"role": "assistant", "content": "answer"}), "answer")
+        self.assertEqual(specifics.set_thinking_flag({}, False), {"enable_thinking": False})
+        self.assertEqual(specifics.set_thinking_flag({"a": 1}, True), {"a": 1, "enable_thinking": True})
 
 
 if __name__ == "__main__":

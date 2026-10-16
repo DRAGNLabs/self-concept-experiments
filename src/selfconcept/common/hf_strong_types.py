@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Protocol, TypedDict, overload
 
+from tokenizers import Tokenizer
 from transformers.tokenization_utils_base import PreTokenizedInput, TextInput
 
 
@@ -32,6 +33,9 @@ class HFTokenizer[RoleT: AllRoles = AllRoles](Protocol):
     all_special_ids: list[int]
     all_special_tokens: list[str]
     eos_token_id: int | None
+
+    @property
+    def backend_tokenizer(self) -> Tokenizer: ...
 
     def __call__(
         self,

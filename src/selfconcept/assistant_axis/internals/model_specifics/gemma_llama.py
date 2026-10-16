@@ -1,12 +1,13 @@
 from typing import Any
 
 from selfconcept.assistant_axis.internals.conversation_utils import content_only_ids_and_offset_standard, longest_common_prefix_len
-from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.common.generation.model_specifics import NoThinkingGenerationSpecifics
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, _Conversation, configure_apply_chat_template, configure_call
 
 
-class GemmaLlamaModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelSpecifics): # TODO: technically not quite right for Llama, since llama supports all roles
-    def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, **apply_chat_template_kwargs: Any) -> list[list[int]]:
+class GemmaLlamaModelSpecifics(CoverallLayerGetter, NoThinkingGenerationSpecifics, ModelSpecifics): # TODO: technically not quite right for Llama, since llama supports all roles
+    def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, *, include_thinking: bool, **apply_chat_template_kwargs: Any) -> list[list[int]]:
         """Gemma/Llama-specific implementation using offset mapping approach."""
         all_turn_indices = []
 
@@ -74,6 +75,8 @@ class GemmaLlamaModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelS
         conversation: _Conversation,
         tokenizer: HFTokenizer,
         full_ids: list[int],
+        *,
+        include_thinking: bool,
         **apply_chat_template_kwargs,
     ) -> tuple[list[int], list[dict[str, Any]]]:
         spans = []
@@ -130,13 +133,3 @@ class GemmaLlamaModelSpecifics(CoverallLayerGetter, HFStyleAssistantTurn, ModelS
         **apply_chat_template_kwargs,
     ) -> tuple[list[int], int]:
         return content_only_ids_and_offset_standard(messages_before, tokenizer, role, content, **apply_chat_template_kwargs)
-
-
-    def set_enable_thinking(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
-        if enable_thinking:
-            raise NotImplementedError("thinking currently not supported for Gemma type models")
-        else:
-            return old_chat_kwargs
-
-    def thinking_close_ids(self, tokenizer: HFTokenizer) -> list[int]:
-        return [] # no thinking block

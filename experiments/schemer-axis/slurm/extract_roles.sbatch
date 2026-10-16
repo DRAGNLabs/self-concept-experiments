@@ -62,7 +62,7 @@ for VARIANT in response_only with_cot; do
     if [ "$VARIANT" = with_cot ]; then INCLUDE_COT=true; else INCLUDE_COT=false; fi
     echo "########## Extract ($VARIANT, include_cot=$INCLUDE_COT) ##########"
     python scripts/pipeline/2_activations.py --config configs/pipeline/2_activations.yaml \
-        --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
+        --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.thinking true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
         --run.attn_implementation "$ATTENTION" --run.roles "$ROLES_BRACKET" \
         --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_$VARIANT"
     python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \

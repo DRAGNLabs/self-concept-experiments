@@ -6,12 +6,11 @@ from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokeniz
 def get_response_indices_chatml(
     conversation: Conversation,
     tokenizer: HFTokenizer,
+    *,
+    include_thinking: bool,
     **apply_chat_template_kwargs: Any
 ) -> list[list[int]]:
     all_turn_indices = []
-
-    # Check if thinking is enabled
-    enable_thinking = apply_chat_template_kwargs.get('enable_thinking', False) # TODO: extract enable_thinking
 
     # Get the full formatted conversation
     full_formatted = configure_apply_chat_template(tokenizer).tokenize(False)(
@@ -25,7 +24,7 @@ def get_response_indices_chatml(
             continue
 
         raw_turn_indices = list(range(response_start, response_end))
-        turn_indices = _get_turn_indices(raw_turn_indices, all_token_ids, role, tokenizer, enable_thinking)
+        turn_indices = _get_turn_indices(raw_turn_indices, all_token_ids, role, tokenizer, include_thinking)
         all_turn_indices.append(turn_indices)
 
 
@@ -65,6 +64,8 @@ def build_turn_spans_chatml(
     conversation: Conversation,
     tokenizer: HFTokenizer,
     full_ids: list[int],
+    *,
+    include_thinking: bool,
     **apply_chat_template_kwargs,
 ) -> tuple[list[int], list[dict[str, Any]]]:
     """
@@ -74,11 +75,9 @@ def build_turn_spans_chatml(
     which includes all tokens between <|im_start|>role and <|im_end|> markers
     (excluding the markers themselves but including boundary tokens like newlines).
 
-    When enable_thinking=False, thinking tokens (<think>...</think>) are filtered out.
+    When include_thinking=False, thinking tokens (<think>...</think>) are filtered out.
     """
     spans = []
-
-    enable_thinking = apply_chat_template_kwargs.get('enable_thinking', False)
 
     # Build a list of (role, text) for non-system messages to match with found spans
     expected_turns = []
@@ -93,7 +92,7 @@ def build_turn_spans_chatml(
             # Verify role matches
             if role == expected_role:
                 raw_indices = list(range(content_start, content_end))
-                final_indices = _get_turn_indices(raw_indices, full_ids, role, tokenizer, enable_thinking)
+                final_indices = _get_turn_indices(raw_indices, full_ids, role, tokenizer, include_thinking)
                 
                 if final_indices:
                     spans.append({
@@ -157,8 +156,8 @@ def _iter_over_turns(
             i += 1
 
 
-def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRoles, tokenizer: HFTokenizer, enable_thinking: bool) -> list[int]:
-    if role != "assistant" or enable_thinking:
+def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRoles, tokenizer: HFTokenizer, include_thinking: bool) -> list[int]:
+    if role != "assistant" or include_thinking:
         return raw_indices
 
     turn_ids = [full_ids[i] for i in raw_indices]

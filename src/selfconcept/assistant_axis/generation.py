@@ -58,6 +58,7 @@ class RoleResponseGenerator:
         short_name: str | None = None,
         dtype: ModelDType = "auto",
         enable_thinking: bool = False,
+        chat_template_kwargs: dict[str, str | bool] | None = None,
     ):
         """
         Initialize role response generator.
@@ -77,6 +78,7 @@ class RoleResponseGenerator:
             prompt_indices: Which prompt indices to use (default: 0-4)
             short_name: Short model name for formatting (auto-detected if None)
             enable_thinking: whether to generate thinking tokens for models that support it
+            chat_template_kwargs: Extra apply_chat_template kwargs, e.g. a replacement chat_template
         """
         self.model_name = model_name
         self.roles_dir = roles_dir
@@ -102,6 +104,7 @@ class RoleResponseGenerator:
             top_p=top_p,
             dtype=dtype,
             enable_thinking=enable_thinking,
+            chat_template_kwargs=chat_template_kwargs or {},
         )
 
         self.questions: list[str] | None = None

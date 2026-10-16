@@ -15,7 +15,7 @@ from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import WhitespaceSplit
 from transformers import LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
-from selfconcept.assistant_axis.projection import load_unit_axes, unit_axis_scorer
+from selfconcept.measurement.unit_axes import load_unit_axes, unit_axis_scorer
 from selfconcept.correlation.analyze import analyze_run, CompletedAnalysis
 from selfconcept.correlation.generate import GenerationSettings, measured_generate, MeasuredModel
 from selfconcept.correlation.run import main, parse_args

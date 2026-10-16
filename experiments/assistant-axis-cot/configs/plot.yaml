@@ -1,0 +1,10 @@
+# Charts of one run's token projections across the CoT/final boundary. CPU only. Run from
+# experiments/assistant-axis-cot:
+#   python scripts/plot.py --config configs/plot.yaml --run.run olmo32b-heldout
+# Writes results/<run>/<chart>_<axis>_<measure>.png.
+run:
+  axis: response_only
+  measure: projection
+  min_region_tokens: 16
+  examples_per_condition: 4
+  seed: 0

@@ -1,0 +1,7 @@
+# Stage 1 shared defaults. Pair with one per-model config (sampling has no code defaults):
+#   python scripts/1_generate.py --config configs/1_generate.yaml --config configs/1_generate_qwen3-32b.yaml
+run:
+  prompts_file: data/prompts.jsonl
+  samples_per_prompt: 4
+  max_tokens: 4096
+  max_model_len: 6144

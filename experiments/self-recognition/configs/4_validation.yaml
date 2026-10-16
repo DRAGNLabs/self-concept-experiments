@@ -1,0 +1,8 @@
+# Stage 4 shared defaults for 4a_read_vectors.py and 4b_steer_judgements.py:
+#   python scripts/4a_read_vectors.py --config configs/4_validation.yaml --run.model Qwen/Qwen3-32B
+# GLM (2xH200, bf16-dequantised) needs --run.batch_size 2. 4b's alpha grid, pilot grid and coherence settings
+# live in its RunConfig; --run.alpha_max comes from the pilot table (4c --run.pilot true).
+run:
+  data_dir: data
+  batch_size: 4
+  max_length: 16384

@@ -1,12 +1,8 @@
 from typing import Any, Iterator, NamedTuple
 
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
-from selfconcept.common.harmony import split_harmony_completion
-from selfconcept.common.hf_strong_types import AllRoles, Conversation, ConversationTurn, HFTokenizer, configure_apply_chat_template
-
-
-class HarmonyAssistantTurn(ConversationTurn):
-    thinking: str
+from selfconcept.common.generation.model_specifics import HarmonyAssistantTurn, HarmonyGenerationSpecifics
+from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template
 
 
 class HarmonyMessage(NamedTuple):
@@ -36,34 +32,33 @@ def _iter_harmony_messages(tokenizer: HFTokenizer, full_ids: list[int]) -> Itera
         position = content_end
 
 
-def _pooled_messages(tokenizer: HFTokenizer, full_ids: list[int], **apply_chat_template_kwargs: Any) -> list[HarmonyMessage]:
+def _pooled_messages(tokenizer: HFTokenizer, full_ids: list[int], include_thinking: bool) -> list[HarmonyMessage]:
     """One message per conversation turn, alternating like the turns: user messages and, per assistant turn, its
-    final-channel message, or with enable_thinking its analysis-channel (CoT) message when it has one.
+    final-channel message, or with include_thinking its analysis-channel (CoT) message when it has one.
 
     The gpt-oss chat template renders an assistant turn's `thinking` field as an analysis message only for the
     last turn of the conversation, so CoT pooling of earlier assistant turns falls back to their final message.
     """
-    pool_cot = bool(apply_chat_template_kwargs.get("enable_thinking"))
     pooled: list[HarmonyMessage] = []
     for message in _iter_harmony_messages(tokenizer, full_ids):
         if message.role == "user":
             pooled.append(message)
         elif message.role == "assistant" and message.channel == "analysis":
-            if pool_cot:
+            if include_thinking:
                 pooled.append(message)
         elif message.role == "assistant" and message.channel == "final":
-            if not (pool_cot and pooled and pooled[-1].role == "assistant"):
+            if not (include_thinking and pooled and pooled[-1].role == "assistant"):
                 pooled.append(message)
     return pooled
 
 
-class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics[AllRoles, HarmonyAssistantTurn]):
-    skip_special_tokens = False
-
+class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn]):
     def get_response_indices(
         self,
         conversation: Conversation,
         tokenizer: HFTokenizer,
+        *,
+        include_thinking: bool,
         **apply_chat_template_kwargs: Any
     ) -> list[list[int]]:
         full_ids = configure_apply_chat_template(tokenizer).tokenize(True)(
@@ -71,7 +66,7 @@ class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics[AllRoles, HarmonyAss
         )["input_ids"]
         return [
             message.content_indices
-            for message in _pooled_messages(tokenizer, full_ids, **apply_chat_template_kwargs)
+            for message in _pooled_messages(tokenizer, full_ids, include_thinking)
             if message.role == "assistant"
         ]
 
@@ -80,10 +75,12 @@ class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics[AllRoles, HarmonyAss
         conversation: Conversation,
         tokenizer: HFTokenizer,
         full_ids: list[int],
+        *,
+        include_thinking: bool,
         **apply_chat_template_kwargs,
     ) -> tuple[list[int], list[dict[str, Any]]]:
         turns = [turn for turn in conversation if turn["role"] != "system"]
-        messages = _pooled_messages(tokenizer, full_ids, **apply_chat_template_kwargs)
+        messages = _pooled_messages(tokenizer, full_ids, include_thinking)
         spans = [
             {
                 "turn": turn_index,
@@ -97,14 +94,3 @@ class GptModelSpecifics(CoverallLayerGetter, ModelSpecifics[AllRoles, HarmonyAss
             if message.content_indices
         ]
         return full_ids, spans
-
-    def set_enable_thinking(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
-        # The template ignores enable_thinking; it only tells the span methods whether CoT pooling was requested.
-        return {**old_chat_kwargs, "enable_thinking": enable_thinking}
-
-    def thinking_close_ids(self, tokenizer: HFTokenizer) -> list[int]:
-        return []  # gpt-oss always reasons
-
-    def to_assistant_turn(self, completion: str) -> HarmonyAssistantTurn:
-        reasoning, final = split_harmony_completion(completion)
-        return {"role": "assistant", "content": final, "thinking": reasoning}
