@@ -37,7 +37,7 @@ if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; the
 fi
 
 MODEL="${MODEL:-google/gemma-4-12B-it}"
-MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"
+MIRROR="${MIRROR:-/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments}"  # Koby's shared data (rh_hillclimb/data)
 SCRATCH="$HOME/nobackup/autodelete/self-concept-experiments/schemer-axis"
 DIRECTION="${DIRECTION:-$SCRATCH/gemma4_12b/full/persona_contrast_cot_fic.pt}"
 ROOT="${ROOT:-$SCRATCH/gemma4_12b/rh}"

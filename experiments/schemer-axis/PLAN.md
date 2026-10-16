@@ -513,6 +513,7 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   `assistant-axis/gptoss12b-thinking/axis_response_only.py`, which is a torch `.pt` file)
 - Residual cache: `~/nobackup/autodelete/rh-random-control-v3/`
 - Committed here: role files, configs, sbatch scripts, PLAN, FINDINGS. `results/` and `slurm-logs/` are gitignored.
+- How to run each stage, and what to change for another model: [README.md](README.md) (added 2026-10-16).
 - Environment: this checkout's `.venv` is a stale Python 3.11 build; jobs use `.venv-313` via
   `SELFCONCEPT_VENV=$REPO/.venv-313; source activate.sh` (override added to `activate.sh` on 2026-10-07). The
   gpt-oss HF path needs the `kernels` package, installed into `.venv-313` the same day.

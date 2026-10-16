@@ -17,7 +17,7 @@ set -euo pipefail
 # extraction root. Until 2026-10-09 the gpt-oss model specifics ignored enable_thinking and pooled the final channel,
 # so every earlier act_with_cot/ was a copy of act_response_only/ (FINDINGS, Phase 1). The target directories must
 # not exist (2_activations skips roles whose .pt file is present).
-# Usage: sbatch --export=ALL,ROOT=<extraction root>[,ROLES="..."] experiments/schemer-axis/slurm/extract_cot_activations.sbatch
+# Usage: sbatch --export=ALL,ROOT=<extraction root>[,ROLES="..."] experiments/schemer-axis/slurm/checks/extract_cot_activations.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1

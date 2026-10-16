@@ -29,7 +29,7 @@ nvidia-smi
 
 MODEL="openai/gpt-oss-120b"
 REVISION="b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
-MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"
+MIRROR="${MIRROR:-/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments}"  # Koby's shared data (rh_hillclimb/data)
 DIRECTIONS="${DIRECTIONS:?set DIRECTIONS to name=path pairs}"
 ROOT="${ROOT:?set ROOT}"
 N="${N:-4}"

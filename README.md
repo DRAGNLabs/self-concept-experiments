@@ -16,3 +16,9 @@ source ./activate.sh
 ```
 
 The slurm scripts already do this (`source ../../activate.sh`).
+
+## Experiments
+
+Each study lives under `experiments/<name>/` with its own plan and findings log. The schemer-axis study (persona vector
+extraction, validation, and reward-hacking interventions on gpt-oss-120b and Gemma 4) has a how-to in
+[experiments/schemer-axis/README.md](experiments/schemer-axis/README.md).

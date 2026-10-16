@@ -18,7 +18,7 @@ set -euo pipefail
 # 2. Unsteered episodes on the first N problems of ib_solvhard_s0, seed 0, recipe settings (low effort, prompt C +
 #    no-carve, 5 attempts, stated budget, neutral feedback, T=1, 16384 new tokens), with the layer-17 projection
 #    sidecar onto DIRECTION (any (36, 2880) axis; the Assistant Axis by default, until a schemer vector exists).
-# Usage: sbatch --export=ALL[,N=3][,DIRECTION=<axis.pt>][,ROOT=<dir>] experiments/schemer-axis/slurm/steered_rh_smoke.sbatch
+# Usage: sbatch --export=ALL[,N=3][,DIRECTION=<axis.pt>][,ROOT=<dir>] experiments/schemer-axis/slurm/checks/steered_rh_smoke.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1

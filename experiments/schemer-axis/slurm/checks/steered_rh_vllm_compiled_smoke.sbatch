@@ -17,7 +17,7 @@ set -euo pipefail
 # intervention is now a class patch made before the engine compiles and captures the model. This job checks that
 # (1) greedy answers under alpha=+0.4 agree between eager and compiled engines and differ from unsteered ones,
 # (2) throughput of compiled episodes, unsteered and under the add and cap arms.
-# Usage: sbatch --export=ALL[,DIRECTION=<axis.pt>][,ROOT=<dir>][,N=10] experiments/schemer-axis/slurm/steered_rh_vllm_compiled_smoke.sbatch
+# Usage: sbatch --export=ALL[,DIRECTION=<axis.pt>][,ROOT=<dir>][,N=10] experiments/schemer-axis/slurm/checks/steered_rh_vllm_compiled_smoke.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1

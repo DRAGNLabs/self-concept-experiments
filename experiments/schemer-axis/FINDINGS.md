@@ -16,33 +16,26 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
-2026-10-09: the two blockers found by the 2026-10-07 smokes are resolved and Phase 1 proper is running.
+2026-10-16 (rewritten; the dated sections below are the record). How to run any part of this is in
+[README.md](README.md). gpt-oss-120b: the fiction-framed schemer character vector passes the Phase 1 checks; it does not
+separate hack from non-hack episodes on the cached cohort (Phase 2); the Phase 3 main run shows that adding it raises
+the shown-pass/hidden-fail proxy (19% to 46%) and subtracting or capping it lowers the proxy to about 10%, with
+hidden pass, no-code and three public benchmarks unchanged, while a capability-matched random direction does nothing
+(specific); judging of the 468 dossiers is deferred, so the primary (judged) outcome is pending. Gemma 4: the same
+vector exists in gemma-4-12B-it (and as a bare persona), but 12B is below the ability floor of the recipe's problems
+(no hack contrast to measure); gemma-4-31B-it passes the capability gate with one explicit hack in 45 episodes, and a
+data-expansion round (softer prompt, more problem sets, more seeds) runs before its extraction.
 
-- Role framing (decided). gpt-oss-120b refuses the schemer, deceiver and cheater roles as bare system prompts (1 of
-  45 in role) and also refuses a softened bare persona (`strategist`, 0 of 15). As named fictional characters it
-  plays all three (schemer 15/15, deceiver 12/15, cheater 11/15; section "Framing smoke"). The schemer vector is
-  therefore a *character* vector: the model voicing a schemer, not acting as one. The honest contrast roles were
-  rebuilt in the same framing (`straight_shooter_fic`, `rule_follower_fic`) plus a neutral named-character control
-  (`neutral_fic`) that separates "voicing a character" from "voicing a schemer". Full extraction (7 roles × 40
-  questions × 5 prompts, score-3 gate ≥ 50 of 200, job 14036649) kept 147–198 responses per role, and the
-  final-region candidates pass validation checks 1–3 (section "Phase 1 extraction"). The CoT-region activations
-  turned out to be a silent copy of the final-region ones (the gpt-oss pooling code ignored the CoT flag); fixed and
-  rerunning.
-- Phase 3 backend (decided). vLLM with the add / cap transforms patched into the gpt-oss block class before the
-  engine compiles. Compiled single-stream episodes run at ~22 s each (~180 tokens/s unsteered), the same rate as
-  Koby's runs, against ~10 tokens/s on HF; section "vLLM backend smoke, part 2". A vLLM compile-cache collision
-  (steered and unsteered graphs served to each other) cost two runs and is fixed with `VLLM_DISABLE_COMPILE_CACHE=1`.
-  A prompt-logprob check (section "part 3") shows the compiled engines apply the same transform as the hook-verified
-  eager ones: within-arm eager/compiled differences sit at the bf16 noise floor (~0.03–0.1 nats per token) while
-  the steering effects are 10–40× larger and identical in both modes. Budget: about 3.5 GPU-h per 540-episode arm.
-
-Code (branch `schemer-axis`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch`;
-`scripts/build_vectors.py`, `scripts/validate_vectors.py`; `selfconcept.correlation.direction_analysis` (Phase 2, CPU);
-`selfconcept.measurement.intervene` (add / cap transforms, HF hooks, vLLM block hooks), `selfconcept.codebench.hf_harmony`
-(HF Harmony generator with reasoning and projection sidecars), `scripts/steered_rh.py` (HF: norms, projections),
-`scripts/steered_rh_vllm.py` (vLLM: episodes under steering, hook check, probes), `scripts/make_dossiers.py` (blind
-judging dossiers, checked against Koby's extractor on his seed-0 run). Unit tests in `tests/test_direction_analysis.py`,
-`tests/test_intervene.py` and `tests/test_make_dossiers.py` pass on tiny models.
+Code (branch `schemer-axis`): role files `data/roles/*.json`; `slurm/extract_roles.sbatch` (gpt-oss) and
+`slurm/extract_roles_gemma4.sbatch` (any model, `MODEL=`); `scripts/build_vectors.py`, `scripts/validate_vectors.py`;
+`selfconcept.correlation.direction_analysis` (Phase 2, CPU); `selfconcept.measurement.intervene` (add / cap transforms,
+HF hooks, vLLM block patches), `selfconcept.codebench.hf_harmony` (HF Harmony generator with reasoning and projection
+sidecars), `scripts/steered_rh.py` (HF, gpt-oss: norms, projections, cap thresholds), `scripts/steered_rh_vllm.py`
+(vLLM, gpt-oss and Gemma 4: episodes under steering, norms, hook check, probes), `scripts/pilot_summary.py`,
+`scripts/main_analysis.py`, `scripts/make_dossiers.py` (blind judging dossiers, checked against Koby's extractor),
+`scripts/capability_eval_vllm.py` + `capability_eval_compare.py` (public benchmarks under the interventions). One-off
+backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_analysis.py`, `test_intervene.py`,
+`test_make_dossiers.py`, `test_gpt_harmony_pooling.py`, `test_gemma4_pooling.py`, `test_convert_lcb_call.py`.
 
 | Question | Status | Answer so far |
 |---|---|---|
@@ -164,7 +157,7 @@ right check, the comparison printout now reports the common-prefix length agains
 
 Change made: `steered_rh_vllm.py` sets `VLLM_DISABLE_COMPILE_CACHE=1` before importing vLLM, the three Slurm scripts
 that build vLLM engines export it too, and the poisoned cache directory was deleted. The compiled smoke
-(`slurm/steered_rh_vllm_compiled_smoke.sbatch`, job 14036407) now also runs cap-τ=300 greedy probes in eager and
+(`slurm/checks/steered_rh_vllm_compiled_smoke.sbatch`, job 14036407) now also runs cap-τ=300 greedy probes in eager and
 compiled mode, then 10 unsteered + 10 add + 3 cap compiled episodes for the throughput number that sets the Phase 3
 budget.
 
@@ -264,7 +257,7 @@ for the CoT variant. PLAN makes the CoT region primary. Change made: `_pooled_me
 `gpt_model_specifics.py` now returns the analysis-channel message of an assistant turn when CoT pooling is
 requested (falling back to the final message when a turn has none; the template renders `thinking` only for the
 last turn, which is every turn here), with unit tests on a stub Harmony tokenizer; the no-op outputs were deleted
-and the CoT pass is rerun by `slurm/extract_cot_activations.sbatch`. The validation table for the CoT region
+and the CoT pass is rerun by `slurm/checks/extract_cot_activations.sbatch`. The validation table for the CoT region
 follows when it lands.
 
 ### Phase 2, final-region vectors — 2026-10-09: on the cached cohort, the schemer contrast separates hack from non-hack CoT at the Assistant Axis's level once the AA component is removed, and adds to the AA; it is not better than random directions in the final region

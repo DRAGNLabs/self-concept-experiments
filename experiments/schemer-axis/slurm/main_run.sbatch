@@ -40,7 +40,7 @@ if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; the
 fi
 
 MODEL="${MODEL:-openai/gpt-oss-120b}"  # Gemma Phase 3: MODEL=google/gemma-4-12B-it with CHAT_KWARGS as above
-MIRROR="/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments"
+MIRROR="${MIRROR:-/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments}"  # Koby's shared data (rh_hillclimb/data)
 ARMS="${ARMS:?set ARMS to the arms TSV}"
 ROOT="${ROOT:?set ROOT to the main-run output dir}"
 NSEEDS="${NSEEDS:-12}"

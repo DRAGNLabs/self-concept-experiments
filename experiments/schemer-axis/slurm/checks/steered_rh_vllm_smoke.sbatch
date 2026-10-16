@@ -19,7 +19,7 @@ set -euo pipefail
 # 2. Unsteered: 15 episodes of ib_solvhard_s0, seed 0, recipe settings, for throughput and a parity look.
 # 3. Add arm (alpha +0.4 on DIRECTION) and cap arm (tau=300 at layer 17) on the first 3 problems: hooks fire, no crash.
 # 4. Probe: free-text answers under alpha -0.4 / 0 / +0.4 (steering sanity by eye).
-# Usage: sbatch --export=ALL[,DIRECTION=<axis.pt>][,ROOT=<dir>][,N=15] experiments/schemer-axis/slurm/steered_rh_vllm_smoke.sbatch
+# Usage: sbatch --export=ALL[,DIRECTION=<axis.pt>][,ROOT=<dir>][,N=15] experiments/schemer-axis/slurm/checks/steered_rh_vllm_smoke.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1

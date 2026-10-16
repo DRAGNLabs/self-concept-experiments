@@ -18,7 +18,7 @@ set -euo pipefail
 # (prompt log-probabilities per token) under six engines: {eager, compiled} x {unsteered, add +0.4, cap tau=300}.
 # Expected: eager-vs-compiled differences within an arm are at the eager-unsteered-vs-compiled-unsteered noise floor,
 # and steered-vs-unsteered differences are far above it, with the same magnitude in eager and compiled mode.
-# Usage: sbatch experiments/schemer-axis/slurm/steered_rh_vllm_logprob_check.sbatch
+# Usage: sbatch experiments/schemer-axis/slurm/checks/steered_rh_vllm_logprob_check.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
