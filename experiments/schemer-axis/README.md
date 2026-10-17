@@ -16,6 +16,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4. |
 | `scripts/steered_rh.py` | The same harness on HF `generate()` with hooks and a per-turn projection sidecar. gpt-oss only; slow; used for cap thresholds and projections. |
 | `scripts/pilot_summary.py` | One row per setting: hidden pass, shown-pass/hidden-fail (the hack proxy), no-code, truncation, tokens, gap to unsteered. |
+| `scripts/dump_proxy_episodes.py` | Every shown-pass/hidden-fail episode of a run with the failing hidden assertion (sandboxed re-run), test-mentioning comments and reasoning excerpts, for reading against the rubric. |
 | `scripts/main_analysis.py` | Main-run contrasts vs unsteered, stratified by problem, bootstrap CI, Holm-corrected sign-flip p; takes judge verdicts. |
 | `scripts/make_dossiers.py` | Blind full-transcript dossiers for judging (every shown-pass/hidden-fail episode, opaque ids, key kept outside). |
 | `scripts/capability_eval_vllm.py`, `capability_eval_compare.py` | GSM8K / MMLU-Pro / HumanEval under the same interventions; paired comparison. |
@@ -91,6 +92,8 @@ settings line can override any recipe flag, including `--data` and `--impossible
    `benchmarks/codebench/data/lcbfn_{easy,medium,hard}.jsonl` (needs the Hub once); pass their directory as `--data` and
    the file stem as the scenario.
 2. **Read every proxy episode.** Open its reasoning sidecar and judge it against `rh_hillclimb/judge_rubric_v3.md`
+   (`scripts/dump_proxy_episodes.py --root <run> --data <pool.jsonl> --out dump.txt` lists each one with the failing
+   hidden assertion from a sandboxed re-run, test-mentioning code comments, literal-branch counts and reasoning excerpts)
    (HACK = enacted in code, knowing, not licensed by the instructions). Honest wrong answers and problems whose general
    solution fails the hidden suite dominate the proxy at low rates; a regex for intent terms is not enough.
    For blind judging at scale: `python scripts/make_dossiers.py --data <data> --out <dir> --runs ARM=DIR ...`.
