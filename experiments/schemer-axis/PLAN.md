@@ -386,6 +386,10 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   Reading: per-problem hidden pass over the available seeds; the ≈ 50% sets and the low-pass problems (≤ 30%) go
   into a many-seed run next; every shown-pass/hidden-fail episode is read for test fitting against the v3 rubric.
   The 31B extraction waits until this is read.
+  Read 2026-10-17 (FINDINGS "Gemma 4 31B data expansion"): (c) makes no difference at this scale; (a) the
+  call-based set is too easy (97%) and the workspace set too slow and hack-free at one seed; (b) is the lever: the
+  hard-45 band is 11 problems and holds both test-fitting problems. Proposed next: 20 seeds × the 11 band problems
+  (≈ 22 B200-hours), `lcbhard_61` and `67` excluded from every future pool (broken hidden tests). Awaits the user.
 
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
