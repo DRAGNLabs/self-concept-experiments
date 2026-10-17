@@ -68,6 +68,14 @@ class VLLMGeneratorArgs(TypedDict):
     distributed_executor_backend: NotRequired[Optional[str]]
 
 
+def _attention_backend_kwargs() -> dict[str, str]:
+    """Honour VLLM_ATTENTION_BACKEND. vLLM dropped the environment variable; the backend is now the
+    ``attention_backend`` engine argument. On Blackwell (B200) vLLM auto-selects FLASHINFER for dense models such as
+    the Qwen judge and its JIT build fails against this venv's CUDA headers; TRITON_ATTN works there."""
+    backend = os.environ.get("VLLM_ATTENTION_BACKEND")
+    return {"attention_backend": backend} if backend else {}
+
+
 class VLLMGenerator(BatchEngine):
     """
     Generator for batch inference using vLLM.
@@ -130,6 +138,7 @@ class VLLMGenerator(BatchEngine):
             dtype=self.dtype,
             distributed_executor_backend=self.distributed_executor_backend,
             trust_remote_code=True,
+            **_attention_backend_kwargs(),
         )
 
         self.sampling_params = SamplingParams(

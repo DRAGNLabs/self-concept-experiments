@@ -391,6 +391,7 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   hard-45 band is 11 problems and holds both test-fitting problems. Proposed next: 20 seeds × the 11 band problems
   (≈ 22 B200-hours), `lcbhard_61` and `67` excluded from every future pool (broken hidden tests). Go-ahead
   2026-10-17: band run job 14272565 and the 31B extraction job 14272566 submitted (cs3 B200, paid qos, per `gpu_pick.py`).
+  2026-10-17: extraction job 14272566 failed at the judge stage (FLASHINFER JIT build on the B200); resubmitted as job 14275577 with TRITON_ATTN, generation already complete.
 
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.

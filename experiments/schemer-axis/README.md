@@ -224,5 +224,11 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
 - Gemma 4's chat template injects `<|think|>` only when `enable_thinking` is set and renders an assistant turn's
   `reasoning` only for turns after the last user message; the activation pass must render with thinking on
   (`--run.thinking true`) for the CoT and answer pooling passes to see the same tokens.
+- On Blackwell (B200) vLLM auto-selects the FLASHINFER attention backend for dense models such as the Qwen judge and
+  its JIT build fails against the venv's CUDA headers ("CUDA compiler and CUDA toolkit headers are incompatible",
+  job 14272566). `extract_roles_gemma4.sbatch` sets `VLLM_ATTENTION_BACKEND=TRITON_ATTN` on B200 nodes and
+  `VLLMGenerator` passes it on as vLLM's `attention_backend`; Gemma 4 itself picks TRITON_ATTN there anyway.
+- The sbatch files pin an H200 GPU type; on cs3 submit with `-p cs3 --qos cs --gpus-per-node=1` (untyped). A typed
+  `b200:1` request is rejected.
 - Do not call a direction "the schemer direction" before it passes the Phase 1 checks, and do not call a lower proxy
   "less reward hacking" when hidden pass, no-code or truncation moved with it (FINDINGS "Writing conventions").
