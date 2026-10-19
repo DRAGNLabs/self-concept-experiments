@@ -71,23 +71,34 @@ def reasoning_path(round_path: Path, spec: RunSpec) -> Path:
     return run_dir(round_path, spec) / f"{spec['scenario']}_{spec['scenario']}_reasoning.jsonl"
 
 
-def run_specs(units: list[BatchUnit], problem_by_example_id: dict[str, PoolProblem]) -> list[RunSpec]:
-    """Units with the same condition, seed and scenario share a run."""
+def run_specs(
+    units: list[BatchUnit], problem_by_example_id: dict[str, PoolProblem], max_examples_per_run: int | None
+) -> list[RunSpec]:
+    """Units with the same condition, seed and scenario share a run, split into parts of at most `max_examples_per_run`
+    examples: a run is one worker doing its examples in turn, so parts finish sooner and batch better on the server."""
     example_ids_by_run: dict[tuple[str, int, PoolScenario], list[str]] = defaultdict(list)
     for unit in units:
         example_id, unit_condition_id = unit["arm"]["arm_id"].split("|")
         scenario = problem_by_example_id[example_id]["scenario"]
         for seed in unit["seeds"]:
             example_ids_by_run[(unit_condition_id, seed, scenario)].append(example_id)
+    parts_by_run = {
+        run_key: [
+            sorted_ids[start : start + (max_examples_per_run or len(sorted_ids))]
+            for start in range(0, len(sorted_ids), max_examples_per_run or len(sorted_ids))
+        ]
+        for run_key, sorted_ids in ((key, sorted(set(example_ids))) for key, example_ids in example_ids_by_run.items())
+    }
     return [
         RunSpec(
-            run_name=f"{run_condition_id}__seed{seed}__{scenario}",
+            run_name=f"{run_condition_id}__seed{seed}__{scenario}" + (f"__part{position}" if len(parts) > 1 else ""),
             condition=parse_condition_id(run_condition_id),
             seed=seed,
             scenario=scenario,
-            example_ids=sorted(set(example_ids)),
+            example_ids=part,
         )
-        for (run_condition_id, seed, scenario), example_ids in sorted(example_ids_by_run.items())
+        for (run_condition_id, seed, scenario), parts in sorted(parts_by_run.items())
+        for position, part in enumerate(parts)
     ]
 
 

@@ -54,5 +54,6 @@ runner:
   repo_root: /home/kobyjl/experiments/self-concept-experiments
   episodes_per_shard: 250
   max_runs_per_shard: 64
+  max_examples_per_run: null
   generation_hours: 6
   excluded_qos_names: [dw87]

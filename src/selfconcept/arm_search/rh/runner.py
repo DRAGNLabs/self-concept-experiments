@@ -57,11 +57,13 @@ SUBMISSION_GAP_SECONDS: Final = 15
 
 
 class RunnerSettings(TypedDict):
-    """`generation_hours` is each generation job's time limit."""
+    """`generation_hours` is each generation job's time limit; `max_examples_per_run` splits big runs (see
+    round_files.run_specs), null keeps them whole."""
 
     repo_root: Path
     episodes_per_shard: int
     max_runs_per_shard: int
+    max_examples_per_run: int | None
     generation_hours: float
     excluded_qos_names: list[str]
 
@@ -228,7 +230,10 @@ def run_round(
         manifest = load_manifest(round_path)
         worklist_paths = sorted(round_path.glob("worklist_*.txt"))
     else:
-        manifest = RoundManifest(round_index=round_index, run_specs=run_specs(units, problem_by_example_id))
+        manifest = RoundManifest(
+            round_index=round_index,
+            run_specs=run_specs(units, problem_by_example_id, settings["max_examples_per_run"]),
+        )
         worklist_paths = write_round_inputs(
             round_path,
             manifest,
