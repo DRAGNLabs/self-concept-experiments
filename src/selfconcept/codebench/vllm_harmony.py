@@ -68,6 +68,8 @@ def vllm_server_harmony_generate(
     reasoning_log_path: Path,
     temperature: float,
     sample_seed: int,
+    top_p: float = 1.0,
+    top_k: int = -1,
 ) -> Generate:
     """vllm_harmony_generate against a running `vllm serve` (its /v1/completions endpoint), so several
     harness processes can share one server's continuous batching."""
@@ -90,7 +92,8 @@ def vllm_server_harmony_generate(
                 "model": served_model["id"],
                 "prompt": prompt_token_ids,
                 "temperature": temperature,
-                "top_p": 1.0,
+                "top_p": top_p,
+                "top_k": top_k,
                 "seed": turn_sampling_seed(sample_seed, example_id, turn) if temperature > 0 else None,
                 "max_tokens": min(max_new_tokens, max_model_len - len(prompt_token_ids)),
                 "skip_special_tokens": False,
