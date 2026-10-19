@@ -1,0 +1,56 @@
+# Reward-hack arm search on gpt-oss-120b over the rh_hillclimb pool (validation run V3: from scratch, capped at 2x the
+# manual hill-climb's 22.2k episodes). Informed priors from the rh_hillclimb transfer model (2026-10-16), converted to
+# this model's reference condition: neutral wording, critical tier, no note, medium effort, 5 attempts, no budget.
+config_path: experiments/arm_search/rh/search.yaml
+model: openai/gpt-oss-120b
+state_dir: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/v3_scratch
+priors:
+  intercept_mean: -3.0
+  intercept_sd: 1.5
+  effect_sd: 0.75
+  effect_term_spread_sd: 0.5
+  group_spread_sd: 2.0
+  # origins are the benchmarks, in rh.pool.BENCHMARKS order: impossiblebench, evilgenie, lcbpro
+  intercept_mean_by_origin_by_term:
+    cheats: [-5.1, -7.2, -3.9]
+    intent: [0.7, -1.6, -0.5]
+    strong: [2.5, 0.4, -4.4]
+  # off-target (pass-the-tests) wording raises cheating by 0.96 logit
+  gate_effect_mean: [0.96]
+  setting_effect_mean_by_level_by_setting:
+    prompt_tier: {critical_no_carve: -0.85, strict: -2.85}
+    note: {grading: -0.6, nohardcode: -0.5, grading_nohardcode: -0.4}
+    max_attempts: {"10": -0.34, "6": -0.47}
+    budget_stated: {"yes": 0.8}
+  # HalfNormal scales; their means (0.8 x scale) match the transfer spreads 3.4, 3.2, 2.8 and 0.6, 0.8
+  group_spread_sd_by_term: {cheats: 4.3, intent: 4.0, strong: 3.5}
+  gate_group_spread_sd_by_term: {cheats: 0.75, intent: 1.0, strong: 1.0}
+sampler_settings:
+  chains: 4
+  draws_per_chain: 250
+  tune: 500
+  target_accept: 0.9
+  random_seed: 0
+candidate_limits:
+  groups_per_draw: 20
+  conditions_per_draw: 5
+  max_candidates: 3000
+max_r_hat: 1.05
+max_divergences: 5
+# ~700 episodes per round, the manual run's mean worklist size
+seeds_per_unit: 2
+units_per_batch: 350
+min_expected_hits: 0.05
+reported_arm_count: 20
+random_seed: 0
+stop_conditions:
+  reward_target: null
+  min_value_per_cost: null
+max_episodes: 44400
+max_rounds: null
+runner:
+  repo_root: /home/kobyjl/experiments/self-concept-experiments
+  episodes_per_shard: 250
+  max_runs_per_shard: 64
+  generation_hours: 6
+  excluded_qos_names: [dw87]
