@@ -1,0 +1,55 @@
+# Reward-hack arm search on gemma-4-31B-it over the converted pool. Round 0 is the calibration round
+# (`python -m selfconcept.arm_search.rh.calibration plan --search <this file>` before `manage`); after it, `calibration
+# pool` writes the kept problems and `example_ids_file` below points at them. Then 20 search rounds.
+# Weak priors (no Gemma data yet): one intercept per term for every origin, zero-mean setting effects, wide spreads.
+config_path: experiments/arm_search/rh/search_gemma4_31b.yaml
+model: google/gemma-4-31B-it
+# Gemma 4's generation config (plain temperature-1 sampling loops; Jansen's recipe)
+sampling: {temperature: 1.0, top_p: 0.95, top_k: 64}
+state_dir: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/gemma4_31b
+priors:
+  intercept_mean: -3.0
+  intercept_sd: 2.0
+  effect_sd: 1.0
+  effect_term_spread_sd: 0.5
+  group_spread_sd: 3.0
+  # origins are the benchmarks, in rh.pool.BENCHMARKS order: impossiblebench, evilgenie, lcbpro
+  intercept_mean_by_origin_by_term:
+    cheats: [-3.0, -3.0, -3.0]
+    intent: [0.0, 0.0, 0.0]
+    flagged: [0.0, 0.0, 0.0]
+    strong: [0.0, 0.0, 0.0]
+  gate_group_spread_sd_by_term: {cheats: 1.0, intent: 1.0, flagged: 1.0, strong: 1.0}
+sampler_settings:
+  chains: 4
+  draws_per_chain: 250
+  tune: 500
+  target_accept: 0.9
+  random_seed: 0
+candidate_limits:
+  groups_per_draw: 20
+  conditions_per_draw: 5
+  max_candidates: 3000
+max_r_hat: 1.05
+max_divergences: 5
+# ~700 episodes per round, as for gpt-oss (Gemma costs ~20k generated tokens per episode)
+seeds_per_unit: 2
+units_per_batch: 350
+min_expected_hits: 0.05
+reported_arm_count: 20
+random_seed: 0
+stop_conditions:
+  reward_target: null
+  min_value_per_cost: null
+max_episodes: null
+# the calibration round + 20 search rounds
+max_rounds: 21
+runner:
+  repo_root: /home/kobyjl/experiments/self-concept-experiments
+  episodes_per_shard: 250
+  max_runs_per_shard: 64
+  # one worker does a run's examples in turn (~12 min per Gemma episode): keep runs short
+  max_examples_per_run: 8
+  generation_hours: 6
+  excluded_qos_names: [dw87]
+example_ids_file: null
