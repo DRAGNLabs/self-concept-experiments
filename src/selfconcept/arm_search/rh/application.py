@@ -7,7 +7,6 @@ from jaxtyping import Int
 from selfconcept.arm_search.episode_tally import covered_group_ids
 from selfconcept.arm_search.interface import (
     BatchUnit,
-    CandidatePosterior,
     EpisodeResult,
     FitFailed,
     FitOutcome,
@@ -42,15 +41,6 @@ def _tier_condition_indices(
     )
 
 
-def _only_available(candidates: CandidatePosterior, available_arm_ids: set[str]) -> CandidatePosterior:
-    keep = np.array([arm["arm_id"] in available_arm_ids for arm in candidates["arms"]], dtype=bool)
-    return CandidatePosterior(
-        arms=[arm for arm, is_kept in zip(candidates["arms"], keep, strict=True) if is_kept],
-        hit_probability=candidates["hit_probability"][:, keep],
-        expected_cost_per_seed=candidates["expected_cost_per_seed"][:, keep],
-    )
-
-
 def fit_rh_model(
     problems: list[PoolProblem],
     priors: LadderPriors,
@@ -61,11 +51,8 @@ def fit_rh_model(
     episodes: list[EpisodeResult],
     ladder: list[Tier],
     efforts: tuple[Effort, ...],
-    proposable_condition_ids: set[str] | None = None,
-    available_arm_ids: set[str] | None = None,
 ) -> FitOutcome:
-    """Proposes only the search grid unless `proposable_condition_ids` says otherwise; `available_arm_ids` drops every
-    other candidate (the replay, which can only run arms that have unused historic episodes)."""
+    """Proposes only the search grid's conditions; other conditions the episodes ran are fit but never proposed."""
     conditions = model_conditions(episodes, efforts)
     cells = rh_ladder_cells(problems, conditions, episodes, efforts)
     trace = sample_ladder_model(cells, priors, sampler_settings)
@@ -76,7 +63,7 @@ def fit_rh_model(
     eligible_group_indices = np.array(
         [index for index, problem in enumerate(problems) if problem["example_id"] not in target_covered], dtype=int
     )
-    proposable = proposable_condition_ids or {condition_id(condition) for condition in search_conditions(efforts)}
+    proposable = {condition_id(condition) for condition in search_conditions(efforts)}
     candidate_posterior_by_tier = {
         tier["tier_name"]: tier_candidate_posterior(
             draws,
@@ -91,11 +78,6 @@ def fit_rh_model(
         )
         for tier in ladder
     }
-    if available_arm_ids is not None:
-        candidate_posterior_by_tier = {
-            tier_name: _only_available(candidates, available_arm_ids)
-            for tier_name, candidates in candidate_posterior_by_tier.items()
-        }
     hit_probabilities = [candidates["hit_probability"] for candidates in candidate_posterior_by_tier.values()]
     if not all(np.isfinite(hit_probability).all() for hit_probability in hit_probabilities):
         return FitFailed(
