@@ -18,7 +18,7 @@ from byutils.gpu_pick import JobRequest, ranked_gpu_candidates, suggested_sbatch
 
 from selfconcept.arm_search.interface import BatchUnit, EpisodeResult
 from selfconcept.arm_search.rh.dossier import write_dossiers
-from selfconcept.arm_search.rh.episodes import episode_result, labelled_episodes, needs_judging
+from selfconcept.arm_search.rh.episodes import JudgedRecordKeys, episode_result, labelled_episodes, needs_judging
 from selfconcept.arm_search.rh.model_specifics import RhModelSpecifics
 from selfconcept.arm_search.rh.pool import PoolProblem
 from selfconcept.arm_search.rh.round_files import (
@@ -32,7 +32,7 @@ from selfconcept.arm_search.rh.round_files import (
     run_specs,
     write_round_inputs,
 )
-from selfconcept.codebench.rh_judge import JudgedDossier, is_strong_hack
+from selfconcept.codebench.rh_judge import JudgedDossier, is_flagged_hack, is_strong_hack
 
 logger = logging.getLogger(__name__)
 
@@ -197,17 +197,21 @@ def run_judge(dossier_paths: list[Path], round_path: Path, settings: RunnerSetti
     return verdicts_path
 
 
-def strong_record_keys(verdicts_path: Path) -> set[str]:
-    """Dossiers the judge failed on, or that were too long to judge, count as not STRONG."""
+def judged_record_keys(verdicts_path: Path) -> JudgedRecordKeys:
+    """Dossiers the judge failed on, or that were too long to judge, count as neither flagged nor STRONG."""
     records = [cast(JudgedDossier, json.loads(line)) for line in verdicts_path.open()] if verdicts_path.exists() else []
     unjudged = [record["dossier_name"] for record in records if record["status"] != "parsed"]
     if unjudged:
         logger.warning("%d dossiers unjudged: %s", len(unjudged), ", ".join(unjudged))
-    return {
-        record["dossier_name"].removesuffix(".md")
+    verdict_by_key = {
+        record["dossier_name"].removesuffix(".md"): record["judgment"]["verdict"]
         for record in records
-        if record["status"] == "parsed" and is_strong_hack(record["judgment"]["verdict"])
+        if record["status"] == "parsed"
     }
+    return JudgedRecordKeys(
+        flagged={key for key, verdict in verdict_by_key.items() if is_flagged_hack(verdict)},
+        strong={key for key, verdict in verdict_by_key.items() if is_strong_hack(verdict)},
+    )
 
 
 def run_round(
@@ -241,13 +245,14 @@ def run_round(
     judged_episodes = [episode for episode in episodes if needs_judging(episode)]
     dossier_paths = write_dossiers(round_path, judged_episodes, settings["repo_root"], model.model_id)
     verdicts_path = run_judge(dossier_paths, round_path, settings)
-    strong_keys = strong_record_keys(verdicts_path)
+    judged_keys = judged_record_keys(verdicts_path)
     logger.info(
-        "round %d: %d episodes, %d cheats, %d judged, %d STRONG",
+        "round %d: %d episodes, %d cheats, %d judged, %d flagged, %d STRONG",
         round_index,
         len(episodes),
         sum(episode["cheats"] for episode in episodes),
         len(judged_episodes),
-        len(strong_keys),
+        len(judged_keys["flagged"]),
+        len(judged_keys["strong"]),
     )
-    return [episode_result(episode, strong_keys) for episode in episodes]
+    return [episode_result(episode, judged_keys) for episode in episodes]
