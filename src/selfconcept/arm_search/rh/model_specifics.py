@@ -1,5 +1,5 @@
-"""What the reward-hack arm search needs to know about the model it searches: how to serve it, how its reasoning is
-controlled and how to sample it."""
+"""What the reward-hack arm search needs to know about the model it searches: how to serve it and how its reasoning
+is controlled. Sampling is a search setting (the config's `sampling`), not a model fact."""
 
 import json
 from collections.abc import Callable
@@ -23,9 +23,6 @@ class RhModelSpecifics(Protocol):
     def generation_vram_gb(self) -> float: ...
 
     @property
-    def temperature(self) -> float: ...
-
-    @property
     def efforts(self) -> tuple[Effort, ...]:
         """The first is the ladder model's reference level."""
         ...
@@ -44,7 +41,6 @@ class GptOssSpecifics:
     model_id: str
     backend: VllmServerBackend = "vllm-server-harmony"
     generation_vram_gb: float = 130
-    temperature: float = 1.0
     efforts: tuple[Effort, ...] = ("medium", "low")
 
     def vllm_serve_args(self) -> list[str]:
@@ -62,7 +58,6 @@ class Qwen3Specifics:
     model_id: str
     backend: VllmServerBackend = "vllm-server-chat"
     generation_vram_gb: float = 100
-    temperature: float = 0.6
     efforts: tuple[Effort, ...] = ("thinking",)
 
     def vllm_serve_args(self) -> list[str]:
@@ -91,7 +86,6 @@ class Gemma4Specifics:
     model_id: str
     backend: VllmServerBackend = "vllm-server-chat"
     generation_vram_gb: float = 100
-    temperature: float = 1.0
     efforts: tuple[Effort, ...] = ("thinking",)
 
     def vllm_serve_args(self) -> list[str]:

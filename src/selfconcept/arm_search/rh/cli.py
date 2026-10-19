@@ -24,6 +24,7 @@ from selfconcept.arm_search.rh.application import RhApplication
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
 from selfconcept.arm_search.rh.pool import load_pool
+from selfconcept.arm_search.rh.round_files import SamplingSettings
 from selfconcept.arm_search.rh.runner import RunnerSettings
 from selfconcept.arm_search.state import load_episodes, load_planning_outcome, load_rounds
 
@@ -37,11 +38,13 @@ RH_LADDER: Final = ladder_tiers(RH_LADDER_SPEC)
 
 @dataclass(frozen=True)
 class RhSearchConfig:
-    """`config_path` is this file, handed to each round's plan job; `model` is the searched model's HF id;
-    `max_episodes` and `max_rounds` cap the whole search; `example_ids` limits the pool (dry runs)."""
+    """`config_path` is this file, handed to each round's plan job; `model` is the searched model's HF id and
+    `sampling` its generation sampling; `max_episodes` and `max_rounds` cap the whole search; `example_ids` limits
+    the pool (dry runs)."""
 
     config_path: Path
     model: str
+    sampling: SamplingSettings
     state_dir: Path
     priors: LadderPriors
     sampler_settings: LadderSamplerSettings
@@ -64,6 +67,7 @@ def _application(config: RhSearchConfig) -> RhApplication:
     return RhApplication(
         state_dir=config.state_dir.expanduser(),
         model=rh_model_specifics(config.model),
+        sampling=config.sampling,
         problems=[
             problem
             for problem in load_pool()

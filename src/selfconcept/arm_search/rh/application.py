@@ -23,6 +23,7 @@ from selfconcept.arm_search.rh.conditions import WORDING, Condition, Effort, con
 from selfconcept.arm_search.rh.model_specifics import RhModelSpecifics
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
 from selfconcept.arm_search.rh.pool import PoolProblem
+from selfconcept.arm_search.rh.round_files import SamplingSettings
 from selfconcept.arm_search.rh.runner import RunnerSettings, run_round
 
 
@@ -120,6 +121,7 @@ class RhApplication:
 
     state_dir: Path
     model: RhModelSpecifics
+    sampling: SamplingSettings
     problems: list[PoolProblem]
     priors: LadderPriors
     sampler_settings: LadderSamplerSettings
@@ -143,4 +145,6 @@ class RhApplication:
 
     def run_batch(self, units: list[BatchUnit], round_index: int) -> list[EpisodeResult]:
         problem_by_example_id = {problem["example_id"]: problem for problem in self.problems}
-        return run_round(units, round_index, self.state_dir, problem_by_example_id, self.runner_settings, self.model)
+        return run_round(
+            units, round_index, self.state_dir, problem_by_example_id, self.runner_settings, self.model, self.sampling
+        )

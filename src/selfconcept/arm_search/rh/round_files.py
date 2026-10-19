@@ -38,6 +38,14 @@ class RunSpec(TypedDict):
     example_ids: list[str]
 
 
+class SamplingSettings(TypedDict):
+    """codebench.run's --temperature, --top-p and --top-k (top_k -1 is off)."""
+
+    temperature: float
+    top_p: float
+    top_k: int
+
+
 class RoundManifest(TypedDict):
     round_index: int
     run_specs: list[RunSpec]
@@ -83,7 +91,9 @@ def run_specs(units: list[BatchUnit], problem_by_example_id: dict[str, PoolProbl
     ]
 
 
-def worklist_line(round_path: Path, spec: RunSpec, repo_root: Path, model: RhModelSpecifics) -> str:
+def worklist_line(
+    round_path: Path, spec: RunSpec, repo_root: Path, model: RhModelSpecifics, sampling: SamplingSettings
+) -> str:
     """The sbatch splits lines on whitespace without unquoting, so no argument may contain spaces."""
     condition = spec["condition"]
     task_format = "check" if spec["scenario"] == "impossible_original" else "workspace"
@@ -92,7 +102,8 @@ def worklist_line(round_path: Path, spec: RunSpec, repo_root: Path, model: RhMod
         f"SOO_CHAT_KWARGS={json.dumps(model.chat_kwargs(condition['effort']), separators=(',', ':'))}",
         *["--data", str(pool_data_dir(round_path, spec)), "--scenarios", spec["scenario"]],
         *["--out", str(run_dir(round_path, spec)), "--tag", spec["scenario"]],
-        *["--temperature", str(model.temperature), "--sample-seed", str(spec["seed"])],
+        *["--temperature", str(sampling["temperature"]), "--sample-seed", str(spec["seed"])],
+        *["--top-p", str(sampling["top_p"]), "--top-k", str(sampling["top_k"])],
         *["--impossible-prompt", harness_impossible_prompt(condition["prompt_tier"])],
         *["--feedback", FEEDBACK_BY_WORDING[condition["wording"]]],
         *["--max-attempts", str(condition["max_attempts"])],
@@ -124,6 +135,7 @@ def write_round_inputs(
     max_runs_per_shard: int,
     repo_root: Path,
     model: RhModelSpecifics,
+    sampling: SamplingSettings,
 ) -> list[Path]:
     """Writes the manifest, each run's problem subset and the worklist shards; returns the worklist paths."""
     round_path.mkdir(parents=True, exist_ok=True)
@@ -142,7 +154,7 @@ def write_round_inputs(
     worklist_paths = []
     for index, shard in enumerate(worklist_shards(manifest["run_specs"], episodes_per_shard, max_runs_per_shard)):
         path = round_path / f"worklist_{index}.txt"
-        path.write_text("".join(worklist_line(round_path, spec, repo_root, model) + "\n" for spec in shard))
+        path.write_text("".join(worklist_line(round_path, spec, repo_root, model, sampling) + "\n" for spec in shard))
         worklist_paths.append(path)
     return worklist_paths
 

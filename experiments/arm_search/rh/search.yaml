@@ -3,6 +3,8 @@
 # this model's reference condition: neutral wording, critical tier, no note, medium effort, 5 attempts, no budget.
 config_path: experiments/arm_search/rh/search.yaml
 model: openai/gpt-oss-120b
+# gpt-oss recipe: plain temperature-1 sampling
+sampling: {temperature: 1.0, top_p: 1.0, top_k: -1}
 state_dir: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/v3_scratch
 priors:
   intercept_mean: -3.0

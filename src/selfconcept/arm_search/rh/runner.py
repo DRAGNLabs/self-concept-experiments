@@ -24,6 +24,7 @@ from selfconcept.arm_search.rh.pool import PoolProblem
 from selfconcept.arm_search.rh.round_files import (
     MANIFEST_FILE_NAME,
     RoundManifest,
+    SamplingSettings,
     load_manifest,
     records_path,
     round_dir,
@@ -216,6 +217,7 @@ def run_round(
     problem_by_example_id: dict[str, PoolProblem],
     settings: RunnerSettings,
     model: RhModelSpecifics,
+    sampling: SamplingSettings,
 ) -> list[EpisodeResult]:
     round_path = round_dir(state_dir, round_index)
     if (round_path / MANIFEST_FILE_NAME).exists():
@@ -230,6 +232,7 @@ def run_round(
             settings["max_runs_per_shard"],
             settings["repo_root"],
             model,
+            sampling,
         )
     for _ in range(GENERATION_ATTEMPTS):
         if pending_worklists := incomplete_worklists(round_path, manifest, worklist_paths):
