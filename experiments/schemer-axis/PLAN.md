@@ -502,7 +502,7 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   here so the write-up states it; the main run's analysis is unchanged.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
-  Reopened 2026-10-19 (user request, prompted by the write-up notes): the closed control rests on one random direction (seed 1729) at 12 sample seeds; the other two pilot directions (1730, 1731) ran at 45 episodes each only. Queued as job 14327888: both at α = 0.07, the main run's 12 sample seeds, 540 episodes each, cs A100 (about 12 A100-hours). Read with `main_analysis.py` alongside `random_a0.07`; the specificity claim then rests on three directions.
+  2026-10-19: two more directions (1730, 1731) at α = 0.07 × 12 sample seeds were queued as job 14327888 and cancelled minutes later at the user's request (no episodes written; the arms file `main/arms_random_a0.07_s1730_1731.tsv` stays for reuse). The control remains the one-direction arm above; the pilot's three directions at 45 episodes each are the supporting evidence.
 
 - **General-capability check of the intervened gpt-oss-120b (user request 2026-10-16).** The main run's capability
   measures are task-internal (hidden pass, no code, truncation). To show that the two mitigating interventions

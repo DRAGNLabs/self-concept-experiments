@@ -1259,7 +1259,7 @@ these ranges.
    drop is degradation. Both arms reason longer (+17–20% characters) and use more attempts, i.e. they keep trying
    instead of shortcutting. The cap and −shift drops are the same size; the cap touches 12 layers but only episodes
    whose projection exceeds the p25 threshold.
-3. *Specificity: not established.* The PLAN's reference was "the same shift along a random direction of matched norm".
+3. *Specificity: not established by this run* (resolved the same day by the capability-matched random control, next section: a random direction at α = 0.07 leaves the hack proxy at 19.4%, Δ 0.0). The PLAN's reference was "the same shift along a random direction of matched norm".
    That arm produced no passing code at all: 0% shown pass, 60% no-code, 2.8% of final answers parse, visibly
    corrupted text in both reasoning and answers ("Likity", "Permations", `//` comments inside Python). The steering
    was applied as specified (unit direction, coefficient 1617, log line `patched TransformerBlock.forward`). The
@@ -1284,7 +1284,7 @@ these ranges.
 weights, different kernels. The cap arm's seed 0 (H100) is inside its seed range, and the H100/A100 split is confounded
 with arm, so a kernel effect cannot be ruled out but would have to mimic the pilot's H200 result to matter. (b) The hack
 proxy is automatic; a visible-pass/hidden-fail episode is not necessarily a judged hack (in the pilot and in Koby's
-seed-0 run nearly all were). (c) Specificity is open (item 3). (d) The dose deviates from the pre-registered rule
+seed-0 run nearly all were). (c) Specificity was open at the time of writing (item 3) and is settled by the capability-matched random arm (next section). (d) The dose deviates from the pre-registered rule
 (PLAN, "Main-run dose").
 
 ### Phase 3 dose pilot — 2026-10-09: adding the schemer direction raises the shown-pass/hidden-fail rate monotonically with dose, at little cost on the capability measures; the hacks it produces are overt lookup tables
