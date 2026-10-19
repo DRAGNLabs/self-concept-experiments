@@ -29,7 +29,8 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 MODEL="${MODEL:-openai/gpt-oss-120b}"
 PORT=$((8000 + SLURM_JOB_ID % 1000))
-N_GPUS=$(nvidia-smi --list-gpus | wc -l)
+# Count allocated GPUs, not visible ones: some nodes (cs-1-2, dw-2) leak extra GPUs into nvidia-smi
+N_GPUS=$(echo "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | grep -c .)
 LOG_DIR="$WORKLIST.logs"
 mkdir -p "$LOG_DIR"
 echo "$(hostname): $MODEL on $N_GPUS GPUs, $(wc -l < "$WORKLIST") workers"
