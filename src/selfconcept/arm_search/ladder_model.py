@@ -106,6 +106,7 @@ def _term_parameters(cells: LadderCells, priors: LadderPriors) -> dict[TermName,
             priors,
         )
         for setting_name, levels in cells["setting_levels_by_name"].items()
+        if len(levels) > 1
     }
     intercept_mean_by_origin_by_term = priors.get("intercept_mean_by_origin_by_term", {})
     group_spread_sd_by_term = priors.get("group_spread_sd_by_term", {})
@@ -127,14 +128,17 @@ def _term_parameters(cells: LadderCells, priors: LadderPriors) -> dict[TermName,
             gate_effect=pt.as_tensor_variable(
                 pm.Deterministic(f"{term_name}_gate_effect", gate_effect_by_term[term_name])
             ),
+            # a one-level setting (e.g. a model with one effort) has nothing to estimate: its effect is a constant 0
             setting_effects=[
                 pt.as_tensor_variable(
                     pm.Deterministic(
                         f"{term_name}_{setting_name}_effect",
-                        pt.concatenate([pt.zeros(1), effect_by_term[term_name]]),
+                        pt.concatenate([pt.zeros(1), setting_effect_by_term_by_name[setting_name][term_name]]),
                     )
                 )
-                for setting_name, effect_by_term in setting_effect_by_term_by_name.items()
+                if setting_name in setting_effect_by_term_by_name
+                else pt.zeros(1)
+                for setting_name in cells["setting_levels_by_name"]
             ],
             group_effect=_group_deviation(
                 f"{term_name}_group_effect",

@@ -40,7 +40,9 @@ def _pooled_draws(posterior: xr.Dataset, name: str) -> Float[np.ndarray, "draw *
 
 
 def ladder_draws(trace: xr.DataTree, cells: LadderCells) -> LadderDraws:
+    """A one-level setting has no effect variable (ladder_model); its effect draws are zeros."""
     posterior = trace.children["posterior"].to_dataset()
+    draw_count = posterior.sizes["chain"] * posterior.sizes["draw"]
     return LadderDraws(
         term_draws_by_name={
             term_name: TermDraws(
@@ -48,7 +50,9 @@ def ladder_draws(trace: xr.DataTree, cells: LadderCells) -> LadderDraws:
                 gate_effect=_pooled_draws(posterior, f"{term_name}_gate_effect"),
                 setting_effects=[
                     _pooled_draws(posterior, f"{term_name}_{setting_name}_effect")
-                    for setting_name in cells["setting_levels_by_name"]
+                    if len(levels) > 1
+                    else np.zeros((draw_count, 1))
+                    for setting_name, levels in cells["setting_levels_by_name"].items()
                 ],
                 group_effect=_pooled_draws(posterior, f"{term_name}_group_effect"),
                 gate_group_deviation=_pooled_draws(posterior, f"{term_name}_gate_group_deviation"),
