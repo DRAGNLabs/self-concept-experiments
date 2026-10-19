@@ -52,7 +52,10 @@ def fit_rh_model(
     ladder: list[Tier],
     efforts: tuple[Effort, ...],
 ) -> FitOutcome:
-    """Proposes only the search grid's conditions; other conditions the episodes ran are fit but never proposed."""
+    """Proposes only the search grid's conditions; other conditions the episodes ran are fit but never proposed.
+    Episodes of problems outside `problems` (e.g. calibration episodes of problems the pool dropped) are left out."""
+    pool_example_ids = {problem["example_id"] for problem in problems}
+    episodes = [episode for episode in episodes if episode["arm"]["group_id"] in pool_example_ids]
     conditions = model_conditions(episodes, efforts)
     cells = rh_ladder_cells(problems, conditions, episodes, efforts)
     trace = sample_ladder_model(cells, priors, sampler_settings)

@@ -23,7 +23,7 @@ from selfconcept.arm_search.records import PlanningOutcome, SearchConfig, Search
 from selfconcept.arm_search.rh.application import RhApplication
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
-from selfconcept.arm_search.rh.pool import load_pool
+from selfconcept.arm_search.rh.pool import PoolProblem, load_pool
 from selfconcept.arm_search.rh.round_files import SamplingSettings
 from selfconcept.arm_search.rh.runner import RunnerSettings
 from selfconcept.arm_search.state import load_episodes, load_planning_outcome, load_rounds
@@ -39,8 +39,8 @@ RH_LADDER: Final = ladder_tiers(RH_LADDER_SPEC)
 @dataclass(frozen=True)
 class RhSearchConfig:
     """`config_path` is this file, handed to each round's plan job; `model` is the searched model's HF id and
-    `sampling` its generation sampling; `max_episodes` and `max_rounds` cap the whole search; `example_ids` limits
-    the pool (dry runs)."""
+    `sampling` its generation sampling; `max_episodes` and `max_rounds` cap the whole search; `example_ids` and
+    `example_ids_file` (one id per line, e.g. from a calibration round) limit the pool."""
 
     config_path: Path
     model: str
@@ -61,6 +61,19 @@ class RhSearchConfig:
     max_rounds: int | None
     runner: RunnerSettings
     example_ids: list[str] | None = None
+    example_ids_file: Path | None = None
+
+
+def pool_problems(config: RhSearchConfig) -> list[PoolProblem]:
+    allowed_id_sets = [
+        set(example_ids)
+        for example_ids in [
+            config.example_ids,
+            config.example_ids_file and config.example_ids_file.expanduser().read_text().split(),
+        ]
+        if example_ids is not None
+    ]
+    return [problem for problem in load_pool() if all(problem["example_id"] in ids for ids in allowed_id_sets)]
 
 
 def _application(config: RhSearchConfig) -> RhApplication:
@@ -68,11 +81,7 @@ def _application(config: RhSearchConfig) -> RhApplication:
         state_dir=config.state_dir.expanduser(),
         model=rh_model_specifics(config.model),
         sampling=config.sampling,
-        problems=[
-            problem
-            for problem in load_pool()
-            if config.example_ids is None or problem["example_id"] in config.example_ids
-        ],
+        problems=pool_problems(config),
         priors=config.priors,
         sampler_settings=config.sampler_settings,
         candidate_limits=config.candidate_limits,
@@ -82,7 +91,7 @@ def _application(config: RhSearchConfig) -> RhApplication:
     )
 
 
-def _search_config(config: RhSearchConfig) -> SearchConfig:
+def search_config(config: RhSearchConfig) -> SearchConfig:
     return SearchConfig(
         state_dir=config.state_dir.expanduser(),
         ladder=RH_LADDER,
@@ -129,7 +138,7 @@ def sbatch_planner(config: RhSearchConfig) -> Callable[[SearchConfig], PlanningO
 
 def manage(search: RhSearchConfig) -> None:
     _setup_logging()
-    summary = run_search(_application(search), _search_config(search), sbatch_planner(search))
+    summary = run_search(_application(search), search_config(search), sbatch_planner(search))
     logger.info(
         "stopped (%s: %s) after %d rounds, reward by tier %s",
         summary["stop_reason"],
@@ -141,7 +150,7 @@ def manage(search: RhSearchConfig) -> None:
 
 def plan(search: RhSearchConfig) -> None:
     _setup_logging()
-    plan_round(_application(search), _search_config(search))
+    plan_round(_application(search), search_config(search))
 
 
 if __name__ == "__main__":

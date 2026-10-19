@@ -26,11 +26,11 @@ from selfconcept.arm_search.ladder_draws import (
 from selfconcept.arm_search.ladder_model import sample_ladder_model
 from selfconcept.arm_search.ladder_spec import tier_term_count
 from selfconcept.arm_search.rh.cells import model_conditions, rh_condition_table, rh_ladder_cells
-from selfconcept.arm_search.rh.cli import RH_LADDER, RhSearchConfig
+from selfconcept.arm_search.rh.cli import RH_LADDER, RhSearchConfig, pool_problems
 from selfconcept.arm_search.rh.conditions import Effort, condition_id
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
-from selfconcept.arm_search.rh.pool import BENCHMARKS, PoolProblem, load_pool
+from selfconcept.arm_search.rh.pool import BENCHMARKS, PoolProblem
 from selfconcept.arm_search.state import load_episodes
 
 logger = logging.getLogger(__name__)
@@ -79,10 +79,13 @@ def _calibration_lines(
 
 def model_check(search: RhSearchConfig, output_path: Path) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-    problems = [
-        problem for problem in load_pool() if search.example_ids is None or problem["example_id"] in search.example_ids
+    problems = pool_problems(search)
+    pool_example_ids = {problem["example_id"] for problem in problems}
+    episodes = [
+        episode
+        for episode in load_episodes(search.state_dir.expanduser())
+        if episode["arm"]["group_id"] in pool_example_ids
     ]
-    episodes = load_episodes(search.state_dir.expanduser())
     efforts = rh_model_specifics(search.model).efforts
     cells = rh_ladder_cells(problems, model_conditions(episodes, efforts), episodes, efforts)
     trace = sample_ladder_model(cells, search.priors, search.sampler_settings)
