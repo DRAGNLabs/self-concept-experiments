@@ -297,7 +297,8 @@ model), user's turn ("you" is the model), and plain text (also run on base).
 
 ## 2026-10-20 — SELF tasks: base model plain text, and why the Instruct SELF run was stopped
 
-- **Base OLMo-2-13B, plain text** (job 14357120, `configs/olmo2-13b-self.yaml`): no-intervention
+- **Base OLMo-2-13B, plain text** (job 14357120, `configs/olmo2-13b-self.yaml`; `says`
+  accuracy via `scripts/summarize_roles.py --prefix self_plain_`): no-intervention
   accuracy 0.99–1.00 for every pairing, but swaps only work between two names (entities
   0.99–1.00, roles 0.81–0.88). Any pair with a pronoun (I/you, I/name, you/name) fails: entity
   swaps 0.00–0.29, role swaps 0.05–0.57. **Pronouns resist binding swaps even when nothing
