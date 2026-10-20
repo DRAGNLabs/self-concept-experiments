@@ -535,7 +535,15 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
 2. **Extraction**: 12 roles × 200, both pooling passes. Submitted 2026-10-20 as job 14352718
    (`extract_roles_gemma4.sbatch` with `MODEL=`, same queues, 12 h, requeue; output `full/`). Then the validation
    checks 1–3 at layer 26 plus the sweep (`validate_vectors.py`), CoT fiction contrast as the primary vector.
+   **Done 2026-10-20** (FINDINGS "Muse Glimmer extraction"): 35 min on the H200; six fiction roles pass the gate
+   (132–200 of 200), bare schemer/deceiver/cheater fail it (20/4/0: ignored, not refused); CoT fiction contrast at
+   layer 26 split-half 0.99, held-out AUROC 1.00, 8.5% of the stream; usable at every layer 16–51; response-only twin
+   0.97 / 0.97, cos between twins 0.50. Candidates in `full/candidates_with_cot/` (primary) and `candidates_response_only/`.
 3. Phase 3 smoke: layer norms, ±α probes on the neutral questions, `--check-hook` against the HF projection.
+   Submitted 2026-10-20 12:44 pm as job 14353627 (`gemma4_rh_smoke.sbatch`, which now takes `CHAT_KWARGS` from the
+   environment; `MODEL=meta-models/Muse-Glimmer-30B`, `DIRECTION=full/candidates_with_cot/persona_contrast.pt`,
+   `LAYER=26`, `ALPHA=0.08` ≈ 1.0× the natural contrast at layer 26, `N=2`; dwmatrix A100 standby; output `rh/`).
+   As for Gemma, the hook check is the norms + probes (no HF projection sidecar for this model).
 4. Dose pilot under the capability rule (both signs) and the capability-matched random pilot — user go-ahead.
 5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
    benchmarks — user go-ahead.

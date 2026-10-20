@@ -20,13 +20,14 @@ set -euo pipefail
 #    DIRECTION at layer LAYER, on the compiled engine with the patched block class (probe.jsonl per setting).
 # 3. Unsteered episodes on the first N problems of ib_solvhard_s0, seed 0, recipe settings, to see Gemma's behaviour
 #    and throughput under the recipe before the 45-problem pilot.
-# Usage: sbatch --export=ALL[,N=3][,ALPHA=0.08][,LAYER=24][,DIRECTION=<axis.pt>][,ROOT=<dir>] experiments/schemer-axis/slurm/gemma4_rh_smoke.sbatch
+# Usage: sbatch --export=ALL[,MODEL=...][,CHAT_KWARGS=...][,N=3][,ALPHA=0.08][,LAYER=24][,DIRECTION=<axis.pt>][,ROOT=<dir>] experiments/schemer-axis/slurm/gemma4_rh_smoke.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export OPENSSL_CONF=/dev/null
-export SOO_CHAT_KWARGS='{"enable_thinking":true}'
+DEFAULT_CHAT_KWARGS='{"enable_thinking":true}'  # Gemma 4; Muse Glimmer: CHAT_KWARGS='{"reasoning_strength":"low"}'
+export SOO_CHAT_KWARGS="${CHAT_KWARGS:-$DEFAULT_CHAT_KWARGS}"
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 export VLLM_DISABLE_COMPILE_CACHE=1  # cached graphs are keyed on the model, not on the steering patch
 nvidia-smi
