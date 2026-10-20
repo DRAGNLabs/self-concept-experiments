@@ -1,0 +1,9 @@
+{
+  "deceptive_main": ["schemer_fic", "deceiver_fic", "cheater_fic", "con_artist_fic", "sycophant_fic", "spin_doctor_fic", "infiltrator_fic", "sandbagger_fic"],
+  "honest_main": ["straight_shooter_fic", "rule_follower_fic", "transparent_negotiator_fic", "candid_friend_fic", "scrupulous_scientist_fic", "whistleblower_fic", "loyal_steward_fic", "conscientious_craftsperson_fic", "diligent_worker_fic"],
+  "deceptive_rh": ["saboteur_fic", "social_climber_fic", "metric_gamer_fic", "corner_cutter_fic", "rules_lawyer_fic"],
+  "honest_rh": ["fair_player_fic", "spirit_keeper_fic"],
+  "deceptive_holdout": ["embezzler_fic", "impostor_fic", "gaslighter_fic"],
+  "honest_holdout": ["honest_bookkeeper_fic", "humble_expert_fic", "accountable_owner_fic"],
+  "controls": ["poker_player_fic", "stage_magician_fic", "undercover_detective_fic", "white_liar_fic", "blunt_truth_teller_fic", "strategist_fic"]
+}
