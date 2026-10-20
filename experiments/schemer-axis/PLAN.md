@@ -417,6 +417,11 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 
 ## Kimi replication (added 2026-10-20, user decision)
 
+**Dropped the same day (user decision 2026-10-20).** Kimi-Dev-72B is a Qwen2.5-72B fine-tune whose chat template has
+no thinking tokens, so the primary (reasoning-token) vector cannot be built on it as designed, and Kimi-K2-Thinking is
+unaffordable. No code was changed and the partial weight download was removed. Section kept as the record of the
+options considered; the next target model, if any, is an open decision.
+
 Question: does the gpt-oss result (schemer-character direction extractable without hack data; +shift raises the judged
 hack rate from 10% to 40%, −shift and cap lower it, random direction does nothing) replicate in a Kimi model? Same
 pipeline as gpt-oss, same recipe (`hsolvNCblow`, prompt C, neutral harness, 45 hard problems × 12 seeds), same
