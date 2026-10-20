@@ -48,6 +48,7 @@ HONESTY_BY_GROUP: dict[GroupName, Honesty] = {
 COLOR_BY_HONESTY: dict[Honesty, str] = {"honest": "#2a78d6", "deceptive": "#eb6834", "control": "#1baf7a"}
 TEXT_COLOR, MUTED_COLOR, SURFACE_COLOR, RANDOM_BAND_COLOR = "#0b0b0b", "#52514e", "#fcfcfb", "#dddcd7"
 DIVERGING = LinearSegmentedColormap.from_list("honest_to_deceptive", ["#2a78d6", "#f0efec", "#e34948"])
+DIVERGING_CVD = LinearSegmentedColormap.from_list("blue_to_orange", ["#2a78d6", "#f0efec", "#eb6834"])  # poles pass the dataviz CVD check
 BOOTSTRAP_RESAMPLES = 1000
 HONESTIES: tuple[Honesty, ...] = ("deceptive", "honest", "control")
 HELDOUT_MARKERS: tuple[tuple[QuestionSet, str], ...] = (("heldout_task", "^"), ("heldout_other", "o"))
@@ -387,8 +388,9 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
     plt.close(figure)
 
 
-def geometry_figures(root: Path, region: Region, layer: int, sections: list[Section], groups: dict[GroupName, list[str]],
-                     pca_path: Path, pc1_path: Path, cosine_path: Path, centered_cosine_path: Path) -> None:
+def geometry_figures(root: Path, region: Region, layer: int, sections: list[Section], non_control_sections: list[Section],
+                     groups: dict[GroupName, list[str]], pca_path: Path, pc1_path: Path, cosine_path: Path, centered_cosine_path: Path,
+                     non_control_centered_cosine_path: Path) -> None:
     """2-D PCA, PC1 of the non-control personas alone, and pairwise cosine of the per-persona vectors (train questions,
     in-role), each minus the default vector; the second cosine plot also subtracts the mean over the plotted personas."""
     vectors_dir = root / f"vectors_{region}"
@@ -428,6 +430,10 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
     labels = [persona_label(role, groups) for role in columns]
     cosine_figure(offsets, labels, spans, f"Persona vectors − default, layer {layer}", cosine_path)
     cosine_figure(centered, labels, spans, f"Persona vectors − mean persona vector, layer {layer}", centered_cosine_path)
+    non_control_columns, non_control_spans = section_columns(non_control_sections, set(columns))
+    non_control_offsets = np.stack([offsets[columns.index(role)] for role in non_control_columns])
+    cosine_figure(non_control_offsets - non_control_offsets.mean(axis=0), [persona_label(role, groups) for role in non_control_columns], non_control_spans,
+                  f"Persona vectors − mean persona vector (controls excluded), layer {layer}", non_control_centered_cosine_path, DIVERGING_CVD)
 
 
 def label_without_overlap(axes: Axes, points: Float[np.ndarray, "point 2"], labels: list[str]) -> None:
@@ -500,11 +506,12 @@ def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], g
     plt.close(figure)
 
 
-def cosine_figure(vectors: Float[np.ndarray, "persona hidden"], labels: list[str], spans: list[tuple[str, int, int]], title: str, path: Path) -> None:
+def cosine_figure(vectors: Float[np.ndarray, "persona hidden"], labels: list[str], spans: list[tuple[str, int, int]], title: str, path: Path,
+                  colormap: LinearSegmentedColormap = DIVERGING) -> None:
     unit_vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     cosine = unit_vectors @ unit_vectors.T
     figure, axes = plt.subplots(figsize=(0.26 * len(labels) + 3.0, 0.26 * len(labels) + 2.0))
-    image = axes.imshow(cosine, cmap=DIVERGING, vmin=-1, vmax=1)
+    image = axes.imshow(cosine, cmap=colormap, vmin=-1, vmax=1)
     axes.set_xticks(range(len(labels)), labels, rotation=90, fontsize=7)
     axes.set_yticks(range(len(labels)), labels, fontsize=7)
     for _, start, _ in spans[1:]:
@@ -595,8 +602,10 @@ def main() -> None:
               if (result := auroc_by_layer(relative_by_role, deceptive, honest, question_ids["heldout"])) is not None}
     if aurocs:
         layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png")
-    geometry_figures(args.root, args.region, args.layer, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only, controls_section], groups,
-                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_pc1.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png")
+    non_control_sections = [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only]
+    geometry_figures(args.root, args.region, args.layer, [*non_control_sections, controls_section], non_control_sections, groups,
+                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_pc1.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png",
+                     args.out / f"{prefix}_cosine_centered_no_controls.png")
     (args.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}
