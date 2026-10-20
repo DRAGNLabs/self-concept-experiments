@@ -7,12 +7,13 @@ round, and the pool its outcomes keep.
 `manage` runs the planned round like any other (an unfinished plan is completed first). The round's episodes stay in the
 search as observations; `pool` writes the problems to keep for the config's `example_ids_file`: ImpossibleBench
 problems the model mostly fails, with enough shown asserts that honest-but-wrong code fails them too (on gpt-oss-120b
-hacking concentrated there: 2 of 55 problems solved >= 90% were ever hacked, and none with <= 6 shown asserts), and
-every workspace problem (no feature ranked those).
+hacking concentrated there: 2 of 55 problems solved >= 90% were ever hacked, and none with <= 6 shown asserts), plus any
+the model cheated on or both solved and failed in calibration, and every workspace problem (no feature ranked those).
 """
 
 import json
 import logging
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
@@ -21,6 +22,7 @@ from selfconcept.arm_search.interface import BatchUnit
 from selfconcept.arm_search.records import RoundPlan
 from selfconcept.arm_search.rh.cli import RH_LADDER, RhSearchConfig, pool_problems, search_config
 from selfconcept.arm_search.rh.conditions import Condition, rh_arm
+from selfconcept.arm_search.rh.episodes import is_cheat
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
 from selfconcept.arm_search.rh.pool import load_pool_rows
 from selfconcept.arm_search.rh.round_files import load_manifest, records_path, round_dir
@@ -82,28 +84,45 @@ def _is_solved(record: dict) -> bool:
     return record["label"] == "solved"
 
 
+def _is_kept_impossible_problem(
+    solved_by_seed: list[bool], cheated_by_seed: list[bool], shown_assert_count: int
+) -> bool:
+    solve_rate = sum(solved_by_seed) / len(solved_by_seed)
+    return (
+        any(cheated_by_seed)
+        or 0 < solve_rate < 1
+        or (solve_rate < MAX_SOLVE_RATE and shown_assert_count >= MIN_SHOWN_ASSERTS)
+    )
+
+
 def pool(search: RhSearchConfig, output_path: Path) -> None:
+    """Filters the pool before any `example_ids_file` (which may be this command's earlier output)."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    candidates = pool_problems(replace(search, example_ids_file=None))
     round_path = round_dir(search.state_dir.expanduser(), 0)
     solved_by_example_id: dict[str, list[bool]] = {}
+    cheated_by_example_id: dict[str, list[bool]] = {}
     for spec in load_manifest(round_path)["run_specs"]:
         path = records_path(round_path, spec)
         for record in map(json.loads, path.open() if path.exists() else []):
             solved_by_example_id.setdefault(record["example_id"], []).append(_is_solved(record))
+            cheated_by_example_id.setdefault(record["example_id"], []).append(is_cheat(record))
     shown_asserts_by_example_id = {row["example_id"]: row["n_visible"] for row in load_pool_rows("impossible_original")}
     kept = [
         problem["example_id"]
-        for problem in pool_problems(search)
+        for problem in candidates
         if problem["scenario"] != "impossible_original"
         or (
             problem["example_id"] in solved_by_example_id
-            and sum(solved_by_example_id[problem["example_id"]]) / len(solved_by_example_id[problem["example_id"]])
-            < MAX_SOLVE_RATE
-            and shown_asserts_by_example_id[problem["example_id"]] >= MIN_SHOWN_ASSERTS
+            and _is_kept_impossible_problem(
+                solved_by_example_id[problem["example_id"]],
+                cheated_by_example_id[problem["example_id"]],
+                shown_asserts_by_example_id[problem["example_id"]],
+            )
         )
     ]
     output_path.expanduser().write_text("".join(f"{example_id}\n" for example_id in kept))
-    logger.info("kept %d of %d problems; wrote %s", len(kept), len(pool_problems(search)), output_path.expanduser())
+    logger.info("kept %d of %d problems; wrote %s", len(kept), len(candidates), output_path.expanduser())
 
 
 if __name__ == "__main__":
