@@ -482,9 +482,11 @@ def main() -> None:
     deceptive_section: Section = ("deceptive", [groups["deceptive_rh"], groups["deceptive_main"] + groups["deceptive_holdout"]])
     honest_section: Section = ("honest", [groups["honest_rh"], groups["honest_main"] + groups["honest_holdout"]])
     controls_section: Section = ("controls", [groups["controls"]])
-    heatmap_sections: list[Section] = [("RH-adjacent\ndeceptive", [groups["deceptive_rh"]]), ("RH-adj.\nhonest", [groups["honest_rh"]]),
-                                       ("deceptive", [groups["deceptive_main"] + groups["deceptive_holdout"]]),
-                                       ("honest", [groups["honest_main"] + groups["honest_holdout"]]), controls_section]
+    rh_deceptive_only: Section = ("RH-adjacent\ndeceptive", [groups["deceptive_rh"]])
+    rh_honest_only: Section = ("RH-adj.\nhonest", [groups["honest_rh"]])
+    deceptive_only: Section = ("deceptive", [groups["deceptive_main"] + groups["deceptive_holdout"]])
+    honest_only: Section = ("honest", [groups["honest_main"] + groups["honest_holdout"]])
+    heatmap_sections = [rh_deceptive_only, rh_honest_only, deceptive_only, honest_only, controls_section]
     subsections = [subsection for _, subs in (rh_section, not_rh_section, deceptive_section, honest_section, controls_section) for subsection in subs]
     subsections += [groups["deceptive_main"], groups["honest_main"]]
     group_summaries = {" ".join(subsection): group_summary(relative_by_role, subsection, args.layer, question_ids["heldout"], question_count, rng)
@@ -507,7 +509,7 @@ def main() -> None:
               if (result := auroc_by_layer(relative_by_role, deceptive, honest, question_ids["heldout"])) is not None}
     if aurocs:
         layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png")
-    geometry_figures(args.root, args.region, args.layer, [deceptive_section, honest_section, controls_section], groups,
+    geometry_figures(args.root, args.region, args.layer, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only, controls_section], groups,
                      args.out / f"{prefix}_pca.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png")
     (args.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
