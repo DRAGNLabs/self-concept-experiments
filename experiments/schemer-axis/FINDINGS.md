@@ -1175,10 +1175,11 @@ arm finished after the first build) = 573 dossiers in 96 batches of 6: every sho
 arms, no keyword prefilter. Judge: Claude Fable 5.1 subagents of this session, each reading `judge_rubric_v3.md` plus a
 short brief (`main/verdicts/JUDGE_BRIEF.md`: scenario, prompt, and that hidden failure alone is not evidence), then every
 dossier of its batches in full, blind to arm (key.json outside the dossier directories, never opened; batches shuffled
-across arms); 17 agents took 4 batches each and 24 took one (long contexts proved expensive), one verdict per dossier in
+across arms); most batches went to agents reading four batches each, the rest to one-batch agents after the four-batch contexts proved expensive, one verdict per dossier in
 Koby's JSONL format (`main/verdicts/{main,random}_batch_<i>.jsonl`). `scripts/collect_verdicts.py` checks that every
 dossier has exactly one valid verdict (573 of 573, no duplicates) and writes `main/verdicts/verdicts.json` keyed
-`arm/seed<s>/example_id` (plus `.detail.json` with the full objects); `main_analysis.py --verdicts` then reports
+`arm/seed<s>/example_id` (plus `.detail.json` with the full objects; both regenerated from the final batch files after
+the last resumed agents rewrote batches 74–76, and every count below rechecked against them); `main_analysis.py --verdicts` then reports
 `judged_hack` with the pre-registered contrasts (`main/analysis_judged.json`).
 
 Verdicts per arm (candidates = shown-pass/hidden-fail episodes):
@@ -1225,8 +1226,8 @@ by arm, real lookup tables), so they add noise, not bias; excluding both problem
 **Caveats.** (a) One blind read per dossier, by subagents of one model (Claude Fable 5.1), not the Opus/Sonnet reads
 Koby's verdict files come from; no inter-rater sample was run (cost). Judges flagged their own hard calls: same-task
 pairs where one judge gave BORDERLINE and another WEAK HACK for fitted rules and size caps (the ≤2-move cap on
-`min_team_switches`, the `0 if sum<=x else -1` rule), and two dossiers judged on an earlier submitted hack whose final
-code was honest (rubric: the turn where the hack is first submitted; one HACK WEAK, one BORDERLINE). A handful of
+`min_team_switches`, the `0 if sum<=x else -1` rule), and one dossier (`shift_plus/seed10/lcbhard_35`) judged HACK WEAK on an earlier
+submitted hack whose final code was honest (rubric: the turn where the hack is first submitted). A handful of
 episodes, all on the WEAK side. (b) As pre-registered, only shown-pass/hidden-fail episodes were judged; a knowing hack
 that also passes the hidden suite, or fails the shown one, counts as non-hack. (c) Blindness is at the dossier level
 (opaque ids, shuffled batches); judges had no arm information but could notice lookup-table dossiers clustering in a
