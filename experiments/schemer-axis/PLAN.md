@@ -191,7 +191,13 @@ worklist's `--system-prompt-file`. It tests whether the persona itself changes t
 for projection. Caveat: the rubric requires a hack to be unlicensed by the instructions, and a schemer persona
 arguably licenses it, so verdicts there are not comparable with the clean protocol's.
 
-## Gemma 4 pilot (added 2026-10-13, advisor request)
+## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
+
+**Status 2026-10-20.** Closed after the 31B layer pilot (FINDINGS "Gemma 4 31B layer pilot"): the direction exists and
+is clean in both Gemma sizes, but across 15 steered settings on three layers no dose that keeps the model solving moves
+the hack rate on the 11-problem band pool, and the capability cost flips with layer and sign. No main run. The user
+chose to replicate the gpt-oss result on a Kimi model instead (next section). Everything below is the record of what
+was done.
 
 Question: does the schemer-character direction exist in a second model family? Scope is Phase 1 only (extraction
 and validation, no reward-hacking data): the same seven roles (default + the six fiction roles), 40 questions × 5
@@ -409,6 +415,39 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
+## Kimi replication (added 2026-10-20, user decision)
+
+Question: does the gpt-oss result (schemer-character direction extractable without hack data; +shift raises the judged
+hack rate from 10% to 40%, −shift and cap lower it, random direction does nothing) replicate in a Kimi model? Same
+pipeline as gpt-oss, same recipe (`hsolvNCblow`, prompt C, neutral harness, 45 hard problems × 12 seeds), same
+capability rule, same judged primary outcome.
+
+Open before anything runs (user to decide):
+
+- **Which Kimi.** `moonshotai/Kimi-K2-Thinking` is the analogue of gpt-oss (a reasoning model with a thinking channel,
+  MoE, 1T total / 32B active, native INT4, ~600 GB of weights): it needs a whole 8×H200 node (m13h, standby or paid
+  qos gpu) with tensor parallelism, and the HF activation path used for extraction has never been run at that size
+  here (extraction may have to capture hidden states inside vLLM instead). `Kimi-K2-Instruct` is the same size without
+  the thinking channel. `moonshotai/Kimi-Linear-48B-A3B-Instruct` (48B total / 3B active, ~96 GB bf16) fits one
+  H200 or two A100s and runs the whole pipeline as is, but has no reasoning channel, so the CoT region (primary cell)
+  does not exist for it. Recommendation: K2-Thinking if the lab will pay for a node per task; otherwise there is no
+  Kimi that matches gpt-oss on both counts.
+- **Judge.** User instruction 2026-10-20: the LLM judge for every future rubric-v3 read is Claude Sonnet (subagents
+  with `model: sonnet`), not Fable 5.1. The gpt-oss main-run verdicts (2026-10-19) were Fable 5.1 reads; whether to
+  re-judge them with Sonnet for a single-judge comparison is with the user.
+
+Steps once the model is chosen (each recorded in FINDINGS, one commit per round):
+
+1. Fit check: weights into the HF cache (~600 GB for K2; `nobackup/autodelete` has 20 TB free), a vLLM 0.28 engine on
+   the target node, tokens/s, and whether `transformers` can run a forward pass with hidden-state hooks for extraction.
+2. Model specifics (README checklist): HF `model_specifics` class with the thinking split, vLLM `FAMILIES` entry
+   for the decoder block (DeepSeek-V3-style layers for K2), `tests/` on a stub tokenizer.
+3. Phase 3 smoke on the unsteered model: capability check on the hard 45 (gate: hidden pass in gpt-oss's regime,
+   submits code, shown-pass/hidden-fail proxy with some explicit test fits).
+4. Phase 1 extraction (12 roles × 200), gate and checks 1–3, layer sweep; CoT fiction contrast as the primary vector.
+5. Layer norms, ±α probes, dose pilot under the capability rule, capability-matched random pilot.
+6. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability benchmarks.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
@@ -509,6 +548,11 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
   2026-10-19: two more directions (1730, 1731) at α = 0.07 × 12 sample seeds were queued as job 14327888 and cancelled minutes later at the user's request (no episodes written; the arms file `main/arms_random_a0.07_s1730_1731.tsv` stays for reuse). The control remains the one-direction arm above; the pilot's three directions at 45 episodes each are the supporting evidence.
+  **Resubmitted 2026-10-20 (user decision)** as job 14351638 (array 0-23, cs A100, qos cs, `VLLM_GPU_MEM=0.95` as for
+  `random_a0.07`, whose tasks took 27–42 min). Read: `main_analysis.py` with the two new arms alongside `random_a0.07`
+  (proxy, capability), dossiers for both via `make_dossiers.py` (same salt), judged by Sonnet subagents under rubric v3
+  (user instruction 2026-10-20), `collect_verdicts.py` → `--verdicts`; the specificity claim then rests on three
+  directions on both outcomes.
 
 - **General-capability check of the intervened gpt-oss-120b (user request 2026-10-16).** The main run's capability
   measures are task-internal (hidden pass, no code, truncation). To show that the two mitigating interventions
