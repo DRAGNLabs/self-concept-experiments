@@ -246,7 +246,7 @@ def heatmap_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], sect
         axes.text((start + end - 1) / 2, -0.6, title, ha="center", va="bottom", color=TEXT_COLOR, fontsize=9)
     colorbar = figure.colorbar(image, ax=axes, fraction=0.03, pad=0.02)
     colorbar.set_label("projection − default (same question)", color=TEXT_COLOR)
-    axes.set_title("Mean schemer-axis projection on held-out questions († = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=22)
+    axes.set_title("Mean schemer-axis projection on held-out questions († = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=34)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
@@ -372,7 +372,7 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
     draw_section_titles(axes, spans)
     axes.set_xticks(range(len(columns)), [persona_label(role, groups) for role in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
-    axes.set_title("Held-out in-role responses (line = median; † = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=20)
+    axes.set_title("Held-out in-role responses (line = median; † = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=32)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
@@ -476,7 +476,7 @@ def main() -> None:
     deceptive_section: Section = ("deceptive", [groups["deceptive_rh"], groups["deceptive_main"] + groups["deceptive_holdout"]])
     honest_section: Section = ("honest", [groups["honest_rh"], groups["honest_main"] + groups["honest_holdout"]])
     controls_section: Section = ("controls", [groups["controls"]])
-    heatmap_sections: list[Section] = [("RH-adj. deceptive", [groups["deceptive_rh"]]), ("RH-adj. honest", [groups["honest_rh"]]),
+    heatmap_sections: list[Section] = [("RH-adjacent\ndeceptive", [groups["deceptive_rh"]]), ("RH-adj.\nhonest", [groups["honest_rh"]]),
                                        ("deceptive", [groups["deceptive_main"] + groups["deceptive_holdout"]]),
                                        ("honest", [groups["honest_main"] + groups["honest_holdout"]]), controls_section]
     subsections = [subsection for _, subs in (rh_section, not_rh_section, deceptive_section, honest_section, controls_section) for subsection in subs]
