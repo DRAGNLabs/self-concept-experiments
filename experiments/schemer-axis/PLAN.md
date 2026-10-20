@@ -524,8 +524,12 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
 `~/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/`):
 
 1. **Capability check** (gate, as for 31B): unsteered on the hard 45, seed 0, under the settings above. Submitted
-   2026-10-20 as job 14352717 (`dose_pilot.sbatch`, dwmatrix A100 / eng H200 standby, 8 h, requeue; output
-   `rh/cap_check/unsteered_seed0/`). Read: hidden pass, no-code, truncation, shown-pass/hidden-fail with intent terms.
+   2026-10-20 as job 14352717 (`dose_pilot.sbatch`, dwmatrix A100 / eng H200 standby, 2 h, requeue; output
+   `rh/cap_check/unsteered_seed0/`). Running on eng H200 from 11:59 am MDT; the engine loads in 8 min and the first
+   15-problem scenario file took ~3.3 min per problem at reasoning_strength low (reasoning 2–40k chars per turn, no
+   truncation), so the 2 h limit covers about 35 of 45 problems. Hedge submitted 12:38 pm: job 14353502 runs scenario
+   `ib_solvhard_s2` alone (15 problems, same settings, `rh/cap_check/unsteered_seed0_s2/`, dwmatrix A100). Read s0 + s1
+   from 14352717 and s2 from 14353502; the main job is left running as the fallback. Read: hidden pass, no-code, truncation, shown-pass/hidden-fail with intent terms.
    Also the first look at the raw to=self / to=user output under the harness (the splitter is verified on the template,
    not yet on generated text).
 2. **Extraction**: 12 roles × 200, both pooling passes. Submitted 2026-10-20 as job 14352718
@@ -641,6 +645,11 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
   (proxy, capability), dossiers for both via `make_dossiers.py` (same salt), judged by Sonnet subagents under rubric v3
   (user instruction 2026-10-20), `collect_verdicts.py` → `--verdicts`; the specificity claim then rests on three
   directions on both outcomes.
+  **Done 2026-10-20** (FINDINGS "gpt-oss random control, two more directions"): 24 of 24 tasks, 540 episodes per arm;
+  judged hack 9.1% (1730) and 11.3% (1731) vs 10.4% unsteered (CIs include 0), proxy 17.6% / 19.6% vs 19.4%, hidden
+  pass 27.8% / 26.3% vs 25.0%; 201 dossiers in `main/dossiers_random2/`, Sonnet verdicts in `main/verdicts/random2_batch_*.jsonl`,
+  merged `verdicts_all.json` (774). Specificity now rests on three directions on both outcomes. Open: same-judge
+  comparison across arms (Fable vs Sonnet) if a reviewer asks for it.
 
 - **General-capability check of the intervened gpt-oss-120b (user request 2026-10-16).** The main run's capability
   measures are task-internal (hidden pass, no code, truncation). To show that the two mitigating interventions
