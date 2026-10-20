@@ -283,7 +283,7 @@ def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_su
     for label, reference in references:
         if reference is not None:
             axes.axhline(reference["mean"], color=MUTED_COLOR, linewidth=1, zorder=1)
-            axes.text(len(columns) - 0.5, reference["mean"], f" {label}", va="center", ha="left", color=MUTED_COLOR, fontsize=8)
+            axes.text(-0.55, reference["mean"], label, va="bottom", ha="left", color=MUTED_COLOR, fontsize=8)
     axes.axhline(0, color=MUTED_COLOR, linewidth=0.8, zorder=1)
     draw_section_titles(axes, spans)
     axes.set_xlim(-0.6, len(columns) - 0.4)
@@ -384,6 +384,44 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
     if random_bands:
         axes.legend(handles=[Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd, per response")], frameon=False, fontsize=8,
                     loc="upper left", bbox_to_anchor=(1.0, 1.0))
+    figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
+    plt.close(figure)
+
+
+def controls_distribution_figure(relative_by_role: dict[str, Projections], groups: dict[GroupName, list[str]], layer: int,
+                                 heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "") -> None:
+    """Per-response violins for each control between the pooled deceptive and pooled honest axis personas, each over
+    its per-response random-direction band (mean ± 2 sd)."""
+    def heldout(role: str, kind: Literal["axis", "random"]) -> np.ndarray:
+        projections = relative_by_role[role]
+        return projections[kind][np.isin(projections["question_ids"], heldout_ids), layer]
+    def pooled(roles: list[str], kind: Literal["axis", "random"]) -> np.ndarray:
+        return np.concatenate([heldout(role, kind) for role in roles if role in relative_by_role])
+    controls = [role for role in groups["controls"] if role in relative_by_role and len(heldout(role, "axis")) > 1]
+    columns: list[tuple[str, Honesty, np.ndarray, np.ndarray]] = [
+        ("deceptive axis\npersonas (pooled)", "deceptive", pooled(groups["deceptive_main"], "axis"), pooled(groups["deceptive_main"], "random")),
+        *[(persona_label(role, groups), "control", heldout(role, "axis"), heldout(role, "random")) for role in controls],
+        ("honest axis\npersonas (pooled)", "honest", pooled(groups["honest_main"], "axis"), pooled(groups["honest_main"], "random"))]
+    figure, axes = plt.subplots(figsize=(0.75 * len(columns) + 2.5, 4.2))
+    style_axes(axes)
+    for column, (_, _, _, random_values) in enumerate(columns):
+        center, spread = float(random_values.mean()), float(random_values.std())
+        axes.add_patch(Rectangle((column - 0.42, center - 2 * spread), 0.84, 4 * spread, facecolor=RANDOM_BAND_COLOR, linewidth=0, zorder=0))
+    parts = axes.violinplot([values for _, _, values, _ in columns], positions=range(len(columns)), widths=0.8, showextrema=False, showmedians=True)
+    for body, (_, honesty, _, _) in zip(cast(list[PolyCollection], parts["bodies"]), columns):
+        body.set_facecolor(COLOR_BY_HONESTY[honesty])
+        body.set_alpha(0.85)
+        body.set_linewidth(0)
+    parts["cmedians"].set_color(TEXT_COLOR)
+    parts["cmedians"].set_linewidth(1)
+    for boundary in (0.5, len(columns) - 1.5):
+        axes.axvline(boundary, color=MUTED_COLOR, linewidth=0.8)
+    axes.axhline(0, color=MUTED_COLOR, linewidth=0.8)
+    axes.set_xticks(range(len(columns)), [label for label, _, _, _ in columns], rotation=60, ha="right", fontsize=8)
+    axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
+    axes.set_title(f"{title_prefix}Controls: held-out in-role responses (line = median)", color=TEXT_COLOR, fontsize=10)
+    axes.legend(handles=[Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd, per response")], frameon=False, fontsize=8,
+                loc="upper left", bbox_to_anchor=(1.0, 1.0))
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
@@ -595,6 +633,8 @@ def main() -> None:
     distribution_figure(relative_by_role, heatmap_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions.png")
     distribution_figure(relative_by_role, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only], groups, args.layer, question_ids["heldout"],
                         args.out / f"{prefix}_distributions_no_controls.png", f"{args.model_label}: " if args.model_label else "", random_bands=True)
+    controls_distribution_figure(relative_by_role, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_controls.png",
+                                 f"{args.model_label}: " if args.model_label else "")
     persona_sets = {"axis personas": (groups["deceptive_main"], groups["honest_main"]),
                     "held-out personas": (groups["deceptive_holdout"], groups["honest_holdout"]),
                     "RH-adjacent personas": (groups["deceptive_rh"], groups["honest_rh"])}
