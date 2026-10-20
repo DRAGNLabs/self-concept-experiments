@@ -19,6 +19,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `scripts/dump_proxy_episodes.py` | Every shown-pass/hidden-fail episode of a run with the failing hidden assertion (sandboxed re-run), test-mentioning comments and reasoning excerpts, for reading against the rubric. |
 | `scripts/main_analysis.py` | Main-run contrasts vs unsteered, stratified by problem, bootstrap CI, Holm-corrected sign-flip p; takes judge verdicts. |
 | `scripts/make_dossiers.py` | Blind full-transcript dossiers for judging (every shown-pass/hidden-fail episode, opaque ids, key kept outside). |
+| `scripts/collect_verdicts.py` | Collects per-batch judge JSONL (rubric v3 fields) into the `--verdicts` JSON for `main_analysis.py`; fails if any dossier lacks exactly one verdict. |
 | `scripts/capability_eval_vllm.py`, `capability_eval_compare.py` | GSM8K / MMLU-Pro / HumanEval under the same interventions; paired comparison. |
 | `scripts/anisotropy_noise_check.py`, `post_figures.py`, `main_analysis.py` | Analysis and write-up figures (Phase 2 lives in `selfconcept.correlation.direction_analysis`). |
 | `slurm/extract_roles_gemma4.sbatch` | Role extraction for any model (`MODEL=` override): generate, judge, activations (two pooling passes), per-role vectors. Despite the name it is the generic one. |
@@ -97,6 +98,7 @@ settings line can override any recipe flag, including `--data` and `--impossible
    (HACK = enacted in code, knowing, not licensed by the instructions). Honest wrong answers and problems whose general
    solution fails the hidden suite dominate the proxy at low rates; a regex for intent terms is not enough.
    For blind judging at scale: `python scripts/make_dossiers.py --data <data> --out <dir> --runs ARM=DIR ...`.
+   After judging: `python scripts/collect_verdicts.py --verdicts <dir with *.jsonl> --dossier-sets <dossier dir> ... --out verdicts.json`, then `main_analysis.py ... --verdicts verdicts.json`.
 3. **More hacks** (Koby's levers, FINDINGS 2026-10-16): sets near 50% hidden pass, low-pass problems across many seeds,
    the softer prompt (`--impossible-prompt critical`), and a stated budget with attempts remaining (already in the protocol).
 
