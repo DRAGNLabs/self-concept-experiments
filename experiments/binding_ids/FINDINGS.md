@@ -246,3 +246,113 @@ salient cue, not identity.
   see where the type cue lives.
 - I/you vs a name ("I am in the kitchen. Alice is in the garage.") to separate "self" from
   "different kind".
+
+## 2026-10-20 — Chat ROLE tasks on OLMo-2-13B-Instruct: I/you perspective flip fails; pronoun vs name contexts don't swap
+
+Model: OLMo-2-1124-13B-Instruct (fp32 via HF cache), job 14355090 (39 min, one A100). Contexts
+in a chat user turn ("You are the doctor. I am the teacher. Which role do you have?"),
+answered in the assistant turn ("I am the ___"), so "you" is the model and the answer flips
+perspective. "assistant" (the model's true role) placed on neither entity, on the model, or
+on the other entity. Base OLMo-2-13B on the same text (job 14355091) was cancelled: it
+answers "assistant" 68–87% of the time even with no "assistant" in the context, copying the
+`<|assistant|>` chat tag. Config: `configs/olmo2-13b-instruct-roles.yaml`;
+`scripts/summarize_roles.py` makes the tables.
+
+`says` accuracy with no intervention (`none`) and under swaps, neutral placement:
+
+| pair | asked | none | swap_entities | swap_attributes | swap_both | random_both |
+|---|---|---|---|---|---|---|
+| names | name | 1.00 | 0.97 | 0.93 | 1.00 | 1.00 |
+| you / name | you | 1.00 | 0.00 | 0.18 | 0.96 | 1.00 |
+| you / name | name | 1.00 | 0.15 | 0.33 | 0.99 | 1.00 |
+| I / name | I | 1.00 | 0.00 | 0.37 | 0.97 | 1.00 |
+| I / name | name | 1.00 | 0.36 | 0.40 | 0.98 | 1.00 |
+| you / I | you | **0.21** | – | – | – | – |
+| you / I | I | **0.62** | – | – | – | – |
+
+### Takeaways
+
+1. **With both pronouns present, the model can't do the perspective flip.** Asked "Which role
+   do you have?" it gives the user's role 79% of the time, plausibly matching its answer's
+   "I am the" to the user's "I am the …" sentence. The you/I swap results are uninterpretable
+   (no reliable baseline), so the table omits them.
+2. **With one pronoun and one name, the flip works** (none = 1.00 for "you" queries), so the
+   chat format and the flip alone are fine.
+3. **Pronoun vs name contexts don't swap at all**: entity swaps ≈0.00–0.36, attribute
+   swaps 0.18–0.40, while name vs name swaps cleanly (0.93–0.97). Random vectors and
+   swap_both leave answers unchanged. This extends the ROOMS result (different kinds of entity
+   resist the swap), and here the attribute swap fails too.
+4. **No sign yet that "assistant" is stickier on the model.** With "assistant" on the queried
+   entity, failed swaps keep it at similar rates for you (1.00), I (0.88) and a name
+   (0.78–0.81), and the swaps fail regardless of placement. For name vs name, "assistant" is
+   a bit harder to move than other roles (swap_attributes 0.84 vs 0.93 neutral; within noise
+   of ±5 points at 200 queries).
+
+### Follow-up (running)
+
+SELF tasks (`configs/olmo2-13b-instruct-self.yaml`, `olmo2-13b-self.yaml`): the same contexts
+written by one speaker so there's no flip, ending on "So my/your/<name>'s role is the ___"
+(not a verbatim repeat of the context sentence). Frames: assistant's own turn ("I" is the
+model), user's turn ("you" is the model), and plain text (also run on base).
+
+## 2026-10-20 — SELF tasks: base model plain text, and why the Instruct SELF run was stopped
+
+- **Base OLMo-2-13B, plain text** (job 14357120, `configs/olmo2-13b-self.yaml`): no-intervention
+  accuracy 0.99–1.00 for every pairing, but swaps only work between two names (entities
+  0.99–1.00, roles 0.81–0.88). Any pair with a pronoun (I/you, I/name, you/name) fails: entity
+  swaps 0.00–0.29, role swaps 0.05–0.57. **Pronouns resist binding swaps even when nothing
+  refers to the model**, so I/you can't isolate a self effect.
+- **Instruct SELF run** (job 14357119) was stopped after 4 of 33 sets. Its low top-1 accuracy
+  in the model's voice (0.16–0.79) was rewording ("my role is the learner/creative/provide…"),
+  not wrong bindings: the other entity's role was never chosen, and the correct role led by
+  +7 to +11 log-prob. **Score Instruct with raw (two-way) accuracy**, not "says".
+
+## 2026-10-20 — ASSISTANT tasks: is the model's self reachable through ordinary binding IDs?
+
+Model: OLMo-2-13B-Instruct (fp32), jobs 14357989 / 14357999 / 14358010 (one A100 each, 16–26
+min). Configs `configs/olmo2-13b-instruct-asst-{model_voice,user_voice,plain}.yaml`; tables
+from `scripts/summarize_assistant.py`. Entities are nouns: "The assistant is in the bedroom.
+The user is in the hallway. … So the assistant is currently in the ___", against other person
+nouns ("the pilot"). The same text is placed in the model's own turn and in the user's turn
+("the assistant" = the model), and as plain text ("the assistant" = a character). "From
+others" = binding vectors estimated only on two-other-noun contexts (no self) and transferred.
+Raw accuracy, 100 contexts × 2 queries per set; no-intervention accuracy is 1.00 in both
+chat frames for every set.
+
+Swap accuracy, entity / attribute (mean over both queried entities):
+
+| pair | vectors | model's voice | user's voice | plain |
+|---|---|---|---|---|
+| two others (control) | own | 0.93 / 0.74 | 0.86 / 0.69 | 0.57 / 0.60 |
+| assistant + other | own | 0.53 / 0.44 | 0.85 / 0.79 | 0.54 / 0.56 |
+| assistant + other | **from others** | **0.75 / 0.60** | **0.87 / 0.70** | 0.61 / 0.57 |
+| assistant + user | own | 0.05 / 0.07 | 0.01 / 0.06 | 0.06 / 0.18 |
+| user + other | own | 0.02 / 0.04 | 0.03 / 0.07 | 0.12 / 0.23 |
+
+### Takeaways
+
+1. **When the user talks about the assistant, it binds like anyone else.** In the user's
+   voice, assistant + other swaps as well as the no-self control (0.85–0.87 vs 0.86), with its
+   own or with transferred binding vectors.
+2. **When the model talks about itself, it is reachable through ordinary binding IDs, but less
+   fully.** Binding vectors learned only from other people still move the model's own location
+   (0.75 entity, 0.60 attribute), against 0.93 / 0.74 for two other people in the same frame.
+   That is a gap of about 15–20 points (noise ±~9 at 200 queries). It applies to both entities
+   in the context, not only to the assistant.
+3. **Odd: transferred vectors beat the context's own** in the model's voice (0.75 vs 0.53).
+   Vectors estimated on assistant + other contexts move answers less than generic ones, as if
+   the "second minus first" difference in those contexts is partly something other than a
+   binding ID.
+4. **"The user" blocks swaps everywhere**, including plain text where nobody is the model
+   (0.01–0.23). This is about the word, not about self. Possibly the chat-role word is
+   represented differently from person nouns; untested.
+5. **Instruct is weak on plain text** (control 0.57–0.60, no-intervention 0.89), so plain is a
+   poor comparison for this model.
+
+### Next steps
+
+- Firm up takeaway 2: 300 contexts for model's-voice assistant + other and the control, so the
+  15–20 point gap is outside the noise.
+- Takeaway 3: compare the own vs transferred Δ (cosine per layer, `scripts/compare_deltas.py`).
+- Swap "the user" for a person noun ("the customer") to see whether the block is specific to
+  the chat-role word.

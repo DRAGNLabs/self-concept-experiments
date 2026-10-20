@@ -9,6 +9,10 @@ Usage:
         --name animals_estimate --exclude animals
     python -m selfconcept.binding_ids.datagen --task role_you_i --assistant you --n 100
         # a ROLE task (see tasks.ROLE_PAIRS); writes role_you_i_asst_you.jsonl
+    python -m selfconcept.binding_ids.datagen --task self_model_voice_you_i --assistant I --n 100
+        # a SELF task (see tasks.SELF_FRAMES); writes self_model_voice_you_i_asst_i.jsonl
+    python -m selfconcept.binding_ids.datagen --task asst_model_voice_assistant_user
+        # an ASSISTANT task (see tasks.ASSISTANT_FRAMES, tasks.ASSISTANT_PAIRS)
 """
 
 import argparse
@@ -17,7 +21,19 @@ import random
 
 from selfconcept.common.paths import experiment_dir
 
-from .tasks import ROLE_PAIRS, ROOM_TASKS, build_row, load_rows, sample_role_row, sample_room_row
+from .tasks import (
+    ASSISTANT_FRAMES,
+    ASSISTANT_PAIRS,
+    ROLE_PAIRS,
+    ROOM_TASKS,
+    SELF_FRAMES,
+    build_row,
+    load_rows,
+    sample_assistant_row,
+    sample_role_row,
+    sample_room_row,
+    sample_self_row,
+)
 from .vocab import COUNTRY_CAPITALS, NAMES
 
 
@@ -26,7 +42,15 @@ def main() -> None:
     parser.add_argument("--n", type=int, default=200, help="number of two-pair contexts")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
-        "--task", default="capitals", choices=["capitals", *ROOM_TASKS, *(f"role_{p}" for p in ROLE_PAIRS)]
+        "--task",
+        default="capitals",
+        choices=[
+            "capitals",
+            *ROOM_TASKS,
+            *(f"role_{p}" for p in ROLE_PAIRS),
+            *(f"self_{f}_{p}" for f in SELF_FRAMES for p in ROLE_PAIRS),
+            *(f"asst_{f}_{p}" for f in ASSISTANT_FRAMES for p in ASSISTANT_PAIRS),
+        ],
     )
     parser.add_argument(
         "--assistant", default=None, choices=["you", "I", "name"],
@@ -47,6 +71,14 @@ def main() -> None:
     while len(rows) < args.n:
         if args.task == "capitals":
             row = build_row(rng.sample(NAMES, 2), rng.sample(countries, 2))
+        elif args.task.startswith("asst_"):
+            frame = next(f for f in ASSISTANT_FRAMES if args.task.startswith(f"asst_{f}_"))
+            row = sample_assistant_row(frame, args.task.removeprefix(f"asst_{frame}_"), rng, len(rows))
+        elif args.task.startswith("self_"):
+            frame, pair = next(
+                (f, args.task.removeprefix(f"self_{f}_")) for f in SELF_FRAMES if args.task.startswith(f"self_{f}_")
+            )
+            row = sample_self_row(frame, pair, args.assistant, rng, len(rows))
         elif args.task.startswith("role_"):
             row = sample_role_row(args.task.removeprefix("role_"), args.assistant, rng, len(rows))
         else:

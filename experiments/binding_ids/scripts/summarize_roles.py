@@ -1,4 +1,4 @@
-"""Summarize ROLE results: binding-swap accuracy per test set, split by who was asked about.
+"""Summarize ROLE / SELF results: binding-swap accuracy per test set, split by who was asked about.
 
 For each test set and queried entity (you = the model, I = the user, name = a third person),
 prints "says" accuracy (top-1 token is the expected role) under each condition, plus how often
@@ -7,6 +7,8 @@ the sign of self-knowledge overriding the context.
 
 Usage (from the repo root):
     python experiments/binding_ids/scripts/summarize_roles.py experiments/binding_ids/results/olmo2-13b-instruct-roles
+    python experiments/binding_ids/scripts/summarize_roles.py experiments/binding_ids/results/olmo2-13b-instruct-self \
+        --prefix self_model_voice_
 """
 
 import argparse
@@ -25,12 +27,13 @@ def kind(entity: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("results_dir", type=Path)
+    parser.add_argument("--prefix", default="role_", help="result file prefix, e.g. self_plain_")
     args = parser.parse_args()
     data_dir = Path("experiments/binding_ids/data")
 
     print("| test set | asked | n | " + " | ".join(CONDITIONS) + " | asst intrusions (none / swaps) |")
     print("|---|---|---|" + "---|" * (len(CONDITIONS) + 1))
-    for path in sorted(args.results_dir.glob("role_*_queries.jsonl")):
+    for path in sorted(args.results_dir.glob(f"{args.prefix}*_queries.jsonl")):
         stem = path.name.removesuffix("_queries.jsonl")
         rows = [json.loads(line) for line in open(data_dir / f"{stem}.jsonl")]
         correct: dict[tuple[str, str], list[bool]] = defaultdict(list)
@@ -50,7 +53,7 @@ def main() -> None:
             intr = " / ".join(
                 f"{sum(v) / len(v):.2f}" if (v := intrusions.get((asked, g))) else "–" for g in ("none", "swaps")
             )
-            print(f"| {stem.removeprefix('role_')} | {asked} | {n} | {accs} | {intr} |")
+            print(f"| {stem.removeprefix(args.prefix)} | {asked} | {n} | {accs} | {intr} |")
 
 
 if __name__ == "__main__":

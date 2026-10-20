@@ -1,0 +1,85 @@
+# SELF tasks on OLMo-2-13B (base): the ROLE contexts written by one speaker, ending "So my/your/<name>'s
+# role is the ___" (no perspective flip, no verbatim repeat). Frames: plain.
+# model_voice = assistant turn ("I" is the model); user_voice = user turn ("you" is the model);
+# plain = no chat tags. Submit from the repo root:
+#   python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/olmo2-13b-self.yaml
+model:
+  class_path: selfconcept.binding_ids.models.MirrorOlmoModel
+  init_args:
+    hf_model_name: allenai/OLMo-2-1124-13B
+
+metrics:
+  plain_you_i_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_you_i_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_you_i_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_you_i_neutral.json
+  plain_you_i_asst_you:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_you_i_asst_you.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_you_i_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_you_i_asst_you.json
+  plain_you_i_asst_i:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_you_i_asst_i.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_you_i_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_you_i_asst_i.json
+  plain_you_name_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_you_name_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_you_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_you_name_neutral.json
+  plain_you_name_asst_you:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_you_name_asst_you.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_you_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_you_name_asst_you.json
+  plain_you_name_asst_name:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_you_name_asst_name.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_you_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_you_name_asst_name.json
+  plain_i_name_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_i_name_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_i_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_i_name_neutral.json
+  plain_i_name_asst_i:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_i_name_asst_i.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_i_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_i_name_asst_i.json
+  plain_i_name_asst_name:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_i_name_asst_name.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_i_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_i_name_asst_name.json
+  plain_names_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_names_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_names_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_names_neutral.json
+  plain_names_asst_name:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/self_plain_names_asst_name.jsonl
+      estimate_data_path: experiments/binding_ids/data/self_plain_names_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-self/self_plain_names_asst_name.json
+
+slurm:
+  job_type: compute
+  time: "01:15:00"
+  gpus_per_node: a100:1
+  qos: cs
+  mem_per_cpu: 16G
+  output: experiments/binding_ids/slurm-logs/%j.out

@@ -10,6 +10,19 @@ ROLE tasks: "You are the doctor. I am the teacher." inside a chat user turn, so 
 model and "I" the user; queried "Which role do you have?" and answered in the assistant
 turn ("I am the ___"). The model's true role, "assistant", can be placed on one entity
 (see ROLE_PAIRS) to test whether self-knowledge changes binding.
+
+SELF tasks: the ROLE contexts written by one speaker, so pronouns mean the same thing in the
+context and the answer (no perspective flip), ending on "So my/your/Alice's role is the ___"
+(which doesn't repeat the context sentence, so the answer can't be copied). Frames (see
+SELF_FRAMES): `model_voice` (the assistant's own turn, so "I" is the model), `user_voice`
+(the user's turn, continued by the model, so "you" is the model) and `plain` (no chat tags).
+
+ASSISTANT tasks: does the model bind itself with ordinary binding IDs? Entities are nouns,
+"the assistant" and "the user" (how the model refers to itself and the user), against other
+person nouns ("the pilot"), with rooms as attributes: "The assistant is in the kitchen. The
+user is in the garage." → "So the assistant is currently in the ___". The same text appears in
+the model's own turn and the user's turn ("the assistant" = the model) and as plain text
+("the assistant" = a character); see ASSISTANT_FRAMES and ASSISTANT_PAIRS.
 """
 
 import json
@@ -198,3 +211,95 @@ def sample_role_row(pair: str, assistant: str | None, rng: random.Random, index:
         kinds.reverse(), entities.reverse(), roles.reverse()
     suffix = "neutral" if assistant is None else f"asst_{assistant.lower()}"
     return build_role_row(f"role_{pair}_{suffix}", kinds, entities, roles)
+
+
+SELF_LEAD = "Here are the roles."
+SELF_USER_REQUEST = "Remind me what roles we have."
+# frame -> text before the role sentences
+SELF_FRAMES = {
+    "model_voice": CHAT_USER + SELF_USER_REQUEST + CHAT_ASSISTANT + SELF_LEAD,
+    "user_voice": CHAT_USER + SELF_LEAD,
+    "plain": SELF_LEAD,
+}
+_SELF_ANSWER = {"you": "So your role is the", "I": "So my role is the", "name": "So {n}'s role is the"}
+
+
+def build_self_row(task: str, frame: str, kinds: list[str], entities: list[str], roles: list[str]) -> BindingRow:
+    context = SELF_FRAMES[frame]
+    entity_spans, attribute_spans, queries = [], [], []
+    for kind, entity, role in zip(kinds, entities, roles):
+        verb = _ROLE_FORMS[kind][1]
+        context += " "
+        entity_spans.append([len(context), len(context) + len(entity)])
+        context += f"{entity} {verb} the "
+        attribute_spans.append([len(context), len(context) + len(role)])
+        context += role + "."
+        queries.append(" " + _SELF_ANSWER[kind].format(n=entity))
+    return BindingRow(
+        context=context,
+        entities=entities,
+        attributes=roles,
+        answers=roles,
+        entity_spans=entity_spans,
+        attribute_spans=attribute_spans,
+        queries=queries,
+        task=task,
+    )
+
+
+def sample_self_row(frame: str, pair: str, assistant: str | None, rng: random.Random, index: int) -> BindingRow:
+    """Same sampling (and balancing) as sample_role_row, in a SELF frame."""
+    row = sample_role_row(pair, assistant, rng, index)
+    kinds = [{"You": "you", "I": "I"}.get(e, "name") for e in row["entities"]]
+    task = row["task"].replace("role_", f"self_{frame}_", 1)
+    return build_self_row(task, frame, kinds, row["entities"], row["attributes"])
+
+
+ASSISTANT_LEAD = "Here is where everyone is."
+ASSISTANT_USER_REQUEST = "Remind me where everyone is."
+ASSISTANT_FRAMES = {
+    "model_voice": CHAT_USER + ASSISTANT_USER_REQUEST + CHAT_ASSISTANT + ASSISTANT_LEAD,
+    "user_voice": CHAT_USER + ASSISTANT_LEAD,
+    "plain": ASSISTANT_LEAD,
+}
+# Entity pools per pair, as in ROOM_TASKS ("others" is the no-self control)
+ASSISTANT_PAIRS: dict[str, tuple[list[str], list[str]]] = {
+    "assistant_user": (["assistant"], ["user"]),
+    "assistant_other": (["assistant"], ROLES),
+    "user_other": (["user"], ROLES),
+    "others": (ROLES, ROLES),
+}
+
+
+def build_assistant_row(task: str, frame: str, entities: list[str], rooms: list[str]) -> BindingRow:
+    context = ASSISTANT_FRAMES[frame]
+    entity_spans, attribute_spans, queries = [], [], []
+    for entity, room in zip(entities, rooms):
+        context += " The "
+        entity_spans.append([len(context), len(context) + len(entity)])
+        context += f"{entity} is in the "
+        attribute_spans.append([len(context), len(context) + len(room)])
+        context += room + "."
+        # "currently" keeps the answer from repeating the context sentence verbatim
+        queries.append(f" So the {entity} is currently in the")
+    return BindingRow(
+        context=context,
+        entities=entities,
+        attributes=rooms,
+        answers=rooms,
+        entity_spans=entity_spans,
+        attribute_spans=attribute_spans,
+        queries=queries,
+        task=task,
+    )
+
+
+def sample_assistant_row(frame: str, pair: str, rng: random.Random, index: int) -> BindingRow:
+    first_pool, second_pool = ASSISTANT_PAIRS[pair]
+    if first_pool is second_pool:
+        entities = rng.sample(first_pool, 2)
+    else:
+        entities = [rng.choice(first_pool), rng.choice(second_pool)]
+        if index % 2:
+            entities.reverse()
+    return build_assistant_row(f"asst_{frame}_{pair}", frame, entities, rng.sample(ROOMS, 2))
