@@ -48,5 +48,6 @@ runner:
   max_examples_per_run: 8
   generation_hours: 6
   excluded_qos_names: [dw87]
+  judge: claude_cli
 example_ids: [lcbhard_100, lcbhard_16, lcbhard_5, lcb_arc186_e, lcbpro_2006F]
 example_ids_file: null

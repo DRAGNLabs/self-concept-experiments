@@ -1,5 +1,6 @@
 """Runs one round on the cluster: generation jobs (one per worklist shard, in parallel, each on whatever GPU option
-gpu_pick ranks first), then the GLM judge job over the round's dossiers. No job uses standby: a round waits for its
+gpu_pick ranks first), then the judge over the round's dossiers: a GLM job, or Claude Sonnet through the `claude` CLI
+from the login node (`judge: claude_cli`). No job uses standby: a round waits for its
 slowest job, and a preempted one goes back to the end of the queue. Every step resumes: the harness and the judge
 skip what their outputs already hold, so rerunning a round only finishes it.
 """
@@ -12,7 +13,7 @@ import time
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
-from typing import Final, TypedDict, cast
+from typing import Final, Literal, TypedDict, cast
 
 from byutils.gpu_pick import JobRequest, ranked_gpu_candidates, suggested_sbatch_flags
 
@@ -32,7 +33,14 @@ from selfconcept.arm_search.rh.round_files import (
     run_specs,
     write_round_inputs,
 )
-from selfconcept.codebench.rh_judge import JudgedDossier, is_flagged_hack, is_strong_hack
+from selfconcept.codebench.rh_judge import (
+    DEFAULT_RUBRIC_PATH,
+    JudgedDossier,
+    RunConfig,
+    is_flagged_hack,
+    is_strong_hack,
+)
+from selfconcept.codebench.rh_judge import main as judge_main
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +56,10 @@ FALLBACK_JUDGE_FLAGS: Final = ["--gpus", "h200:2", "--time", "02:00:00"]
 NON_JUDGE_GPU_TYPES: Final = frozenset({"p100", "v100", "a100", "l40s", "h100", "b200"})
 JUDGE_VRAM_GB: Final = 160
 JUDGE_HOURS: Final = 2.0
+CLAUDE_JUDGE_MODEL: Final = "claude-sonnet-5-5"
+CLAUDE_JUDGE_CONTEXT_TOKENS: Final = 1_000_000
+
+type JudgeBackend = Literal["glm_vllm", "claude_cli"]
 # Later attempts finish the runs of a job that died (node failure, cancelled at start); the harness skips recorded
 # examples
 GENERATION_ATTEMPTS: Final = 3
@@ -66,6 +78,7 @@ class RunnerSettings(TypedDict):
     max_examples_per_run: int | None
     generation_hours: float
     excluded_qos_names: list[str]
+    judge: JudgeBackend
 
 
 def picked_sbatch_flags(request: JobRequest, fallback_flags: list[str]) -> list[str]:
@@ -182,6 +195,18 @@ def run_judge(dossier_paths: list[Path], round_path: Path, settings: RunnerSetti
     dossier_list = round_path / "dossiers.list"
     dossier_list.write_text("".join(f"{path}\n" for path in dossier_paths))
     logger.info("judging %d dossiers", len(dossier_paths))
+    if settings["judge"] == "claude_cli":
+        judge_main(
+            RunConfig(
+                dossier_list=dossier_list,
+                output_path=verdicts_path,
+                rubric_path=settings["repo_root"] / DEFAULT_RUBRIC_PATH,
+                judge_model=CLAUDE_JUDGE_MODEL,
+                chat_format="claude_cli",
+                max_model_len=CLAUDE_JUDGE_CONTEXT_TOKENS,
+            )
+        )
+        return verdicts_path
     _wait_for_jobs(
         [
             lambda: [

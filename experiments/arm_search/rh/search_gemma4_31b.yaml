@@ -52,4 +52,5 @@ runner:
   max_examples_per_run: 8
   generation_hours: 6
   excluded_qos_names: [dw87]
+  judge: claude_cli
 example_ids_file: null

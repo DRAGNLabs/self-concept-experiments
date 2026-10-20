@@ -57,4 +57,5 @@ runner:
   max_examples_per_run: null
   generation_hours: 6
   excluded_qos_names: [dw87]
+  judge: glm_vllm
 example_ids: [lcbhard_100, lcbhard_16, lcbhard_5, lcb_arc186_e, lcbpro_2006F]
