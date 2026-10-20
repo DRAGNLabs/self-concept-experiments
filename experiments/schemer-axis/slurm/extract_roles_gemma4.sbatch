@@ -19,6 +19,7 @@ set -euo pipefail
 # already on disk, so a resubmission resumes. Default roles are the six fiction roles + default; add the bare roles
 # (schemer deceiver cheater) to see whether Gemma plays a bare persona that gpt-oss refused.
 # Usage: sbatch --export=ALL,ROOT=<dir>[,MODEL=google/gemma-4-E4B-it][,ROLES="..."][,QUESTIONS=100][,MIN_COUNT=50] experiments/schemer-axis/slurm/extract_roles_gemma4.sbatch
+# Sharded: add --array=0-3; each task runs every stage for its slice of ROLES into the same ROOT.
 # Smoke: sbatch --export=ALL,ROLES="default schemer schemer_fic straight_shooter_fic",QUESTIONS=3,MIN_COUNT=1,ROOT=<dir> ...
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -42,6 +43,9 @@ MAXLEN=12288
 JUDGE_MAXLEN=32768
 ACT_BATCH=4
 ROLES="${ROLES:-default schemer_fic deceiver_fic cheater_fic straight_shooter_fic rule_follower_fic neutral_fic}"
+if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then  # array job: task i takes every N-th role, round robin
+    ROLES="$(echo $ROLES | tr ' ' '\n' | awk -v n="$SLURM_ARRAY_TASK_COUNT" -v i="$((SLURM_ARRAY_TASK_ID - SLURM_ARRAY_TASK_MIN))" '(NR - 1) % n == i' | tr '\n' ' ')"
+fi
 ROLES_BRACKET="[$(echo $ROLES | tr ' ' ',')]"
 ROLES_DIR="../schemer-axis/data/roles"
 QUESTIONS_FILE="../schemer-axis/data/questions.jsonl"
@@ -72,7 +76,7 @@ for VARIANT in response_only with_cot; do
         --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.thinking true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
         --run.roles "$ROLES_BRACKET" \
         --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_$VARIANT"
-    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$TRAIN_QUESTIONS" \
+    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$TRAIN_QUESTIONS" --run.roles "$ROLES_BRACKET" \
         --run.activations_dir "$ROOT/act_$VARIANT" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_$VARIANT"
 done
 

@@ -39,6 +39,7 @@ class RunConfig:
     min_count: int = 50
     overwrite: bool = False
     question_indices: list[int] | None = None
+    roles: list[str] | None = None
 
 
 def load_scores(scores_file: Path) -> dict[str, int]:
@@ -84,6 +85,8 @@ def main(run: RunConfig = RunConfig()) -> None:
     run.output_dir.mkdir(parents=True, exist_ok=True)
 
     activation_files = sorted(run.activations_dir.glob("*.pt"))
+    if run.roles:
+        activation_files = [f for f in activation_files if f.stem in run.roles]
     logger.info(f"Found {len(activation_files)} activation files")
 
     successful = skipped = failed = 0
