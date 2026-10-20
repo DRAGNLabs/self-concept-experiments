@@ -52,7 +52,9 @@ def _episode_hit_probability(
     example_and_condition = [episode["arm"]["arm_id"].split("|") for episode in scored]
     condition_indices = np.array([condition_index_by_id[cid] for _, cid in example_and_condition], dtype=int)
     features = ArmFeatures(
-        group_index=np.array([problem_index_by_example_id[example_id] for example_id, _ in example_and_condition]),
+        group_index=np.array(
+            [problem_index_by_example_id[example_id] for example_id, _ in example_and_condition], dtype=int
+        ),
         off_target_gate=table["off_target_gate"][condition_indices],
         setting_codes=table["setting_codes"][condition_indices],
     )
@@ -68,7 +70,9 @@ def _calibration_lines(
         eligible = [episode for episode in episodes if is_eligible(episode["arm"], tier)]
         predicted = _episode_hit_probability(problems, episodes, eligible, tier, draws, efforts)
         for benchmark in BENCHMARKS:
-            in_benchmark = np.array([benchmark_by_example_id[e["arm"]["group_id"]] == benchmark for e in eligible])
+            in_benchmark = np.array(
+                [benchmark_by_example_id[e["arm"]["group_id"]] == benchmark for e in eligible], dtype=bool
+            )
             observed = sum(is_hit(e, tier) for e, keep in zip(eligible, in_benchmark, strict=True) if keep)
             lines.append(
                 f"| {tier['tier_name']} | {benchmark} | {int(in_benchmark.sum())} | {observed} "
