@@ -409,7 +409,7 @@ name, is now Winifred), assigned by a seeded shuffle, three of one gender and tw
 | Held out, RH-adjacent, honest | fair_player, spirit_keeper |
 | Held out, not RH-adjacent, deceptive | embezzler, impostor, gaslighter |
 | Held out, not RH-adjacent, honest | honest_bookkeeper, humble_expert, accountable_owner |
-| Controls, projected but outside any contrast | poker_player, stage_magician, undercover_detective, white_liar, blunt_truth_teller, strategist |
+| Controls, projected but outside any contrast | poker_player, stage_magician, undercover_detective, white_liar, blunt_truth_teller, strategist, neutral |
 
 The RH-adjacent holdout keeps open the claim that a vector built without reward-hacking-like personas still predicts
 reward hacking. The non-RH holdout is a generalization test of the vector on unseen honest and deceptive personas; two
@@ -417,7 +417,8 @@ of its three pairs (embezzler / honest_bookkeeper, impostor / humble_expert) are
 so their shared topic does not leak into the contrast. The controls separate deception the listener has consented to
 (poker_player, stage_magician), deception for a sanctioned end (undercover_detective), deception without self-interest
 (white_liar), honesty without warmth (blunt_truth_teller) and secrecy without lies (strategist; this `_fic` version
-does not lie, unlike the bare `strategist.json`).
+does not lie, unlike the bare `strategist.json`). neutral (Jansen's earlier character role with no honesty trait) was added to the controls on 2026-10-20
+as a character-without-a-stance baseline.
 
 ## Work order
 

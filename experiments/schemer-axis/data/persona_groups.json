@@ -5,5 +5,5 @@
   "honest_rh": ["fair_player_fic", "spirit_keeper_fic"],
   "deceptive_holdout": ["embezzler_fic", "impostor_fic", "gaslighter_fic"],
   "honest_holdout": ["honest_bookkeeper_fic", "humble_expert_fic", "accountable_owner_fic"],
-  "controls": ["poker_player_fic", "stage_magician_fic", "undercover_detective_fic", "white_liar_fic", "blunt_truth_teller_fic", "strategist_fic"]
+  "controls": ["poker_player_fic", "stage_magician_fic", "undercover_detective_fic", "white_liar_fic", "blunt_truth_teller_fic", "strategist_fic", "neutral_fic"]
 }

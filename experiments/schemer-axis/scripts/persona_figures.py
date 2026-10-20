@@ -378,8 +378,9 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
 
 
 def geometry_figures(root: Path, region: Region, layer: int, sections: list[Section], groups: dict[GroupName, list[str]],
-                     pca_path: Path, cosine_path: Path) -> None:
-    """2-D PCA and pairwise cosine of the per-persona vectors (train questions, in-role), each minus the default vector."""
+                     pca_path: Path, cosine_path: Path, centered_cosine_path: Path) -> None:
+    """2-D PCA and pairwise cosine of the per-persona vectors (train questions, in-role), each minus the default vector;
+    the second cosine plot also subtracts the mean over the plotted personas."""
     vectors_dir = root / f"vectors_{region}"
     def vector(role: str) -> Float[np.ndarray, "hidden"]:
         return torch.load(vectors_dir / f"{role}.pt", map_location="cpu", weights_only=False)["vector"][layer].float().numpy()
@@ -411,21 +412,26 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
     figure.savefig(pca_path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
-    unit_offsets = offsets / np.linalg.norm(offsets, axis=1, keepdims=True)
-    cosine = unit_offsets @ unit_offsets.T
     labels = [persona_label(role, groups) for role in columns]
-    figure, axes = plt.subplots(figsize=(0.26 * len(columns) + 3.0, 0.26 * len(columns) + 2.0))
+    cosine_figure(offsets, labels, spans, f"Persona vectors − default, layer {layer}", cosine_path)
+    cosine_figure(centered, labels, spans, f"Persona vectors − mean persona vector, layer {layer}", centered_cosine_path)
+
+
+def cosine_figure(vectors: Float[np.ndarray, "persona hidden"], labels: list[str], spans: list[tuple[str, int, int]], title: str, path: Path) -> None:
+    unit_vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    cosine = unit_vectors @ unit_vectors.T
+    figure, axes = plt.subplots(figsize=(0.26 * len(labels) + 3.0, 0.26 * len(labels) + 2.0))
     image = axes.imshow(cosine, cmap=DIVERGING, vmin=-1, vmax=1)
-    axes.set_xticks(range(len(columns)), labels, rotation=90, fontsize=7)
-    axes.set_yticks(range(len(columns)), labels, fontsize=7)
+    axes.set_xticks(range(len(labels)), labels, rotation=90, fontsize=7)
+    axes.set_yticks(range(len(labels)), labels, fontsize=7)
     for _, start, _ in spans[1:]:
         axes.axvline(start - 0.5, color=SURFACE_COLOR, linewidth=2)
         axes.axhline(start - 0.5, color=SURFACE_COLOR, linewidth=2)
     for side in axes.spines.values():
         side.set_visible(False)
     figure.colorbar(image, ax=axes, fraction=0.04, pad=0.02).set_label("cosine similarity", color=TEXT_COLOR)
-    axes.set_title(f"Persona vectors − default, layer {layer}", color=TEXT_COLOR, fontsize=10)
-    figure.savefig(cosine_path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
+    axes.set_title(title, color=TEXT_COLOR, fontsize=10)
+    figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
 
@@ -501,8 +507,8 @@ def main() -> None:
               if (result := auroc_by_layer(relative_by_role, deceptive, honest, question_ids["heldout"])) is not None}
     if aurocs:
         layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png")
-    geometry_figures(args.root, args.region, args.layer, heatmap_sections, groups,
-                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_cosine.png")
+    geometry_figures(args.root, args.region, args.layer, [deceptive_section, honest_section, controls_section], groups,
+                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png")
     (args.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}
