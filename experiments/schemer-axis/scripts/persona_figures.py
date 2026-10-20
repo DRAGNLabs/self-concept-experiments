@@ -353,12 +353,19 @@ def layer_sweep_figure(aurocs: dict[str, tuple[Float[np.ndarray, "layer"], Float
 
 
 def distribution_figure(relative_by_role: dict[str, Projections], sections: list[Section], groups: dict[GroupName, list[str]],
-                        layer: int, heldout_ids: Int[np.ndarray, "subset"], path: Path) -> None:
+                        layer: int, heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", random_bands: bool = False) -> None:
+    """Per-response violins; with random_bands, a grey band per persona spans mean ± 2 sd of the same per-response
+    values projected onto the random directions instead of the axis."""
     values_by_role = {role: projections["axis"][np.isin(projections["question_ids"], heldout_ids), layer]
                       for role, projections in relative_by_role.items() if role != "default"}
     columns, spans = section_columns(sections, {role for role, values in values_by_role.items() if len(values) > 1})
     figure, axes = plt.subplots(figsize=(max(6.0, 0.36 * len(columns) + 2.0), 4.2))
     style_axes(axes)
+    for column, role in enumerate(columns if random_bands else []):
+        projections = relative_by_role[role]
+        random_values = projections["random"][np.isin(projections["question_ids"], heldout_ids), layer]
+        center, spread = float(random_values.mean()), float(random_values.std())
+        axes.add_patch(Rectangle((column - 0.42, center - 2 * spread), 0.84, 4 * spread, facecolor=RANDOM_BAND_COLOR, linewidth=0, zorder=0))
     if columns:
         parts = axes.violinplot([values_by_role[role] for role in columns], positions=range(len(columns)), widths=0.8,
                                 showextrema=False, showmedians=True)
@@ -372,7 +379,10 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
     draw_section_titles(axes, spans)
     axes.set_xticks(range(len(columns)), [persona_label(role, groups) for role in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
-    axes.set_title("Held-out in-role responses (line = median; † = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=32)
+    axes.set_title(f"{title_prefix}Held-out in-role responses (line = median; † = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=32)
+    if random_bands:
+        axes.legend(handles=[Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd, per response")], frameon=False, fontsize=8,
+                    loc="upper left", bbox_to_anchor=(1.0, 1.0))
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
@@ -529,6 +539,7 @@ def main() -> None:
     parser.add_argument("--questions", type=Path, default=here / "data/questions.jsonl")
     parser.add_argument("--random-count", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1729)
+    parser.add_argument("--model-label", default="", help="model name for figure titles, e.g. 'GPT-OSS 120B'")
     args = parser.parse_args()
 
     groups: dict[GroupName, list[str]] = json.loads(args.groups.read_text())
@@ -575,6 +586,8 @@ def main() -> None:
                            ("honest axis personas", group_summaries[" ".join(groups["honest_main"])])))
     generalization_figure(summaries, groups, args.out / f"{prefix}_train_vs_heldout.png")
     distribution_figure(relative_by_role, heatmap_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions.png")
+    distribution_figure(relative_by_role, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only], groups, args.layer, question_ids["heldout"],
+                        args.out / f"{prefix}_distributions_no_controls.png", f"{args.model_label}: " if args.model_label else "", random_bands=True)
     persona_sets = {"axis personas": (groups["deceptive_main"], groups["honest_main"]),
                     "held-out personas": (groups["deceptive_holdout"], groups["honest_holdout"]),
                     "RH-adjacent personas": (groups["deceptive_rh"], groups["honest_rh"])}
