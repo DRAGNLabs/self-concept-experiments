@@ -53,4 +53,5 @@ runner:
   generation_hours: 6
   excluded_qos_names: [dw87]
   judge: claude_cli
-example_ids_file: null
+# written by `calibration pool` from round 0 (273 of 357 problems: 19 ImpossibleBench, every workspace problem)
+example_ids_file: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/gemma4_31b/pool_example_ids.txt
