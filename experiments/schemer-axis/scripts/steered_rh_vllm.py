@@ -26,7 +26,8 @@ with the HF capture path.
 
 Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort)
 and ``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
-in the Gemma 4 role extraction). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
+in the Gemma 4 role extraction) and ``muse-glimmer`` (meta-models/Muse-Glimmer-30B; thinking is always on, the
+to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue of gpt-oss's low effort). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
 import argparse
@@ -39,6 +40,7 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 
 from selfconcept.assistant_axis.internals.model_specifics.gemma4 import split_gemma4_completion
+from selfconcept.assistant_axis.internals.model_specifics.muse_glimmer import split_muse_glimmer_completion
 from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
 from selfconcept.codebench.vllm_harmony import vllm_harmony_generate
@@ -53,6 +55,11 @@ def split_gemma4(raw: str) -> tuple[str, str]:
     return reasoning or "", content
 
 
+def split_muse_glimmer(raw: str) -> tuple[str, str]:
+    reasoning, content = split_muse_glimmer_completion(raw)
+    return reasoning or "", content
+
+
 # Per model family: the vLLM decoder-block class to patch (module:attr), the patcher matching its forward contract,
 # how to read the residual stream off a forward hook's output, and the completion parser.
 FAMILIES = {
@@ -60,6 +67,10 @@ FAMILIES = {
                 "stream": lambda output: output[0] + output[1], "split": split_harmony_completion},
     "gemma4": {"block": ("vllm.model_executor.models.gemma4", "Gemma4DecoderLayer"), "patch": patch_vllm_stream_layers,
                "stream": lambda output: output[0], "split": split_gemma4},
+    # MuseGlimmerDecoderLayer.forward(positions, hidden_states, residual) -> (hidden_states, residual): the first element
+    # is the full residual stream after the layer (the HF MuseGlimmerTextDecoderLayer output); the second is stale.
+    "muse-glimmer": {"block": ("vllm.model_executor.models.muse_glimmer", "MuseGlimmerDecoderLayer"), "patch": patch_vllm_stream_layers,
+                     "stream": lambda output: output[0], "split": split_muse_glimmer},
 }
 
 
@@ -69,6 +80,8 @@ def family_of(model: str) -> str:
         return "gpt-oss"
     if "gemma-4" in name or "gemma4" in name:
         return "gemma4"
+    if "glimmer" in name:
+        return "muse-glimmer"
     raise SystemExit(f"no vLLM steering recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
@@ -119,8 +132,8 @@ def model_dims(model_name: str) -> tuple[int, int]:
 
 
 def model_layers(model):
-    """The decoder layers of a loaded vLLM model: gpt-oss at model.model.layers, Gemma 4 (unified multimodal wrapper)
-    at model.language_model.model.layers."""
+    """The decoder layers of a loaded vLLM model: gpt-oss and Muse Glimmer at model.model.layers, Gemma 4 (unified
+    multimodal wrapper) at model.language_model.model.layers."""
     for path in ("model.layers", "language_model.model.layers"):
         obj = model
         try:

@@ -193,14 +193,16 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
    and `build_turn_spans` with the `include_thinking` keyword (which tokens are "the assistant's answer" vs "its
    thinking"), and a generation-specifics mixin from `src/selfconcept/common/generation/model_specifics/` (thinking
    flag, completion split/join, `skip_special_tokens`), registered there as well. ChatML-style templates (Qwen, OLMo,
-   GLM) reuse `_shared.py`; a model with its own thinking channel follows `gemma4.py` (a token-level message iterator
-   plus a splitter). Test it on a stub tokenizer that renders what the real template emits (`tests/test_gemma4_pooling.py`).
+   GLM) reuse `_shared.py`; a model with its own thinking channel follows `gemma4.py` or `muse_glimmer.py` (a token-level
+   message iterator plus a splitter; Muse Glimmer's ATEM `to=self` channel is always on and `direct_answer_prefix_ids`
+   forces the user channel). Test it on a stub tokenizer that renders what the real template emits (`tests/test_gemma4_pooling.py`).
    Multimodal checkpoints load through `selfconcept.common.loading.load_causal_lm` and keep their sizes in
    `text_config`; `src/selfconcept/assistant_axis/models.py` falls back to the middle layer when the model has no entry.
 2. **vLLM steering family** (`scripts/steered_rh_vllm.py`, `FAMILIES` and `family_of`): the decoder-block class
    (`module:attr`), the patcher that matches its forward contract (`patch_vllm_blocks` when forward returns
    `(mlp_output, residual)` as gpt-oss's `TransformerBlock`; `patch_vllm_stream_layers` when it returns the residual
-   stream itself, as `Gemma4DecoderLayer`), a `stream` lambda that reads the residual off a forward-hook output, and
+   stream itself, as `Gemma4DecoderLayer` and `MuseGlimmerDecoderLayer`; the layer index is read from the layer or its
+   `self_attn`), a `stream` lambda that reads the residual off a forward-hook output, and
    the completion splitter. `model_layers` must find the decoder layers on the vLLM model object. Then verify once:
    `--check-hook` against an HF projection (`slurm/checks/steered_rh_vllm_smoke.sbatch`), eager vs compiled agreement
    (`steered_rh_vllm_compiled_smoke.sbatch`), prompt log-probs (`steered_rh_vllm_logprob_check.sbatch`).

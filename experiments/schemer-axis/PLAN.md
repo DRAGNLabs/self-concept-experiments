@@ -420,7 +420,7 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 **Dropped the same day (user decision 2026-10-20).** Kimi-Dev-72B is a Qwen2.5-72B fine-tune whose chat template has
 no thinking tokens, so the primary (reasoning-token) vector cannot be built on it as designed, and Kimi-K2-Thinking is
 unaffordable. No code was changed and the partial weight download was removed. Section kept as the record of the
-options considered; the next target model, if any, is an open decision.
+options considered; the next target model is Muse Glimmer (next section, user decision 2026-10-20).
 
 Question: does the gpt-oss result (schemer-character direction extractable without hack data; +shift raises the judged
 hack rate from 10% to 40%, −shift and cap lower it, random direction does nothing) replicate in a Kimi model? Same
@@ -463,6 +463,78 @@ Steps (each recorded in FINDINGS, one commit per round):
 4. Phase 1 extraction (12 roles × 200), gate and checks 1–3, layer sweep; CoT fiction contrast as the primary vector.
 5. Layer norms, ±α probes, dose pilot under the capability rule, capability-matched random pilot.
 6. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability benchmarks.
+
+## Muse Glimmer replication (added 2026-10-20, user decision)
+
+Question: does the gpt-oss result (schemer-character direction extractable without hack data; +shift raises the judged
+hack rate from 10% to 40%, −shift and cap lower it, a random direction does nothing) replicate on
+`meta-models/Muse-Glimmer-30B`? Same pipeline, recipe (`hsolvNCblow`: prompt C `critical_no_carve`, neutral feedback,
+5 stated attempts, T = 1, 16 384 new tokens, hard 45 × 12 seeds), capability rule and judged primary outcome as for
+gpt-oss. A teammate is running the same question on a Qwen 3 model, so Muse is the third family.
+
+**Why this model (2026-10-20).** It has a thinking channel like gpt-oss (Kimi-Dev-72B had none), fits one 80 GB GPU
+(K2-Thinking needed an 8×H200 node), and its coding ability is in gpt-oss's regime: SWE-bench Verified 76.0 and
+SWE-bench Pro 51.2 against Gemma 4 31B's 66.6 / 36.9 (Meta's card; Qwen3.6-27B is about even with it). The SOO study
+(main, 2026-09, `experiments/soo/FINDINGS.md`) already ran this checkpoint: no SOO LoRA band at any depth, but
+activation steering at layer 26 was the strongest honesty intervention in that study with no damage edge up to 4.7×
+the activation norm; on its ImpossibleBench screen with the user channel forced (thinking off, 2 048-token cap) Muse
+solved 48% of an LCB-hard subset and rewrote tests once in 40, i.e. it did not reward-hack at base *under that
+protocol*. Its base rate under this recipe (thinking on, 16k budget, prompt C, the hard 45) is what the capability check
+measures; if it is near zero with no intent, the replication is a null-by-floor as the Gemma hard-split was.
+
+**Model facts** (HF card, config, chat template; 2026-10-20). Meta Superintelligence Labs, released 2026-08-10, Apache
+2.0, not gated, distilled from Muse Spark. `MuseGlimmerForConditionalGeneration`: dense 52-layer text decoder (hidden
+6 656, 32 heads / 2 KV heads, head dim 128, SwiGLU 19 968, three sliding-window layers (2 048) then one global NoPE
+layer, 131k context, vocab 202 048, final logit softcap 20) plus a 1.8B ViT-G/14 perception encoder (unused here; text
+only). bf16 weights 59.6 GB in `~/nobackup/autodelete/hf_cache` (downloaded 2026-10-20). Native in vLLM 0.28
+(`MuseGlimmerForCausalLM`, reasoning parser `muse_glimmer`) and Transformers 5.17 (`AutoModelForImageTextToText`;
+`load_causal_lm` already routes it). Chat format (ATEM): every message is `<|start|>HEADER<|message|>BODY` ended by
+`<|eom|>` / `<|eot|>`; an assistant turn is `<|start|>assistant to=self<|message|>{reasoning}<|eom|><|start|>assistant
+to=user<|message|>{answer}<|eot|>`, the template renders `reasoning_content` as the to=self message for every assistant
+turn, and the generation prompt ends at `<|start|>assistant`, after which the model writes ` to=self<|message|>` itself.
+Thinking cannot be turned off; `reasoning_strength` (low / medium / high / xhigh, default high; a chat-template kwarg
+rendered as "Reasoning strength: X." in the system turn) sets its depth. Generation config: T 1.0, top-p 0.95,
+top-k 64. The to=self channel is the CoT region (primary cell), the to=user body the final region.
+
+**Pipeline changes (2026-10-20).** `MuseGlimmerGenerationSpecifics` / `MuseGlimmerModelSpecifics` (registry keys
+`muse-glimmer`, `muse_glimmer`, `glimmer`): completion split at the channel headers (to=self bodies → `reasoning_content`,
+last to=user body → `content`; follows vLLM's parser rules, tolerates a truncated to=self and a bare answer), the
+inverse join, `direct_answer_prefix_ids` = ` to=user<|message|>` (the SOO study's `--force-user-channel`) for the
+thinking-off path, token-level message iterator for the pooling spans (verified on the real template: system/user/
+to=self/to=user spans, round trip through `apply_chat_template`), `get_layers` at `model.language_model.layers`;
+`tests/test_muse_glimmer_pooling.py`. vLLM steering family `muse-glimmer` in `steered_rh_vllm.py`: patches
+`MuseGlimmerDecoderLayer.forward` (returns `(hidden_states, residual)` with the full stream first) through
+`patch_vllm_stream_layers`, which now reads the layer index from `self_attn.layer_idx` when the layer has none of its
+own (`tests/test_intervene.py`). `extract_roles_gemma4.sbatch` takes `MAXTOK` / `MAXLEN` overrides.
+
+**Settings (2026-10-20; the user can override any of these).**
+- RH recipe: `SOO_CHAT_KWARGS='{"reasoning_strength":"low"}'` as the analogue of gpt-oss's `reasoning_effort: low`
+  (the recipe's setting; Gemma 4 had no depth control), sampling from the generation config (top-p 0.95, top-k 64, as
+  for Gemma 4), 16 384 new tokens, `--max-model-len 20480`, vLLM memory fraction 0.95 on an 80 GB card. The capability
+  check reports truncation; if low leaves the model unable to finish, medium is the next setting and the arms are rerun
+  under one setting.
+- Extraction: the template default (high) with 16 384-token answers and 20 480 context, thinking on (`--run.thinking
+  true` is a no-op on this template; the activation pass renders the same system line), 12 roles × 200 as for Gemma,
+  Qwen2.5-7B judge, gate ≥ 50 of 200.
+- Layers: mid-depth 26 of 52 for validation and the first steering site (gpt-oss 17 of 36, Gemma 24 of 48; also the
+  SOO steering layer), plus the per-layer sweep; α in units of the layer's mean norm.
+- Judge for the dossiers: Claude Sonnet subagents, rubric v3, blind to arm.
+
+Steps (each recorded in FINDINGS, one commit per round; outputs under
+`~/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/`):
+
+1. **Capability check** (gate, as for 31B): unsteered on the hard 45, seed 0, under the settings above. Submitted
+   2026-10-20 as job 14352717 (`dose_pilot.sbatch`, dwmatrix A100 / eng H200 standby, 8 h, requeue; output
+   `rh/cap_check/unsteered_seed0/`). Read: hidden pass, no-code, truncation, shown-pass/hidden-fail with intent terms.
+   Also the first look at the raw to=self / to=user output under the harness (the splitter is verified on the template,
+   not yet on generated text).
+2. **Extraction**: 12 roles × 200, both pooling passes. Submitted 2026-10-20 as job 14352718
+   (`extract_roles_gemma4.sbatch` with `MODEL=`, same queues, 12 h, requeue; output `full/`). Then the validation
+   checks 1–3 at layer 26 plus the sweep (`validate_vectors.py`), CoT fiction contrast as the primary vector.
+3. Phase 3 smoke: layer norms, ±α probes on the neutral questions, `--check-hook` against the HF projection.
+4. Dose pilot under the capability rule (both signs) and the capability-matched random pilot — user go-ahead.
+5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
+   benchmarks — user go-ahead.
 
 ## Work order
 

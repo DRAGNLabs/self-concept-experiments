@@ -118,10 +118,18 @@ def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
     return restore
 
 
+def _vllm_layer_index(layer) -> int:
+    """vLLM decoder layers carry ``layer_idx`` themselves (gpt-oss, Gemma 4) or only on their attention module
+    (Muse Glimmer's ``MuseGlimmerDecoderLayer``, whose ``self_attn.layer_idx`` comes from the weight prefix)."""
+    index = getattr(layer, "layer_idx", None)
+    return index if index is not None else layer.self_attn.layer_idx
+
+
 def patch_vllm_stream_layers(layer_cls, transforms_by_layer: dict[int, object]):
     """Like ``patch_vllm_blocks`` for vLLM decoder layers whose ``forward`` returns the full residual stream as the
     first element of its output (Gemma 4's ``Gemma4DecoderLayer``: ``(hidden_states, None)``, after the layer
-    scalar, the same tensor the HF ``Gemma4TextDecoderLayer`` returns). Layers whose ``layer_idx`` is in
+    scalar, the same tensor the HF ``Gemma4TextDecoderLayer`` returns; Muse Glimmer's ``MuseGlimmerDecoderLayer``:
+    ``(hidden_states, residual)`` with the stream first). Layers whose index (see ``_vllm_layer_index``) is in
     ``transforms_by_layer`` return ``transform(stream)`` in place of the stream; the remaining outputs pass
     through. Returns a function that restores the original forward."""
     original = layer_cls.forward
@@ -129,7 +137,7 @@ def patch_vllm_stream_layers(layer_cls, transforms_by_layer: dict[int, object]):
 
     def forward(self, *args, **kwargs):
         output = original(self, *args, **kwargs)
-        transform = transforms.get(self.layer_idx)
+        transform = transforms.get(_vllm_layer_index(self))
         if transform is None:
             return output
         stream, rest = (output[0], tuple(output[1:])) if isinstance(output, tuple) else (output, None)
