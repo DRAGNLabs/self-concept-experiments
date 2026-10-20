@@ -378,9 +378,9 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
 
 
 def geometry_figures(root: Path, region: Region, layer: int, sections: list[Section], groups: dict[GroupName, list[str]],
-                     pca_path: Path, cosine_path: Path, centered_cosine_path: Path) -> None:
-    """2-D PCA and pairwise cosine of the per-persona vectors (train questions, in-role), each minus the default vector;
-    the second cosine plot also subtracts the mean over the plotted personas."""
+                     pca_path: Path, pc1_path: Path, cosine_path: Path, centered_cosine_path: Path) -> None:
+    """2-D PCA, PC1 of the non-control personas alone, and pairwise cosine of the per-persona vectors (train questions,
+    in-role), each minus the default vector; the second cosine plot also subtracts the mean over the plotted personas."""
     vectors_dir = root / f"vectors_{region}"
     def vector(role: str) -> Float[np.ndarray, "hidden"]:
         return torch.load(vectors_dir / f"{role}.pt", map_location="cpu", weights_only=False)["vector"][layer].float().numpy()
@@ -400,11 +400,11 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
         persona_group = group_of(role, groups)
         axes.scatter(x, y, marker=marker_by_group[persona_group], s=46, color=COLOR_BY_HONESTY[HONESTY_BY_GROUP[persona_group]],
                      edgecolors=SURFACE_COLOR, linewidths=1.5, zorder=3)
-        axes.annotate(persona_label(role, groups), (x, y), xytext=(4, 3), textcoords="offset points", fontsize=7, color=TEXT_COLOR)
     axes.set_aspect("equal", adjustable="datalim")
+    label_without_overlap(axes, coordinates, [persona_label(role, groups) for role in columns])
     axes.set_xlabel(f"PC1 ({explained[0]:.0%})", color=TEXT_COLOR)
     axes.set_ylabel(f"PC2 ({explained[1]:.0%})", color=TEXT_COLOR)
-    axes.set_title(f"Persona vectors − default, layer {layer}", color=TEXT_COLOR, fontsize=10)
+    axes.set_title(f"Persona vectors − default, layer {layer} (labels thinned where they would overlap)", color=TEXT_COLOR, fontsize=10)
     legend = [Patch(color=COLOR_BY_HONESTY[h], label=h) for h in HONESTIES]
     legend += [Line2D([], [], marker=marker, linestyle="", color=MUTED_COLOR, label=label)
                for marker, label in (("o", "in axis"), ("s", "held out"), ("^", "held out, RH-adjacent"), ("D", "control"))]
@@ -412,9 +412,82 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
     figure.savefig(pca_path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
+    non_control = [index for index, role in enumerate(columns) if group_of(role, groups) != "controls"]
+    pc1_figure(offsets[non_control], [columns[index] for index in non_control], groups, layer, pc1_path)
+
     labels = [persona_label(role, groups) for role in columns]
     cosine_figure(offsets, labels, spans, f"Persona vectors − default, layer {layer}", cosine_path)
     cosine_figure(centered, labels, spans, f"Persona vectors − mean persona vector, layer {layer}", centered_cosine_path)
+
+
+def label_without_overlap(axes: Axes, points: Float[np.ndarray, "point 2"], labels: list[str]) -> None:
+    """Label the most isolated points first, skipping any label whose box would overlap one already placed."""
+    axes.apply_aspect()
+    distances = np.linalg.norm(points[:, None] - points[None], axis=-1) + np.diag(np.full(len(points), np.inf))
+    placed = []
+    for index in np.argsort(-distances.min(axis=1)):
+        text = axes.annotate(labels[index], tuple(points[index]), xytext=(4, 3), textcoords="offset points", fontsize=7, color=TEXT_COLOR)
+        box = text.get_window_extent().expanded(1.05, 1.15)
+        if any(box.overlaps(other) for other in placed):
+            text.remove()
+        else:
+            placed.append(box)
+
+
+def spread_apart(targets: Float[np.ndarray, "point"], gap: float) -> Float[np.ndarray, "point"]:
+    """Positions near the targets with neighbours at least gap apart (pairwise pushes until nothing overlaps)."""
+    order = np.argsort(targets)
+    positions = targets[order].astype(float)
+    for _ in range(500):
+        overlaps = gap - np.diff(positions)
+        if (overlaps <= 1e-9).all():
+            break
+        push = np.where(overlaps > 0, overlaps / 2, 0.0)
+        positions[:-1] -= push
+        positions[1:] += push
+    spread = np.empty_like(positions)
+    spread[order] = positions
+    return spread
+
+
+def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], groups: dict[GroupName, list[str]], layer: int, path: Path) -> None:
+    """Each persona's PC1 coordinate (PCA over these personas only), one column per persona group, deceptive side up."""
+    centroid = offsets.mean(axis=0)
+    _, singular_values, components = np.linalg.svd(offsets - centroid, full_matrices=False)
+    pc1 = components[0]
+    deceptive = [index for index, role in enumerate(roles) if HONESTY_BY_GROUP[group_of(role, groups)] == "deceptive"]
+    pc1 = pc1 if ((offsets[deceptive] - centroid) @ pc1).mean() > 0 else -pc1
+    coordinates = (offsets - centroid) @ pc1
+    default_coordinate = float(-centroid @ pc1)
+    column_groups: list[tuple[GroupName, str]] = [("deceptive_main", "deceptive\nin axis"), ("deceptive_holdout", "deceptive\nheld out"),
+                                                  ("deceptive_rh", "deceptive\nRH-adjacent"), ("honest_main", "honest\nin axis"),
+                                                  ("honest_holdout", "honest\nheld out"), ("honest_rh", "honest\nRH-adjacent")]
+    figure, axes = plt.subplots(figsize=(11.0, 7.0))
+    style_axes(axes)
+    low, high = min(coordinates.min(), default_coordinate), max(coordinates.max(), default_coordinate)
+    margin = 0.06 * (high - low)
+    axes.set_ylim(low - margin, high + margin)
+    axes.set_xlim(-0.4, len(column_groups) - 0.2)
+    axes_height_points = axes.get_position().height * figure.get_figheight() * 72
+    gap = 9.0 / axes_height_points * (high - low + 2 * margin)
+    axes.axhline(default_coordinate, color=MUTED_COLOR, linewidth=0.8, linestyle="--", zorder=1)
+    axes.text(len(column_groups) - 0.25, default_coordinate, "default", ha="right", va="bottom", fontsize=8, color=MUTED_COLOR)
+    for column, (group_name, _) in enumerate(column_groups):
+        members = [index for index, role in enumerate(roles) if group_of(role, groups) == group_name]
+        if not members:
+            continue
+        values = coordinates[members]
+        color = COLOR_BY_HONESTY[HONESTY_BY_GROUP[group_name]]
+        axes.scatter(np.full(len(members), column), values, s=40, color=color, edgecolors=SURFACE_COLOR, linewidths=1.5, zorder=3)
+        for index, value, label_y in zip(members, values, spread_apart(values, gap)):
+            axes.plot([column + 0.03, column + 0.13], [value, label_y], color="#c9c8c3", linewidth=0.6, zorder=2)
+            axes.text(column + 0.15, label_y, persona_label(roles[index], groups), va="center", fontsize=7, color=TEXT_COLOR)
+    axes.set_xticks(range(len(column_groups)), [label for _, label in column_groups], color=TEXT_COLOR, fontsize=9)
+    explained = singular_values[0] ** 2 / (singular_values ** 2).sum()
+    axes.set_ylabel(f"PC1 ({explained:.0%} of variance), deceptive side up", color=TEXT_COLOR)
+    axes.set_title(f"Persona vectors − default, layer {layer}: first principal component, controls excluded", color=TEXT_COLOR, fontsize=10)
+    figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
+    plt.close(figure)
 
 
 def cosine_figure(vectors: Float[np.ndarray, "persona hidden"], labels: list[str], spans: list[tuple[str, int, int]], title: str, path: Path) -> None:
@@ -510,7 +583,7 @@ def main() -> None:
     if aurocs:
         layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png")
     geometry_figures(args.root, args.region, args.layer, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only, controls_section], groups,
-                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png")
+                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_pc1.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png")
     (args.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}
