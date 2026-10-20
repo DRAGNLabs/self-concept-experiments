@@ -254,7 +254,7 @@ def heatmap_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], sect
 def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_summaries: dict[str, Summary | None],
                sections: list[Section], groups: dict[GroupName, list[str]], title: str, path: Path,
                references: tuple[tuple[str, Summary | None], ...] = ()) -> None:
-    """Per-persona held-out means with bootstrap CIs over grey random-direction bands, and a mean ± CI line per subsection."""
+    """Per-persona held-out means with bootstrap CIs over grey random-direction bands, and a mean line per subsection."""
     present = {role for role, by_set in summaries.items() if by_set["heldout"] is not None}
     columns, spans = section_columns(sections, present)
     if not columns:
@@ -278,7 +278,6 @@ def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_su
             if not subsection_columns or group is None:
                 continue
             left, right = min(subsection_columns) - 0.45, max(subsection_columns) + 0.45
-            axes.fill_between([left, right], group["ci_low"], group["ci_high"], color=MUTED_COLOR, alpha=0.18, linewidth=0, zorder=4)
             axes.plot([left, right], [group["mean"]] * 2, color=MUTED_COLOR, linewidth=1.5, zorder=5)
     for label, reference in references:
         if reference is not None:
@@ -294,7 +293,7 @@ def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_su
     honesties: list[Honesty] = [honesty for honesty in HONESTIES if any(honesty_of(role, groups) == honesty for role in columns)]
     legend = [Patch(color=COLOR_BY_HONESTY[honesty], label=honesty) for honesty in honesties]
     legend += [Patch(facecolor=MUTED_COLOR, hatch="////", edgecolor=SURFACE_COLOR, label="RH-adjacent")] if any(is_rh_adjacent(r, groups) for r in columns) else []
-    legend += [Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd"), Patch(color=MUTED_COLOR, alpha=0.4, label="group mean, 95% CI")]
+    legend += [Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd"), Line2D([], [], color=MUTED_COLOR, linewidth=1.5, label="group mean")]
     axes.legend(handles=legend, frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(1.0, 1.0))
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
