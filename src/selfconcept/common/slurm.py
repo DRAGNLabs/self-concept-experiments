@@ -1,6 +1,8 @@
 """Slurm submission through MIRROR's sbatch template, activating a mamba env.
 
 MIRROR's own launcher hardcodes `source .venv/bin/activate` (uv); this repo uses mamba.
+
+Job requests must follow BYU_ORC_AGENTS.md at the repo root: minimal resources, no partition.
 """
 
 import shlex

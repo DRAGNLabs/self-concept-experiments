@@ -1,0 +1,84 @@
+# ROLE tasks on OLMo-2-13B-Instruct: "You are the <role>. I am the <role>." in a chat user turn, so "you" is
+# the model. Each pair is tested with neither entity holding "assistant" (neutral), and with
+# the model's true role on one entity. Same text for base and Instruct. Submit from the repo root:
+#   python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/olmo2-13b-instruct-roles.yaml
+model:
+  class_path: selfconcept.binding_ids.models.MirrorOlmoModel
+  init_args:
+    hf_model_name: allenai/OLMo-2-1124-13B-Instruct
+    dtype: float32  # loads from the HF cache; fp32 to match the base runs
+metrics:
+  you_i_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_you_i_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_you_i_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_you_i_neutral.json
+  you_i_asst_you:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_you_i_asst_you.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_you_i_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_you_i_asst_you.json
+  you_i_asst_i:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_you_i_asst_i.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_you_i_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_you_i_asst_i.json
+  you_name_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_you_name_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_you_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_you_name_neutral.json
+  you_name_asst_you:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_you_name_asst_you.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_you_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_you_name_asst_you.json
+  you_name_asst_name:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_you_name_asst_name.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_you_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_you_name_asst_name.json
+  i_name_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_i_name_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_i_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_i_name_neutral.json
+  i_name_asst_i:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_i_name_asst_i.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_i_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_i_name_asst_i.json
+  i_name_asst_name:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_i_name_asst_name.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_i_name_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_i_name_asst_name.json
+  names_neutral:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_names_neutral.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_names_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_names_neutral.json
+  names_asst_name:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/role_names_asst_name.jsonl
+      estimate_data_path: experiments/binding_ids/data/role_names_estimate.jsonl
+      output_path: experiments/binding_ids/results/olmo2-13b-instruct-roles/role_names_asst_name.json
+
+slurm:
+  job_type: compute
+  time: "01:30:00"
+  gpus_per_node: a100:1
+  qos: cs
+  mem_per_cpu: 16G
+  output: experiments/binding_ids/slurm-logs/%j.out

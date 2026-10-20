@@ -17,6 +17,11 @@ from .interventions import CONDITIONS, expected_answer, mean_intervention_offset
 from .tasks import load_rows
 
 
+# Binding vectors per (model, estimate file), so metrics in one job that share an estimate
+# set (e.g. the ROLE placements) estimate it once
+_DELTA_CACHE: dict[tuple[int, str], tuple[torch.Tensor, torch.Tensor]] = {}
+
+
 class MeanInterventionMetric(MirrorMetric):
     """Swap the two pairs' binding IDs with mean interventions and check whether answers follow.
 
@@ -25,16 +30,15 @@ class MeanInterventionMetric(MirrorMetric):
     `accuracy_<condition>` is the fraction of queries where the model's answer matches what
     the binding-ID account predicts under that condition (original answer for none, swap_both
     and the random_* controls; the other pair's answer for single swaps). Answers are scored
-    by each in-context capital's first-token log prob, median-calibrated per answer slot and
-    condition as in the paper. Variants:
-      - `strict_accuracy_*`: calibrated with the medians from the `none` condition only, so a
-        slot bias the intervention itself introduces isn't calibrated away
+    by each in-context answer's (capital's or room's) first-token log prob, median-calibrated
+    per answer slot and condition as in the paper. Variants:
       - `raw_accuracy_*`: no calibration; the model prefers the expected in-context capital
       - `vocab_accuracy_*`: the top-1 token over the whole vocabulary is the first token of the
         expected pair's capital or country, i.e. what the model would actually generate (some
         models, e.g. OLMo-2-7B, answer "the city of" with the country)
     `_e0`/`_e1` suffixes split by which entity was queried. Per-query log probs and top
-    tokens are written next to `output_path` as `<stem>_queries.jsonl`.
+    tokens are written next to `output_path` as `<stem>_queries.jsonl`, and the estimated
+    binding vectors as `<stem>_deltas.pt` (for comparing them across tasks).
     """
 
     def __init__(
@@ -67,9 +71,10 @@ class MeanInterventionMetric(MirrorMetric):
         records: list[dict] = []  # one per (query, condition)
         n_skipped = 0
         with torch.no_grad():
-            delta_entity, delta_attribute = estimate_binding_deltas(
-                hf_model, layers, tokenizer, estimate_rows, fabric.device
-            )
+            key = (id(hf_model), self.estimate_data_path)
+            if key not in _DELTA_CACHE:
+                _DELTA_CACHE[key] = estimate_binding_deltas(hf_model, layers, tokenizer, estimate_rows, fabric.device)
+            delta_entity, delta_attribute = _DELTA_CACHE[key]
             for row_index, row in enumerate(eval_rows, start=self.eval_start):
                 candidates = [tokenizer.encode(" " + a, add_special_tokens=False)[0] for a in row["answers"]]
                 if candidates[0] == candidates[1]:
@@ -121,6 +126,10 @@ class MeanInterventionMetric(MirrorMetric):
             out.write_text(json.dumps(results, indent=2) + "\n")
             with open(out.with_name(f"{out.stem}_queries.jsonl"), "w") as f:
                 f.writelines(json.dumps(r) + "\n" for r in records)
+            torch.save(
+                {"entity": delta_entity.cpu(), "attribute": delta_attribute.cpu()},
+                out.with_name(f"{out.stem}_deltas.pt"),
+            )
         return results
 
 
@@ -136,7 +145,6 @@ def top_slot(tokenizer, row: dict, token_id: int) -> int | None:
 def summarize(records: list[dict]) -> dict[str, float]:
     """All accuracy variants for every condition, from per-query records (see the metric docstring)."""
     by_condition = {c: [r for r in records if r["condition"] == c] for c in CONDITIONS}
-    baseline_medians = _log_probs(by_condition["none"]).median(dim=0).values
     results = {}
     for condition, rows in by_condition.items():
         query_index = torch.tensor([r["query_index"] for r in rows])
@@ -146,7 +154,6 @@ def summarize(records: list[dict]) -> dict[str, float]:
         # later-mentioned attribute) independent of binding
         predictions = {
             "accuracy": (log_probs - log_probs.median(dim=0).values).argmax(dim=1),
-            "strict_accuracy": (log_probs - baseline_medians).argmax(dim=1),
             "raw_accuracy": log_probs.argmax(dim=1),
             "vocab_accuracy": torch.tensor([-1 if r["top_slot"] is None else r["top_slot"] for r in rows]),
         }

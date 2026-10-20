@@ -29,6 +29,27 @@ python -m selfconcept.binding_ids.datagen
 - `data/capitals_estimate.jsonl` — 500 further contexts (none shared with `capitals.jsonl`) used
   only to estimate binding vectors:
   `python -m selfconcept.binding_ids.datagen --n 500 --seed 1 --name capitals_estimate --exclude capitals`
+- ROOMS tasks, which test binding across entity types with one shared frame,
+  "<entity> is in the <room>." → "Where is <entity>? … in the ___". The answer is the room itself.
+  Each has a 200-context eval file and a disjoint 500-context `_estimate` file:
+
+  | task | example context |
+  |---|---|
+  | `people` | "Alice is in the kitchen. Bob is in the garage." |
+  | `animals` | "The dog is in the kitchen. The fox is in the garage." |
+  | `objects` | "The key is in the kitchen. The lamp is in the garage." |
+  | `i_you` | "I am in the kitchen. You are in the garage." (same speaker throughout) |
+  | `animal_object` | "The dog is in the kitchen. The key is in the garage." (living + non-living) |
+
+  ```bash
+  python -m selfconcept.binding_ids.datagen --task animals
+  python -m selfconcept.binding_ids.datagen --task animals --n 500 --seed 1 --name animals_estimate --exclude animals
+  ```
+
+  Pools are in `vocab.py`: single tokens in the OLMo-2 and Llama-3.2 tokenizers, with
+  strong room associations (cow/barn, knife/kitchen) left out. For two-pool tasks the order
+  alternates, so each pool comes first in exactly half the contexts.
+  `scripts/compare_deltas.py` compares the binding vectors of different tasks.
 
 ### Running
 
@@ -68,9 +89,7 @@ MIRROR_DATA_PATH=~/mirror_data python -m selfconcept.binding_ids.run --config ex
    answer for `none`, `swap_both` and the random controls, the other pair's answer for single
    swaps. Answers are scored on each capital's first-token log prob, median-calibrated per answer
    slot (removes the model's bias toward e.g. the later-mentioned attribute, as in the paper);
-   `_e0`/`_e1` split by queried entity. Stricter variants, from most to least lenient:
-   - `strict_accuracy_*`: calibrated with medians from the `none` condition only, so a slot bias
-     the intervention itself creates isn't calibrated away
+   `_e0`/`_e1` split by queried entity. Stricter variants:
    - `raw_accuracy_*`: uncalibrated; the model prefers the expected in-context capital
    - `vocab_accuracy_*`: the expected capital is the model's top-1 token over the whole vocabulary
 
