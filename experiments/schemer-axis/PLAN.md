@@ -422,7 +422,11 @@ hack rate from 10% to 40%, −shift and cap lower it, random direction does noth
 pipeline as gpt-oss, same recipe (`hsolvNCblow`, prompt C, neutral harness, 45 hard problems × 12 seeds), same
 capability rule, same judged primary outcome.
 
-Open before anything runs (user to decide):
+**User decisions 2026-10-20.** Model: `moonshotai/Kimi-Dev-72B` (not K2-Thinking: a whole 8×H200 node per task is
+unaffordable, and a second-model replication should be shown on something cheaper first). Judge: Sonnet for the two
+new random-direction arms (job 14351638) only; the 2026-10-19 Fable reads of the main run stand, no re-judge.
+
+Open before anything runs (resolved above; kept as the record of the options):
 
 - **Which Kimi.** `moonshotai/Kimi-K2-Thinking` is the analogue of gpt-oss (a reasoning model with a thinking channel,
   MoE, 1T total / 32B active, native INT4, ~600 GB of weights): it needs a whole 8×H200 node (m13h, standby or paid
@@ -436,7 +440,14 @@ Open before anything runs (user to decide):
   with `model: sonnet`), not Fable 5.1. The gpt-oss main-run verdicts (2026-10-19) were Fable 5.1 reads; whether to
   re-judge them with Sonnet for a single-judge comparison is with the user.
 
-Steps once the model is chosen (each recorded in FINDINGS, one commit per round):
+Kimi-Dev-72B facts (HF model card and config, 2026-10-20): Qwen2.5-72B fine-tune (`Qwen2ForCausalLM`, 80 layers,
+hidden 8192, 64 heads / 8 KV heads, 131k context, bf16 safetensors ≈ 146 GB, MIT licence, vLLM-served, SWE-bench
+Verified 60.4%). Its chat template is Qwen2.5's ChatML with no thinking tokens, so unlike gpt-oss and Gemma 4 it has
+no separate reasoning channel; whether it writes a long chain of thought inside the response (which would make the
+"CoT region" the response text before the code) is checked in the smoke. Size: 146 GB of weights needs tensor
+parallelism over 2 H200s (or 3 A100s) per task, or an FP8 weight-only engine on one H200; either is a fit-check item.
+
+Steps (each recorded in FINDINGS, one commit per round):
 
 1. Fit check: weights into the HF cache (~600 GB for K2; `nobackup/autodelete` has 20 TB free), a vLLM 0.28 engine on
    the target node, tokens/s, and whether `transformers` can run a forward pass with hidden-state hooks for extraction.
