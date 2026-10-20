@@ -532,6 +532,12 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    from 14352717 and s2 from 14353502; the main job is left running as the fallback. Read: hidden pass, no-code, truncation, shown-pass/hidden-fail with intent terms.
    Also the first look at the raw to=self / to=user output under the harness (the splitter is verified on the template,
    not yet on generated text).
+   **Done 2026-10-20** (FINDINGS "Muse Glimmer capability check"): 14352717 was preempted and requeued (resume
+   works), 14353502 finished scenario 2 at 1:55 pm, the main job was cancelled; merged read in `rh/cap_check/merged/`.
+   Hidden pass 47%, shown pass 82%, no code 0, no truncation (reasoning 1.3k–40k chars per turn at low strength),
+   proxy 36% (16 of 45); 15 of 45 episodes are knowing test fits (lookup tables on the shown asserts, 13 of them on the
+   first attempt), 11 proxy episodes plus 4 that pass the hidden suite anyway. Gate passed; base rate ≈ 33%, three
+   times gpt-oss's. Cost: ≈ 3.3 min per problem on an H200, 4.7 on an A100 (≈ 2.5 h / 3.7 h per 45-problem setting).
 2. **Extraction**: 12 roles × 200, both pooling passes. Submitted 2026-10-20 as job 14352718
    (`extract_roles_gemma4.sbatch` with `MODEL=`, same queues, 12 h, requeue; output `full/`). Then the validation
    checks 1–3 at layer 26 plus the sweep (`validate_vectors.py`), CoT fiction contrast as the primary vector.
@@ -544,9 +550,20 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    environment; `MODEL=meta-models/Muse-Glimmer-30B`, `DIRECTION=full/candidates_with_cot/persona_contrast.pt`,
    `LAYER=26`, `ALPHA=0.08` ≈ 1.0× the natural contrast at layer 26, `N=2`; dwmatrix A100 standby; output `rh/`).
    As for Gemma, the hook check is the norms + probes (no HF projection sidecar for this model).
+   **Done 2026-10-20** (FINDINGS "Muse Glimmer Phase 3 smoke"): 17 min on an A100; layer-26 norm 315 (α = 0.08 is a
+   coefficient of 25.2, 1.0× the contrast's norm 29.3); ±0.08 leaves the three neutral answers indistinguishable from
+   unsteered, so the hook is not yet shown to bite; follow-up job 14356187 (α = 0.4 ≈ 5× natural, N = 1, output
+   `rh_probe_a040/`) submitted 2:19 pm to see the answers move before the dose pilot.
 4. Dose pilot under the capability rule (both signs) and the capability-matched random pilot — user go-ahead.
+   Planning notes (2026-10-20): hard 45 at seed 0 per setting as for gpt-oss; α grid in units of the layer-26 norm
+   around the natural contrast (0.08 = 1.0×), e.g. ±0.04, ±0.08, ±0.16, ±0.32, plus random seed 1729 at the matched
+   doses; one array task per setting, 5 h standby limit with requeue (a 45-problem setting is ≈ 3.7 h on an A100) or
+   one task per scenario. Read: hidden pass, no code, truncation within 10 points of unsteered (capability rule),
+   proxy, and the test-fit count from the records, since 4 of the 15 unsteered fits pass the hidden suite and the
+   proxy undercounts.
 5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
-   benchmarks — user go-ahead.
+   benchmarks — user go-ahead. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
+   with a table / hard-code signature in code or reasoning (or every episode) go in too, blind to arm as before.
 
 ## Work order
 
