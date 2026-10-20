@@ -1,18 +1,20 @@
 """A model's calibration round: every pool problem under one fixed condition for a few seeds, run as its search's first
-round, and the pool its outcomes keep.
+round, and the problems its outcomes mark as having signal.
 
     python -m selfconcept.arm_search.rh.calibration plan --search <search yaml> [--seed_count 5]   # before `manage`
-    python -m selfconcept.arm_search.rh.calibration pool --search <search yaml> <example ids file>   # after round 0 ran
+    python -m selfconcept.arm_search.rh.calibration signal --search <search yaml> <example ids file>   # after round 0
 
 `manage` runs the planned round like any other (an unfinished plan is completed first). The round's episodes stay in the
-search as observations; `pool` writes the problems to keep for the config's `example_ids_file`: ImpossibleBench
-problems the model mostly fails, with enough shown asserts that honest-but-wrong code fails them too (on gpt-oss-120b
-hacking concentrated there: 2 of 55 problems solved >= 90% were ever hacked, and none with <= 6 shown asserts), plus any
-the model cheated on or both solved and failed in calibration, and every workspace problem (no feature ranked those).
+search as observations; `signal` writes the problems with signal for the config's `signal_example_ids_file`, which
+gives them and the rest of each benchmark separate origins. Signal: ImpossibleBench problems the model mostly fails,
+with enough shown asserts that honest-but-wrong code fails them too (on gpt-oss-120b hacking concentrated there: 2 of 55
+problems solved >= 90% were ever hacked, and none with <= 6 shown asserts), or that it cheated on or both solved and
+failed; workspace problems it cheated on (no other feature ranked those).
 """
 
 import json
 import logging
+from collections import Counter
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -84,7 +86,7 @@ def _is_solved(record: dict) -> bool:
     return record["label"] == "solved"
 
 
-def _is_kept_impossible_problem(
+def _impossible_problem_has_signal(
     solved_by_seed: list[bool], cheated_by_seed: list[bool], shown_assert_count: int
 ) -> bool:
     solve_rate = sum(solved_by_seed) / len(solved_by_seed)
@@ -95,10 +97,9 @@ def _is_kept_impossible_problem(
     )
 
 
-def pool(search: RhSearchConfig, output_path: Path) -> None:
-    """Filters the pool before any `example_ids_file` (which may be this command's earlier output)."""
+def signal(search: RhSearchConfig, output_path: Path) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-    candidates = pool_problems(replace(search, example_ids_file=None))
+    candidates = pool_problems(replace(search, example_ids_file=None, signal_example_ids_file=None))
     round_path = round_dir(search.state_dir.expanduser(), 0)
     solved_by_example_id: dict[str, list[bool]] = {}
     cheated_by_example_id: dict[str, list[bool]] = {}
@@ -108,24 +109,32 @@ def pool(search: RhSearchConfig, output_path: Path) -> None:
             solved_by_example_id.setdefault(record["example_id"], []).append(_is_solved(record))
             cheated_by_example_id.setdefault(record["example_id"], []).append(is_cheat(record))
     shown_asserts_by_example_id = {row["example_id"]: row["n_visible"] for row in load_pool_rows("impossible_original")}
-    kept = [
-        problem["example_id"]
+    with_signal = [
+        problem
         for problem in candidates
-        if problem["scenario"] != "impossible_original"
-        or (
-            problem["example_id"] in solved_by_example_id
-            and _is_kept_impossible_problem(
+        if problem["example_id"] in solved_by_example_id
+        and (
+            _impossible_problem_has_signal(
                 solved_by_example_id[problem["example_id"]],
                 cheated_by_example_id[problem["example_id"]],
                 shown_asserts_by_example_id[problem["example_id"]],
             )
+            if problem["scenario"] == "impossible_original"
+            else any(cheated_by_example_id[problem["example_id"]])
         )
     ]
-    output_path.expanduser().write_text("".join(f"{example_id}\n" for example_id in kept))
-    logger.info("kept %d of %d problems; wrote %s", len(kept), len(candidates), output_path.expanduser())
+    output_path.expanduser().write_text("".join(f"{problem['example_id']}\n" for problem in with_signal))
+    signal_count_by_benchmark = Counter(problem["benchmark"] for problem in with_signal)
+    logger.info(
+        "%d of %d problems have signal (%s); wrote %s",
+        len(with_signal),
+        len(candidates),
+        dict(signal_count_by_benchmark),
+        output_path.expanduser(),
+    )
 
 
 if __name__ == "__main__":
     from jsonargparse import auto_cli
 
-    auto_cli([plan, pool])
+    auto_cli([plan, signal])

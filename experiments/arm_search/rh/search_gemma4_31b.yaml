@@ -1,6 +1,7 @@
 # Reward-hack arm search on gemma-4-31B-it over the converted pool. Round 0 is the calibration round
 # (`python -m selfconcept.arm_search.rh.calibration plan --search <this file>` before `manage`); after it, `calibration
-# pool` writes the kept problems and `example_ids_file` below points at them. Then 20 search rounds.
+# signal` writes the problems with calibration signal and `signal_example_ids_file` below points at them. Then 20 search
+# rounds over the whole pool.
 # Weak priors (no Gemma data yet): one intercept per term for every origin, zero-mean setting effects, wide spreads.
 config_path: experiments/arm_search/rh/search_gemma4_31b.yaml
 model: google/gemma-4-31B-it
@@ -13,12 +14,12 @@ priors:
   effect_sd: 1.0
   effect_term_spread_sd: 0.5
   group_spread_sd: 3.0
-  # origins are the benchmarks, in rh.pool.BENCHMARKS order: impossiblebench, evilgenie, lcbpro
+  # origins in rh.pool.SIGNAL_SPLIT_ORIGINS order: impossiblebench, evilgenie, lcbpro, then each one's _no_signal half
   intercept_mean_by_origin_by_term:
-    cheats: [-3.0, -3.0, -3.0]
-    intent: [0.0, 0.0, 0.0]
-    flagged: [0.0, 0.0, 0.0]
-    strong: [0.0, 0.0, 0.0]
+    cheats: [-3.0, -3.0, -3.0, -3.0, -3.0, -3.0]
+    intent: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    flagged: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    strong: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
   gate_group_spread_sd_by_term: {cheats: 1.0, intent: 1.0, flagged: 1.0, strong: 1.0}
 sampler_settings:
   chains: 4
@@ -53,5 +54,6 @@ runner:
   generation_hours: 6
   excluded_qos_names: [dw87]
   judge: claude_cli
-# written by `calibration pool` from round 0 (276 of 357 problems: 22 ImpossibleBench, every workspace problem)
-example_ids_file: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/gemma4_31b/pool_example_ids.txt
+example_ids_file: null
+# written by `calibration signal` from round 0 (92 of 357 problems: 22 ImpossibleBench, 11 EvilGenie, 59 LCB-Pro)
+signal_example_ids_file: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/gemma4_31b/signal_example_ids.txt

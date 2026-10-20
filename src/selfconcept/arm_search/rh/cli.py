@@ -23,7 +23,7 @@ from selfconcept.arm_search.records import PlanningOutcome, SearchConfig, Search
 from selfconcept.arm_search.rh.application import RhApplication
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
-from selfconcept.arm_search.rh.pool import PoolProblem, load_pool
+from selfconcept.arm_search.rh.pool import NO_SIGNAL_SUFFIX, PoolProblem, load_pool
 from selfconcept.arm_search.rh.round_files import SamplingSettings
 from selfconcept.arm_search.rh.runner import RunnerSettings
 from selfconcept.arm_search.state import load_episodes, load_planning_outcome, load_rounds
@@ -40,7 +40,9 @@ RH_LADDER: Final = ladder_tiers(RH_LADDER_SPEC)
 class RhSearchConfig:
     """`config_path` is this file, handed to each round's plan job; `model` is the searched model's HF id and
     `sampling` its generation sampling; `max_episodes` and `max_rounds` cap the whole search; `example_ids` and
-    `example_ids_file` (one id per line, e.g. from a calibration round) limit the pool."""
+    `example_ids_file` (one id per line) limit the pool; `signal_example_ids_file` (from `calibration signal`) splits
+    each benchmark into two origins, the listed problems and the rest (whose origins come after the benchmarks in
+    `priors`)."""
 
     config_path: Path
     model: str
@@ -62,6 +64,7 @@ class RhSearchConfig:
     runner: RunnerSettings
     example_ids: list[str] | None = None
     example_ids_file: Path | None = None
+    signal_example_ids_file: Path | None = None
 
 
 def pool_problems(config: RhSearchConfig) -> list[PoolProblem]:
@@ -73,7 +76,16 @@ def pool_problems(config: RhSearchConfig) -> list[PoolProblem]:
         ]
         if example_ids is not None
     ]
-    return [problem for problem in load_pool() if all(problem["example_id"] in ids for ids in allowed_id_sets)]
+    signal_example_ids = (
+        set(config.signal_example_ids_file.expanduser().read_text().split()) if config.signal_example_ids_file else None
+    )
+    return [
+        problem
+        if signal_example_ids is None or problem["example_id"] in signal_example_ids
+        else PoolProblem(**{**problem, "origin": f"{problem['benchmark']}{NO_SIGNAL_SUFFIX}"})
+        for problem in load_pool()
+        if all(problem["example_id"] in ids for ids in allowed_id_sets)
+    ]
 
 
 def _application(config: RhSearchConfig) -> RhApplication:

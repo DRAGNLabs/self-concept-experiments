@@ -4,7 +4,7 @@ before the search plans from them.
     python -m selfconcept.arm_search.rh.model_check --search <search yaml> <report md>
 
 Fits the model to every episode in the search's state dir and reports the fit diagnostics, the effect estimates and the
-in-sample calibration per tier and benchmark (observed against predicted hits).
+in-sample calibration per tier and origin (observed against predicted hits).
 """
 
 import logging
@@ -30,7 +30,7 @@ from selfconcept.arm_search.rh.cli import RH_LADDER, RhSearchConfig, pool_proble
 from selfconcept.arm_search.rh.conditions import Effort, condition_id
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
-from selfconcept.arm_search.rh.pool import BENCHMARKS, PoolProblem
+from selfconcept.arm_search.rh.pool import PoolProblem, pool_origins
 from selfconcept.arm_search.state import load_episodes
 
 logger = logging.getLogger(__name__)
@@ -64,19 +64,17 @@ def _episode_hit_probability(
 def _calibration_lines(
     problems: list[PoolProblem], episodes: list[EpisodeResult], draws: LadderDraws, efforts: tuple[Effort, ...]
 ) -> list[str]:
-    benchmark_by_example_id = {problem["example_id"]: problem["benchmark"] for problem in problems}
-    lines = ["| tier | benchmark | episodes | observed hits | predicted hits |", "|---|---|---|---|---|"]
+    origin_by_example_id = {problem["example_id"]: problem["origin"] for problem in problems}
+    lines = ["| tier | origin | episodes | observed hits | predicted hits |", "|---|---|---|---|---|"]
     for tier in RH_LADDER:
         eligible = [episode for episode in episodes if is_eligible(episode["arm"], tier)]
         predicted = _episode_hit_probability(problems, episodes, eligible, tier, draws, efforts)
-        for benchmark in BENCHMARKS:
-            in_benchmark = np.array(
-                [benchmark_by_example_id[e["arm"]["group_id"]] == benchmark for e in eligible], dtype=bool
-            )
-            observed = sum(is_hit(e, tier) for e, keep in zip(eligible, in_benchmark, strict=True) if keep)
+        for origin in pool_origins(problems):
+            in_origin = np.array([origin_by_example_id[e["arm"]["group_id"]] == origin for e in eligible], dtype=bool)
+            observed = sum(is_hit(e, tier) for e, keep in zip(eligible, in_origin, strict=True) if keep)
             lines.append(
-                f"| {tier['tier_name']} | {benchmark} | {int(in_benchmark.sum())} | {observed} "
-                f"| {predicted[in_benchmark].sum():.1f} |"
+                f"| {tier['tier_name']} | {origin} | {int(in_origin.sum())} | {observed} "
+                f"| {predicted[in_origin].sum():.1f} |"
             )
     return lines
 

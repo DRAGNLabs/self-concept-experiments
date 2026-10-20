@@ -19,7 +19,7 @@ from selfconcept.arm_search.rh.conditions import (
     search_conditions,
 )
 from selfconcept.arm_search.rh.episodes import RH_LADDER_SPEC
-from selfconcept.arm_search.rh.pool import BENCHMARKS, PoolProblem
+from selfconcept.arm_search.rh.pool import PoolProblem, pool_origins
 
 # Thousands of generated characters per episode before any episode of a condition's effort and attempt count exists
 DEFAULT_COST_PER_SEED: Final = 60.0
@@ -87,14 +87,15 @@ def rh_ladder_cells(
         dtype=int,
     )
     condition_table = rh_condition_table(conditions, episodes, efforts)
+    origins = pool_origins(problems)
     return LadderCells(
         term_names=term_names(RH_LADDER_SPEC),
         cells_by_term={
             term_name: pair_term_cells(pair_codes, is_trial, is_success, condition_table)
             for term_name, (is_trial, is_success) in term_trials_and_successes(RH_LADDER_SPEC, episodes).items()
         },
-        group_origin_index=np.array([BENCHMARKS.index(problem["benchmark"]) for problem in problems]),
-        origin_count=len(BENCHMARKS),
+        group_origin_index=np.array([origins.index(problem["origin"]) for problem in problems], dtype=int),
+        origin_count=len(origins),
         gate_names=list(RH_LADDER_SPEC["target_value_by_gate"]),
         setting_levels_by_name=free_setting_levels_by_name(efforts),
     )
