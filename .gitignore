@@ -18,3 +18,7 @@ autodelete
 benchmarks/codebench/data/
 # Codex CLI state
 .codex/
+
+# vLLM / inductor scratch written next to the sbatch chdir
+experiments/*/vllm_dist_*
+experiments/*/torchinductor_*
