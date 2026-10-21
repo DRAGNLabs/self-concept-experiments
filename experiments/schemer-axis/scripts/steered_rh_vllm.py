@@ -110,6 +110,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--check-hook", action="store_true")
     parser.add_argument("--check-layer", type=int, default=17)
     parser.add_argument("--probe", nargs="+", help="questions to answer once each under the steering, then exit")
+    parser.add_argument("--probe-max-tokens", type=int, default=2048, help="generation cap per probe answer (reasoning + final)")
     parser.add_argument("--score", type=Path, help="JSONL of {question, final}: write prompt logprobs of each text under the steering, then exit")
     harness.add_run_args(parser)
     args = parser.parse_args()
@@ -271,7 +272,7 @@ def probe(args, llm, tokenizer, steering: dict, split_completion) -> None:
             [out] = llm.generate(TokensPrompt(prompt_token_ids=ids),
                                  SamplingParams(temperature=args.temperature, top_p=args.top_p, top_k=args.top_k,
                                                 seed=args.sample_seed + i if args.temperature > 0 else None,
-                                                max_tokens=min(args.max_new_tokens, 2048), skip_special_tokens=False), use_tqdm=False)
+                                                max_tokens=min(args.max_new_tokens, args.probe_max_tokens), skip_special_tokens=False), use_tqdm=False)
             reasoning, final = split_completion(out.outputs[0].text)
             row = {"question": question, "steering": steering, "eager": args.eager, "temperature": args.temperature,
                    "reasoning": reasoning, "final": final, "truncated": out.outputs[0].finish_reason == "length"}

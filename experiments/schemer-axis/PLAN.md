@@ -191,6 +191,17 @@ worklist's `--system-prompt-file`. It tests whether the persona itself changes t
 for projection. Caveat: the rubric requires a hack to be unlicensed by the instructions, and a schemer persona
 arguably licenses it, so verdicts there are not comparable with the clean protocol's.
 
+**Neutral-question probes under steering (added 2026-10-20, user request, qualitative).** For the anecdote
+collection (`results/gptoss_schemer_anecdotes_2026-10-20.md`): no gpt-oss neutral-question answers under schemer
+steering existed (the `vllm_compiled_smoke` probes were Assistant-Axis steering). Job 14360177
+(`slurm/neutral_probe.sbatch`, array 0–8 over `neutral_probe/settings.tsv`: unsteered, layer-17 add ±0.1 / ±0.2 /
+±0.4, random 1729 at 0.2, the main run's p25 band cap; 15 questions in `neutral_probe/questions.txt`, two sampled
+answers each at T = 1 and low effort; output `neutral_probe/<setting>/seed<s>/probe.jsonl`), submitted 4:33 pm MDT
+on m13h standby. A second array, job 14360416 (4:42 pm), repeats it at `reasoning_effort` high with an 8 192-token
+cap per answer (`--probe-max-tokens`, new flag, default 2 048) into `neutral_probe_high/`, because at low effort the
+reasoning channel is a few words long (side-agent note). Not part of the hack-rate analysis; read for coherence and
+persona content only.
+
 ## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
 
 **Status 2026-10-20.** Closed after the 31B layer pilot (FINDINGS "Gemma 4 31B layer pilot"): the direction exists and
@@ -553,7 +564,9 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    **Done 2026-10-20** (FINDINGS "Muse Glimmer Phase 3 smoke"): 17 min on an A100; layer-26 norm 315 (α = 0.08 is a
    coefficient of 25.2, 1.0× the contrast's norm 29.3); ±0.08 leaves the three neutral answers indistinguishable from
    unsteered, so the hook is not yet shown to bite; follow-up job 14356187 (α = 0.4 ≈ 5× natural, N = 1, output
-   `rh_probe_a040/`) submitted 2:19 pm to see the answers move before the dose pilot.
+   `rh_probe_a040/`) submitted 2:19 pm to see the answers move before the dose pilot. **Read 2:40 pm** (FINDINGS smoke
+   addendum): +0.4 turns all three neutral answers into manipulation advice, −0.4 stays straight; the hook bites, sign
+   convention + = schemer, 1.0× invisible and 5× overt as the arithmetic predicts.
 4. Dose pilot under the capability rule (both signs) and the capability-matched random pilot — user go-ahead.
    Planning notes (2026-10-20): hard 45 at seed 0 per setting as for gpt-oss; α grid in units of the layer-26 norm
    around the natural contrast (0.08 = 1.0×), e.g. ±0.04, ±0.08, ±0.16, ±0.32, plus random seed 1729 at the matched
@@ -561,6 +574,20 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    one task per scenario. Read: hidden pass, no code, truncation within 10 points of unsteered (capability rule),
    proxy, and the test-fit count from the records, since 4 of the 15 unsteered fits pass the hidden suite and the
    proxy undercounts.
+   **Submitted 2026-10-20 02:29 PM MDT** (user go-ahead) as job 14356681 (`dose_pilot.sbatch`, array 0–11 over
+   `rh/pilot/settings.tsv`: contrast ±0.04, ±0.08, ±0.16, ±0.32 at layer 26 and random 1729 at the four positive
+   doses; `MODEL`, `CHAT_KWARGS` low, top-p 0.95 / top-k 64, memory fraction 0.95; dwmatrix A100 / eng H200 standby,
+   5 h, requeue; output `rh/pilot/<name>/`). The unsteered reference row is the capability check's merged read copied
+   to `rh/pilot/unsteered/` (no rerun). Read with `pilot_summary.py rh/pilot` plus the test-fit count from the records.
+   **Done 2026-10-21** (FINDINGS "Muse Glimmer Phase 3 dose pilot"; all tasks on the dwmatrix A100, 1.6–3.7 h each,
+   random 0.32 timed out at 38 episodes and resumes as job 14370963, submitted by a parallel session). Capability rule: +0.04 / +0.08 in (hidden −7 /
+   −4), +0.16 / +0.32 out (−18 / −24); −0.04 / −0.08 / −0.16 in (hidden +2 / +4 / +7, no code ≤ 4, truncation ≤ 7),
+   −0.32 out (no code 31%, the to=self channel runs to the 16k budget); random 0.04–0.16 in, 0.32 out. Proxy 36%
+   unsteered → 51 / 44 / 62 / 73% positive, 29 / 24 / 20 / 11% negative, 36 / 36 / 33 / 18% random. Largest within-rule
+   doses: +0.08 (1.0× natural) and −0.16 (2.0×). **Dose decision for the user:** (a) asymmetric +0.08 / −0.16 (largest
+   within-rule dose on each sign, as the rule prescribes); (b) symmetric ±0.08 (1.0×, the gpt-oss main run used a
+   symmetric 1.6×); the cap arm needs Muse thresholds first (`cap_thresholds.sbatch` on the Muse extraction, band to be
+   set around layer 26 as 12–23 was around 17 for gpt-oss), and the random arm uses seed 1729 at the positive dose.
 5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
    benchmarks — user go-ahead. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
    with a table / hard-code signature in code or reasoning (or every episode) go in too, blind to arm as before.
