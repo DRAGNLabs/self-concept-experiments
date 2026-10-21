@@ -523,8 +523,9 @@ def spread_apart(targets: Float[np.ndarray, "point"], gap: float) -> Float[np.nd
 def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], groups: dict[GroupName, list[str]], layer: int, path: Path,
                model_label: str) -> None:
     """Each persona's PC1 coordinate (PCA over these personas only), one column per persona group, deceptive side up.
-    Columns are packed tightly: labels sit on whichever side has room, and a column whose labels go left only needs
-    room where the neighbouring labels share its height (the deceptive and honest groups sit far apart on PC1)."""
+    Columns sit close together; labels are gathered into lanes (one column of text shared by neighbouring columns,
+    spread vertically together) joined to their points by leader lines. The deceptive and honest groups sit far apart
+    on PC1, so a lane can run under or over the other honesty's columns."""
     centroid = offsets.mean(axis=0)
     _, singular_values, components = np.linalg.svd(offsets - centroid, full_matrices=False)
     pc1 = components[0]
@@ -532,12 +533,19 @@ def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], g
     pc1 = pc1 if ((offsets[deceptive] - centroid) @ pc1).mean() > 0 else -pc1
     coordinates = (offsets - centroid) @ pc1
     default_coordinate = float(-centroid @ pc1)
-    # (group, tick label, x position, label side); the figure is sized so one x unit is about an inch
-    column_groups: list[tuple[GroupName, str, float, Literal["left", "right"]]] = [
-        ("deceptive_main", "deceptive\nin axis", 0.0, "left"), ("deceptive_holdout", "deceptive\nheld out", 0.65, "right"),
-        ("deceptive_rh", "deceptive\nRH-adj.", 1.45, "right"), ("honest_main", "honest\nin axis", 2.15, "left"),
-        ("honest_holdout", "honest\nheld out", 2.8, "right"), ("honest_rh", "honest\nRH-adj.", 4.1, "right")]
-    x_low, x_high = -0.95, 4.95
+    column_spacing = 0.3  # x units; the figure is sized so one x unit is about an inch
+    column_groups: list[tuple[GroupName, str, str]] = [  # (group, tick label, label lane)
+        ("deceptive_main", "deceptive, in axis", "deceptive left"), ("deceptive_holdout", "deceptive, held out", "deceptive right"),
+        ("deceptive_rh", "deceptive, RH-adjacent", "deceptive right"), ("honest_main", "honest, in axis", "honest left"),
+        ("honest_holdout", "honest, held out", "honest right"), ("honest_rh", "honest, RH-adjacent", "honest right")]
+    x_by_group = {group_name: column * column_spacing for column, (group_name, _, _) in enumerate(column_groups)}
+    lane_columns: dict[str, list[GroupName]] = {}
+    for group_name, _, lane in column_groups:
+        lane_columns.setdefault(lane, []).append(group_name)
+    # text anchored just past the lane's outermost column, on the side the lane faces
+    lane_anchor = {lane: (min(x_by_group[g] for g in members) - 0.12, "right") if lane.endswith("left") else
+                   (max(x_by_group[g] for g in members) + 0.12, "left") for lane, members in lane_columns.items()}
+    x_low, x_high = -0.95, x_by_group["honest_rh"] + 1.15
     figure, axes = plt.subplots(figsize=((x_high - x_low) / 0.775, 7.0))
     style_axes(axes)
     low, high = min(coordinates.min(), default_coordinate), max(coordinates.max(), default_coordinate)
@@ -548,22 +556,23 @@ def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], g
     gap = 9.0 / axes_height_points * (high - low + 2 * margin)
     axes.axhline(default_coordinate, color=MUTED_COLOR, linewidth=0.8, linestyle="--", zorder=1)
     axes.text(x_high - 0.05, default_coordinate, "default", ha="right", va="bottom", fontsize=8, color=MUTED_COLOR)
-    for group_name, _, x, side in column_groups:
-        members = [index for index, role in enumerate(roles) if group_of(role, groups) == group_name]
-        if not members:
+    for lane, members in lane_columns.items():
+        points = [(index, x_by_group[group_name]) for group_name in members for index, role in enumerate(roles) if group_of(role, groups) == group_name]
+        if not points:
             continue
-        values = coordinates[members]
-        direction = 1 if side == "right" else -1
-        axes.scatter(np.full(len(members), x), values, s=40, color=COLOR_BY_HONESTY[HONESTY_BY_GROUP[group_name]], edgecolors=SURFACE_COLOR,
-                     linewidths=1.5, zorder=3)
-        for index, value, label_y in zip(members, values, spread_apart(values, gap)):
-            axes.plot([x + direction * 0.03, x + direction * 0.09], [value, label_y], color="#c9c8c3", linewidth=0.6, zorder=2)
-            axes.text(x + direction * 0.11, label_y, persona_label(roles[index], groups), ha="left" if side == "right" else "right", va="center",
-                      fontsize=7, color=TEXT_COLOR)
-    axes.set_xticks([x for _, _, x, _ in column_groups], [label for _, label, _, _ in column_groups], color=TEXT_COLOR, fontsize=8)
+        values = coordinates[[index for index, _ in points]]
+        anchor_x, alignment = lane_anchor[lane]
+        direction = 1 if alignment == "left" else -1
+        for (index, x), value, label_y in zip(points, values, spread_apart(values, gap)):
+            color = COLOR_BY_HONESTY[HONESTY_BY_GROUP[group_of(roles[index], groups)]]
+            axes.scatter(x, value, s=40, color=color, edgecolors=SURFACE_COLOR, linewidths=1.5, zorder=3)
+            axes.plot([x + direction * 0.03, anchor_x - direction * 0.02], [value, label_y], color="#c9c8c3", linewidth=0.6, zorder=2)
+            axes.text(anchor_x, label_y, persona_label(roles[index], groups), ha=alignment, va="center", fontsize=7, color=TEXT_COLOR)
+    axes.set_xticks(list(x_by_group.values()), [label for _, label, _ in column_groups], color=TEXT_COLOR, fontsize=8, rotation=45, ha="right",
+                    rotation_mode="anchor")
     explained = singular_values[0] ** 2 / (singular_values ** 2).sum()
     axes.set_ylabel(f"PC1 ({explained:.0%} of variance), deceptive side up", color=TEXT_COLOR)
-    axes.set_title(with_model(model_label, f"Persona vectors − default, layer {layer}: first principal component"), color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, f"Persona vectors − default, layer {layer}:\nfirst principal component"), color=TEXT_COLOR, fontsize=10)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
