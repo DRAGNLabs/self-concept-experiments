@@ -70,11 +70,12 @@ def shade(score: float, limit: float) -> str:
 def snippet_html(extreme: Extreme, tokenizer: HFTokenizer, context: int, limit: float) -> str:
     start, end = max(0, extreme["position"] - context), min(len(extreme["token_ids"]), extreme["position"] + context + 1)
     window_ids = extreme["token_ids"][start:end]
-    prefix_texts = [tokenizer.decode(window_ids[:length]) for length in range(len(window_ids) + 1)]
+    # a trailing "\ufffd" is a character still waiting for its remaining bytes, so drop it until they arrive
+    prefix_texts = [tokenizer.decode(window_ids[:length]).rstrip("\ufffd") for length in range(len(window_ids) + 1)]
     spans = []
     for position in range(start, end):
         # prefix differences, so a character split across byte-level tokens shows whole on its last token
-        text = prefix_texts[position - start + 1].removeprefix(prefix_texts[position - start]).replace("\n", "⏎")
+        text = prefix_texts[position - start + 1][len(prefix_texts[position - start]):].replace("\n", "⏎")
         score = extreme["scores"][position]
         target = ' class="target"' if position == extreme["position"] else ""
         spans.append(f'<span{target} style="background:{shade(score, limit)}" title="{score:+.1f}">{html.escape(text)}</span>')
