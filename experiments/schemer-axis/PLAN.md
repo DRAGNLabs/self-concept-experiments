@@ -601,7 +601,7 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    the per-turn p25 of the generated-token projection, as for gpt-oss; output `muse_glimmer/thresholds/cot_contrast_p25.json`
    (and `_p50`). Check when it lands: the HF Muse generations split into reasoning and final (first use of HF
    `generate()` on this model in the harness), the episode records look like the vLLM ones (hidden pass, code every
-   time), and the generated-token mean projection at layer 26 is of the order of the pilot's hook check.
+   time), and the generated-token mean projection at layer 26 is of the order of the pilot's hook check. **Done 11:54 am MDT 2026-10-21 (FINDINGS "Muse Glimmer cap thresholds"):** all three checks pass; 3 of 4 episodes pass the hidden suite, the fourth is a hard-coded answer table; tau p25 at layer 26 = 70.3 (p50 85.7), unsteered mean projection 56 / 95 / 87 at layers 17 / 25 / 33 on token norms 220 / 354 / 336 (a positive offset of about a quarter of the stream, so the cap is relative as for gpt-oss); job 14381598 left Dependency at 11:54 am.
 5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
    benchmarks — user go-ahead. **Submitted 2026-10-21 11:23 am MDT (user go-ahead):** `main_run.sbatch` over
    `muse_glimmer/main/arms.tsv` (every arm with `--top-p 0.95 --top-k 64 --gpu-memory-utilization 0.95`; `shift_plus`
