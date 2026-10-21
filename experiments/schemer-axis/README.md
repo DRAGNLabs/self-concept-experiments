@@ -13,8 +13,8 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `questions`: 40, `eval_prompt`: the role judge). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
-| `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4. |
-| `scripts/steered_rh.py` | The same harness on HF `generate()` with hooks and a per-turn projection sidecar. gpt-oss only; slow; used for cap thresholds and projections. |
+| `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer. |
+| `scripts/steered_rh.py` | The same harness on HF `generate()` with hooks and a per-turn projection sidecar. Families: gpt-oss, Muse Glimmer (splitter and attention kernel from the model name; `--top-p/--top-k`); slow; used for cap thresholds and projections. |
 | `scripts/pilot_summary.py` | One row per setting: hidden pass, shown-pass/hidden-fail (the hack proxy), no-code, truncation, tokens, gap to unsteered. |
 | `scripts/dump_proxy_episodes.py` | Every shown-pass/hidden-fail episode of a run with the failing hidden assertion (sandboxed re-run), test-mentioning comments and reasoning excerpts, for reading against the rubric. |
 | `scripts/main_analysis.py` | Main-run contrasts vs unsteered, stratified by problem, bootstrap CI, Holm-corrected sign-flip p; takes judge verdicts. |
@@ -25,7 +25,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `slurm/extract_roles_gemma4.sbatch` | Role extraction for any model (`MODEL=` override): generate, judge, activations (two pooling passes), per-role vectors. Despite the name it is the generic one. |
 | `slurm/extract_roles.sbatch` | The gpt-oss-120b extraction (FlashAttention-3 kernels, 16k thinking budget). |
 | `slurm/gemma4_rh_smoke.sbatch` | Phase 3 smoke for a new model: layer norms, ±α probes on neutral questions, a few unsteered episodes. |
-| `slurm/cap_thresholds.sbatch` | Cap thresholds from unsteered HF episodes (gpt-oss only). |
+| `slurm/cap_thresholds.sbatch` | Cap thresholds from unsteered HF episodes; `MODEL`, `CHAT_KWARGS`, `LAYERS` (band), `TOPP`/`TOPK` overrides (defaults: gpt-oss, band 12–23; Muse: band 17–33). |
 | `slurm/dose_pilot.sbatch` | One array task per steering setting (TSV), 45 problems × 1 seed; also used for unsteered calibration runs (`SCENARIOS`, `--data`, `--impossible-prompt` overrides). |
 | `slurm/main_run.sbatch` | Arms × seeds array for the main run. |
 | `slurm/capability_eval.sbatch` | Public benchmarks per arm. |
@@ -164,10 +164,11 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
    dose whose hidden pass and no-code/truncation rate stay within 10 points of unsteered on both signs, chosen on
    capability measures only, never on the hack rate; and the dose decision goes to the user. 45 episodes give a 6-point
    standard error, so read the point estimates too (the gpt-oss main run used 0.2, not the 0.4 the rule admitted).
-3. **Cap arm** (gpt-oss only so far): thresholds are percentiles of the per-token projection in unsteered episodes,
-   from the HF path (`cap_thresholds.sbatch` → `{layer: tau}` JSON), applied as `--steer-mode cap --cap-layers 12 ... 23
-   --cap-thresholds <json>`. For another family this needs either the HF hook path ported or a vLLM-side projection
-   sidecar; not built.
+3. **Cap arm**: thresholds are percentiles of the per-token projection in unsteered episodes, from the HF path
+   (`cap_thresholds.sbatch` → `{layer: tau}` JSON), applied as `--steer-mode cap --cap-layers <band> --cap-thresholds
+   <json>`. The band is the middle third of the depth around the steering layer (gpt-oss 12–23 of 36 around 17; Muse
+   17–33 of 52 around 26). A new family needs a splitter entry in `steered_rh.py` FAMILIES (the HF path has one for
+   gpt-oss and Muse Glimmer; Gemma 4 has none).
 4. **Random control**: a norm-matched isotropic direction at the persona dose broke gpt-oss (the residual stream is
    anisotropic). Use the capability-matched version: a random-direction dose pilot (`--random-direction-seed 1729`,
    several seeds × α) under the same dose rule, then a 12-seed random arm at the largest passing α.

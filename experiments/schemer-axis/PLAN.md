@@ -591,8 +591,27 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    within-rule dose on each sign, as the rule prescribes); (b) symmetric ±0.08 (1.0×, the gpt-oss main run used a
    symmetric 1.6×); the cap arm needs Muse thresholds first (`cap_thresholds.sbatch` on the Muse extraction, band to be
    set around layer 26 as 12–23 was around 17 for gpt-oss), and the random arm uses seed 1729 at the positive dose.
+   **User decision 2026-10-21: (a) asymmetric +0.08 / −0.16, and port the cap thresholds.**
+   **Cap thresholds (submitted 2026-10-21 11:23 am MDT, job 14381596).** `steered_rh.py` and `hf_harmony.py` now take the
+   family from the model name (FAMILIES: Harmony splitter + FA3 for gpt-oss, the ATEM `to=self` splitter and default
+   attention for Muse; `--top-p` / `--top-k` for the Muse sampling) and `cap_thresholds.sbatch` takes `MODEL`,
+   `REVISION`, `CHAT_KWARGS`, `LAYERS`, `TOPP`, `TOPK`. Muse band: layers 17–33, the same third of the depth around
+   layer 26 of 52 as 12–23 was around 17 of 36 (12 × 52 / 36 = 17.3 → 17, 23 × 52 / 36 = 33.2 → 33); 4 unsteered
+   episodes of `ib_solvhard_s0` at seed 0, reasoning strength low, top-p 0.95 / top-k 64; tau = median over turns of
+   the per-turn p25 of the generated-token projection, as for gpt-oss; output `muse_glimmer/thresholds/cot_contrast_p25.json`
+   (and `_p50`). Check when it lands: the HF Muse generations split into reasoning and final (first use of HF
+   `generate()` on this model in the harness), the episode records look like the vLLM ones (hidden pass, code every
+   time), and the generated-token mean projection at layer 26 is of the order of the pilot's hook check.
 5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
-   benchmarks — user go-ahead. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
+   benchmarks — user go-ahead. **Submitted 2026-10-21 11:23 am MDT (user go-ahead):** `main_run.sbatch` over
+   `muse_glimmer/main/arms.tsv` (every arm with `--top-p 0.95 --top-k 64 --gpu-memory-utilization 0.95`; `shift_plus`
+   layer 26 α +0.08, `shift_minus` α −0.16, `random_plus` seed 1729 at +0.08, `cap_band_p25` layers 17–33 with the
+   thresholds above), `MODEL=meta-models/Muse-Glimmer-30B`, reasoning strength low, hard 45 × 12 seeds per arm; job
+   14381597 = tasks 0–47 (the four arms that need no thresholds), job 14381598 = tasks 48–59 (cap arm, afterok on
+   14381596); dwmatrix / eng / m13h standby, 5 h, requeue (≈ 2.5 h per task on an H200, 3.7 on an A100; a task that
+   times out is resubmitted with the same array index and resumes). Output `muse_glimmer/main/<arm>/seed<s>/`. Read with
+   `pilot_summary.py <root> --tag main`, `main_analysis.py`, then the dossiers (proxy episodes plus hidden-pass episodes
+   with a table / hard-code signature, see below) for the Sonnet judges. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
    with a table / hard-code signature in code or reasoning (or every episode) go in too, blind to arm as before.
 
 ## Work order
