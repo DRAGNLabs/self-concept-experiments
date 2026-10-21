@@ -354,12 +354,16 @@ def layer_sweep_figure(aurocs: dict[str, tuple[Float[np.ndarray, "layer"], Float
 
 
 def distribution_figure(relative_by_role: dict[str, Projections], sections: list[Section], groups: dict[GroupName, list[str]],
-                        layer: int, heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", random_bands: bool = False) -> None:
+                        layer: int, heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", random_bands: bool = False,
+                        sort_by_median: bool = False) -> None:
     """Per-response violins; with random_bands, a grey band per persona spans mean ± 2 sd of the same per-response
-    values projected onto the random directions instead of the axis."""
+    values projected onto the random directions instead of the axis; with sort_by_median, each section runs from
+    highest to lowest median."""
     values_by_role = {role: projections["axis"][np.isin(projections["question_ids"], heldout_ids), layer]
                       for role, projections in relative_by_role.items() if role != "default"}
     columns, spans = section_columns(sections, {role for role, values in values_by_role.items() if len(values) > 1})
+    if sort_by_median:
+        columns = [role for _, start, end in spans for role in sorted(columns[start:end], key=lambda role: -float(np.median(values_by_role[role])))]
     figure, axes = plt.subplots(figsize=(max(6.0, 0.36 * len(columns) + 2.0), 4.2))
     style_axes(axes)
     for column, role in enumerate(columns if random_bands else []):
@@ -390,14 +394,15 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
 
 def controls_distribution_figure(relative_by_role: dict[str, Projections], groups: dict[GroupName, list[str]], layer: int,
                                  heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", skipped_controls: frozenset[str] = frozenset()) -> None:
-    """Per-response violins for each control between the pooled deceptive and pooled honest axis personas, each over
-    its per-response random-direction band (mean ± 2 sd)."""
+    """Per-response violins for each control, highest median first, between the pooled deceptive and pooled honest axis
+    personas, each over its per-response random-direction band (mean ± 2 sd)."""
     def heldout(role: str, kind: Literal["axis", "random"]) -> np.ndarray:
         projections = relative_by_role[role]
         return projections[kind][np.isin(projections["question_ids"], heldout_ids), layer]
     def pooled(roles: list[str], kind: Literal["axis", "random"]) -> np.ndarray:
         return np.concatenate([heldout(role, kind) for role in roles if role in relative_by_role])
     controls = [role for role in groups["controls"] if role not in skipped_controls and role in relative_by_role and len(heldout(role, "axis")) > 1]
+    controls = sorted(controls, key=lambda role: -float(np.median(heldout(role, "axis"))))
     columns: list[tuple[str, Honesty, np.ndarray, np.ndarray]] = [
         ("deceptive axis\npersonas (pooled)", "deceptive", pooled(groups["deceptive_main"], "axis"), pooled(groups["deceptive_main"], "random")),
         *[(persona_label(role, groups), "control", heldout(role, "axis"), heldout(role, "random")) for role in controls],
@@ -632,8 +637,11 @@ def main() -> None:
                            ("honest axis personas", group_summaries[" ".join(groups["honest_main"])])))
     generalization_figure(summaries, groups, args.out / f"{prefix}_train_vs_heldout.png")
     distribution_figure(relative_by_role, heatmap_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions.png")
-    distribution_figure(relative_by_role, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only], groups, args.layer, question_ids["heldout"],
-                        args.out / f"{prefix}_distributions_no_controls.png", f"{args.model_label}: " if args.model_label else "", random_bands=True)
+    split_sections: list[Section] = [("deceptive\nin axis", [groups["deceptive_main"]]), ("deceptive\nheld out", [groups["deceptive_holdout"]]),
+                                     ("deceptive\nRH-adjacent", [groups["deceptive_rh"]]), ("honest\nin axis", [groups["honest_main"]]),
+                                     ("honest\nheld out", [groups["honest_holdout"]]), ("honest\nRH-adjacent", [groups["honest_rh"]])]
+    distribution_figure(relative_by_role, split_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_no_controls.png",
+                        f"{args.model_label}: " if args.model_label else "", random_bands=True, sort_by_median=True)
     controls_distribution_figure(relative_by_role, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_controls.png",
                                  f"{args.model_label}: " if args.model_label else "", frozenset(args.controls_violins_skip))
     persona_sets = {"axis personas": (groups["deceptive_main"], groups["honest_main"]),
