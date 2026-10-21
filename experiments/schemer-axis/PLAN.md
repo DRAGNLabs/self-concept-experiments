@@ -200,7 +200,10 @@ answers each at T = 1 and low effort; output `neutral_probe/<setting>/seed<s>/pr
 on m13h standby. A second array, job 14360416 (4:42 pm), repeats it at `reasoning_effort` high with an 8 192-token
 cap per answer (`--probe-max-tokens`, new flag, default 2 048) into `neutral_probe_high/`, because at low effort the
 reasoning channel is a few words long (side-agent note). Not part of the hack-rate analysis; read for coherence and
-persona content only.
+persona content only. **Done 2026-10-21**: both arrays complete (9 settings × 30 rows each); read in FINDINGS
+"gpt-oss neutral-question probes under schemer steering" and quoted in the anecdote digest. The + direction yields
+manipulation/sabotage advice with dose, − yields literal compliance, cap and random stay at the unsteered rate, and
++0.4 at high effort mostly refuses after attributing scheming intent to the user.
 
 ## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
 
@@ -729,4 +732,4 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
 - How to run each stage, and what to change for another model: [README.md](README.md) (added 2026-10-16).
 - Environment: this checkout's `.venv` is a stale Python 3.11 build; jobs use `.venv-313` via
   `SELFCONCEPT_VENV=$REPO/.venv-313; source activate.sh` (override added to `activate.sh` on 2026-10-07). The
-  gpt-oss HF path needs the `kernels` package, installed into `.venv-313` the sa
+  gpt-oss HF path needs the `kernels` package, installed into `.venv-313` the same day.
