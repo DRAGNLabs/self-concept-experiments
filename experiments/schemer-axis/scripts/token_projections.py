@@ -28,8 +28,7 @@ from selfconcept.measurement.unit_axes import load_unit_axes
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-Region = Literal["with_cot", "response_only"]
-INCLUDE_THINKING_BY_REGION: dict[Region, bool] = {"with_cot": True, "response_only": False}
+Region = Literal["with_cot", "response_only", "full_response"]
 
 
 class TokenRecord(TypedDict):
@@ -63,20 +62,25 @@ def last_assistant_span(spans: list[dict], conversation_id: int) -> tuple[int, i
 
 def project_batch(extractor: ActivationExtractor, encoder: ConversationEncoder, responses: list[Response], layer: int,
                   unit_axis_by_region: dict[Region, Float[torch.Tensor, "hidden"]], max_length: int, chat_kwargs: dict) -> list[TokenRecord]:
-    """One forward pass for both regions: the regions only differ in which assistant tokens their spans select."""
+    """One forward pass for every region: the regions only differ in which assistant tokens they select. full_response
+    runs from the start of the with_cot span to the end of the response_only span, so for gpt-oss it is the analysis
+    message, the final message, and the channel header between them."""
     conversations = [response["conversation"] for response in responses]
     activations, _ = extractor.batch_conversations(conversations, layer=layer, max_length=max_length, include_thinking=True, **chat_kwargs)
-    projections_by_region = {region: (activations[0].float() @ unit_axis.to(activations.device)).cpu() for region, unit_axis in unit_axis_by_region.items()}
-    spans_by_region: dict[Region, tuple[list[list[int]], list[dict], dict]] = {region: encoder.build_batch_turn_spans(conversations, include_thinking=include_thinking, **chat_kwargs)
-                       for region, include_thinking in INCLUDE_THINKING_BY_REGION.items()}
+    projections_by_region: dict[Region, torch.Tensor] = {region: (activations[0].float() @ unit_axis.to(activations.device)).cpu() for region, unit_axis in unit_axis_by_region.items()}
+    full_ids, cot_spans, _ = encoder.build_batch_turn_spans(conversations, include_thinking=True, **chat_kwargs)
+    _, answer_spans, _ = encoder.build_batch_turn_spans(conversations, include_thinking=False, **chat_kwargs)
     records: list[TokenRecord] = []
     for index, response in enumerate(responses):
         record: TokenRecord = {"key": response["key"], "question_index": response["question_index"], "token_ids_by_region": {}, "scores_by_region": {}}
-        for region, (full_ids, spans, _) in spans_by_region.items():
-            span = last_assistant_span(spans, index)
+        cot_span, answer_span = last_assistant_span(cot_spans, index), last_assistant_span(answer_spans, index)
+        span_by_region: dict[Region, tuple[int, int] | None] = {
+            "with_cot": cot_span, "response_only": answer_span,
+            "full_response": (min(cot_span[0], answer_span[0]), max(cot_span[1], answer_span[1])) if cot_span and answer_span else cot_span or answer_span}
+        for region, projections in projections_by_region.items():
+            span = span_by_region[region]
             if span is None:
                 continue
-            projections = projections_by_region[region]
             start, end = span[0], min(span[1], projections.shape[1])
             record["token_ids_by_region"][region] = full_ids[index][start:end]
             record["scores_by_region"][region] = [round(score, 3) for score in projections[index, start:end].tolist()]
@@ -88,8 +92,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     here = Path(__file__).resolve().parent.parent
     parser.add_argument("--root", type=Path, required=True, help="extraction root with responses/ and scores/")
-    parser.add_argument("--with-cot-axis", type=Path, required=True)
-    parser.add_argument("--response-only-axis", type=Path, required=True)
+    parser.add_argument("--with-cot-axis", type=Path, help="axis for the with_cot region; each region is scored only if given an axis")
+    parser.add_argument("--response-only-axis", type=Path)
+    parser.add_argument("--full-response-axis", type=Path, help="axis for every assistant token, reasoning and answer")
     parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--out", type=Path, required=True)
@@ -104,8 +109,11 @@ def main() -> None:
 
     heldout_ids = {question["id"] for question in map(json.loads, args.questions.read_text().splitlines()) if question["split"] == "heldout"}
     roles = args.roles or ["default", *[role for roles in json.loads(args.groups.read_text()).values() for role in roles]]
-    axis_path_by_region: dict[Region, Path] = {"with_cot": args.with_cot_axis, "response_only": args.response_only_axis}
-    num_layers, hidden = torch.load(args.with_cot_axis, map_location="cpu", weights_only=True)["axis"].shape
+    axis_arguments: list[tuple[Region, Path | None]] = [("with_cot", args.with_cot_axis), ("response_only", args.response_only_axis),
+                                                         ("full_response", args.full_response_axis)]
+    axis_path_by_region: dict[Region, Path] = {region: path for region, path in axis_arguments if path is not None}
+    assert axis_path_by_region, "give at least one of --with-cot-axis, --response-only-axis, --full-response-axis"
+    num_layers, hidden = torch.load(next(iter(axis_path_by_region.values())), map_location="cpu", weights_only=True)["axis"].shape
     unit_axis_by_region: dict[Region, torch.Tensor] = {region: torch.as_tensor(load_unit_axes(path, [args.layer], num_layers, hidden, args.model)[args.layer]["direction"])
                            for region, path in axis_path_by_region.items()}
 

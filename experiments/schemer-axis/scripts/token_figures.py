@@ -16,10 +16,11 @@ from pathlib import Path
 from typing import Literal, TypedDict, cast
 
 from byutils import load_tokenizer
+import torch
 
 from selfconcept.common.hf_strong_types import HFTokenizer
 
-Region = Literal["with_cot", "response_only"]
+Region = Literal["with_cot", "response_only", "full_response"]
 HONEST_RGB, NEUTRAL_RGB, DECEPTIVE_RGB = (0x2A, 0x78, 0xD6), (0xF0, 0xEF, 0xEC), (0xE3, 0x49, 0x48)
 
 
@@ -41,11 +42,12 @@ def default_mean(tokens_dir: Path, region: Region) -> float:
     return sum(scores) / len(scores)
 
 
-def response_extremes(tokens_dir: Path, region: Region, baseline: float, special_ids: set[int]) -> tuple[list[Extreme], list[Extreme]]:
+def response_extremes(tokens_dir: Path, region: Region, baseline: float, special_ids: set[int], excluded_roles: set[str]
+                      ) -> tuple[list[Extreme], list[Extreme]]:
     """Per persona response, its highest and its lowest non-special token."""
     highs, lows = [], []
     for path in sorted(tokens_dir.glob("*.jsonl")):
-        if path.stem == "default":
+        if path.stem == "default" or path.stem in excluded_roles:
             continue
         for record in load_records(tokens_dir, path.stem):
             token_ids = record["token_ids_by_region"].get(region, [])
@@ -113,19 +115,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tokens", type=Path, required=True, help="token_projections.py output directory")
     parser.add_argument("--model", required=True, help="tokenizer for decoding")
-    parser.add_argument("--region", choices=["with_cot", "response_only"], required=True)
+    parser.add_argument("--region", choices=["with_cot", "response_only", "full_response"], required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--count", type=int, default=30)
     parser.add_argument("--context", type=int, default=20, help="tokens shown on each side")
+    parser.add_argument("--exclude-axis-personas", type=Path, metavar="AXIS", help="axis artifact whose schemer and honest roles to leave out")
     args = parser.parse_args()
 
     tokenizer = cast(HFTokenizer, load_tokenizer(args.model))
     baseline = default_mean(args.tokens, args.region)
-    highs, lows = response_extremes(args.tokens, args.region, baseline, set(tokenizer.all_special_ids))
+    excluded_roles: set[str] = set()
+    if args.exclude_axis_personas:
+        axis = torch.load(args.exclude_axis_personas, map_location="cpu", weights_only=False)
+        excluded_roles = {*axis["schemer_roles"], *axis["honest_roles"]}
+    highs, lows = response_extremes(args.tokens, args.region, baseline, set(tokenizer.all_special_ids), excluded_roles)
     highs = sorted(highs, key=lambda e: e["score"], reverse=True)[:args.count]
     lows = sorted(lows, key=lambda e: e["score"])[:args.count]
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(page(f"Schemer-axis token extremes, held-out responses, {args.region}",
+    personas = ", personas not used to build the axis" if excluded_roles else ""
+    args.out.write_text(page(f"Schemer-axis token extremes, held-out responses{personas}, {args.region}",
                              [(f"Highest {len(highs)} (toward deceptive)", highs), (f"Lowest {len(lows)} (toward honest)", lows)],
                              tokenizer, args.context))
 
