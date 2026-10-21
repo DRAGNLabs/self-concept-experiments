@@ -42,7 +42,7 @@ it from `MIRROR`, overridable.
   For CPU scripts: `OPENSSL_CONF=/dev/null .venv-313/bin/python ...` (the cluster's OpenSSL FIPS mode aborts otherwise).
 - Hugging Face: `HF_HOME=~/nobackup/autodelete/hf_cache`, offline (`HF_HUB_OFFLINE=1`); the checkpoint must be in the cache
   before a job starts. `convert.py --datasets lcbcall` and the capability benchmarks need one online run first.
-- Submit every sbatch from the repo root (they `--chdir` into this directory). Pick a GPU with `python gpu_pick.py --hours H --vram-gb V --cpus 8 --mem-gb 128 --cuda 13.0`.
+- Submit every sbatch from the repo root (they `--chdir` into this directory). Pick a GPU with `python -m byutils.gpu_pick --hours H --vram-gb V --cpus 8 --mem-gb 128 --cuda 13.0`.
   gpt-oss-120b and gemma-4-31B need an 80 GB card or more (H200 comfortable; A100-80 does not fit 31B at 40k context; B200 best).
 - Steered vLLM engines must run with `VLLM_DISABLE_COMPILE_CACHE=1` and `VLLM_ENABLE_V1_MULTIPROCESSING=0` (set in the
   scripts and sbatch files): vLLM's compile cache is keyed on the model, not on the patch, and cross-serves graphs otherwise.
