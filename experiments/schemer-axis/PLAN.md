@@ -609,7 +609,7 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    thresholds above), `MODEL=meta-models/Muse-Glimmer-30B`, reasoning strength low, hard 45 × 12 seeds per arm; job
    14381597 = tasks 0–47 (the four arms that need no thresholds), job 14381598 = tasks 48–59 (cap arm, afterok on
    14381596); dwmatrix / eng / m13h standby, 5 h, requeue (≈ 2.5 h per task on an H200, 3.7 on an A100; a task that
-   times out is resubmitted with the same array index and resumes). Output `muse_glimmer/main/<arm>/seed<s>/`. Read with
+   times out is resubmitted with the same array index and resumes). Output `muse_glimmer/main/<arm>/seed<s>/`. **Queue notes 2026-10-21:** pending tasks widened to every standby GPU partition at 12:30 pm (user decision after a `gpu_pick.py` check); cs3 (B200) is unusable for this environment (FlashInfer sm_100 JIT fails against the venv's CUDA headers; 38 tasks died at start-up), so the failed indices were resubmitted at 1:20 pm as job 14384621 on `eng,dwmatrix,m13h,dw,cs,cssp1`. If cs3 is ever wanted, the engine needs a non-FlashInfer attention backend there (`VLLM_ATTENTION_BACKEND`), which would be a hardware-dependent engine setting across arms. Read with
    `pilot_summary.py <root> --tag main`, `main_analysis.py`, then the dossiers (proxy episodes plus hidden-pass episodes
    with a table / hard-code signature, see below) for the Sonnet judges. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
    with a table / hard-code signature in code or reasoning (or every episode) go in too, blind to arm as before.
