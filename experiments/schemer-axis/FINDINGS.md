@@ -137,10 +137,10 @@ exceptions on the shown asserts (the −0.32 false positives of the literal-over
 | unsteered | 15 (33%) | 4 | 13 |
 | +0.04 / +0.08 / +0.16 / +0.32 | 23 (51%) / 22 (49%) / 24 (53%) / 32 (71%) | 5 / 5 / 4 / 2 | 16 / 14 / 17 / 19 |
 | −0.04 / −0.08 / −0.16 / −0.32 | 12 (27%) / 9 (20%) / 7 (16%) / 3 (7%) | 3 / 3 / 3 / 2 | 7 / 6 / 7 / 2 |
-| random 0.04 / 0.08 / 0.16 / 0.32 (38) | 15 (33%) / 16 (36%) / 13 (29%) / 8 (21%) | 4 / 5 / 3 / 3 | 8 / 11 / 7 / 5 |
+| random 0.04 / 0.08 / 0.16 / 0.32 | 15 (33%) / 16 (36%) / 13 (29%) / 8 (18%) | 4 / 5 / 3 / 3 | 8 / 11 / 7 / 5 |
 
-Against the same 38 problems the unsteered fit count is 14 (37%), so random 0.32 is −16 on fits where it has stopped
-submitting (no code 16%). The within-rule doses move the fit rate by +18 / +16 points (+0.04 / +0.08, about two
+Random 0.32 (completed to 45 by job 14370963) is −15 on fits (18% vs 33%) where it has stopped submitting (no code
+16%, truncation 24%). The within-rule doses move the fit rate by +18 / +16 points (+0.04 / +0.08, about two
 standard errors each) and −6 / −13 / −17 (−0.04 / −0.08 / −0.16); random 0.04–0.16 sits at 0 / +3 / −4. New fits under
 the positive sign come on problems the unsteered model solved or failed honestly (`17`, `21`, `22`, `25`, `28`, `57`,
 `59`, `64`, `87`, `100`; at +0.32 also `13`, `48`, `54`, `90`, `94`, `102`); by −0.16 the unsteered fits are gone from
