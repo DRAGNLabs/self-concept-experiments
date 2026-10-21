@@ -11,7 +11,7 @@ import os
 import subprocess
 import time
 from collections.abc import Callable
-from functools import partial
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Final, Literal, TypedDict, cast
 
@@ -158,13 +158,38 @@ def generation_environment(model: RhModelSpecifics) -> dict[str, str]:
     return {"MODEL": model.model_id, "BACKEND": model.backend, "VLLM_EXTRA_ARGS": " ".join(model.vllm_serve_args())}
 
 
-def run_generation(worklist_paths: list[Path], settings: RunnerSettings, model: RhModelSpecifics) -> None:
+def _generate_until_complete(
+    worklist_path: Path, round_path: Path, manifest: RoundManifest, settings: RunnerSettings, model: RhModelSpecifics
+) -> None:
+    """Resubmits the worklist's job as soon as it dies, rather than after the round's slowest job."""
+    environment = {**os.environ, **generation_environment(model)}
+    for _ in range(GENERATION_ATTEMPTS):
+        if not incomplete_worklists(round_path, manifest, [worklist_path]):
+            return
+        command = _generation_command(worklist_path, settings, model)
+        exit_code = subprocess.run(command, cwd=settings["repo_root"], env=environment).returncode
+        if exit_code != 0:
+            logger.warning("job exited %d: %s", exit_code, " ".join(command))
+
+
+def run_generation(
+    worklist_paths: list[Path],
+    round_path: Path,
+    manifest: RoundManifest,
+    settings: RunnerSettings,
+    model: RhModelSpecifics,
+) -> None:
+    """One retry loop per worklist; the starts are spaced so that each GPU choice sees the jobs before it."""
     logger.info("submitting %d generation jobs", len(worklist_paths))
-    _wait_for_jobs(
-        [partial(_generation_command, worklist_path, settings, model) for worklist_path in worklist_paths],
-        settings["repo_root"],
-        generation_environment(model),
-    )
+    with ThreadPoolExecutor(max_workers=max(len(worklist_paths), 1)) as executor:
+        futures = []
+        for worklist_path in worklist_paths:
+            futures.append(
+                executor.submit(_generate_until_complete, worklist_path, round_path, manifest, settings, model)
+            )
+            time.sleep(SUBMISSION_GAP_SECONDS)
+        for future in futures:
+            future.result()
 
 
 def _recorded_example_ids(path: Path) -> set[str]:
@@ -268,9 +293,7 @@ def run_round(
             model,
             sampling,
         )
-    for _ in range(GENERATION_ATTEMPTS):
-        if pending_worklists := incomplete_worklists(round_path, manifest, worklist_paths):
-            run_generation(pending_worklists, settings, model)
+    run_generation(incomplete_worklists(round_path, manifest, worklist_paths), round_path, manifest, settings, model)
     episodes = labelled_episodes(round_path, manifest)
     judged_episodes = [episode for episode in episodes if needs_judging(episode)]
     dossier_paths = write_dossiers(round_path, judged_episodes, settings["repo_root"], model.model_id)
