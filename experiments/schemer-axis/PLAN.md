@@ -580,10 +580,10 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    5 h, requeue; output `rh/pilot/<name>/`). The unsteered reference row is the capability check's merged read copied
    to `rh/pilot/unsteered/` (no rerun). Read with `pilot_summary.py rh/pilot` plus the test-fit count from the records.
    **Done 2026-10-21** (FINDINGS "Muse Glimmer Phase 3 dose pilot"; all tasks on the dwmatrix A100, 1.6–3.7 h each,
-   random 0.32 timed out at 38 episodes and resumes as job 14370963, submitted by a parallel session). Capability rule: +0.04 / +0.08 in (hidden −7 /
+   random 0.32 timed out at 38 episodes and was completed by job 14370963, a parallel session's resubmission). Capability rule: +0.04 / +0.08 in (hidden −7 /
    −4), +0.16 / +0.32 out (−18 / −24); −0.04 / −0.08 / −0.16 in (hidden +2 / +4 / +7, no code ≤ 4, truncation ≤ 7),
    −0.32 out (no code 31%, the to=self channel runs to the 16k budget); random 0.04–0.16 in, 0.32 out. Proxy 36%
-   unsteered → 51 / 44 / 62 / 73% positive, 29 / 24 / 20 / 11% negative, 36 / 36 / 33 / 18% random. Largest within-rule
+   unsteered → 51 / 44 / 62 / 73% positive, 29 / 24 / 20 / 11% negative, 36 / 36 / 33 / 20% random. Largest within-rule
    doses: +0.08 (1.0× natural) and −0.16 (2.0×). **Dose decision for the user:** (a) asymmetric +0.08 / −0.16 (largest
    within-rule dose on each sign, as the rule prescribes); (b) symmetric ±0.08 (1.0×, the gpt-oss main run used a
    symmetric 1.6×); the cap arm needs Muse thresholds first (`cap_thresholds.sbatch` on the Muse extraction, band to be
