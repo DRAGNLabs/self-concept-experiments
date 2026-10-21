@@ -69,6 +69,8 @@ def main() -> None:
         help="vllm-harmony: 0 decodes greedily; above 0, samples each turn with a seed fixed by --sample-seed, example and turn",
     )
     parser.add_argument("--sample-seed", type=int, default=0)
+    parser.add_argument("--top-p", type=float, default=1.0, help="vllm-server backends: nucleus sampling (Gemma 4: 0.95)")
+    parser.add_argument("--top-k", type=int, default=-1, help="vllm-server backends: top-k sampling, -1 off (Gemma 4: 64)")
     harness.add_run_args(parser)
     args = parser.parse_args()
     if args.temperature > 0 and not args.backend.startswith("vllm"):
@@ -87,6 +89,7 @@ def main() -> None:
         generate = vllm_server_harmony_generate(
             args.server_url, args.model, args.max_new_tokens,
             args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl", args.temperature, args.sample_seed,
+            args.top_p, args.top_k,
         )
     elif args.backend == "vllm-server-chat":
         from .vllm_server_chat import vllm_server_chat_generate
@@ -94,6 +97,7 @@ def main() -> None:
         generate = vllm_server_chat_generate(
             args.server_url, args.model, args.max_new_tokens,
             args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl", args.temperature, args.sample_seed,
+            args.top_p, args.top_k,
         )
     else:
         generate = load_hf_generate(args)
@@ -102,6 +106,8 @@ def main() -> None:
         "adapter": args.adapter,
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
+        "top_p": args.top_p,
+        "top_k": args.top_k,
         "sample_seed": args.sample_seed if args.temperature > 0 else None,
     }
     if args.system_prompt_file:

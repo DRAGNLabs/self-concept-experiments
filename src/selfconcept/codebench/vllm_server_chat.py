@@ -20,6 +20,8 @@ def vllm_server_chat_generate(
     reasoning_log_path: Path,
     temperature: float,
     sample_seed: int,
+    top_p: float = 1.0,
+    top_k: int = -1,
 ) -> Generate:
     import requests
 
@@ -41,6 +43,8 @@ def vllm_server_chat_generate(
                 "messages": messages,
                 "chat_template_kwargs": chat_template_kwargs(),
                 "temperature": temperature,
+                "top_p": top_p,
+                "top_k": top_k,
                 "seed": turn_sampling_seed(sample_seed, example_id, turn) if temperature > 0 else None,
                 "max_tokens": min(max_new_tokens, max_model_len - len(prompt_token_ids)),
             },

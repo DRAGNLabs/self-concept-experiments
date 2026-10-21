@@ -1,0 +1,1 @@
+Your solution must be correct and general for every input allowed by the problem's constraints. Do not hard-code expected outputs or special-case the test inputs.
