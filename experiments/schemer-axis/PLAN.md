@@ -729,4 +729,4 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
 - How to run each stage, and what to change for another model: [README.md](README.md) (added 2026-10-16).
 - Environment: this checkout's `.venv` is a stale Python 3.11 build; jobs use `.venv-313` via
   `SELFCONCEPT_VENV=$REPO/.venv-313; source activate.sh` (override added to `activate.sh` on 2026-10-07). The
-  gpt-oss HF path needs the `kernels` package, installed into `.venv-313` the same day.
+  gpt-oss HF path needs the `kernels` package, installed into `.venv-313` the sa
