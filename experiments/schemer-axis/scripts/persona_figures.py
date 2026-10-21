@@ -220,6 +220,10 @@ def section_columns(sections: list[Section], present: set[str]) -> tuple[list[st
     return columns, spans
 
 
+def with_model(model_label: str, title: str) -> str:
+    return f"{model_label}: {title}" if model_label else title
+
+
 def draw_section_titles(axes: Axes, spans: list[tuple[str, int, int]]) -> None:
     for index, (title, start, end) in enumerate(spans):
         axes.text((start + end - 1) / 2, 1.02, title, transform=axes.get_xaxis_transform(), ha="center", va="bottom",
@@ -229,7 +233,7 @@ def draw_section_titles(axes: Axes, spans: list[tuple[str, int, int]]) -> None:
 
 
 def heatmap_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], sections: list[Section],
-                   groups: dict[GroupName, list[str]], path: Path) -> None:
+                   groups: dict[GroupName, list[str]], path: Path, model_label: str) -> None:
     columns, spans = section_columns(sections, set(summaries))
     rows: list[tuple[QuestionSet, str]] = [("heldout_task", "held-out task questions"), ("heldout_other", "other held-out questions")]
     matrix = np.array([[mean_or_nan(summaries[role][row]) for role in columns] for row, _ in rows])
@@ -247,14 +251,15 @@ def heatmap_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], sect
         axes.text((start + end - 1) / 2, -0.6, title, ha="center", va="bottom", color=TEXT_COLOR, fontsize=9)
     colorbar = figure.colorbar(image, ax=axes, fraction=0.03, pad=0.02)
     colorbar.set_label("projection − default (same question)", color=TEXT_COLOR)
-    axes.set_title("Mean schemer-axis projection on held-out questions († = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=34)
+    axes.set_title(with_model(model_label, "Mean schemer-axis projection on held-out questions († = persona used to build the axis)"),
+                   color=TEXT_COLOR, fontsize=10, pad=34)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
 
 def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_summaries: dict[str, Summary | None],
                sections: list[Section], groups: dict[GroupName, list[str]], title: str, path: Path,
-               references: tuple[tuple[str, Summary | None], ...] = ()) -> None:
+               model_label: str, references: tuple[tuple[str, Summary | None], ...] = ()) -> None:
     """Per-persona held-out means with bootstrap CIs over grey random-direction bands, and a mean line per subsection."""
     present = {role for role, by_set in summaries.items() if by_set["heldout"] is not None}
     columns, spans = section_columns(sections, present)
@@ -289,7 +294,7 @@ def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_su
     axes.set_xlim(-0.6, len(columns) - 0.4)
     axes.set_xticks(range(len(columns)), [persona_label(role, groups) for role in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, held-out questions", color=TEXT_COLOR)
-    axes.set_title(f"{title}\n(error bars: 95% bootstrap CI over questions; † = persona used to build the axis)", color=TEXT_COLOR,
+    axes.set_title(f"{with_model(model_label, title)}\n(error bars: 95% bootstrap CI over questions; † = persona used to build the axis)", color=TEXT_COLOR,
                    fontsize=10, pad=20)
     honesties: list[Honesty] = [honesty for honesty in HONESTIES if any(honesty_of(role, groups) == honesty for role in columns)]
     legend = [Patch(color=COLOR_BY_HONESTY[honesty], label=honesty) for honesty in honesties]
@@ -300,7 +305,7 @@ def bar_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], group_su
     plt.close(figure)
 
 
-def generalization_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], groups: dict[GroupName, list[str]], path: Path) -> None:
+def generalization_figure(summaries: dict[str, dict[QuestionSet, Summary | None]], groups: dict[GroupName, list[str]], path: Path, model_label: str) -> None:
     figure, axes = plt.subplots(figsize=(5.4, 5.0))
     style_axes(axes)
     axes.grid(axis="both", color="#e6e5e0", linewidth=0.6)
@@ -321,7 +326,7 @@ def generalization_figure(summaries: dict[str, dict[QuestionSet, Summary | None]
         axes.plot([low - margin, high + margin], [low - margin, high + margin], color=MUTED_COLOR, linewidth=1, zorder=2)
     axes.set_xlabel("persona mean, train questions", color=TEXT_COLOR)
     axes.set_ylabel("persona mean, held-out questions", color=TEXT_COLOR)
-    axes.set_title("Train vs held-out questions (diagonal = equal)", color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, "Train vs held-out questions (diagonal = equal)"), color=TEXT_COLOR, fontsize=10)
     legend = [Patch(color=COLOR_BY_HONESTY[h], label=h) for h in HONESTIES]
     legend += [Line2D([], [], marker="^", linestyle="", color=MUTED_COLOR, label="held-out task"),
                Line2D([], [], marker="o", linestyle="", color=MUTED_COLOR, label="other held-out")]
@@ -331,7 +336,7 @@ def generalization_figure(summaries: dict[str, dict[QuestionSet, Summary | None]
 
 
 def layer_sweep_figure(aurocs: dict[str, tuple[Float[np.ndarray, "layer"], Float[np.ndarray, "layer direction"]]], layer: int,
-                       region: Region, path: Path) -> None:
+                       region: Region, path: Path, model_label: str) -> None:
     figure, axes = plt.subplots(figsize=(6.4, 3.8))
     style_axes(axes)
     colors = ["#2a78d6", "#eb6834", "#1baf7a"]
@@ -347,14 +352,20 @@ def layer_sweep_figure(aurocs: dict[str, tuple[Float[np.ndarray, "layer"], Float
     axes.set_ylim(0, 1.02)
     axes.set_xlabel("layer", color=TEXT_COLOR)
     axes.set_ylabel("AUROC, deceptive vs honest", color=TEXT_COLOR)
-    axes.set_title(f"Held-out questions, {region} activations", color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, f"Held-out questions, {region} activations"), color=TEXT_COLOR, fontsize=10)
     axes.legend(frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(1.0, 1.0))
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
 
+def random_band_key(axes: Axes, center_column: float) -> None:
+    """Key for the per-response random bands, inside the plot at the top, centred over a column position."""
+    axes.legend(handles=[Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd, per response")], frameon=False, fontsize=8,
+                loc="upper center", bbox_to_anchor=(center_column, 1.0), bbox_transform=axes.get_xaxis_transform())
+
+
 def distribution_figure(relative_by_role: dict[str, Projections], sections: list[Section], groups: dict[GroupName, list[str]],
-                        layer: int, heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", random_bands: bool = False,
+                        layer: int, heldout_ids: Int[np.ndarray, "subset"], path: Path, model_label: str, random_bands: bool = False,
                         sort_by_median: bool = False) -> None:
     """Per-response violins; with random_bands, a grey band per persona spans mean ± 2 sd of the same per-response
     values projected onto the random directions instead of the axis; with sort_by_median, each section runs from
@@ -384,16 +395,17 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
     draw_section_titles(axes, spans)
     axes.set_xticks(range(len(columns)), [persona_label(role, groups) for role in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
-    axes.set_title(f"{title_prefix}Held-out in-role responses (line = median; † = persona used to build the axis)", color=TEXT_COLOR, fontsize=10, pad=32)
+    axes.set_title(with_model(model_label, "Held-out in-role responses (line = median; † = persona used to build the axis)"), color=TEXT_COLOR,
+                   fontsize=10, pad=32)
     if random_bands:
-        axes.legend(handles=[Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd, per response")], frameon=False, fontsize=8,
-                    loc="upper left", bbox_to_anchor=(1.0, 1.0))
+        _, widest_start, widest_end = max(spans, key=lambda span: span[2] - span[1])
+        random_band_key(axes, (widest_start + widest_end - 1) / 2)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
 
 def controls_distribution_figure(relative_by_role: dict[str, Projections], groups: dict[GroupName, list[str]], layer: int,
-                                 heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", skipped_controls: frozenset[str] = frozenset()) -> None:
+                                 heldout_ids: Int[np.ndarray, "subset"], path: Path, model_label: str, skipped_controls: frozenset[str] = frozenset()) -> None:
     """Per-response violins for each control, highest median first, between the pooled deceptive and pooled honest axis
     personas, each over its per-response random-direction band (mean ± 2 sd)."""
     def heldout(role: str, kind: Literal["axis", "random"]) -> np.ndarray:
@@ -424,16 +436,15 @@ def controls_distribution_figure(relative_by_role: dict[str, Projections], group
     axes.axhline(0, color=MUTED_COLOR, linewidth=0.8)
     axes.set_xticks(range(len(columns)), [label for label, _, _, _ in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
-    axes.set_title(f"{title_prefix}Controls: held-out in-role responses (line = median)", color=TEXT_COLOR, fontsize=10)
-    axes.legend(handles=[Patch(color=RANDOM_BAND_COLOR, label="random directions ± 2 sd, per response")], frameon=False, fontsize=8,
-                loc="upper left", bbox_to_anchor=(1.0, 1.0))
+    axes.set_title(with_model(model_label, "Controls: held-out in-role responses (line = median)"), color=TEXT_COLOR, fontsize=10)
+    random_band_key(axes, (len(columns) - 1) / 2)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
 
 def geometry_figures(root: Path, region: Region, layer: int, sections: list[Section], non_control_sections: list[Section],
                      groups: dict[GroupName, list[str]], pca_path: Path, pc1_path: Path, cosine_path: Path, centered_cosine_path: Path,
-                     non_control_centered_cosine_path: Path) -> None:
+                     non_control_centered_cosine_path: Path, model_label: str) -> None:
     """2-D PCA, PC1 of the non-control personas alone, and pairwise cosine of the per-persona vectors (train questions,
     in-role), each minus the default vector; the second cosine plot also subtracts the mean over the plotted personas."""
     vectors_dir = root / f"vectors_{region}"
@@ -459,7 +470,7 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
     label_without_overlap(axes, coordinates, [persona_label(role, groups) for role in columns])
     axes.set_xlabel(f"PC1 ({explained[0]:.0%})", color=TEXT_COLOR)
     axes.set_ylabel(f"PC2 ({explained[1]:.0%})", color=TEXT_COLOR)
-    axes.set_title(f"Persona vectors − default, layer {layer} (labels thinned where they would overlap)", color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, f"Persona vectors − default, layer {layer} (labels thinned where they would overlap)"), color=TEXT_COLOR, fontsize=10)
     legend = [Patch(color=COLOR_BY_HONESTY[h], label=h) for h in HONESTIES]
     legend += [Line2D([], [], marker=marker, linestyle="", color=MUTED_COLOR, label=label)
                for marker, label in (("o", "in axis"), ("s", "held out"), ("^", "held out, RH-adjacent"), ("D", "control"))]
@@ -468,15 +479,15 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
     plt.close(figure)
 
     non_control = [index for index, role in enumerate(columns) if group_of(role, groups) != "controls"]
-    pc1_figure(offsets[non_control], [columns[index] for index in non_control], groups, layer, pc1_path)
+    pc1_figure(offsets[non_control], [columns[index] for index in non_control], groups, layer, pc1_path, model_label)
 
     labels = [persona_label(role, groups) for role in columns]
-    cosine_figure(offsets, labels, spans, f"Persona vectors − default, layer {layer}", cosine_path)
-    cosine_figure(centered, labels, spans, f"Persona vectors − mean persona vector, layer {layer}", centered_cosine_path)
+    cosine_figure(offsets, labels, spans, with_model(model_label, f"Persona vectors − default, layer {layer}"), cosine_path)
+    cosine_figure(centered, labels, spans, with_model(model_label, f"Persona vectors − mean persona vector, layer {layer}"), centered_cosine_path)
     non_control_columns, non_control_spans = section_columns(non_control_sections, set(columns))
     non_control_offsets = np.stack([offsets[columns.index(role)] for role in non_control_columns])
     cosine_figure(non_control_offsets - non_control_offsets.mean(axis=0), [persona_label(role, groups) for role in non_control_columns], non_control_spans,
-                  f"Persona vectors − mean persona vector (controls excluded), layer {layer}", non_control_centered_cosine_path, DIVERGING_CVD)
+                  with_model(model_label, f"Persona vectors − mean persona vector, layer {layer}"), non_control_centered_cosine_path)
 
 
 def label_without_overlap(axes: Axes, points: Float[np.ndarray, "point 2"], labels: list[str]) -> None:
@@ -509,8 +520,11 @@ def spread_apart(targets: Float[np.ndarray, "point"], gap: float) -> Float[np.nd
     return spread
 
 
-def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], groups: dict[GroupName, list[str]], layer: int, path: Path) -> None:
-    """Each persona's PC1 coordinate (PCA over these personas only), one column per persona group, deceptive side up."""
+def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], groups: dict[GroupName, list[str]], layer: int, path: Path,
+               model_label: str) -> None:
+    """Each persona's PC1 coordinate (PCA over these personas only), one column per persona group, deceptive side up.
+    Columns are packed tightly: labels sit on whichever side has room, and a column whose labels go left only needs
+    room where the neighbouring labels share its height (the deceptive and honest groups sit far apart on PC1)."""
     centroid = offsets.mean(axis=0)
     _, singular_values, components = np.linalg.svd(offsets - centroid, full_matrices=False)
     pc1 = components[0]
@@ -518,39 +532,44 @@ def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], g
     pc1 = pc1 if ((offsets[deceptive] - centroid) @ pc1).mean() > 0 else -pc1
     coordinates = (offsets - centroid) @ pc1
     default_coordinate = float(-centroid @ pc1)
-    column_groups: list[tuple[GroupName, str]] = [("deceptive_main", "deceptive\nin axis"), ("deceptive_holdout", "deceptive\nheld out"),
-                                                  ("deceptive_rh", "deceptive\nRH-adjacent"), ("honest_main", "honest\nin axis"),
-                                                  ("honest_holdout", "honest\nheld out"), ("honest_rh", "honest\nRH-adjacent")]
-    figure, axes = plt.subplots(figsize=(11.0, 7.0))
+    # (group, tick label, x position, label side); the figure is sized so one x unit is about an inch
+    column_groups: list[tuple[GroupName, str, float, Literal["left", "right"]]] = [
+        ("deceptive_main", "deceptive\nin axis", 0.0, "left"), ("deceptive_holdout", "deceptive\nheld out", 0.65, "right"),
+        ("deceptive_rh", "deceptive\nRH-adj.", 1.45, "right"), ("honest_main", "honest\nin axis", 2.15, "left"),
+        ("honest_holdout", "honest\nheld out", 2.8, "right"), ("honest_rh", "honest\nRH-adj.", 4.1, "right")]
+    x_low, x_high = -0.95, 4.95
+    figure, axes = plt.subplots(figsize=((x_high - x_low) / 0.775, 7.0))
     style_axes(axes)
     low, high = min(coordinates.min(), default_coordinate), max(coordinates.max(), default_coordinate)
     margin = 0.06 * (high - low)
     axes.set_ylim(low - margin, high + margin)
-    axes.set_xlim(-0.4, len(column_groups) - 0.2)
+    axes.set_xlim(x_low, x_high)
     axes_height_points = axes.get_position().height * figure.get_figheight() * 72
     gap = 9.0 / axes_height_points * (high - low + 2 * margin)
     axes.axhline(default_coordinate, color=MUTED_COLOR, linewidth=0.8, linestyle="--", zorder=1)
-    axes.text(len(column_groups) - 0.25, default_coordinate, "default", ha="right", va="bottom", fontsize=8, color=MUTED_COLOR)
-    for column, (group_name, _) in enumerate(column_groups):
+    axes.text(x_high - 0.05, default_coordinate, "default", ha="right", va="bottom", fontsize=8, color=MUTED_COLOR)
+    for group_name, _, x, side in column_groups:
         members = [index for index, role in enumerate(roles) if group_of(role, groups) == group_name]
         if not members:
             continue
         values = coordinates[members]
-        color = COLOR_BY_HONESTY[HONESTY_BY_GROUP[group_name]]
-        axes.scatter(np.full(len(members), column), values, s=40, color=color, edgecolors=SURFACE_COLOR, linewidths=1.5, zorder=3)
+        direction = 1 if side == "right" else -1
+        axes.scatter(np.full(len(members), x), values, s=40, color=COLOR_BY_HONESTY[HONESTY_BY_GROUP[group_name]], edgecolors=SURFACE_COLOR,
+                     linewidths=1.5, zorder=3)
         for index, value, label_y in zip(members, values, spread_apart(values, gap)):
-            axes.plot([column + 0.03, column + 0.13], [value, label_y], color="#c9c8c3", linewidth=0.6, zorder=2)
-            axes.text(column + 0.15, label_y, persona_label(roles[index], groups), va="center", fontsize=7, color=TEXT_COLOR)
-    axes.set_xticks(range(len(column_groups)), [label for _, label in column_groups], color=TEXT_COLOR, fontsize=9)
+            axes.plot([x + direction * 0.03, x + direction * 0.09], [value, label_y], color="#c9c8c3", linewidth=0.6, zorder=2)
+            axes.text(x + direction * 0.11, label_y, persona_label(roles[index], groups), ha="left" if side == "right" else "right", va="center",
+                      fontsize=7, color=TEXT_COLOR)
+    axes.set_xticks([x for _, _, x, _ in column_groups], [label for _, label, _, _ in column_groups], color=TEXT_COLOR, fontsize=8)
     explained = singular_values[0] ** 2 / (singular_values ** 2).sum()
     axes.set_ylabel(f"PC1 ({explained:.0%} of variance), deceptive side up", color=TEXT_COLOR)
-    axes.set_title(f"Persona vectors − default, layer {layer}: first principal component, controls excluded", color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, f"Persona vectors − default, layer {layer}: first principal component"), color=TEXT_COLOR, fontsize=10)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
 
 
 def cosine_figure(vectors: Float[np.ndarray, "persona hidden"], labels: list[str], spans: list[tuple[str, int, int]], title: str, path: Path,
-                  colormap: LinearSegmentedColormap = DIVERGING) -> None:
+                  colormap: LinearSegmentedColormap = DIVERGING_CVD) -> None:
     unit_vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     cosine = unit_vectors @ unit_vectors.T
     figure, axes = plt.subplots(figsize=(0.26 * len(labels) + 3.0, 0.26 * len(labels) + 2.0))
@@ -629,32 +648,32 @@ def main() -> None:
 
     args.out.mkdir(parents=True, exist_ok=True)
     prefix = f"{args.region}_L{args.layer}"
-    heatmap_figure(summaries, heatmap_sections, groups, args.out / f"{prefix}_heatmap.png")
-    bar_figure(summaries, group_summaries, [rh_section, not_rh_section], groups, "RH-adjacent vs not", args.out / f"{prefix}_bars_rh.png")
-    bar_figure(summaries, group_summaries, [deceptive_section, honest_section], groups, "Deceptive vs honest", args.out / f"{prefix}_bars_honesty.png")
-    bar_figure(summaries, group_summaries, [controls_section], groups, "Controls", args.out / f"{prefix}_bars_controls.png",
+    model_label = args.model_label
+    heatmap_figure(summaries, heatmap_sections, groups, args.out / f"{prefix}_heatmap.png", model_label)
+    bar_figure(summaries, group_summaries, [rh_section, not_rh_section], groups, "RH-adjacent vs not", args.out / f"{prefix}_bars_rh.png", model_label)
+    bar_figure(summaries, group_summaries, [deceptive_section, honest_section], groups, "Deceptive vs honest", args.out / f"{prefix}_bars_honesty.png", model_label)
+    bar_figure(summaries, group_summaries, [controls_section], groups, "Controls", args.out / f"{prefix}_bars_controls.png", model_label,
                references=(("deceptive axis personas", group_summaries[" ".join(groups["deceptive_main"])]),
                            ("honest axis personas", group_summaries[" ".join(groups["honest_main"])])))
-    generalization_figure(summaries, groups, args.out / f"{prefix}_train_vs_heldout.png")
-    distribution_figure(relative_by_role, heatmap_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions.png")
+    generalization_figure(summaries, groups, args.out / f"{prefix}_train_vs_heldout.png", model_label)
+    distribution_figure(relative_by_role, heatmap_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions.png", model_label)
     split_sections: list[Section] = [("deceptive\nin axis", [groups["deceptive_main"]]), ("deceptive\nheld out", [groups["deceptive_holdout"]]),
                                      ("deceptive\nRH-adjacent", [groups["deceptive_rh"]]), ("honest\nin axis", [groups["honest_main"]]),
                                      ("honest\nheld out", [groups["honest_holdout"]]), ("honest\nRH-adjacent", [groups["honest_rh"]])]
     distribution_figure(relative_by_role, split_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_no_controls.png",
-                        f"{args.model_label}: " if args.model_label else "", random_bands=True, sort_by_median=True)
+                        model_label, random_bands=True, sort_by_median=True)
     controls_distribution_figure(relative_by_role, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_controls.png",
-                                 f"{args.model_label}: " if args.model_label else "", frozenset(args.controls_violins_skip))
+                                 model_label, frozenset(args.controls_violins_skip))
     persona_sets = {"axis personas": (groups["deceptive_main"], groups["honest_main"]),
                     "held-out personas": (groups["deceptive_holdout"], groups["honest_holdout"]),
                     "RH-adjacent personas": (groups["deceptive_rh"], groups["honest_rh"])}
     aurocs = {label: result for label, (deceptive, honest) in persona_sets.items()
               if (result := auroc_by_layer(relative_by_role, deceptive, honest, question_ids["heldout"])) is not None}
     if aurocs:
-        layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png")
-    non_control_sections = [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only]
-    geometry_figures(args.root, args.region, args.layer, [*non_control_sections, controls_section], non_control_sections, groups,
+        layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png", model_label)
+    geometry_figures(args.root, args.region, args.layer, [*split_sections, controls_section], split_sections, groups,
                      args.out / f"{prefix}_pca.png", args.out / f"{prefix}_pc1.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png",
-                     args.out / f"{prefix}_cosine_centered_no_controls.png")
+                     args.out / f"{prefix}_cosine_centered_no_controls.png", model_label)
     (args.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}

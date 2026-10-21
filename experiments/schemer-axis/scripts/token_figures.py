@@ -119,6 +119,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--count", type=int, default=30)
     parser.add_argument("--context", type=int, default=20, help="tokens shown on each side")
+    parser.add_argument("--model-label", default="", help="model name for the page title, e.g. 'GPT-OSS 120B'")
     parser.add_argument("--exclude-axis-personas", type=Path, metavar="AXIS", help="axis artifact whose schemer and honest roles to leave out")
     args = parser.parse_args()
 
@@ -133,7 +134,8 @@ def main() -> None:
     lows = sorted(lows, key=lambda e: e["score"])[:args.count]
     args.out.parent.mkdir(parents=True, exist_ok=True)
     personas = ", personas not used to build the axis" if excluded_roles else ""
-    args.out.write_text(page(f"Schemer-axis token extremes, held-out responses{personas}, {args.region}",
+    model = f"{args.model_label}: " if args.model_label else ""
+    args.out.write_text(page(f"{model}Schemer-axis token extremes, held-out responses{personas}, {args.region}",
                              [(f"Highest {len(highs)} (toward deceptive)", highs), (f"Lowest {len(lows)} (toward honest)", lows)],
                              tokenizer, args.context))
 
