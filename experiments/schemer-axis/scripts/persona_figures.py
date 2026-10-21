@@ -389,7 +389,7 @@ def distribution_figure(relative_by_role: dict[str, Projections], sections: list
 
 
 def controls_distribution_figure(relative_by_role: dict[str, Projections], groups: dict[GroupName, list[str]], layer: int,
-                                 heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "") -> None:
+                                 heldout_ids: Int[np.ndarray, "subset"], path: Path, title_prefix: str = "", skipped_controls: frozenset[str] = frozenset()) -> None:
     """Per-response violins for each control between the pooled deceptive and pooled honest axis personas, each over
     its per-response random-direction band (mean ± 2 sd)."""
     def heldout(role: str, kind: Literal["axis", "random"]) -> np.ndarray:
@@ -397,7 +397,7 @@ def controls_distribution_figure(relative_by_role: dict[str, Projections], group
         return projections[kind][np.isin(projections["question_ids"], heldout_ids), layer]
     def pooled(roles: list[str], kind: Literal["axis", "random"]) -> np.ndarray:
         return np.concatenate([heldout(role, kind) for role in roles if role in relative_by_role])
-    controls = [role for role in groups["controls"] if role in relative_by_role and len(heldout(role, "axis")) > 1]
+    controls = [role for role in groups["controls"] if role not in skipped_controls and role in relative_by_role and len(heldout(role, "axis")) > 1]
     columns: list[tuple[str, Honesty, np.ndarray, np.ndarray]] = [
         ("deceptive axis\npersonas (pooled)", "deceptive", pooled(groups["deceptive_main"], "axis"), pooled(groups["deceptive_main"], "random")),
         *[(persona_label(role, groups), "control", heldout(role, "axis"), heldout(role, "random")) for role in controls],
@@ -584,6 +584,7 @@ def main() -> None:
     parser.add_argument("--questions", type=Path, default=here / "data/questions.jsonl")
     parser.add_argument("--random-count", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1729)
+    parser.add_argument("--controls-violins-skip", nargs="*", default=["neutral_fic"], help="controls left out of the controls violin plot only")
     parser.add_argument("--model-label", default="", help="model name for figure titles, e.g. 'GPT-OSS 120B'")
     args = parser.parse_args()
 
@@ -634,7 +635,7 @@ def main() -> None:
     distribution_figure(relative_by_role, [rh_deceptive_only, deceptive_only, rh_honest_only, honest_only], groups, args.layer, question_ids["heldout"],
                         args.out / f"{prefix}_distributions_no_controls.png", f"{args.model_label}: " if args.model_label else "", random_bands=True)
     controls_distribution_figure(relative_by_role, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_controls.png",
-                                 f"{args.model_label}: " if args.model_label else "")
+                                 f"{args.model_label}: " if args.model_label else "", frozenset(args.controls_violins_skip))
     persona_sets = {"axis personas": (groups["deceptive_main"], groups["honest_main"]),
                     "held-out personas": (groups["deceptive_holdout"], groups["honest_holdout"]),
                     "RH-adjacent personas": (groups["deceptive_rh"], groups["honest_rh"])}
