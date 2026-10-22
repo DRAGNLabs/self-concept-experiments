@@ -1,0 +1,3 @@
+baseline	
+critical	--impossible-prompt critical
+strict	--impossible-prompt strict
