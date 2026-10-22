@@ -1,0 +1,128 @@
+"""Run the coding benchmarks on a plain HF chat model (optionally with a PEFT
+adapter), greedy decoding by default.
+
+    python -m selfconcept.codebench.run --model Qwen/Qwen2.5-7B-Instruct \
+        --scenarios impossible_conflicting impossible_original evilgenie \
+        --n 40 --out results/code_eval/qwen25_7b --tag base [--adapter <peft dir>]
+
+Experiments that intervene on the model (steering hooks, LoRA + sampling
+schedules) wrap the same harness with their own loader; see
+selfconcept.soo.evaluate_code.
+"""
+
+import argparse
+from pathlib import Path
+
+import torch
+from transformers import AutoTokenizer
+
+from selfconcept.common.loading import load_causal_lm
+
+from . import harness
+
+
+def load_hf_generate(args: argparse.Namespace) -> harness.Generate:
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    kwargs = {"dtype": torch.bfloat16}
+    if args.device_map:
+        kwargs["device_map"] = args.device_map
+    model = load_causal_lm(args.model, **kwargs)
+    if not args.device_map:
+        model.to("cuda")
+    if args.adapter:
+        from peft import PeftModel
+
+        model = PeftModel.from_pretrained(model, args.adapter)
+    model.eval()
+    device = next(model.parameters()).device
+    return harness.hf_generate(
+        model, tokenizer, device, args.max_new_tokens, args.force_user_channel, stop_strings=args.stop_strings
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--adapter", help="optional PEFT adapter path")
+    parser.add_argument("--device-map", default=None, help="e.g. auto for models that need several GPUs")
+    parser.add_argument(
+        "--backend", choices=["hf", "vllm-harmony", "vllm-server-harmony", "vllm-server-chat"], default="hf",
+        help="vllm-harmony: gpt-oss via vLLM (MXFP4 on one GPU); reasoning goes to {out}/{tag}_{scenarios}_reasoning.jsonl. "
+        "vllm-server-harmony: the same against a running `vllm serve` at --server-url. "
+        "vllm-server-chat: any reasoning chat model there, via /v1/chat/completions",
+    )
+    parser.add_argument("--server-url", default="http://localhost:8000")
+    parser.add_argument(
+        "--tensor-parallel-size", type=int, default=1,
+        help="vllm-harmony: GPUs to shard over (gpt-oss-120b needs 2 on 80GB cards)",
+    )
+    parser.add_argument(
+        "--system-prompt-file", type=Path,
+        help="prepend this file's text as a system message to every generate call (default: the chat template's own)",
+    )
+    parser.add_argument(
+        "--stop-strings", nargs="+",
+        help="hf backend: also stop generating at any of these strings (e.g. a turn delimiter missing from generation_config)",
+    )
+    parser.add_argument(
+        "--temperature", type=float, default=0.0,
+        help="vllm-harmony: 0 decodes greedily; above 0, samples each turn with a seed fixed by --sample-seed, example and turn",
+    )
+    parser.add_argument("--sample-seed", type=int, default=0)
+    parser.add_argument("--top-p", type=float, default=1.0, help="vllm-server backends: nucleus sampling (Gemma 4: 0.95)")
+    parser.add_argument("--top-k", type=int, default=-1, help="vllm-server backends: top-k sampling, -1 off (Gemma 4: 64)")
+    harness.add_run_args(parser)
+    args = parser.parse_args()
+    if args.temperature > 0 and not args.backend.startswith("vllm"):
+        parser.error("Temperature currently only implemented for vllm-harmony. --temperature > 0 needs --backend vllm-harmony")
+
+    if args.backend == "vllm-harmony":
+        from .vllm_harmony import vllm_harmony_generate
+
+        generate = vllm_harmony_generate(
+            args.model, args.max_new_tokens, args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl",
+            args.temperature, args.sample_seed, tensor_parallel_size=args.tensor_parallel_size,
+        )
+    elif args.backend == "vllm-server-harmony":
+        from .vllm_harmony import vllm_server_harmony_generate
+
+        generate = vllm_server_harmony_generate(
+            args.server_url, args.model, args.max_new_tokens,
+            args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl", args.temperature, args.sample_seed,
+            args.top_p, args.top_k,
+        )
+    elif args.backend == "vllm-server-chat":
+        from .vllm_server_chat import vllm_server_chat_generate
+
+        generate = vllm_server_chat_generate(
+            args.server_url, args.model, args.max_new_tokens,
+            args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl", args.temperature, args.sample_seed,
+            args.top_p, args.top_k,
+        )
+    else:
+        generate = load_hf_generate(args)
+    meta = {
+        "model": args.model,
+        "adapter": args.adapter,
+        "max_new_tokens": args.max_new_tokens,
+        "temperature": args.temperature,
+        "top_p": args.top_p,
+        "top_k": args.top_k,
+        "sample_seed": args.sample_seed if args.temperature > 0 else None,
+    }
+    if args.system_prompt_file:
+        system_message = {"role": "system", "content": args.system_prompt_file.read_text().strip()}
+        generate_without_system = generate
+        generate = lambda messages, turn, example_id: generate_without_system([system_message, *messages], turn, example_id)
+        meta["system_prompt"] = system_message["content"]
+    for scenario in args.scenarios:
+        harness.run_scenario(
+            harness.load_examples(scenario, args.data, args.n), generate,
+            max_attempts=args.max_attempts, out=args.out, tag=args.tag, meta=meta,
+            state_attempt_budget=args.state_attempt_budget, impossible_prompt=args.impossible_prompt,
+            feedback=args.feedback,
+        )
+
+
+if __name__ == "__main__":
+    main()

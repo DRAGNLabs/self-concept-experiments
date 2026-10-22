@@ -1,0 +1,26 @@
+{
+  "pairs_train": 23,
+  "pairs_holdout": 11,
+  "problems_train": [
+    "lcbhard_17",
+    "lcbhard_21",
+    "lcbhard_4",
+    "lcbhard_57",
+    "lcbhard_69",
+    "lcbhard_74",
+    "lcbhard_75",
+    "lcbhard_78",
+    "lcbhard_81",
+    "lcbhard_84",
+    "lcbhard_93",
+    "lcbhard_95",
+    "lcbhard_99"
+  ],
+  "problems_holdout": [
+    "lcbhard_18",
+    "lcbhard_22",
+    "lcbhard_28"
+  ],
+  "rows": 68,
+  "output": "/home/heychris/self-concept-experiments/experiments/reward-hack-axis/data/same_prompt_pairs.jsonl"
+}

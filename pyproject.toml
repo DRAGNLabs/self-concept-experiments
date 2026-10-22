@@ -1,9 +1,36 @@
 [project]
 name = "selfconcept"
 version = "0.1.0"
-requires-python = ">=3.11"
-# Runtime deps (torch, transformers, ...) are managed by environment.yaml (mamba), not here.
-dependencies = []
+requires-python = ">=3.13"
+dependencies = [
+    "byutils",
+    # The torch family lives in the conflicting cu130/p100 dependency groups below.
+    # vllm is pinned: uv (stricter than pip) otherwise backtracks past a working
+    # vllm to an unbuildable sdist. transformers/ray are left for vllm to constrain.
+    "transformers>=4.48",
+    "jaxtyping",
+    "vllm==0.30.0",
+    "ray",
+    "peft>=0.14",
+    "accelerate>=1.2",
+    "datasets>=3.2",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "pyyaml",
+    "jsonargparse",
+    "jsonlines",
+    "tqdm",
+    # used by the capability evals, the Fisher tests in the analysis scripts, and --quant-4bit
+    "lm_eval>=0.4",
+    "scipy",
+    "scikit-learn>=1.5",
+    "bitsandbytes>=0.45",
+    "pydantic>=2.13",
+    "kernels>=0.16,<0.17",
+    "pymc>=6.3.2",
+    "plotly>=7.1.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -11,3 +38,63 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"selfconcept.codebench" = ["evilgenie_templates/*.jinja"]
+"selfconcept.goodfire_rh_metrics" = ["rubrics/*.txt"]
+
+# Two mutually exclusive torch builds, each synced into its own venv (see
+# activate.sh). cu130 is the default and matches vllm's own cu13 kernels, but CUDA
+# 13 dropped Pascal/Volta, so the P100 (m9g) and V100 (msg) nodes need p100 (cu126).
+# The torch family must be declared directly in each group because uv only honours
+# [tool.uv.sources] pins for direct dependencies; a transitive torchvision etc.
+# from the wrong CUDA build aborts on C-extension load.
+[dependency-groups]
+dev = ["pyright"]
+cu130 = [
+    "torch==2.13.0",
+    # flashinfer JIT-compiles kernels with the venv's nvcc (via CUDA_HOME in
+    # activate.sh) and aborts unless it matches torch's CUDA 13.0 runtime headers;
+    # vllm's deps would otherwise pull the 13.4 compiler.
+    "nvidia-cuda-nvcc==13.0.*",
+    "nvidia-cuda-crt==13.0.*",
+    "nvidia-nvvm==13.0.*",
+    "torchvision==0.28.0",
+    "torchaudio==2.11.0",
+    "torchcodec==0.16.0",
+]
+p100 = [
+    "torch==2.13.0",
+    "torchvision==0.28.0",
+    "torchaudio==2.11.0",
+    "torchcodec==0.16.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+torchvision = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+torchaudio = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+torchcodec = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
+byutils = { git = "https://github.com/Plyb/byutils.git" }
+
+[tool.uv]
+default-groups = ["dev", "cu130"]
+conflicts = [[{ group = "cu130" }, { group = "p100" }]]
+# vllm pulls in opencv-python-headless (only for its optional video-input path,
+# which we never use); its bundled OpenSSL fails a FIPS self-test on this cluster
+# and SIGABRTs on `import cv2` -- and therefore on `from vllm import LLM`. vllm
+# degrades cleanly when cv2 is *absent* (it catches the ImportError), so exclude
+# it entirely. An always-false environment marker drops the package from
+# resolution: uv replaces every requirement on this name with the override, and
+# the override's marker never evaluates true, so nothing depends on it.
+override-dependencies = ["opencv-python-headless; sys_platform == 'nonexistent'"]

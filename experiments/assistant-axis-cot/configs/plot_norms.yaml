@@ -1,0 +1,8 @@
+# Residual norms by token position and norm-outlier tokens of a run's unprompted transcripts. CPU only. Run from
+# experiments/assistant-axis-cot after slurm/region_means.sbatch:
+#   python scripts/plot_norms.py --config configs/plot_norms.yaml --run.run olmo32b-heldout
+# Writes results/<run>/{residual_norm_by_position.png,norm_outliers.md}.
+run:
+  min_transcripts: 10
+  norm_ratio_threshold: 3.0
+  example_positions: 5

@@ -21,7 +21,7 @@ from transformers import AutoTokenizer
 
 from selfconcept.common.paths import experiment_dir
 from selfconcept.soo.activations import get_decoder_layers
-from selfconcept.soo.loading import load_causal_lm
+from selfconcept.common.loading import load_causal_lm
 from selfconcept.soo.train import chat_text, encode_batch
 
 model_id, out_json = sys.argv[1], sys.argv[2]

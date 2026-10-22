@@ -27,6 +27,19 @@ def get_decoder_layers(model):
     raise AttributeError(f"cannot find decoder layers on {type(model)}")
 
 
+def attn_out_proj(layer):
+    """The attention block's output projection of one decoder layer: self_attn.o_proj
+    on standard layers, linear_attn.out_proj on the Gated DeltaNet layers of hybrid
+    models (Qwen3.5/3.8: 3 of every 4 layers). Both write the token-mixing block's
+    contribution into the residual stream, which is the steering/capture site."""
+    for path in ("self_attn.o_proj", "linear_attn.out_proj"):
+        try:
+            return layer.get_submodule(path)
+        except AttributeError:
+            continue
+    raise AttributeError(f"no attention output projection found in {type(layer).__name__}")
+
+
 @contextmanager
 def capture_o_proj(model, layer_idx: int, store: list):
     """Capture the o_proj output tensor of one decoder layer during forward passes.
@@ -34,7 +47,7 @@ def capture_o_proj(model, layer_idx: int, store: list):
     Appends one tensor per forward pass to `store` (gradients flow through it,
     so it is usable directly in a loss).
     """
-    module = get_decoder_layers(model)[layer_idx].get_submodule("self_attn.o_proj")
+    module = attn_out_proj(get_decoder_layers(model)[layer_idx])
 
     def hook(_module, _inputs, output):
         store.append(output)

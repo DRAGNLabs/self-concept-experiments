@@ -10,9 +10,11 @@ family. See [PLAN.md](PLAN.md) for the full design.
 ### Setup
 
 ```bash
-conda env create -f environment.yaml
-conda activate soo
+uv sync
 ```
+
+Then either prefix commands with `uv run` (e.g. `uv run python -m selfconcept.soo.datagen`)
+or activate the env directly with `source .venv/bin/activate`.
 
 ### Data
 

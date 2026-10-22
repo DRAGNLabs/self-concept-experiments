@@ -28,7 +28,8 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from .activations import capture_o_proj
-from .loading import load_causal_lm
+from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.loading import load_causal_lm
 from .evaluate import pick_device
 
 
@@ -40,7 +41,7 @@ def set_seed(seed: int) -> None:
 
 def chat_text(tokenizer, prompt: str) -> str:
     return tokenizer.apply_chat_template(
-        [{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True
+        [{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True, **chat_template_kwargs()
     )
 
 

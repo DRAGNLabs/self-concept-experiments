@@ -1,0 +1,5 @@
+run:
+  model: Qwen/Qwen3-32B
+  temperature: 0.7  # Qwen3-32B model card, non-thinking mode (min_p 0 = vLLM default)
+  top_p: 0.8
+  top_k: 20

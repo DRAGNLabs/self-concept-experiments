@@ -11,7 +11,7 @@
 #SBATCH --output=slurm-logs/%x-%j.out
 #SBATCH --chdir=experiments/soo  # relative to the submission dir -- run sbatch from the repo root
 
-mamba activate ../../.env
+source ../../activate.sh
 
 # Compute nodes have no internet; model must be pre-downloaded to ~/.cache/huggingface
 export HF_HUB_OFFLINE=1

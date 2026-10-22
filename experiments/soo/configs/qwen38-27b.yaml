@@ -1,0 +1,21 @@
+# Qwen3.8-27B (2026-08, 64 layers, hybrid: 48 Gated DeltaNet + 16 full
+# attention, every 4th). Gemma-2-27b paper recipe held constant (r=4,
+# alpha=8, dropout 0.1, lr 9e-4, 8 epochs, batch 4, last_token) as for
+# gemma-4. Default layer = 50% depth (L32, the gemma-4 LoRA band: 31B L32/60,
+# 12B L24/48); sweep overrides via --layer. Run with
+# SOO_CHAT_KWARGS='{"enable_thinking": false}' (template defaults to thinking).
+model: Qwen/Qwen3.8-27B
+layer: 32
+lora_r: 4
+lora_alpha: 8
+lora_dropout: 0.1
+lr: 0.0009
+epochs: 8
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl
+# Text stack only (the vision tower is untouched). q_proj/v_proj exist only
+# on the 16 full-attention layers; the Gated DeltaNet layers' analog is the
+# fused in_proj_qkv, included so the adapter covers every layer's token-mixing
+# input as the paper recipe does on a homogeneous stack. Regex -> re.fullmatch.
+target_modules: model\.language_model\.layers\.\d+\.(self_attn\.(q_proj|v_proj)|linear_attn\.in_proj_qkv)
