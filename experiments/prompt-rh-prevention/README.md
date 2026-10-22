@@ -28,7 +28,12 @@ instruction is `critical_no_carve`, so the `baseline` arm passes no extra args.
 ## Environment and conventions
 
 - Python: the repo's `.venv` (`uv sync`; see the top-level README). Jobs do
-  `export SELFCONCEPT_VENV=$SLURM_SUBMIT_DIR/.venv; source activate.sh`.
+  `export SELFCONCEPT_VENV=$SLURM_SUBMIT_DIR/.venv; source activate.sh`. ORC has no Python 3.13 module; one way to
+  get the interpreter and `uv` is a small Miniforge env:
+  `module load miniforge3; mamba create -n selfconcept-py313 -c conda-forge python=3.13.7 uv`, then
+  `uv sync --frozen --python ~/.conda/envs/selfconcept-py313/bin/python3.13` from the repo root.
+- Model: `hf download openai/gpt-oss-120b --revision b5c939de8f754692c1647ca79fbf85e8c1e70f8a --exclude 'original/*'
+  --exclude 'metal/*'` with `HF_HOME` as below (65 GB; on a login node, not through the compute-node proxy).
 - Hugging Face: `HF_HOME=~/nobackup/autodelete/hf_cache`, offline in jobs; the checkpoint must be in the cache
   before a job starts.
 - Submit every sbatch from the repo root (they `--chdir` into this directory). Jobs request one A100 with QoS `cs`
