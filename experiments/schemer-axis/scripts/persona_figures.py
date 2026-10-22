@@ -5,15 +5,15 @@ Every projection is taken relative to the default role: the default's mean proje
 subtracted. Persona means average per-question means, so each question counts once; 95% intervals bootstrap over
 questions. The grey bands are mean ± 2 sd of the same quantity on isotropic random directions.
 
-    python scripts/persona_figures.py --root <extraction root> --region with_cot --layer 17 \
-        --axis <candidates>/persona_contrast.pt --out <dir> [--groups data/persona_groups.json] [--questions data/questions.jsonl]
+    python scripts/persona_figures.py --run.root <extraction root> --run.region with_cot --run.layer 17 \
+        --run.axis <candidates>/persona_contrast.pt --run.out <dir> [--run.groups data/persona_groups.json] [--run.questions data/questions.jsonl]
 """
 from __future__ import annotations
 
-import argparse
 import json
 import logging
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, TypedDict, cast
 
@@ -633,38 +633,43 @@ def question_ids_by_set(questions_path: Path) -> dict[QuestionSet, Int[np.ndarra
             "heldout_other": ids(lambda q: q["split"] == "heldout" and q["group"] != "task")}
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    here = Path(__file__).resolve().parent.parent
-    parser.add_argument("--root", type=Path, required=True, help="extraction root with act_<region>/, scores/, vectors_<region>/")
-    parser.add_argument("--region", choices=["with_cot", "response_only"], required=True)
-    parser.add_argument("--axis", type=Path, required=True, help="(layers, hidden) axis artifact, e.g. build_vectors.py's persona_contrast.pt")
-    parser.add_argument("--layer", type=int, required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--groups", type=Path, default=here / "data/persona_groups.json")
-    parser.add_argument("--questions", type=Path, default=here / "data/questions.jsonl")
-    parser.add_argument("--random-count", type=int, default=256)
-    parser.add_argument("--seed", type=int, default=1729)
-    parser.add_argument("--controls-violins-skip", nargs="*", default=["neutral_fic"], help="controls left out of the controls violin plot only")
-    parser.add_argument("--model-label", default="", help="model name for figure titles, e.g. 'GPT-OSS 120B'")
-    args = parser.parse_args()
+_SCRIPT_ROOT = Path(__file__).resolve().parent.parent
 
-    groups: dict[GroupName, list[str]] = json.loads(args.groups.read_text())
-    question_ids = question_ids_by_set(args.questions)
+
+@dataclass(frozen=True)
+class RunConfig:
+    """Extraction root and axis in, figures and summary JSON out."""
+
+    root: Path  # extraction root with act_<region>/, scores/, vectors_<region>/
+    region: Literal["with_cot", "response_only"]
+    axis: Path  # (layers, hidden) axis artifact, e.g. build_vectors.py's persona_contrast.pt
+    layer: int
+    out: Path
+    groups: Path = _SCRIPT_ROOT / "data/persona_groups.json"
+    questions: Path = _SCRIPT_ROOT / "data/questions.jsonl"
+    random_count: int = 256
+    seed: int = 1729
+    controls_violins_skip: tuple[str, ...] = ("neutral_fic",)  # controls left out of the controls violin plot only
+    model_label: str = ""  # model name for figure titles, e.g. 'GPT-OSS 120B'
+
+
+def main(run: RunConfig) -> None:
+    groups: dict[GroupName, list[str]] = json.loads(run.groups.read_text())
+    question_ids = question_ids_by_set(run.questions)
     question_count = max(int(ids.max()) for ids in question_ids.values() if len(ids)) + 1
-    default_vector = torch.load(args.root / f"vectors_{args.region}" / "default.pt", map_location="cpu", weights_only=False)["vector"]
+    default_vector = torch.load(run.root / f"vectors_{run.region}" / "default.pt", map_location="cpu", weights_only=False)["vector"]
     num_layers, hidden = default_vector.shape
-    unit_by_layer = load_unit_axes(args.axis, list(range(num_layers)), num_layers, hidden)
+    unit_by_layer = load_unit_axes(run.axis, list(range(num_layers)), num_layers, hidden)
     unit_axes = torch.as_tensor(np.stack([unit_by_layer[layer]["direction"] for layer in range(num_layers)]))
-    random_axes = torch.as_tensor(np.stack([random_directions(hidden, args.random_count, args.seed, layer) for layer in range(num_layers)]))
+    random_axes = torch.as_tensor(np.stack([random_directions(hidden, run.random_count, run.seed, layer) for layer in range(num_layers)]))
 
     roles = ["default", *[role for roles in groups.values() for role in roles]]
-    projections_by_role = {role: p for role in roles if (p := load_projections(args.root, args.region, role, unit_axes, random_axes)) is not None}
+    projections_by_role = {role: p for role in roles if (p := load_projections(run.root, run.region, role, unit_axes, random_axes)) is not None}
     default = projections_by_role.pop("default")
     relative_by_role = {role: relative_to_default(p, default, question_count) for role, p in projections_by_role.items()}
 
-    rng = np.random.default_rng(args.seed)
-    summaries: dict[str, dict[QuestionSet, Summary | None]] = {role: {question_set: summarize(*per_question_at_layer(relative, args.layer, ids, question_count), rng)
+    rng = np.random.default_rng(run.seed)
+    summaries: dict[str, dict[QuestionSet, Summary | None]] = {role: {question_set: summarize(*per_question_at_layer(relative, run.layer, ids, question_count), rng)
                         for question_set, ids in question_ids.items()}
                  for role, relative in relative_by_role.items()}
 
@@ -680,50 +685,52 @@ def main() -> None:
     heatmap_sections = [rh_deceptive_only, rh_honest_only, deceptive_only, honest_only, controls_section]
     subsections = [subsection for _, subs in (rh_section, not_rh_section, deceptive_section, honest_section, controls_section) for subsection in subs]
     subsections += [groups["deceptive_main"], groups["honest_main"]]
-    group_summaries = {" ".join(subsection): group_summary(relative_by_role, subsection, args.layer, question_ids["heldout"], question_count, rng)
+    group_summaries = {" ".join(subsection): group_summary(relative_by_role, subsection, run.layer, question_ids["heldout"], question_count, rng)
                        for subsection in subsections}
 
-    args.out.mkdir(parents=True, exist_ok=True)
-    prefix = f"{args.region}_L{args.layer}"
-    model_label = args.model_label
-    heatmap_figure(summaries, heatmap_sections, groups, args.out / f"{prefix}_heatmap.png", model_label)
-    bar_figure(summaries, group_summaries, [rh_section, not_rh_section], groups, "RH-adjacent vs not", args.out / f"{prefix}_bars_rh.png", model_label)
-    bar_figure(summaries, group_summaries, [deceptive_section, honest_section], groups, "Deceptive vs honest", args.out / f"{prefix}_bars_honesty.png", model_label)
-    bar_figure(summaries, group_summaries, [controls_section], groups, "Controls", args.out / f"{prefix}_bars_controls.png", model_label,
+    run.out.mkdir(parents=True, exist_ok=True)
+    prefix = f"{run.region}_L{run.layer}"
+    model_label = run.model_label
+    heatmap_figure(summaries, heatmap_sections, groups, run.out / f"{prefix}_heatmap.png", model_label)
+    bar_figure(summaries, group_summaries, [rh_section, not_rh_section], groups, "RH-adjacent vs not", run.out / f"{prefix}_bars_rh.png", model_label)
+    bar_figure(summaries, group_summaries, [deceptive_section, honest_section], groups, "Deceptive vs honest", run.out / f"{prefix}_bars_honesty.png", model_label)
+    bar_figure(summaries, group_summaries, [controls_section], groups, "Controls", run.out / f"{prefix}_bars_controls.png", model_label,
                references=(("deceptive axis personas", group_summaries[" ".join(groups["deceptive_main"])]),
                            ("honest axis personas", group_summaries[" ".join(groups["honest_main"])])))
-    generalization_figure(summaries, groups, args.out / f"{prefix}_train_vs_heldout.png", model_label)
-    distribution_figure(relative_by_role, heatmap_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions.png", model_label)
+    generalization_figure(summaries, groups, run.out / f"{prefix}_train_vs_heldout.png", model_label)
+    distribution_figure(relative_by_role, heatmap_sections, groups, run.layer, question_ids["heldout"], run.out / f"{prefix}_distributions.png", model_label)
     split_sections: list[Section] = [("deceptive\nin axis", [groups["deceptive_main"]]), ("deceptive\nheld out", [groups["deceptive_holdout"]]),
                                      ("deceptive\nRH-adjacent", [groups["deceptive_rh"]]), ("honest\nin axis", [groups["honest_main"]]),
                                      ("honest\nheld out", [groups["honest_holdout"]]), ("honest\nRH-adjacent", [groups["honest_rh"]])]
-    distribution_figure(relative_by_role, split_sections, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_no_controls.png",
+    distribution_figure(relative_by_role, split_sections, groups, run.layer, question_ids["heldout"], run.out / f"{prefix}_distributions_no_controls.png",
                         model_label, random_bands=True, sort_by_median=True)
-    controls_distribution_figure(relative_by_role, groups, args.layer, question_ids["heldout"], args.out / f"{prefix}_distributions_controls.png",
-                                 model_label, frozenset(args.controls_violins_skip))
+    controls_distribution_figure(relative_by_role, groups, run.layer, question_ids["heldout"], run.out / f"{prefix}_distributions_controls.png",
+                                 model_label, frozenset(run.controls_violins_skip))
     persona_sets = {"axis personas": (groups["deceptive_main"], groups["honest_main"]),
                     "held-out personas": (groups["deceptive_holdout"], groups["honest_holdout"]),
                     "RH-adjacent personas": (groups["deceptive_rh"], groups["honest_rh"])}
     aurocs = {label: result for label, (deceptive, honest) in persona_sets.items()
               if (result := auroc_by_layer(relative_by_role, deceptive, honest, question_ids["heldout"])) is not None}
     if aurocs:
-        layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png", model_label)
+        layer_sweep_figure(aurocs, run.layer, run.region, run.out / f"{run.region}_layer_sweep.png", model_label)
     relative_with_default = relative_by_role | {"default": relative_to_default(default, default, question_count)}
     honest_sets = {"axis personas": groups["honest_main"], "held-out personas": groups["honest_holdout"], "RH-adjacent personas": groups["honest_rh"]}
     honest_sets |= {role: [role] for roles in honest_sets.values() for role in roles}
-    honest_vs_default_by_question_set = {question_set: {label: auroc_versus_random(relative_with_default, roles, ["default"], args.layer, question_ids[question_set])
+    honest_vs_default_by_question_set = {question_set: {label: auroc_versus_random(relative_with_default, roles, ["default"], run.layer, question_ids[question_set])
                                                         for label, roles in honest_sets.items()}
                                          for question_set in ("heldout", "train")}
-    geometry_figures(args.root, args.region, args.layer, [*split_sections, controls_section], split_sections, groups,
-                     args.out / f"{prefix}_pca.png", args.out / f"{prefix}_pc1.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png",
-                     args.out / f"{prefix}_cosine_centered_no_controls.png", model_label)
-    (args.out / f"{prefix}_summary.json").write_text(json.dumps(
-        {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
+    geometry_figures(run.root, run.region, run.layer, [*split_sections, controls_section], split_sections, groups,
+                     run.out / f"{prefix}_pca.png", run.out / f"{prefix}_pc1.png", run.out / f"{prefix}_cosine.png", run.out / f"{prefix}_cosine_centered.png",
+                     run.out / f"{prefix}_cosine_centered_no_controls.png", model_label)
+    (run.out / f"{prefix}_summary.json").write_text(json.dumps(
+        {"axis": str(run.axis), "root": str(run.root), "persona": summaries, "group": group_summaries,
          "honest_vs_default_auroc": honest_vs_default_by_question_set,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}
                             for label, (axis, random) in aurocs.items()}}, indent=2))
-    logger.info(f"figures in {args.out}")
+    logger.info(f"figures in {run.out}")
 
 
 if __name__ == "__main__":
-    main()
+    from jsonargparse import auto_cli
+
+    auto_cli(main)

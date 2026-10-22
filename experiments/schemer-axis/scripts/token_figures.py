@@ -5,13 +5,13 @@ default's held-out responses (same region) is subtracted. Each persona response 
 highest and single lowest token, so one response cannot fill the list. Every token in a snippet is shaded by its
 score on one diverging scale (blue = toward honest, red = toward deceptive); hover shows the value.
 
-    python scripts/token_figures.py --tokens <token_projections out> --model openai/gpt-oss-120b --region with_cot --out <file.html>
+    python scripts/token_figures.py --run.tokens <token_projections out> --run.model openai/gpt-oss-120b --run.region with_cot --run.out <file.html>
 """
 from __future__ import annotations
 
-import argparse
 import html
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, TypedDict, cast
 
@@ -111,34 +111,39 @@ Colour: blue toward honest, red toward deceptive, scaled to ±{limit:.0f}. Hover
 {body}"""
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--tokens", type=Path, required=True, help="token_projections.py output directory")
-    parser.add_argument("--model", required=True, help="tokenizer for decoding")
-    parser.add_argument("--region", choices=["with_cot", "response_only", "full_response"], required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--count", type=int, default=30)
-    parser.add_argument("--context", type=int, default=20, help="tokens shown on each side")
-    parser.add_argument("--model-label", default="", help="model name for the page title, e.g. 'GPT-OSS 120B'")
-    parser.add_argument("--exclude-axis-personas", type=Path, metavar="AXIS", help="axis artifact whose schemer and honest roles to leave out")
-    args = parser.parse_args()
+@dataclass(frozen=True)
+class RunConfig:
+    """Token projections in, HTML page out."""
 
-    tokenizer = cast(HFTokenizer, load_tokenizer(args.model))
-    baseline = default_mean(args.tokens, args.region)
+    tokens: Path  # token_projections.py output directory
+    model: str  # tokenizer for decoding
+    region: Region
+    out: Path
+    count: int = 30
+    context: int = 20  # tokens shown on each side
+    model_label: str = ""  # model name for the page title, e.g. 'GPT-OSS 120B'
+    exclude_axis_personas: Path | None = None  # axis artifact whose schemer and honest roles to leave out
+
+
+def main(run: RunConfig) -> None:
+    tokenizer = cast(HFTokenizer, load_tokenizer(run.model))
+    baseline = default_mean(run.tokens, run.region)
     excluded_roles: set[str] = set()
-    if args.exclude_axis_personas:
-        axis = torch.load(args.exclude_axis_personas, map_location="cpu", weights_only=False)
+    if run.exclude_axis_personas:
+        axis = torch.load(run.exclude_axis_personas, map_location="cpu", weights_only=False)
         excluded_roles = {*axis["schemer_roles"], *axis["honest_roles"]}
-    highs, lows = response_extremes(args.tokens, args.region, baseline, set(tokenizer.all_special_ids), excluded_roles)
-    highs = sorted(highs, key=lambda e: e["score"], reverse=True)[:args.count]
-    lows = sorted(lows, key=lambda e: e["score"])[:args.count]
-    args.out.parent.mkdir(parents=True, exist_ok=True)
+    highs, lows = response_extremes(run.tokens, run.region, baseline, set(tokenizer.all_special_ids), excluded_roles)
+    highs = sorted(highs, key=lambda e: e["score"], reverse=True)[:run.count]
+    lows = sorted(lows, key=lambda e: e["score"])[:run.count]
+    run.out.parent.mkdir(parents=True, exist_ok=True)
     personas = ", personas not used to build the axis" if excluded_roles else ""
-    model = f"{args.model_label}: " if args.model_label else ""
-    args.out.write_text(page(f"{model}Schemer-axis token extremes, held-out responses{personas}, {args.region}",
+    model = f"{run.model_label}: " if run.model_label else ""
+    run.out.write_text(page(f"{model}Schemer-axis token extremes, held-out responses{personas}, {run.region}",
                              [(f"Highest {len(highs)} (toward deceptive)", highs), (f"Lowest {len(lows)} (toward honest)", lows)],
-                             tokenizer, args.context))
+                             tokenizer, run.context))
 
 
 if __name__ == "__main__":
-    main()
+    from jsonargparse import auto_cli
+
+    auto_cli(main)
