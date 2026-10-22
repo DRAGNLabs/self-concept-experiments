@@ -72,6 +72,16 @@ class Summary(TypedDict):
     questions: int
 
 
+class AurocVersusRandom(TypedDict):
+    axis: float
+    random_2_5: float
+    random_50: float
+    random_97_5: float
+    random_fraction_at_least_as_far_from_half: float
+    positive_responses: int
+    negative_responses: int
+
+
 def question_index_of(response_key: str) -> int:
     return int(response_key.rsplit("_q", 1)[1])
 
@@ -159,21 +169,39 @@ def group_summary(relative_by_role: dict[str, Projections], roles: list[str], la
     return summarize(axis, random, rng)
 
 
-def auroc_by_layer(relative_by_role: dict[str, Projections], deceptive: list[str], honest: list[str],
+def selected_projections(relative_by_role: dict[str, Projections], roles: list[str], question_ids: Int[np.ndarray, "subset"]) -> list[Projections]:
+    return [restrict_to_questions(relative_by_role[role], question_ids) for role in roles if role in relative_by_role]
+
+
+def auroc_by_layer(relative_by_role: dict[str, Projections], positive: list[str], negative: list[str],
                    question_ids: Int[np.ndarray, "subset"]) -> tuple[Float[np.ndarray, "layer"], Float[np.ndarray, "layer direction"]] | None:
-    """Response-level AUROC of deceptive vs honest personas along the axis and along each random direction."""
-    def selected(roles: list[str]) -> list[Projections]:
-        return [restrict_to_questions(relative_by_role[role], question_ids) for role in roles if role in relative_by_role]
-    deceptive_sets, honest_sets = selected(deceptive), selected(honest)
-    if not deceptive_sets or not honest_sets:
+    """Response-level AUROC of the positive vs the negative roles along the axis and along each random direction."""
+    positive_sets, negative_sets = selected_projections(relative_by_role, positive, question_ids), selected_projections(relative_by_role, negative, question_ids)
+    if not positive_sets or not negative_sets:
         return None
-    axis = np.concatenate([p["axis"] for p in deceptive_sets + honest_sets])
-    random = np.concatenate([p["random"] for p in deceptive_sets + honest_sets])
-    labels = np.concatenate([np.ones(sum(len(p["axis"]) for p in deceptive_sets)), np.zeros(sum(len(p["axis"]) for p in honest_sets))])
+    axis = np.concatenate([p["axis"] for p in positive_sets + negative_sets])
+    random = np.concatenate([p["random"] for p in positive_sets + negative_sets])
+    labels = np.concatenate([np.ones(sum(len(p["axis"]) for p in positive_sets)), np.zeros(sum(len(p["axis"]) for p in negative_sets))])
     axis_auroc = np.array([roc_auc_score(labels, axis[:, layer]) for layer in range(axis.shape[1])])
     random_auroc = np.array([[roc_auc_score(labels, random[:, layer, direction]) for direction in range(random.shape[2])]
                              for layer in range(random.shape[1])])
     return axis_auroc, random_auroc
+
+
+def auroc_versus_random(relative_by_role: dict[str, Projections], positive: list[str], negative: list[str], layer: int,
+                        question_ids: Int[np.ndarray, "subset"]) -> AurocVersusRandom | None:
+    """The axis AUROC at one layer against the 95% range of the random-direction AUROCs."""
+    at_layer = {role: {"question_ids": p["question_ids"], "axis": p["axis"][:, layer:layer + 1], "random": p["random"][:, layer:layer + 1]}
+                for role, p in relative_by_role.items()}
+    result = auroc_by_layer(cast(dict[str, Projections], at_layer), positive, negative, question_ids)
+    if result is None:
+        return None
+    [axis_auroc], [random_auroc] = result
+    low, median, high = np.quantile(random_auroc, [0.025, 0.5, 0.975])
+    return {"axis": float(axis_auroc), "random_2_5": float(low), "random_50": float(median), "random_97_5": float(high),
+            "random_fraction_at_least_as_far_from_half": float((np.abs(random_auroc - 0.5) >= abs(axis_auroc - 0.5)).mean()),
+            "positive_responses": sum(len(p["axis"]) for p in selected_projections(relative_by_role, positive, question_ids)),
+            "negative_responses": sum(len(p["axis"]) for p in selected_projections(relative_by_role, negative, question_ids))}
 
 
 def mean_or_nan(summary: Summary | None) -> float:
@@ -680,11 +708,18 @@ def main() -> None:
               if (result := auroc_by_layer(relative_by_role, deceptive, honest, question_ids["heldout"])) is not None}
     if aurocs:
         layer_sweep_figure(aurocs, args.layer, args.region, args.out / f"{args.region}_layer_sweep.png", model_label)
+    relative_with_default = relative_by_role | {"default": relative_to_default(default, default, question_count)}
+    honest_sets = {"axis personas": groups["honest_main"], "held-out personas": groups["honest_holdout"], "RH-adjacent personas": groups["honest_rh"]}
+    honest_sets |= {role: [role] for roles in honest_sets.values() for role in roles}
+    honest_vs_default_by_question_set = {question_set: {label: auroc_versus_random(relative_with_default, roles, ["default"], args.layer, question_ids[question_set])
+                                                        for label, roles in honest_sets.items()}
+                                         for question_set in ("heldout", "train")}
     geometry_figures(args.root, args.region, args.layer, [*split_sections, controls_section], split_sections, groups,
                      args.out / f"{prefix}_pca.png", args.out / f"{prefix}_pc1.png", args.out / f"{prefix}_cosine.png", args.out / f"{prefix}_cosine_centered.png",
                      args.out / f"{prefix}_cosine_centered_no_controls.png", model_label)
     (args.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(args.axis), "root": str(args.root), "persona": summaries, "group": group_summaries,
+         "honest_vs_default_auroc": honest_vs_default_by_question_set,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}
                             for label, (axis, random) in aurocs.items()}}, indent=2))
     logger.info(f"figures in {args.out}")
