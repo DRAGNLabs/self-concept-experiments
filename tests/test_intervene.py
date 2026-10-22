@@ -190,3 +190,30 @@ class VllmStreamLayerPatchTest(unittest.TestCase):
         restore()
         out1, _ = layers[1](None, h, None)
         self.assertTrue(torch.equal(out1, h * 2))
+
+    def test_qwen35_patch_adds_to_the_sum_of_mlp_and_residual(self):
+        import torch
+        from torch import nn
+        from selfconcept.measurement.intervene import add_transform, patch_vllm_qwen35_blocks
+
+        class Block(nn.Module):
+            def __init__(self, layer_idx):
+                super().__init__()
+                self.layer_idx = layer_idx
+
+            def forward(self, hidden_states, residual, positions=None, **kwargs):
+                return hidden_states + 1, residual + 2
+
+        blocks = [Block(0), Block(1)]
+        direction = torch.zeros(4)
+        direction[0] = 1.0
+        restore = patch_vllm_qwen35_blocks(Block, {1: add_transform(direction, 3.0)})
+        hidden = torch.ones(2, 4)
+        residual = torch.ones(2, 4)
+        mlp, out_residual = blocks[1](hidden, residual, positions=torch.arange(2))
+        stream = (hidden + 1) + (residual + 2)
+        self.assertTrue(torch.allclose(mlp + out_residual, stream + 3.0 * direction))
+        self.assertTrue(torch.equal(out_residual, residual + 2))
+        restore()
+        mlp, out_residual = blocks[1](hidden, residual, positions=torch.arange(2))
+        self.assertTrue(torch.equal(mlp, hidden + 1) and torch.equal(out_residual, residual + 2))
