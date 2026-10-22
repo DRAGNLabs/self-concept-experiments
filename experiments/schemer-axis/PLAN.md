@@ -614,6 +614,26 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    with a table / hard-code signature, see below) for the Sonnet judges. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
    with a table / hard-code signature in code or reasoning (or every episode) go in too, blind to arm as before. **Done 2026-10-22 (FINDINGS "Muse Glimmer Phase 3 main run"):** run complete 12:48 am MDT (jobs 14381597 / 14381598 / 14384621 / 14386104 / 14386108 / 14386262 / 14397590; pending tasks moved to qos cs by the user on 2026-10-21 after standby preemptions); 1,030 dossiers (803 proxy + 227 hidden-pass signature episodes, `make_dossiers.py --all` on the `hidden_sig/` filtered record dirs with its own salt) judged blind by Sonnet, one batch per agent, plus one adjudication rule for size cutoffs and fitted rules (`ADJUDICATION_BRIEF.md`) and six verdict variants (`scripts/verdict_variants.py`, `scripts/submission_conditioned.py`); judged 28 → 41 / 10 / 3 / 22% (proxy set) and 33 → 49 / 13 / 6 / 28% (with the hidden-pass set). Still open for Muse: the capability benchmarks under the interventions (step 6) and two more capability-matched random directions, because the one random arm lowered the judged rate 6 points (CI −11 to −2) where gpt-oss's three moved nothing.
 
+6. **Extension after the main run (added 2026-10-22, user decision, before any of it ran):** the −0.16 drop came with
+   7% no-code, truncated reasoning and +7k reasoning characters per turn, and the pilot (one seed) put the start of the
+   reasoning lengthening at −0.08 (14.2k chars per turn vs 8.8k unsteered; −0.04 stayed at 9.6k with no no-code or
+   truncation). So before the benchmarks are read at a single negative dose: (a) two softer negative arms, −0.04 and
+   −0.08 at layer 26, 12 seeds on the same 45 problems and seeds, giving a judged dose response 0 / −0.04 / −0.08 /
+   −0.16 with the degradation columns tracked at each dose; (b) two more norm-matched random directions (seeds 1730,
+   1731) at +0.08, as for gpt-oss (2026-10-20), because the one random arm lowered the judged rate 6 points; (c) one
+   unsteered arm at `reasoning_strength: medium` (same 16 384-token budget) as the confound control: if longer
+   thinking alone lowers the hack rate, it shows there without steering, and if medium mostly truncates at this budget
+   that is itself the −shift mechanism in the open; (d) the general-capability benchmarks (step 6 of the README) for
+   every steering arm at once (unsteered, +0.08, −0.04, −0.08, −0.16, random 1729, cap) so they are not rerun after
+   the dose is chosen. Analysis: `main_analysis.py` on `muse_glimmer/main_ext/` (unsteered symlinked from `main/`),
+   so the pre-registered contrasts of step 5 stay as committed; the new arms are reported with the same stratified
+   CI and sign-flip p but outside the Holm set. Judging as in step 5 (proxy episodes + hidden-pass signature
+   episodes, Sonnet, blind, same adjudication rule). Prediction stated in advance: if the hack reduction is the
+   direction's own effect, −0.04 lowers the judged rate with no-code and truncation at zero; if −0.04 shows nothing
+   and the drop appears only with the longer reasoning, the reduction and the degradation are one lever and the
+   write-up says so. Arms TSV `muse_glimmer/main_ext/arms.tsv`; output `muse_glimmer/main_ext/<arm>/seed<s>/`,
+   benchmarks `muse_glimmer/capeval/<arm>/`.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
