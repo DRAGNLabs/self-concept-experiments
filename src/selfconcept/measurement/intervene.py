@@ -118,6 +118,32 @@ def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
     return restore
 
 
+def patch_vllm_qwen35_blocks(block_cls, transforms_by_layer: dict[int, object]):
+    """Like ``patch_vllm_blocks`` for Qwen3.5 / Qwen3.8 ``Qwen3_5DecoderLayer``.
+
+    The residual stream is still ``mlp_output + residual``, but ``forward`` takes
+    ``(hidden_states, residual, positions)`` rather than gpt-oss's
+    ``(hidden_states, positions, residual)``. Returns a function that restores the
+    original forward."""
+    original = block_cls.forward
+    transforms = dict(transforms_by_layer)
+
+    def forward(self, hidden_states, residual, positions=None, **kwargs):
+        mlp_output, residual = original(self, hidden_states, residual, positions, **kwargs)
+        transform = transforms.get(self.layer_idx)
+        if transform is not None:
+            stream = mlp_output + residual
+            mlp_output = mlp_output + (transform(stream) - stream).to(mlp_output.dtype)
+        return mlp_output, residual
+
+    block_cls.forward = forward
+
+    def restore():
+        block_cls.forward = original
+
+    return restore
+
+
 def patch_vllm_stream_layers(layer_cls, transforms_by_layer: dict[int, object]):
     """Like ``patch_vllm_blocks`` for vLLM decoder layers whose ``forward`` returns the full residual stream as the
     first element of its output (Gemma 4's ``Gemma4DecoderLayer``: ``(hidden_states, None)``, after the layer

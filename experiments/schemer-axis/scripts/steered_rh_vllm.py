@@ -24,9 +24,10 @@ with the HF capture path.
                           --n problems through a hook at the same site, to compare with the HF projection sidecar)
         [--probe "question" ...]  (only: one sampled answer per question under the configured steering)
 
-Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort)
-and ``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
-in the Gemma 4 role extraction). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
+Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort),
+``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
+in the Gemma 4 role extraction), and ``qwen3_5`` (Qwen/Qwen3.8-*; same ``enable_thinking`` flag, ``<think>`` channel).
+Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
 import argparse
@@ -45,12 +46,33 @@ from selfconcept.codebench.vllm_harmony import vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.correlation.random_vectors import random_directions
-from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_blocks, patch_vllm_stream_layers
+from selfconcept.measurement.intervene import (
+    add_transform,
+    cap_transform,
+    patch_vllm_blocks,
+    patch_vllm_qwen35_blocks,
+    patch_vllm_stream_layers,
+)
 
 
 def split_gemma4(raw: str) -> tuple[str, str]:
     reasoning, content = split_gemma4_completion(raw)
     return reasoning or "", content
+
+
+def split_qwen_think(raw: str) -> tuple[str, str]:
+    """(reasoning, final) for a Qwen3 completion. The chat template opens ``<think>``; the answer follows ``</think>``."""
+    marker = "</think>"
+    index = raw.rfind(marker)
+    if index == -1:
+        return raw.replace("<think>", "").strip(), ""
+    reasoning = raw[:index].replace("<think>", "").strip()
+    return reasoning, raw[index + len(marker):].strip()
+
+
+def split_qwen_answer(raw: str) -> tuple[str, str]:
+    """Thinking-off completion. The template already wrote ``</think>`` into the prompt, so every generated token is the answer."""
+    return "", raw.strip()
 
 
 # Per model family: the vLLM decoder-block class to patch (module:attr), the patcher matching its forward contract,
@@ -60,6 +82,8 @@ FAMILIES = {
                 "stream": lambda output: output[0] + output[1], "split": split_harmony_completion},
     "gemma4": {"block": ("vllm.model_executor.models.gemma4", "Gemma4DecoderLayer"), "patch": patch_vllm_stream_layers,
                "stream": lambda output: output[0], "split": split_gemma4},
+    "qwen3_5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_qwen35_blocks,
+                "stream": lambda output: output[0] + output[1], "split": split_qwen_think},
 }
 
 
@@ -69,6 +93,8 @@ def family_of(model: str) -> str:
         return "gpt-oss"
     if "gemma-4" in name or "gemma4" in name:
         return "gemma4"
+    if "qwen3.8" in name or "qwen3.5" in name or "qwen3_5" in name:
+        return "qwen3_5"
     raise SystemExit(f"no vLLM steering recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
@@ -310,6 +336,9 @@ def main() -> None:
 
     family = family_of(args.model)
     recipe = FAMILIES[family]
+    split = recipe["split"]
+    if family == "qwen3_5" and chat_template_kwargs().get("enable_thinking", True) is False:
+        split = split_qwen_answer
     module_name, class_name = recipe["block"]
     block_cls = getattr(importlib.import_module(module_name), class_name)
     hook_mode = args.check_hook or args.measure_norms
@@ -335,7 +364,7 @@ def main() -> None:
         check_hook(args, llm, tokenizer, directions[args.check_layer], recipe["stream"])
         return
     if args.probe:
-        probe(args, llm, tokenizer, steering, recipe["split"])
+        probe(args, llm, tokenizer, steering, split)
         return
     if args.score:
         score(args, llm, tokenizer, steering)
@@ -347,7 +376,7 @@ def main() -> None:
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
         generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl",
-                                         args.temperature, args.sample_seed, llm=llm, split_completion=recipe["split"],
+                                         args.temperature, args.sample_seed, llm=llm, split_completion=split,
                                          top_p=args.top_p, top_k=args.top_k)
         harness.run_scenario(harness.load_examples(scenario, args.data, args.n), generate, max_attempts=args.max_attempts,
                              out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,
