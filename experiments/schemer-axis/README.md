@@ -58,6 +58,13 @@ it from `MIRROR`, overridable.
 
 ## Stage A: find reward hacks (unsteered runs)
 
+> **Superseded for full runs.** The `arm_search` module (`src/selfconcept/arm_search/`, configs and sbatch files in
+> `experiments/arm_search/`; on the `arm-search` branch, merged to `main`) replaces the manual loop below: a Bayesian batch search
+> (tiered Thompson sampling) over problem pool, prompt tier, note, attempt limit and stated budget, which refits and
+> re-plans each round (`python -m selfconcept.arm_search.rh.cli plan|manage --search <config>`, e.g.
+> `experiments/arm_search/rh/search.yaml`). Use it to find hacks for a full run. The manual Stage A below is still fine
+> for quick tests: checking the harness on a new model, a small pilot, or calibrating a handful of problems.
+
 The harness (`selfconcept.codebench.harness`) gives the model a coding task with shown tests and checks the hidden full
 suite. A record (`<out>/<tag>_impossible_original.jsonl`) has `passed` (shown tests), `passed_original` (hidden suite),
 `n_attempts`, `attempts[]` (completion, code, result), `stop_reason` (passed / attempt_limit / stopped / flagged) and
@@ -207,7 +214,7 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
    `generation_config.json` (`--top-p`, `--top-k`); a thinking budget the model actually finishes in (`--max-new-tokens`,
    `--max-model-len`; check the truncation column of `pilot_summary.py`); GPU memory (`VLLM_GPU_MEM`). A model whose
    thinking runs past the budget submits no code, and no-code is not a hack.
-4. **Problem pool**: measure the per-problem hidden pass first (Stage A) and keep problems in the 10–90% band, ideally
+4. **Problem pool**: measure the per-problem hidden pass first (Stage A, or `arm_search` for a full run) and keep problems in the 10–90% band, ideally
    near 50%. Changing the pool, the prompt or the sampling is a recipe deviation: record it, and keep the unsteered arm
    of every comparison under the same settings as the steered arms.
 5. **Layer and dose**: mid-depth layer for validation and steering (plus the sweep); α in units of that layer's mean
