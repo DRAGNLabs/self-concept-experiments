@@ -633,6 +633,9 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    and the drop appears only with the longer reasoning, the reduction and the degradation are one lever and the
    write-up says so. Arms TSV `muse_glimmer/main_ext/arms.tsv`; output `muse_glimmer/main_ext/<arm>/seed<s>/`,
    benchmarks `muse_glimmer/capeval/<arm>/`.
+   **(d) done 2026-10-22 3:22 pm** (FINDINGS "Muse-Glimmer-30B general-capability benchmarks"): every arm within 1 point of
+   unsteered on GSM8K and MMLU-Pro and 2 on HumanEval, no truncation, no paired CI excludes zero; the benchmark question is
+   settled for every dose, and the dose decision rests on the judged dose response and the medium-strength control alone.
 
 ## Work order
 
