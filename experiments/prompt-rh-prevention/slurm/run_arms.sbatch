@@ -13,7 +13,7 @@ set -euo pipefail
 
 # Prompt arms on the recipe (PLAN.md), adapted from schemer-axis/slurm/main_run.sbatch. One Slurm array task per
 # (arm, seed): task index i -> arm line i / NSEEDS of the ARMS TSV (name <TAB> extra args for selfconcept.codebench.run,
-# e.g. --impossible-prompt strict or --system-prompt-file data/prompts/ban.txt), seed i % NSEEDS.
+# e.g. --impossible-prompt strict), seed i % NSEEDS.
 # Output: $ROOT/<arm>/seed<s>/<TAG>_impossible_original.jsonl plus the reasoning sidecar. Rerunning a task resumes
 # (the harness skips example ids already recorded).
 # Usage (from the repo root):

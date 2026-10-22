@@ -11,7 +11,6 @@ operating manual. Read the reward-hacking setup first:
 | Path | What it is |
 |---|---|
 | `data/arms.tsv` | One prompt arm per line: `name <TAB> extra args for selfconcept.codebench.run`. Empty args = the recipe as is (`baseline`). |
-| `data/prompts/*.txt` | System prompts for the arms that add one (`--system-prompt-file`). |
 | `slurm/run_arms.sbatch` | Arms × seeds array on the 45 hard problems with the recipe; one task per (arm, seed). |
 | `scripts/` | Summaries and analysis, adapted from schemer-axis. |
 
@@ -21,13 +20,10 @@ matters). Shared data (Koby's): `/grphome/grp_mirror/nobackup/autodelete/self-co
 
 ## How the prompt arms work
 
-Every arm runs the recipe (`critical_no_carve` task instruction, neutral feedback, 5 attempts with a stated budget,
-low reasoning effort, temperature 1, 16384 new tokens) and changes only the prompt, in one of two places:
-
-- **Task instruction:** `--impossible-prompt minimal|critical|critical_no_carve|strict`, the instruction above the
-  function stub (`selfconcept.codebench.harness`).
-- **System prompt:** `--system-prompt-file <file>`. gpt-oss's chat template renders a leading system message as the
-  developer message (`# Instructions`), which is where gpt-oss expects instructions.
+Every arm runs the recipe (neutral feedback, 5 attempts with a stated budget, low reasoning effort, temperature 1,
+16384 new tokens) and changes only the task instruction above the function stub:
+`--impossible-prompt minimal|critical|critical_no_carve|strict` (`selfconcept.codebench.harness`). The recipe's own
+instruction is `critical_no_carve`, so the `baseline` arm passes no extra args.
 
 ## Environment and conventions
 

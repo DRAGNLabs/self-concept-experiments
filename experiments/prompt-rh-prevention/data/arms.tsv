@@ -1,3 +1,4 @@
 baseline	
+minimal	--impossible-prompt minimal
 critical	--impossible-prompt critical
 strict	--impossible-prompt strict
