@@ -66,16 +66,20 @@ def main() -> None:
     schemer = [roles[r] for r in args.schemer if roles[r] is not None]
     honest = [roles[r] for r in args.honest if roles[r] is not None]
     default = roles[args.default]
-    if not schemer or default is None:
+    if not schemer or default is None or missing:
         raise SystemExit(f"Need the default vector and at least one schemer role; missing {missing}")
     aa = load_axis(args.assistant_axis) if args.assistant_axis is not None else None
     if aa is not None and aa.shape != default.shape:
         raise SystemExit(f"Assistant axis shape {tuple(aa.shape)} differs from role vectors {tuple(default.shape)}")
 
     schemer_mean = torch.stack(schemer).mean(0)
-    candidates = {"persona_raw": schemer_mean - default}
+    honest_mean = torch.stack(honest).mean(0)
+    candidates = {
+        "persona_raw": schemer_mean - default,
+        "honest_raw": honest_mean - default,
+    }
     if len(honest) == len(args.honest):
-        candidates["persona_contrast"] = schemer_mean - torch.stack(honest).mean(0)
+        candidates["persona_contrast"] = schemer_mean - honest_mean
     if aa is not None:
         candidates["persona_orth"] = project_out(candidates["persona_raw"], aa)
         if "persona_contrast" in candidates:
@@ -83,6 +87,8 @@ def main() -> None:
     for role in args.schemer:
         if roles[role] is not None:
             candidates[f"{role}_minus_default"] = roles[role] - default
+    if "persona_contrast" in candidates:
+        candidates["persona_contrast_no_costume"] = project_out(candidates["persona_contrast"], candidates["honest_raw"])
 
     args.out.mkdir(parents=True, exist_ok=True)
     provenance = {"vectors_dir": str(args.vectors_dir),
