@@ -10,7 +10,8 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 
 | Path | What it is |
 |---|---|
-| `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `questions`: 40, `eval_prompt`: the role judge). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
+| `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `eval_prompt`: the role judge; a `questions` list in the older files is never read, see `data/questions.jsonl`). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`, including the expanded set and its groups in PLAN "Expanded persona set"), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
+| `data/questions.jsonl` | The questions every role answers (`--run.questions_file`), tagged by `group`: ids 0–39 `generic` (the first 40 assistant-axis extraction questions, which every run before 2026-10-20 used), 40–79 `intent` (the questions the `*_fic` files carried), 80–99 `task` (work and evaluation situations); and by `split`: the task questions plus a seeded random 8 generic and 8 intent questions are `heldout`, and the extraction sbatch files build `vectors_*` from the 64 `train` questions only (`4_vectors.py --run.question_indices`). |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
 | `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4. |
@@ -19,6 +20,8 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `scripts/main_analysis.py` | Main-run contrasts vs unsteered, stratified by problem, bootstrap CI, Holm-corrected sign-flip p; takes judge verdicts. |
 | `scripts/make_dossiers.py` | Blind full-transcript dossiers for judging (every shown-pass/hidden-fail episode, opaque ids, key kept outside). |
 | `scripts/capability_eval_vllm.py`, `capability_eval_compare.py` | GSM8K / MMLU-Pro / HumanEval under the same interventions; paired comparison. |
+| `scripts/persona_figures.py`, `data/persona_groups.json` | Expanded-persona figures from one extraction root and an axis artifact (from `build_vectors.py`): held-out projection heatmap, per-persona bars by RH-adjacency, honesty and controls (bootstrap CIs over questions, random-direction ± 2 sd bands), train vs held-out, layer-sweep AUROC, per-response distributions, persona PCA and cosine. CPU; the groups file is PLAN "Expanded persona set" in machine-readable form. |
+| `scripts/token_projections.py`, `scripts/token_figures.py` | Highest- and lowest-scoring held-out tokens on the axis, in context. `token_projections.py` (GPU, one forward pass at one layer) writes per-token projections over the same reasoning (`with_cot`) and answer (`response_only`) spans the extraction pools; `token_figures.py` (CPU) renders the top/bottom 30 (one per response, relative to the default's mean token score) as a self-contained HTML page shaded by score. |
 | `scripts/anisotropy_noise_check.py`, `post_figures.py`, `main_analysis.py` | Analysis and write-up figures (Phase 2 lives in `selfconcept.correlation.direction_analysis`). |
 | `slurm/extract_roles_gemma4.sbatch` | Role extraction for any model (`MODEL=` override): generate, judge, activations (two pooling passes), per-role vectors. Despite the name it is the generic one. |
 | `slurm/extract_roles.sbatch` | The gpt-oss-120b extraction (FlashAttention-3 kernels, 16k thinking budget). |
@@ -54,6 +57,13 @@ it from `MIRROR`, overridable.
   check `squeue -u $USER` and `git log` before submitting or committing.
 
 ## Stage A: find reward hacks (unsteered runs)
+
+> **Superseded for full runs.** The `arm_search` module (`src/selfconcept/arm_search/`, configs and sbatch files in
+> `experiments/arm_search/`; on the `arm-search` branch, merged to `main`) replaces the manual loop below: a Bayesian batch search
+> (tiered Thompson sampling) over problem pool, prompt tier, note, attempt limit and stated budget, which refits and
+> re-plans each round (`python -m selfconcept.arm_search.rh.cli plan|manage --search <config>`, e.g.
+> `experiments/arm_search/rh/search.yaml`). Use it to find hacks for a full run. The manual Stage A below is still fine
+> for quick tests: checking the harness on a new model, a small pilot, or calibrating a handful of problems.
 
 The harness (`selfconcept.codebench.harness`) gives the model a coding task with shown tests and checks the hidden full
 suite. A record (`<out>/<tag>_impossible_original.jsonl`) has `passed` (shown tests), `passed_original` (hidden suite),
@@ -204,7 +214,7 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
    `generation_config.json` (`--top-p`, `--top-k`); a thinking budget the model actually finishes in (`--max-new-tokens`,
    `--max-model-len`; check the truncation column of `pilot_summary.py`); GPU memory (`VLLM_GPU_MEM`). A model whose
    thinking runs past the budget submits no code, and no-code is not a hack.
-4. **Problem pool**: measure the per-problem hidden pass first (Stage A) and keep problems in the 10–90% band, ideally
+4. **Problem pool**: measure the per-problem hidden pass first (Stage A, or `arm_search` for a full run) and keep problems in the 10–90% band, ideally
    near 50%. Changing the pool, the prompt or the sampling is a recipe deviation: record it, and keep the unsteered arm
    of every comparison under the same settings as the steered arms.
 5. **Layer and dose**: mid-depth layer for validation and steering (plus the sweep); α in units of that layer's mean
