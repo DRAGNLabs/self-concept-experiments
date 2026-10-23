@@ -88,7 +88,10 @@ def main() -> None:
         if roles[role] is not None:
             candidates[f"{role}_minus_default"] = roles[role] - default
     if "persona_contrast" in candidates:
-        candidates["persona_contrast_no_costume"] = project_out(candidates["persona_contrast"], candidates["honest_raw"])
+        default_fic = roles["default_fic"]
+        costume = default_fic - default
+        candidates["persona_contrast_honest_projected_out"] = project_out(candidates["persona_contrast"], candidates["honest_raw"])
+        candidates["persona_contrast_no_costume"] = project_out(candidates["persona_contrast"], costume)
 
     args.out.mkdir(parents=True, exist_ok=True)
     provenance = {"vectors_dir": str(args.vectors_dir),
