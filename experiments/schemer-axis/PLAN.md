@@ -227,7 +227,13 @@ first submission with the main run's 5-role vector (jobs 14703018 / 14703019, 3:
 5-role dumps under `anecdotes_v2/main/` stay for the unsteered / random contrast. Digest →
 `results/gptoss_schemer_anecdotes_2026-10-23.md` (verbatim, sourced), copied to the group share `docs/`. Qualitative; not
 part of the hack-rate analysis; also a first look at this vector's coding behaviour on gpt-oss before the 17-role
-re-runs.
+re-runs. **Reuse (user question 2026-10-23, ~3:50 pm MDT):** the coding episodes are not a separate study; they are
+seeds 0–3 of the eventual gpt-oss 17-role re-run (same vector, layer 17, ±0.2, p25 cap with these thresholds, same 45
+problems and seeds; `main_run.sbatch` resumes per finished example id), so the full re-run (12 seeds, explicit
+go-ahead still needed, not submitted) should be launched into `answer17_anecdotes/coding/` with the same arm names and
+only compute seeds 4–11; only the ±0.4 × 1 seed arms (90 episodes) are anecdote-only extras. **Reader agents run on
+Sonnet** (user rule 2026-10-23, ~3:50 pm): the first three reader reports (unsteered, random, answer17), written at the
+default model, were moved to `anecdotes_v2/reports/superseded_default_model/` and redone on Sonnet.
 
 ## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
 
