@@ -85,7 +85,9 @@ the usable band and is kept for comparability with the main run. The lower score
 200) and `cheater_fic` (132) are the judge rejecting off-role answers, as in the reasoning-region extraction.
 
 **Pilot (running).** Job 14702736 (submitted 3:05 pm MDT, array 0–15, eng/dwmatrix/m13h standby with requeue, 5 h
-limit, the Muse main run's settings: `reasoning_strength` low, top-p 0.95, top-k 64): arms `ans17_raw_p0.04`,
+limit; moved 5:44 pm MDT to job 14706298 on cs A100 80 GB, qos cs, 10 h limit, user decision after a `gpu_pick.py` check,
+because every standby start was preempted within minutes and 26 of 720 episodes existed after 2.5 h; tasks resume
+their records, same engine settings as the main-run extension on the same nodes; the Muse main run's settings: `reasoning_strength` low, top-p 0.95, top-k 64): arms `ans17_raw_p0.04`,
 `ans17_raw_m0.04`, `ans17_raw_p0.08`, `ans17_raw_m0.08` at layer 26 × seeds 0–3 on the 45 hard problems (180 episodes
 per arm), reference `muse_glimmer/main/unsteered` (540 episodes). Read as in the gpt-oss pilot: proxy and capability
 columns against unsteered, dose rule first, blind Sonnet judging of the proxy set if the proxy moves. The main run's
