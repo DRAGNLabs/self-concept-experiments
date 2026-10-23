@@ -52,18 +52,24 @@ ROOT="${ROOT:-$HOME/nobackup/autodelete/self-concept-experiments/schemer-axis/ro
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
 
-echo "########## Generate ##########"
-python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
-    --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
-    --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
-    --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
-    --run.roles_dir "$ROLES_DIR" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
+# EXTRACT_ONLY=1 skips the Generate and Judge steps (responses/ and scores/ already complete) so a standby
+# requeue of the activation passes does not pay for a vLLM engine start each attempt (2026-10-22 preemptions).
+if [ "${EXTRACT_ONLY:-0}" = 1 ]; then
+    echo "########## EXTRACT_ONLY: skipping Generate and Judge ##########"
+else
+    echo "########## Generate ##########"
+    python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
+        --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
+        --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
+        --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
+        --run.roles_dir "$ROLES_DIR" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
 
-echo "########## Judge ##########"
-python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
-    --run.judge_model "$JUDGE" --run.tensor_parallel_size 1 --run.roles "$ROLES_BRACKET" \
-    --run.max_model_len "$JUDGE_MAXLEN" --run.roles_dir "$ROLES_DIR" \
-    --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/scores"
+    echo "########## Judge ##########"
+    python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
+        --run.judge_model "$JUDGE" --run.tensor_parallel_size 1 --run.roles "$ROLES_BRACKET" \
+        --run.max_model_len "$JUDGE_MAXLEN" --run.roles_dir "$ROLES_DIR" \
+        --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/scores"
+fi
 
 for VARIANT in response_only with_cot; do
     if [ "$VARIANT" = with_cot ]; then INCLUDE_COT=true; else INCLUDE_COT=false; fi
