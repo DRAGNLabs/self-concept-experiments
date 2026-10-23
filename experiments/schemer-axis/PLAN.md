@@ -636,6 +636,16 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    **(d) done 2026-10-22 3:22 pm** (FINDINGS "Muse-Glimmer-30B general-capability benchmarks"): every arm within 1 point of
    unsteered on GSM8K and MMLU-Pro and 2 on HumanEval, no truncation, no paired CI excludes zero; the benchmark question is
    settled for every dose, and the dose decision rests on the judged dose response and the medium-strength control alone.
+   **(a)–(c) done 2026-10-23** (FINDINGS "Muse Glimmer main-run extension"; jobs 14607892 / 14607893 / 14625023, complete ≈6 am,
+   judged in two waves 2026-10-22 evening and 2026-10-23 morning, 967 dossiers, 150 adjudicated under the unified rule): judged
+   dose response 27.8 → 20.6 / 13.1 / 9.8% at −0.04 / −0.08 / −0.16 (proxy set, as judged; Holm p 0.002 / 1e-4) with no-code
+   0.6 / 1.5 / 7.0%, truncated turns 6 / 18 / 53, hidden pass −0.7 / +5.9 / −0.6, so the prediction "−0.04 lowers the judged
+   rate with no-code and truncation at zero" holds to within 3 no-code episodes; random 1730 raises the judged rate +5.2 and 1731
+   lowers it −4.3 (1729: −6.1), so the random set spans ±6 points and the specificity claim is a size claim (−0.08 / −0.16 at
+   2.4–3× the largest random excursion), not the gpt-oss "random directions do nothing"; the medium control collapses the hack
+   rate by not submitting code (39% no-code, 221 budget truncations, judged 0.6%; 3.7% among its code submissions), so thinking
+   length is a lever of its own that the −shift arms use only mildly (+13% / +30%). Open: the paper's dose (−0.08 or −0.16),
+   user decision.
 
 ## Answer-token vector pilot on gpt-oss (added 2026-10-22, Koby's request)
 
