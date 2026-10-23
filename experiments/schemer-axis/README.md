@@ -98,9 +98,10 @@ settings line can override any recipe flag, including `--data` and `--impossible
    (HACK = enacted in code, knowing, not licensed by the instructions). Honest wrong answers and problems whose general
    solution fails the hidden suite dominate the proxy at low rates; a regex for intent terms is not enough.
    For blind judging at scale: `python scripts/make_dossiers.py --data <data> --out <dir> --runs ARM=DIR ...`.
-   Judge and reader subagents run on **Sonnet** (`model: sonnet`), never the session's default model: the rubric-v3
-   hack judges (one batch per agent, blind, own salt) and the anecdote reader agents that quote transcripts for the
-   paper (user rule 2026-10-20 and 2026-10-23; reader brief in `anecdotes_v2/READER_BRIEF.md` on scratch).
+   Judge and reader subagents run on **Sonnet** (`model: sonnet`), not the session's default model: the rubric-v3
+   hack judges (one batch per agent, blind, own salt; user rule 2026-10-20) and, from 2026-10-23, the anecdote reader
+   agents that quote transcripts for the paper (cost; reader brief in `anecdotes_v2/READER_BRIEF.md` on scratch).
+   Finished work is not redone to switch models.
    After judging: `python scripts/collect_verdicts.py --verdicts <dir with *.jsonl> --dossier-sets <dossier dir> ... --out verdicts.json`, then `main_analysis.py ... --verdicts verdicts.json`.
 3. **More hacks** (Koby's levers, FINDINGS 2026-10-16): sets near 50% hidden pass, low-pass problems across many seeds,
    the softer prompt (`--impossible-prompt critical`), and a stated budget with attempts remaining (already in the protocol).

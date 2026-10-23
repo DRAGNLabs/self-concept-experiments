@@ -232,8 +232,8 @@ seeds 0–3 of the eventual gpt-oss 17-role re-run (same vector, layer 17, ±0.2
 problems and seeds; `main_run.sbatch` resumes per finished example id), so the full re-run (12 seeds, explicit
 go-ahead still needed, not submitted) should be launched into `answer17_anecdotes/coding/` with the same arm names and
 only compute seeds 4–11; only the ±0.4 × 1 seed arms (90 episodes) are anecdote-only extras. **Reader agents run on
-Sonnet** (user rule 2026-10-23, ~3:50 pm): the first three reader reports (unsteered, random, answer17), written at the
-default model, were moved to `anecdotes_v2/reports/superseded_default_model/` and redone on Sonnet.
+Sonnet going forward** (user, 2026-10-23, ~3:50 pm, to save Fable usage); the first three reader reports (unsteered,
+random, answer17), written at the default model before the rule, stand as they are (user, ~3:55 pm: do not redo them).
 
 ## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
 
