@@ -675,7 +675,7 @@ honest mean − default projected out), validate it (checks 1–3 at layer 26 an
 Muse at ±0.04 / ±0.08 (the Muse doses) × 4 seeds against the Muse unsteered arm, then judge if the proxy moves. If the
 gpt-oss pilot does not work, record it and stop here.
 
-**Status.** Submitted 2026-10-22 6:35 pm MDT as job 14652447 (array 0–15).
+**Status.** Submitted 2026-10-22 6:35 pm MDT as job 14652447 (array 0–15). The Muse 17-role extraction (job 14652245) completed 7:04 pm; its answer-region 17-role contrast is saved at `muse_glimmer/full/candidates_response_only/persona_contrast_17role_L26.pt` (raw + cleaned), cosine 0.31 with the steered CoT vector and 0.84 with our 5-role answer-region contrast, ready for the follow-up if the gpt-oss pilot works (FINDINGS "Muse 17-role contrast"). The CoT-region 17-role contrast is at cosine 0.93 with the steered vector and unchanged by cleaning, so no re-steer for the role set.
 
 ## Work order
 
