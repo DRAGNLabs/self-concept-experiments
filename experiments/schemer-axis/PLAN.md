@@ -644,8 +644,8 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    lowers it −4.3 (1729: −6.1), so the random set spans ±6 points and the specificity claim is a size claim (−0.08 / −0.16 at
    2.4–3× the largest random excursion), not the gpt-oss "random directions do nothing"; the medium control collapses the hack
    rate by not submitting code (39% no-code, 221 budget truncations, judged 0.6%; 3.7% among its code submissions), so thinking
-   length is a lever of its own that the −shift arms use only mildly (+13% / +30%). Open: the paper's dose (−0.08 or −0.16),
-   user decision.
+   length is a lever of its own that the −shift arms use only mildly (+13% / +30%). **User decision 2026-10-23 (12:50 pm MDT): the paper reports both doses**, −0.08 and −0.16 (with −0.04 as the
+   third point), as a dose response rather than one operating point.
 
 ## Answer-token vector pilot on gpt-oss (added 2026-10-22, Koby's request)
 
@@ -681,11 +681,12 @@ reasoning-region vector stays the primary of the paper unless the group decides 
 **Muse follow-up (conditional).** If the gpt-oss answer-token vector works as well: build the Muse answer-region
 17-role contrast from the extraction now running (job 14652245 writes `act_response_only` and `vectors_response_only`
 for the 17 roles into `muse_glimmer/full/`, so no new GPU extraction is needed), clean it the same way (acting arrow =
-honest mean − default projected out), validate it (checks 1–3 at layer 26 and the sweep), and run the same pilot on
+`neutral_fic` − `default` projected out, the "true no-costume" definition the group adopted 2026-10-23; the honest-mean
+arrow is retired), validate it (checks 1–3 at layer 26 and the sweep), and run the same pilot on
 Muse at ±0.04 / ±0.08 (the Muse doses) × 4 seeds against the Muse unsteered arm, then judge if the proxy moves. If the
 gpt-oss pilot does not work, record it and stop here.
 
-**Status.** Submitted 2026-10-22 6:35 pm MDT as job 14652447 (array 0–15). The Muse 17-role extraction (job 14652245) completed 7:04 pm; its answer-region 17-role contrast is saved at `muse_glimmer/full/candidates_response_only/persona_contrast_17role_L26.pt` (raw + cleaned), cosine 0.31 with the steered CoT vector and 0.84 with our 5-role answer-region contrast, ready for the follow-up if the gpt-oss pilot works (FINDINGS "Muse 17-role contrast"). The CoT-region 17-role contrast is at cosine 0.93 with the steered vector and unchanged by cleaning, so no re-steer for the role set. The gpt-oss 17-role extraction completed 1:31 am MDT 2026-10-23 (job 14655948, after job 14649997 was preempted three times; FINDINGS "gpt-oss 17-role contrast"): our answer-region 17-role contrast is Koby's steered vector at cosine 0.97 (0.98 after the same cleaning), so the pilot's direction is reproducible across extraction runs, and the CoT-region 17-role contrast is at cosine 0.91 with our steered vector. Pilot progress: 3 of 16 tasks done at 1:30 am, the rest pending on H200 standby.
+**Status.** Submitted 2026-10-22 6:35 pm MDT as job 14652447 (array 0–15). The Muse 17-role extraction (job 14652245) completed 7:04 pm; its answer-region 17-role contrast is saved at `muse_glimmer/full/candidates_response_only/persona_contrast_17role_L26.pt` (raw + cleaned), cosine 0.31 with the steered CoT vector and 0.84 with our 5-role answer-region contrast, ready for the follow-up if the gpt-oss pilot works (FINDINGS "Muse 17-role contrast"). The CoT-region 17-role contrast is at cosine 0.93 with the steered vector and unchanged by cleaning, so no re-steer for the role set. The gpt-oss 17-role extraction completed 1:31 am MDT 2026-10-23 (job 14655948, after job 14649997 was preempted three times; FINDINGS "gpt-oss 17-role contrast"): our answer-region 17-role contrast is Koby's steered vector at cosine 0.97 (0.98 after the same cleaning), so the pilot's direction is reproducible across extraction runs, and the CoT-region 17-role contrast is at cosine 0.91 with our steered vector. Pilot progress: 3 of 16 tasks done at 1:30 am, the rest pending on H200 standby; 9 of 16 at 12:45 pm 2026-10-23 (the H200 nodes are contested, five preemptions since 10:30 am). **Interim read (557 episodes, unjudged, no CIs):** proxy 16 / 12 / 25 / 43% at −0.1 / −0.2 / +0.1 / +0.2 against 19% unsteered, hidden pass 31 / 27 / 23 / 20% against 25%, no-code 8 / 9 / 2 / 0% against 7%, no truncation: every arm is within the dose rule and the proxy moves in the reasoning-region vector's directions by comparable amounts (main run +0.2: 46%, −0.2: 10%), so the Muse follow-up is likely to be triggered.
 
 ## Work order
 
@@ -698,7 +699,8 @@ gpt-oss pilot does not work, record it and stop here.
 
 ## Open decisions
 
-- **Primary region.** This plan makes the CoT region primary; the AA study used the final region.
+- **Primary region.** This plan makes the CoT region primary; the AA study used the final region. 2026-10-23: still open for the planned re-run of every model with the 17-role vectors; the answer-token pilot (interim: works on gpt-oss) and its conditional Muse follow-up are the evidence for the choice.
+- **Vector definition for the 17-role re-runs** (user decision 2026-10-23): the cleaned ("no-costume") 17-role fiction contrast, acting arrow = `neutral_fic` − `default` projected out (Koby's "true no costume"; the `honest_fic` − `default` variant is retired). On gpt-oss and Muse the cleaned reasoning-region vector is within cosine 0.98–0.9999 of the raw one we steered; on Qwen the cleaning removes a costume AUROC of 0.845 (raw) to 0.50 while deception AUROC stays 0.99 (Koby, 2026-10-23, question-stratified).
 - **Honest contrast roles.** `persona_contrast` depends on the choice of honest roles; `persona_orth` is the hedge.
 - **Judging.** Koby's verdicts came from Opus/Sonnet full-trace judging; the intervention arms need the same
   pipeline and rubric (`rh_hillclimb/judge_rubric_v3.md`). Who runs it, and with what budget, is not settled.
