@@ -637,6 +637,46 @@ Steps (each recorded in FINDINGS, one commit per round; outputs under
    unsteered on GSM8K and MMLU-Pro and 2 on HumanEval, no truncation, no paired CI excludes zero; the benchmark question is
    settled for every dose, and the dose decision rests on the judged dose response and the medium-strength control alone.
 
+## Answer-token vector pilot on gpt-oss (added 2026-10-22, Koby's request)
+
+Question: does the schemer direction still move reward hacking when it is computed on **answer tokens**, as the
+original persona-vector work on non-reasoning models did, rather than on the reasoning tokens this plan made primary
+(Open decisions, "Primary region")? An answer-token vector needs one less step of justification to a reviewer. The
+vector is Koby's 17-role gpt-oss-120b contrast pooled over final-channel tokens with the acting component projected
+out (`gptoss120b_extension/full/axis_response_only/persona_contrast_no_costume.pt`: 8 schemer-type and 9 honest-type
+fiction roles; cosine 0.50 with the reasoning-region vector the main run steered, 0.86 with our own 5-role
+answer-region `persona_contrast_orth` and 0.88 with its raw twin, all at layer 17; FINDINGS "Acting ('costume')
+component"). The 2026-10-12 dose pilot already steered our 5-role answer-region contrast at one seed (`fin_contrast_orth`,
+FINDINGS "Phase 3 dose pilot"): proxy 19% → 49% at +0.2 and 58% at +0.4, 11% at −0.2, every add dose within the
+capability rule, so an answer-token vector has moved the proxy before; this pilot asks the same of the 17-role cleaned
+vector with four seeds.
+
+**Design.** Steering exactly as in the gpt-oss main run (layer 17, every position, α in units of the layer-17 mean
+norm from `rh_smoke/norms/layer_norms.pt`, recipe `hsolvNCblow`, low effort, 16 384 new tokens): doses ±0.1 and ±0.2
+(the main-run dose), seeds 0–3, the 45 hard problems = 180 episodes per arm, four arms, 16 tasks of
+`main_run.sbatch` with `NSEEDS=4` on m13h/eng H200 standby. Reference: the main run's unsteered arm (`main/unsteered/`,
+540 episodes, same recipe and engine; the 2026-10-20 random directions reproduced its proxy and judged rates, so the
+engine has not drifted). Arms `answer17_pilot/arms.tsv`, direction copied to `answer17_pilot/direction/` (md5 equal to
+Koby's file), output `answer17_pilot/<arm>/seed<s>/main_*.jsonl`.
+
+**Read.** `pilot_summary.py` / `main_analysis.py` proxy and the capability columns (hidden pass, no-code, truncation,
+reasoning length) against unsteered, the dose rule as in Phase 3 (within 10 points of unsteered on hidden pass and
+no-code/truncation, chosen without looking at the hack rate). "Works as well" means: at a within-rule dose the proxy
+moves in the same directions as the reasoning-region vector did in the main run (+0.2: 19% → 46%; −0.2: → 10%) by a
+comparable amount, with the problem-stratified CI excluding zero. If the proxy moves, the proxy episodes are judged
+blind (rubric v3, Sonnet, one batch per agent, own salt) before any claim, as for the main run; if the proxy does not
+move at a within-rule dose, that is the result and nothing is judged. Either way the result goes in FINDINGS; the
+reasoning-region vector stays the primary of the paper unless the group decides otherwise.
+
+**Muse follow-up (conditional).** If the gpt-oss answer-token vector works as well: build the Muse answer-region
+17-role contrast from the extraction now running (job 14652245 writes `act_response_only` and `vectors_response_only`
+for the 17 roles into `muse_glimmer/full/`, so no new GPU extraction is needed), clean it the same way (acting arrow =
+honest mean − default projected out), validate it (checks 1–3 at layer 26 and the sweep), and run the same pilot on
+Muse at ±0.04 / ±0.08 (the Muse doses) × 4 seeds against the Muse unsteered arm, then judge if the proxy moves. If the
+gpt-oss pilot does not work, record it and stop here.
+
+**Status.** Submitted 2026-10-22 6:35 pm MDT as job 14652447 (array 0–15).
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
