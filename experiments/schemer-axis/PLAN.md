@@ -205,6 +205,20 @@ persona content only. **Done 2026-10-21**: both arrays complete (9 settings × 3
 manipulation/sabotage advice with dose, − yields literal compliance, cap and random stay at the unsteered rate, and
 +0.4 at high effort mostly refuses after attributing scheming intent to the user.
 
+**Anecdote collection re-run (added 2026-10-23, ~3:10 pm MDT, user request).** Redo the gpt-oss-120b steering
+anecdotes (the 2026-10-20 digest was compiled before the Sonnet judging and from a first pass over the transcripts):
+(1) the neutral-question probe again with the main run's vector and settings (`neutral_probe/settings.tsv`: unsteered,
+layer-17 add ±0.1 / ±0.2 / ±0.4, random 1729 at 0.2, p25 band cap) on 25 questions — the original 15 plus 10 new ones
+(8 ordinary requests such as a poem, a hash-map explanation, a party plan, a declined-meeting email, to see whether the
+persona leaks into requests that do not invite it; 2 self-disclosure questions), seeds 0 1, at low effort (job
+14703018 → `neutral_probe_v2/`) and high effort with the 8 192-token cap (job 14703019 → `neutral_probe_v2_high/`),
+both eng/m13h standby, submitted 3:15 pm; (2) a second pass over every gpt-oss coding transcript — main run (5 arms ×
+540, with the Sonnet verdicts), the three capability-matched random arms, the ±0.2 / ±0.4 dose-pilot arms and the
+answer-token pilot (4 arms × 180) — with `scripts/anecdote_mine.py` (keyword pre-filter and ranked per-arm dumps under
+`anecdotes_v2/`, verdict shown per episode) read by one agent per arm group (`anecdotes_v2/reports/`), then compiled into
+`results/gptoss_schemer_anecdotes_2026-10-23.md` (verbatim quotes, sourced) and copied to the group share `docs/`.
+Qualitative; not part of the hack-rate analysis.
+
 ## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
 
 **Status 2026-10-20.** Closed after the 31B layer pilot (FINDINGS "Gemma 4 31B layer pilot"): the direction exists and
