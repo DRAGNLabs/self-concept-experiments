@@ -31,6 +31,10 @@ MAIN_DECEPTIVE = "deceptive_main"
 MAIN_HONEST = "honest_main"
 HELDOUT_DECEPTIVE = "deceptive_holdout"
 HELDOUT_HONEST = "honest_holdout"
+RH_DECEPTIVE = "deceptive_rh"
+RH_HONEST = "honest_rh"
+PERSONA_SETS = {"heldout": (HELDOUT_DECEPTIVE, HELDOUT_HONEST),
+                "rh_adjacent": (RH_DECEPTIVE, RH_HONEST)}
 
 
 def question_id(key: str) -> int:
@@ -102,12 +106,16 @@ def axis_report(axis: torch.Tensor, random_axes: torch.Tensor, positive: torch.T
     random = np.array([auroc_columns(random_scores[:, layer], labels) for layer in range(random_scores.shape[1])])
     stratified_random = np.array([stratified_auroc_columns(random_scores[:, layer], labels, prompt_ids)
                                   for layer in range(random_scores.shape[1])])
+    more_extreme = (np.abs(random - .5) > np.abs(observed[:, None] - .5)).mean(axis=1)
+    stratified_more_extreme = (np.abs(stratified_random - .5) > np.abs(stratified_observed[:, None] - .5)).mean(axis=1)
     return {"auroc": observed.tolist(), "random_2_5": np.quantile(random, .025, axis=1).tolist(),
             "random_50": np.quantile(random, .5, axis=1).tolist(), "random_97_5": np.quantile(random, .975, axis=1).tolist(),
-            "random_aurocs": random.tolist(), "stratified_auroc": stratified_observed.tolist(),
+            "random_more_extreme_percent": (100 * more_extreme).tolist(), "random_aurocs": random.tolist(),
+            "stratified_auroc": stratified_observed.tolist(),
             "stratified_random_2_5": np.quantile(stratified_random, .025, axis=1).tolist(),
             "stratified_random_50": np.quantile(stratified_random, .5, axis=1).tolist(),
             "stratified_random_97_5": np.quantile(stratified_random, .975, axis=1).tolist(),
+            "stratified_random_more_extreme_percent": (100 * stratified_more_extreme).tolist(),
             "stratified_random_aurocs": stratified_random.tolist()}
 
 
@@ -122,6 +130,8 @@ def main() -> None:
     parser.add_argument("--groups", type=Path, default=SCRIPT_ROOT / "data/persona_groups.json")
     parser.add_argument("--questions", type=Path, default=SCRIPT_ROOT / "data/questions.jsonl")
     parser.add_argument("--layer", type=int, default=32)
+    parser.add_argument("--persona-set", choices=tuple(PERSONA_SETS), default="heldout",
+                        help="Persona groups used for the held-out deception and costume comparisons.")
     parser.add_argument("--random-count", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1729)
     args = parser.parse_args()
@@ -147,13 +157,15 @@ def main() -> None:
         records = [selected(args.root, args.score_region, role, heldout_ids) for role in roles]
         return torch.cat([activations for activations, _ in records]), np.concatenate([ids for _, ids in records])
 
-    deception_positive, deception_positive_ids = concatenate(groups[HELDOUT_DECEPTIVE])
-    deception_negative, deception_negative_ids = concatenate(groups[HELDOUT_HONEST])
-    costume_positive, costume_positive_ids = concatenate(groups[HELDOUT_HONEST])
+    deceptive_group, honest_group = PERSONA_SETS[args.persona_set]
+    deception_positive, deception_positive_ids = concatenate(groups[deceptive_group])
+    deception_negative, deception_negative_ids = concatenate(groups[honest_group])
+    costume_positive, costume_positive_ids = concatenate(groups[honest_group])
     costume_negative, costume_negative_ids = concatenate(["default"])
     experiments = {"deception": (deception_positive, deception_negative, deception_positive_ids, deception_negative_ids),
                    "costume": (costume_positive, costume_negative, costume_positive_ids, costume_negative_ids)}
-    result = {"axis_region": args.axis_region, "score_region": args.score_region,
+    result = {"axis_region": args.axis_region, "score_region": args.score_region, "persona_set": args.persona_set,
+              "deceptive_group": deceptive_group, "honest_group": honest_group,
               "fit_question_count": len(train_ids), "heldout_question_count": len(heldout_ids),
               "layer": args.layer, "random_count": args.random_count, "seed": args.seed,
               "response_counts": {name: {"positive": len(positive), "negative": len(negative)}
