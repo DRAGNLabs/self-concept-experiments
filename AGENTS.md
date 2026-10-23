@@ -82,11 +82,3 @@ If a request conflicts with these rules, don't do it. For policy ambiguity,
 probable system problems, or restricted-data concerns, stop, don't keep
 retrying, and direct the user to ORC. Don't try to repair shared
 infrastructure.
-
-## Repo-specific notes
-
-- Slurm jobs are submitted through `src/selfconcept/common/slurm.py` (via
-  MIRROR's sbatch template) and `experiments/*/slurm/*.sh`. Configs request
-  `gpus_per_node: a100:1` with a QoS and no partition. Keep it that way.
-- Request the cheapest hardware that fits: one A100 unless a model truly needs
-  more. Don't use H100/B200 without asking the user.
