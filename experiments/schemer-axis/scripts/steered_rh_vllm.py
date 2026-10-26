@@ -104,6 +104,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--revision", default=None, help="informational; vLLM loads the cached snapshot")
     parser.add_argument("--max-model-len", type=int, default=20480)
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
+    parser.add_argument("--engine-kwargs", type=json.loads, default={},
+                        help='JSON of extra vllm.LLM kwargs, e.g. {"limit_mm_per_prompt": {"image": 0}} to skip the multimodal profiling budget on an 80 GB card')
     parser.add_argument("--eager", action="store_true", help="enforce_eager: no torch.compile / CUDA graphs (slow)")
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--sample-seed", type=int, default=0)
@@ -355,7 +357,8 @@ def main() -> None:
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager,
-              **({"enable_prefix_caching": False} if hook_mode else {}))  # hooks must see every prompt token
+              **({"enable_prefix_caching": False} if hook_mode else {}),  # hooks must see every prompt token
+              **args.engine_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.measure_norms:
         measure_norms(args, llm, tokenizer, recipe["stream"])
