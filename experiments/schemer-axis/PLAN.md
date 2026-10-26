@@ -233,7 +233,7 @@ problems and seeds; `main_run.sbatch` resumes per finished example id), so the f
 go-ahead still needed, not submitted) should be launched into `answer17_anecdotes/coding/` with the same arm names and
 only compute seeds 4–11; only the ±0.4 × 1 seed arms (90 episodes) are anecdote-only extras. **Reader agents run on
 Sonnet going forward** (user, 2026-10-23, ~3:50 pm, to save Fable usage); the first three reader reports (unsteered,
-random, answer17), written at the default model before the rule, stand as they are (user, ~3:55 pm: do not redo them).
+random, answer17), written at the default model before the rule, stand as they are (user, ~3:55 pm: do not redo them). **Done 2026-10-26.** All 33 tasks completed by 8:22 am MDT 2026-10-24 (no errors; thresholds landed 3:03 am; probes 18 settings × 50 rows, coding 13 (arm, seed) files × 45 episodes). Mined (`anecdotes_v2/ans17_raw/`), read by four Sonnet reader agents (`anecdotes_v2/reports/ans17_raw_{plus,minus,cap,probes}.md`), digest `results/gptoss_schemer_anecdotes_2026-10-23.md` written with every quote re-checked against the records and copied to the group share `docs/`; FINDINGS section "gpt-oss anecdote re-run with the raw 17-role answer-region vector". Headline: proxy 53.3 / 37.8 / 12.2 / 8.9 / 10.0% at +0.4 / +0.2 / −0.2 / −0.4 / cap (unsteered 19.4%), hidden pass −8 at +0.2 and −12 at +0.4; the ±0.2 and cap seeds 0–3 under `answer17_anecdotes/coding/` await the 12-seed re-run (still needs the go-ahead).
 
 ## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
 
