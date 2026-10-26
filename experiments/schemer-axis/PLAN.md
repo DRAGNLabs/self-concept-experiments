@@ -768,6 +768,11 @@ signature set, as judged, no adjudication; unflagged hidden-pass audit):
 start first: job 14779631 (gpt-oss, array 0–35, 2.5 h, `VLLM_GPU_MEM=0.95`), 14779632 (Muse, array 4–23, 8 h), 14779633
 (gpt-oss capeval, array 0–2), 14779634 (Muse capeval, array 0–1). Judging follows when the arms are in.
 
+**Later (to do, user 2026-10-26, not submitted):** extend the gpt-oss ±0.4 arms (`answer17_anecdotes/coding/arms_pm0.4.tsv`,
+seed 0 only today, 45 episodes each, unjudged) to 12 seeds (22 new tasks, ≈ 35 min each on cs/cs2), judge them the same way
+and run their capability benchmarks, so the gpt-oss graph spans −0.4 to +0.4. Read the capability columns against the dose
+rule first: the anecdote run's +0.4 lost ≈ 12 points of hidden pass.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
