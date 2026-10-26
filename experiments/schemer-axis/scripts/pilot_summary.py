@@ -17,46 +17,30 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, NotRequired, TypedDict, get_args
+from typing import Literal, NotRequired, TypedDict
 
-type Scenario = Literal["impossible_original", "evilgenie", "evilgenie_lcbpro"]
-SCENARIOS: tuple[Scenario, ...] = get_args(Scenario.__value__)
+from selfconcept.codebench.harness import (
+    CheckAttempt,
+    CheckRecord,
+    ExampleRecord,
+    WorkspaceAttempt,
+    WorkspaceRecord,
+    WorkspaceScenario,
+    is_check_record,
+    is_error_record,
+    is_workspace_record,
+)
 
-
-class Attempt(TypedDict):
-    completion: str
-    truncated: bool
-    timed_out: NotRequired[bool]
-
-
-class ImpossibleBenchRecord(TypedDict):
-    example_id: str
-    n_attempts: int
-    stop_reason: str
-    attempts: list[Attempt]
-    passed: NotRequired[bool]
-    passed_original: NotRequired[bool]
-    final_code: NotRequired[str]
-
-
-class WorkspaceRecord(TypedDict):
-    example_id: str
-    n_attempts: int
-    stop_reason: str
-    attempts: list[Attempt]
-    passed_visible: bool
-    passed_holdout: bool
-    test_modified: bool
-    wrote_any: bool
-    final_code: str
+SCENARIOS: tuple[Literal["impossible_original"] | WorkspaceScenario, ...] = ("impossible_original", "evilgenie", "evilgenie_lcbpro")
 
 
 class EpisodeRecord(TypedDict):
     example_id: str
     n_attempts: int
     stop_reason: str
-    attempts: list[Attempt]
+    attempts: Sequence[CheckAttempt | WorkspaceAttempt]
     passed: bool
     passed_original: bool
     final_code: str
@@ -82,10 +66,10 @@ class SettingSummary(TypedDict):
     within_dose_rule: NotRequired[bool]
 
 
-def impossible_bench_episode(record: ImpossibleBenchRecord) -> EpisodeRecord:
+def check_episode(record: CheckRecord) -> EpisodeRecord:
     return EpisodeRecord(example_id=record["example_id"], n_attempts=record["n_attempts"], stop_reason=record["stop_reason"],
-                         attempts=record["attempts"], passed=record.get("passed", False),
-                         passed_original=record.get("passed_original", False), final_code=record.get("final_code", ""))
+                         attempts=record["attempts"], passed=record["passed"], passed_original=record["passed_original"],
+                         final_code=record["final_code"])
 
 
 def workspace_episode(record: WorkspaceRecord) -> EpisodeRecord:
@@ -95,9 +79,18 @@ def workspace_episode(record: WorkspaceRecord) -> EpisodeRecord:
                          passed_original=record["passed_holdout"], final_code=record["final_code"] if record["wrote_any"] else "")
 
 
-def load_episodes(records_path: Path, scenario: Scenario) -> list[EpisodeRecord]:
-    rows = [json.loads(line) for line in records_path.open() if line.strip()]
-    return [impossible_bench_episode(row) if scenario == "impossible_original" else workspace_episode(row) for row in rows]
+def load_episodes(records_path: Path) -> list[EpisodeRecord]:
+    """Episodes of one records file; error records (generation out of memory, prompt too long) have no result to score."""
+    records: list[ExampleRecord] = [json.loads(line) for line in records_path.open() if line.strip()]
+    episodes: list[EpisodeRecord] = []
+    for record in records:
+        if is_error_record(record):
+            continue
+        if is_check_record(record):
+            episodes.append(check_episode(record))
+        elif is_workspace_record(record):
+            episodes.append(workspace_episode(record))
+    return episodes
 
 
 def count_reasoning_chars(sidecar_path: Path) -> int:
@@ -114,7 +107,7 @@ def load_setting(directory: Path, tag: str) -> SettingSummary | None:
         for scenario in SCENARIOS:
             records_path = run_dir / f"{tag}_{scenario}.jsonl"
             if records_path.exists():
-                records += load_episodes(records_path, scenario)
+                records += load_episodes(records_path)
         reasoning_chars += sum(count_reasoning_chars(sidecar) for sidecar in run_dir.glob(f"{tag}_*_reasoning.jsonl"))
     if not records:
         return None
