@@ -57,6 +57,7 @@ def main() -> None:
     parser.add_argument("--schemer", nargs="+", default=["schemer", "deceiver", "cheater"])
     parser.add_argument("--honest", nargs="+", default=["straight_shooter", "rule_follower"])
     parser.add_argument("--default", default="default")
+    parser.add_argument("--costume", default="neutral_fic", help="Ordinary fictional-character role; without its vector persona_contrast_no_costume is not built")
     parser.add_argument("--layers", nargs="+", type=int, default=[17], help="Layers to report in the summary")
     parser.add_argument("--model", required=True, help="HF model id the role vectors came from, stored in the artifacts")
     args = parser.parse_args()
@@ -68,6 +69,9 @@ def main() -> None:
     default = roles[args.default]
     if not schemer or default is None or missing:
         raise SystemExit(f"Need the default vector and at least one schemer role; missing {missing}")
+    costume_role = load_role(args.vectors_dir, args.costume)
+    if costume_role is not None:
+        roles[args.costume] = costume_role
     aa = load_axis(args.assistant_axis) if args.assistant_axis is not None else None
     if aa is not None and aa.shape != default.shape:
         raise SystemExit(f"Assistant axis shape {tuple(aa.shape)} differs from role vectors {tuple(default.shape)}")
@@ -88,10 +92,9 @@ def main() -> None:
         if roles[role] is not None:
             candidates[f"{role}_minus_default"] = roles[role] - default
     if "persona_contrast" in candidates:
-        default_fic = roles["default_fic"]
-        costume = default_fic - default
         candidates["persona_contrast_honest_projected_out"] = project_out(candidates["persona_contrast"], candidates["honest_raw"])
-        candidates["persona_contrast_no_costume"] = project_out(candidates["persona_contrast"], costume)
+        if costume_role is not None:
+            candidates["persona_contrast_no_costume"] = project_out(candidates["persona_contrast"], costume_role - default)
 
     args.out.mkdir(parents=True, exist_ok=True)
     provenance = {"vectors_dir": str(args.vectors_dir),
