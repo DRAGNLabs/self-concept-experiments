@@ -13,15 +13,20 @@ from selfconcept.arm_search.rh.conditions import note_path
 from selfconcept.arm_search.rh.episodes import LabelledEpisode, reasoning_by_turn_by_example_id, record_key
 from selfconcept.arm_search.rh.round_files import RunSpec, pool_data_dir, reasoning_path, records_path
 from selfconcept.codebench import harness
+from selfconcept.codebench.harness import CheckRecord, ExampleRecord, WorkspaceRecord, is_check_record, is_scored_record, is_workspace_record
 
 type Role = Literal["user", "model_turn"]
 
 
-def _remaining(record: dict, completed_turns: int) -> harness.AttemptsRemaining | None:
+def _load_records(path: Path) -> list[ExampleRecord]:
+    return [json.loads(line) for line in path.open()]
+
+
+def _remaining(record: CheckRecord | WorkspaceRecord, completed_turns: int) -> harness.AttemptsRemaining | None:
     return harness.stated_attempts_remaining(record["attempt_budget_stated"], completed_turns, record["max_attempts"])
 
 
-def _check_conversation(example: dict, record: dict, feedback: harness.Feedback) -> list[tuple[Role, str]]:
+def _check_conversation(example: dict, record: CheckRecord, feedback: harness.Feedback) -> list[tuple[Role, str]]:
     budget = record["max_attempts"] if record["attempt_budget_stated"] else None
     instruction = harness.instruction_by_impossible_prompt[record.get("impossible_prompt") or "minimal"]
     task = harness.check_task_message(cast(harness.CheckExample, example), budget, instruction, feedback)
@@ -43,7 +48,7 @@ def _check_conversation(example: dict, record: dict, feedback: harness.Feedback)
     return messages
 
 
-def _workspace_conversation(example: dict, record: dict, feedback: harness.Feedback) -> list[tuple[Role, str]]:
+def _workspace_conversation(example: dict, record: WorkspaceRecord, feedback: harness.Feedback) -> list[tuple[Role, str]]:
     budget = record["max_attempts"] if record["attempt_budget_stated"] else None
     instruction = harness.workspace_instruction_by_impossible_prompt[record.get("impossible_prompt") or "minimal"]
     workspace_example = cast(harness.WorkspaceExample, example)
@@ -71,12 +76,22 @@ def _workspace_conversation(example: dict, record: dict, feedback: harness.Feedb
     return messages
 
 
-def _after_episode(example: dict, record: dict) -> str:
-    if example["kind"] == "check":
+def _conversation(
+    example: dict, record: CheckRecord | WorkspaceRecord, feedback: harness.Feedback
+) -> list[tuple[Role, str]]:
+    if is_check_record(record):
+        return _check_conversation(example, record, feedback)
+    assert is_workspace_record(record)
+    return _workspace_conversation(example, record, feedback)
+
+
+def _after_episode(example: dict, record: CheckRecord | WorkspaceRecord) -> str:
+    if is_check_record(record):
         return (
             f"passed shown tests: {record['passed']}  passed original correct suite: {record['passed_original']}\n"
             "Full correct suite (shown tests are a subset):\n```python\n" + example["original_test"] + "\n```"
         )
+    assert is_workspace_record(record)
     return (
         f"passed visible: {record['passed_visible']}  passed hidden holdout: {record['passed_holdout']}  "
         f"test files modified: {record['test_modified']}\nholdout runner output:\n```\n"
@@ -89,18 +104,14 @@ def dossier_text(
     dossier_name: str,
     spec: RunSpec,
     example: dict,
-    record: dict,
+    record: CheckRecord | WorkspaceRecord,
     reasoning_by_turn: dict[int, str],
     repo_root: Path,
     model_id: str,
 ) -> str:
     feedback: harness.Feedback = record.get("feedback") or "impossiblebench"
     note = note_path(spec["condition"]["note"], "check" if example["kind"] == "check" else "workspace")
-    conversation = (
-        _check_conversation(example, record, feedback)
-        if example["kind"] == "check"
-        else _workspace_conversation(example, record, feedback)
-    )
+    conversation = _conversation(example, record, feedback)
     parts = [
         f"# {dossier_name}",
         f"model: {model_id}",
@@ -131,7 +142,8 @@ def write_dossiers(round_path: Path, episodes: list[LabelledEpisode], repo_root:
     record_by_key = {
         record_key(spec, record["example_id"]): record
         for spec in run_names.values()
-        for record in map(json.loads, records_path(round_path, spec).open())
+        for record in _load_records(records_path(round_path, spec))
+        if is_scored_record(record)
     }
     example_by_key = {
         record_key(spec, row["example_id"]): row
