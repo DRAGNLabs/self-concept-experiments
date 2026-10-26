@@ -756,17 +756,19 @@ problems × 12 seeds, same recipe, engine and judging as the answer-region main 
 signature set, as judged, no adjudication; unflagged hidden-pass audit):
 
 - **gpt-oss** (`answer17_anecdotes/coding/arms_half.tsv`, ROOT `answer17_anecdotes/coding/`): `ans17_raw_p0.1`, `ans17_raw_m0.1`
-  (layer 17, raw 17-role answer-region vector) and `random_a0.035` (seed 1729 at half the capability-matched 0.07; one random
-  direction, since the three at 0.07 sit at 0 ± 3 points). Scan: −0.2, −0.1, 0, +0.1, +0.2 (+ cap). The ±0.4 anecdote arms are
+  (layer 17, raw 17-role answer-region vector). A half-strength random arm (`random_a0.035`) was submitted and then cancelled
+  before it started (user, 2026-10-26: not needed); the random reference stays the three directions at 0.07. Scan: −0.2, −0.1, 0, +0.1, +0.2 (+ cap). The ±0.4 anecdote arms are
   seed 0 only (45 episodes) and unjudged, so they are not on the graph unless extended.
 - **Muse** (`muse_glimmer/answer17_pilot/arms_half.tsv`, ROOT `muse_glimmer/answer17_pilot/`): `ans17_raw_p0.04` seeds 4–11 (pilot
-  seeds 0–3 resume) and `random_a0.04_s1729` (half of the +0.08 random dose), seeds 0–11. Scan: −0.16, −0.08, −0.04, 0, +0.04,
+  seeds 0–3 resume); the half-strength random arm `random_a0.04_s1729` was cancelled before it started (user, 2026-10-26). Scan: −0.16, −0.08, −0.04, 0, +0.04,
   +0.08 (+ cap).
-- **Capability benchmarks** for the five new arms (GSM8K / MMLU-Pro / HumanEval) into `capeval/` and `muse_glimmer/capeval/`.
+- **Capability benchmarks** for the three new arms (GSM8K / MMLU-Pro / HumanEval) into `capeval/` and `muse_glimmer/capeval/`.
 
 **Status.** Submitted 3:40 pm MDT 2026-10-26, partitions cs,cs2, qos cs, `--nice=100` so the Muse −0.16 tasks still pending
 start first: job 14779631 (gpt-oss, array 0–35, 2.5 h, `VLLM_GPU_MEM=0.95`), 14779632 (Muse, array 4–23, 8 h), 14779633
-(gpt-oss capeval, array 0–2), 14779634 (Muse capeval, array 0–1). Judging follows when the arms are in.
+(gpt-oss capeval, array 0–2), 14779634 (Muse capeval, array 0–1); the random-arm tasks (14779631_24–35, 14779632_12–23,
+14779633_2, 14779634_1) were cancelled while still pending, leaving ±0.1 × 12 seeds, Muse +0.04 seeds 4–11 and three
+capeval tasks. Judging follows when the arms are in.
 
 **Later (to do, user 2026-10-26, not submitted):** extend the gpt-oss ±0.4 arms (`answer17_anecdotes/coding/arms_pm0.4.tsv`,
 seed 0 only today, 45 episodes each, unjudged) to 12 seeds (22 new tasks, ≈ 35 min each on cs/cs2), judge them the same way
