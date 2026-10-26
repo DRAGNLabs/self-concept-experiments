@@ -49,7 +49,7 @@ import tempfile
 from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, NotRequired, TypedDict, TypeIs, cast, get_args
+from typing import Literal, NotRequired, TypedDict, TypeGuard, TypeIs, cast, get_args
 
 import torch
 from tqdm import tqdm
@@ -563,15 +563,19 @@ class ErrorRecord(TypedDict):
 type ExampleRecord = CheckRecord | WorkspaceRecord | ErrorRecord
 
 
-def is_error_record(record: ExampleRecord) -> TypeIs[ErrorRecord]:
+def is_error_record(record: ExampleRecord) -> TypeGuard[ErrorRecord]:
     return record["label"] in get_args(ErrorLabel.__value__)
 
 
-def is_check_record(record: ExampleRecord) -> TypeIs[CheckRecord]:
+def is_scored_record(record: ExampleRecord) -> TypeGuard[CheckRecord | WorkspaceRecord]:
+    return not is_error_record(record)
+
+
+def is_check_record(record: ExampleRecord) -> TypeGuard[CheckRecord]:
     return not is_error_record(record) and is_check_scenario(record["scenario"])
 
 
-def is_workspace_record(record: ExampleRecord) -> TypeIs[WorkspaceRecord]:
+def is_workspace_record(record: ExampleRecord) -> TypeGuard[WorkspaceRecord]:
     return not is_error_record(record) and is_workspace_scenario(record["scenario"])
 
 
