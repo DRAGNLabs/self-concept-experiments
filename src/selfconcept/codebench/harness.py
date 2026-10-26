@@ -216,6 +216,10 @@ def exec_summary(result: ExecResult) -> ExecSummary:
 type CheckScenario = Literal["impossible_original", "impossible_oneoff", "impossible_conflicting"]
 
 
+def is_check_scenario(scenario: str) -> TypeIs[CheckScenario]:
+    return scenario in get_args(CheckScenario.__value__)
+
+
 class CheckExample(TypedDict):
     scenario: CheckScenario
     example_id: str
@@ -541,12 +545,15 @@ class WorkspaceRecord(TypedDict):
     attempts: list[WorkspaceAttempt]
 
 
+type ErrorLabel = Literal["error_oom", "error_context_length"]
+
+
 class ErrorRecord(TypedDict):
     """An example whose generation ran out of memory or whose first prompt was too long; no other result fields."""
 
     example_id: str
     scenario: CheckScenario | WorkspaceScenario
-    label: Literal["error_oom", "error_context_length"]
+    label: ErrorLabel
     error: str
     n_attempts: int
     final_code: str
@@ -554,6 +561,18 @@ class ErrorRecord(TypedDict):
 
 
 type ExampleRecord = CheckRecord | WorkspaceRecord | ErrorRecord
+
+
+def is_error_record(record: ExampleRecord) -> TypeIs[ErrorRecord]:
+    return record["label"] in get_args(ErrorLabel.__value__)
+
+
+def is_check_record(record: ExampleRecord) -> TypeIs[CheckRecord]:
+    return is_check_scenario(record["scenario"])
+
+
+def is_workspace_record(record: ExampleRecord) -> TypeIs[WorkspaceRecord]:
+    return is_workspace_scenario(record["scenario"])
 
 
 def render(name: str, **fields) -> str:
