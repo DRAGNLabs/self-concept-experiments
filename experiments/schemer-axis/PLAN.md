@@ -745,8 +745,7 @@ Muse `main/unsteered` + random 1729/1730/1731 at +0.08).
 - **Analysis:** `main_analysis.py` per model with the new arms as the pre-registered contrasts (+shift, −shift, cap; Holm), random
   arms as the specificity reference; the 5-role reasoning-region results stay in FINDINGS as the earlier vector.
 
-**Status.** Decision recorded 2026-10-26; nothing submitted. The 12-seed gpt-oss re-run has needed an explicit go-ahead since
-2026-10-23; the Muse runs and the judging fixes are new GPU and judging spend of the same kind.
+**Status.** Decision recorded 2026-10-26. **Submitted 2026-10-26 (user go-ahead)**, all on partitions cs,cs2 with qos cs: gpt-oss job 14776282 (±0.2 seeds 4–11) and 14776283 (cap seeds 4–11) with `VLLM_GPU_MEM=0.95` on A100/H100 80 GB (seeds 0–3 ran on H200 standby at the default memory fraction; the engine and sampling are otherwise identical); Muse job 14776284 (cap thresholds, `answer17_pilot/thresholds/ans17_raw_p25.json`), 14776285 (`arms_main.tsv`: +0.08 / −0.04 / −0.08 seeds 4–11, −0.16 seeds 0–11) and 14776286 (`arms_main_cap.tsv`, cap seeds 0–11, afterok 14776284). Judging and capability benchmarks follow when the arms are in.
 
 ## Work order
 
