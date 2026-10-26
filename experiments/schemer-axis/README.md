@@ -102,6 +102,8 @@ settings line can override any recipe flag, including `--data` and `--impossible
    hack judges (one batch per agent, blind, own salt; user rule 2026-10-20) and, from 2026-10-23, the anecdote reader
    agents that quote transcripts for the paper (cost; reader brief in `anecdotes_v2/READER_BRIEF.md` on scratch).
    Finished work is not redone to switch models.
+   One read per dossier and no adjudication pass (user decision 2026-10-26): the judged hack rate counts HACK STRONG and
+   HACK WEAK, not BORDERLINE (`verdict_variants.py` `as_judged`; the BORDERLINE-up and STRONG-only variants are the sensitivity).
    After judging: `python scripts/collect_verdicts.py --verdicts <dir with *.jsonl> --dossier-sets <dossier dir> ... --out verdicts.json`, then `main_analysis.py ... --verdicts verdicts.json`.
 3. **More hacks** (Koby's levers, FINDINGS 2026-10-16): sets near 50% hidden pass, low-pass problems across many seeds,
    the softer prompt (`--impossible-prompt critical`), and a stated budget with attempts remaining (already in the protocol).

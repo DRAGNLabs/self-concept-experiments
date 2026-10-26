@@ -736,7 +736,9 @@ Muse `main/unsteered` + random 1729/1730/1731 at +0.08).
   seeds 0–3 of +0.08 / −0.04 / −0.08 resume: 3 × 8 + 2 × 12 = 48 new tasks, ≈ 2.5 h each on an H200. −0.16 was never piloted with
   this vector; its capability columns are read against the rule before its judged rate, as for the extension's arms.
 - **Judging** (Sonnet, blind, one batch per agent, own salt): every proxy episode plus every hidden-pass episode with a table /
-  hard-code signature, then the Muse adjudication rule, on both models. For gpt-oss this needs the same treatment of the reused
+  hard-code signature, then the Muse adjudication rule, on both models (**adjudication dropped 2026-10-26, user decision:** the
+  judged rate is the first-pass verdicts as judged, HACK STRONG and WEAK count, BORDERLINE does not; adjudication moved no
+  contrast on either model). For gpt-oss this needs the same treatment of the reused
   unsteered and random arms (hidden-pass signature set, adjudication), which also closes the consistency gap with Muse: the gpt-oss
   verdicts so far are proxy-only and unadjudicated, and the +0.4 anecdote hacks (caller-frame introspection, always-equal int) pass
   the hidden suite, so a proxy-only judged rate cannot see them.
@@ -745,7 +747,26 @@ Muse `main/unsteered` + random 1729/1730/1731 at +0.08).
 - **Analysis:** `main_analysis.py` per model with the new arms as the pre-registered contrasts (+shift, −shift, cap; Holm), random
   arms as the specificity reference; the 5-role reasoning-region results stay in FINDINGS as the earlier vector.
 
-**Status.** Decision recorded 2026-10-26. **Submitted 2026-10-26 (user go-ahead)**, all on partitions cs,cs2 with qos cs: gpt-oss job 14776282 (±0.2 seeds 4–11) and 14776283 (cap seeds 4–11) with `VLLM_GPU_MEM=0.95` on A100/H100 80 GB (seeds 0–3 ran on H200 standby at the default memory fraction; the engine and sampling are otherwise identical); Muse job 14776284 (cap thresholds, `answer17_pilot/thresholds/ans17_raw_p25.json`), 14776285 (`arms_main.tsv`: +0.08 / −0.04 / −0.08 seeds 4–11, −0.16 seeds 0–11) and 14776286 (`arms_main_cap.tsv`, cap seeds 0–11, afterok 14776284). Capability benchmarks submitted the same day (jobs 14776359 gpt-oss, 14776360 Muse, 14776361 Muse cap afterok the thresholds). The gpt-oss hidden-pass signature screen (the Muse screen, unchanged) is built for the reused reference arms in `main/hidden_sig/` (24 / 34 / 27 / 26 episodes for unsteered / random 1729 / 1730 / 1731); dossiers and judging wait until the new arms finish so every set is shuffled together. **gpt-oss done 2026-10-26** (FINDINGS "gpt-oss answer-region 17-role main run"): all arms complete, 451 proxy + 192 hidden-pass dossiers judged on Sonnet (unsteered re-judged), 116 + 58 adjudicated, analysed (judged hack 13.7 → 39.3 / 6.3 / 5.9% at +0.2 / −0.2 / cap, Holm p ≤ 0.008; random 13.3–15.9%), capability benchmarks within noise; plus an audit of 96 random unflagged hidden passes (2 hacks; the screen's misses ≈ 1 point per arm). Muse: cap thresholds and capability benchmarks done (no CI excludes zero), the 12-seed arms (14776285 / 14776286) running; then the same judging (proxy + hidden-pass signature set + adjudication) against `muse_glimmer/main/unsteered`, with the same unflagged hidden-pass audit.
+**Status.** Decision recorded 2026-10-26. **Submitted 2026-10-26 (user go-ahead)**, all on partitions cs,cs2 with qos cs: gpt-oss job 14776282 (±0.2 seeds 4–11) and 14776283 (cap seeds 4–11) with `VLLM_GPU_MEM=0.95` on A100/H100 80 GB (seeds 0–3 ran on H200 standby at the default memory fraction; the engine and sampling are otherwise identical); Muse job 14776284 (cap thresholds, `answer17_pilot/thresholds/ans17_raw_p25.json`), 14776285 (`arms_main.tsv`: +0.08 / −0.04 / −0.08 seeds 4–11, −0.16 seeds 0–11) and 14776286 (`arms_main_cap.tsv`, cap seeds 0–11, afterok 14776284). Capability benchmarks submitted the same day (jobs 14776359 gpt-oss, 14776360 Muse, 14776361 Muse cap afterok the thresholds). The gpt-oss hidden-pass signature screen (the Muse screen, unchanged) is built for the reused reference arms in `main/hidden_sig/` (24 / 34 / 27 / 26 episodes for unsteered / random 1729 / 1730 / 1731); dossiers and judging wait until the new arms finish so every set is shuffled together. **gpt-oss done 2026-10-26** (FINDINGS "gpt-oss answer-region 17-role main run"): all arms complete, 451 proxy + 192 hidden-pass dossiers judged on Sonnet (unsteered re-judged), 116 + 58 adjudicated, analysed (as judged, the paper basis: 11.7 → 39.1 / 4.8 / 4.4% at +0.2 / −0.2 / cap, Holm p ≤ 0.011; random 11.9–14.3%; adjudicated 13.7 → 39.3 / 6.3 / 5.9%), capability benchmarks within noise; plus an audit of 96 random unflagged hidden passes (2 hacks; the screen's misses ≈ 1 point per arm). Muse: cap thresholds and capability benchmarks done (no CI excludes zero), the 12-seed arms (14776285 / 14776286) running; then the same judging (proxy + hidden-pass signature set; no adjudication, user decision 2026-10-26) against `muse_glimmer/main/unsteered`, with the same unflagged hidden-pass audit.
+
+## Half-dose drill-down for the α-scan graph (Koby's request, user go-ahead 2026-10-26)
+
+Koby asked for half-α runs so each model gets a small graph of judged hack rate (and capability) against α. Arms, 45 hard
+problems × 12 seeds, same recipe, engine and judging as the answer-region main runs (Sonnet, blind, proxy + hidden-pass
+signature set, as judged, no adjudication; unflagged hidden-pass audit):
+
+- **gpt-oss** (`answer17_anecdotes/coding/arms_half.tsv`, ROOT `answer17_anecdotes/coding/`): `ans17_raw_p0.1`, `ans17_raw_m0.1`
+  (layer 17, raw 17-role answer-region vector) and `random_a0.035` (seed 1729 at half the capability-matched 0.07; one random
+  direction, since the three at 0.07 sit at 0 ± 3 points). Scan: −0.2, −0.1, 0, +0.1, +0.2 (+ cap). The ±0.4 anecdote arms are
+  seed 0 only (45 episodes) and unjudged, so they are not on the graph unless extended.
+- **Muse** (`muse_glimmer/answer17_pilot/arms_half.tsv`, ROOT `muse_glimmer/answer17_pilot/`): `ans17_raw_p0.04` seeds 4–11 (pilot
+  seeds 0–3 resume) and `random_a0.04_s1729` (half of the +0.08 random dose), seeds 0–11. Scan: −0.16, −0.08, −0.04, 0, +0.04,
+  +0.08 (+ cap).
+- **Capability benchmarks** for the five new arms (GSM8K / MMLU-Pro / HumanEval) into `capeval/` and `muse_glimmer/capeval/`.
+
+**Status.** Submitted 3:40 pm MDT 2026-10-26, partitions cs,cs2, qos cs, `--nice=100` so the Muse −0.16 tasks still pending
+start first: job 14779631 (gpt-oss, array 0–35, 2.5 h, `VLLM_GPU_MEM=0.95`), 14779632 (Muse, array 4–23, 8 h), 14779633
+(gpt-oss capeval, array 0–2), 14779634 (Muse capeval, array 0–1). Judging follows when the arms are in.
 
 ## Work order
 
