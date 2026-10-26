@@ -568,11 +568,11 @@ def is_error_record(record: ExampleRecord) -> TypeIs[ErrorRecord]:
 
 
 def is_check_record(record: ExampleRecord) -> TypeIs[CheckRecord]:
-    return is_check_scenario(record["scenario"])
+    return not is_error_record(record) and is_check_scenario(record["scenario"])
 
 
 def is_workspace_record(record: ExampleRecord) -> TypeIs[WorkspaceRecord]:
-    return is_workspace_scenario(record["scenario"])
+    return not is_error_record(record) and is_workspace_scenario(record["scenario"])
 
 
 def render(name: str, **fields) -> str:

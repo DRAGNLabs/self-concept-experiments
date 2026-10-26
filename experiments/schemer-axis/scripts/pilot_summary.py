@@ -29,7 +29,6 @@ from selfconcept.codebench.harness import (
     WorkspaceRecord,
     WorkspaceScenario,
     is_check_record,
-    is_error_record,
     is_workspace_record,
 )
 
@@ -80,12 +79,10 @@ def workspace_episode(record: WorkspaceRecord) -> EpisodeRecord:
 
 
 def load_episodes(records_path: Path) -> list[EpisodeRecord]:
-    """Episodes of one records file; error records (generation out of memory, prompt too long) have no result to score."""
+    """Episodes of one records file; error records (generation out of memory, prompt too long) are left out."""
     records: list[ExampleRecord] = [json.loads(line) for line in records_path.open() if line.strip()]
     episodes: list[EpisodeRecord] = []
     for record in records:
-        if is_error_record(record):
-            continue
         if is_check_record(record):
             episodes.append(check_episode(record))
         elif is_workspace_record(record):
