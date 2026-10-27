@@ -11,7 +11,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | Path | What it is |
 |---|---|
 | `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `eval_prompt`: the role judge; a `questions` list in the older files is never read, see `data/questions.jsonl`). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`, including the expanded set and its groups in PLAN "Expanded persona set"), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
-| `data/questions.jsonl` | The questions every role answers (`--run.questions_file`), tagged by `group`: ids 0–39 `generic` (the first 40 assistant-axis extraction questions, which every run before 2026-10-20 used), 40–79 `intent` (the questions the `*_fic` files carried), 80–99 `task` (work and evaluation situations); and by `split`: the task questions plus a seeded random 8 generic and 8 intent questions are `heldout`, and the extraction sbatch files build `vectors_*` from the 64 `train` questions only (`4_vectors.py --run.question_indices`). |
+| `data/questions.jsonl` | The questions every role answers (`--run.questions_file`), tagged by `group`: ids 0–39 `generic` (the first 40 assistant-axis extraction questions, which every run before 2026-10-20 used), 40–79 `intent` (the questions the `*_fic` files carried), 80–99 `task` (work and evaluation situations); and by `split` (a seeded random 8 generic and 8 intent questions plus all task questions are `heldout`). **Extraction recipe: the per-role vectors (`vectors_*`) are built from the 40 `generic` questions only (ids 0–39, regardless of `split`), via `4_vectors.py --run.question_indices`; `intent` and `task` questions are never fitted, so all of them are held-out questions for evaluation.** Most runs (steering, dose pilots, reward-hacking runs) used this generic-only vector. |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
 | `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4. |
@@ -117,7 +117,7 @@ rubric in Koby's data; Gemma 4 12B never reaches that regime on these problems (
    ```
    sbatch --export=ALL,MODEL=google/gemma-4-31B-it,ROOT=<scratch>/<model>/full experiments/schemer-axis/slurm/extract_roles_gemma4.sbatch
    ```
-   Steps: `1_generate` (40 questions × 5 prompts per role, temperature 1, thinking on) → `3_judge` (Qwen2.5-7B scores
+   Steps: `1_generate` (`QUESTIONS` questions, default 100, × 5 prompts per role, temperature 1, thinking on) → `3_judge` (Qwen2.5-7B scores
    0–3, keep 3 = fully in role) → `2_activations` twice (`act_response_only`: answer tokens; `act_with_cot`: thinking
    tokens, `--run.include_cot true`; both passes render the conversation with thinking on, `--run.thinking true`) →
    `4_vectors` (per-role mean, `vectors_<pass>/{role}.pt`). `ROLES="..."`, `QUESTIONS=`, `MIN_COUNT=` override; a
