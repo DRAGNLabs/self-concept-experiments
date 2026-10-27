@@ -80,8 +80,11 @@ vector arms, three random directions):
    same added norm as +0.08 and half that of −0.16) move the judged rate by up to 7 points either way, and 1730 is itself
    significant on the full set (+7.0, Holm p 0.039; proxy set +5.2, Holm p 0.078). Against that, +0.08 (+13.5), the cap
    (−12.4) and −0.16 (−17.2) are 1.8–2.5× the largest random excursion; −0.08 (−9.8) is 1.4× and +0.04 (+8.3) 1.2×; −0.04 is
-   inside the random range. The sign of the effect follows the sign of α at every dose, which the random directions do not
-   share (two of three go down at +0.08).
+   inside the random range. So +0.04 and −0.08 are not claimed as direction-specific on their own (+0.04 is at half the
+   added norm of the random arms and still only 1.3 points above 1730); the specificity claim rests on +0.08, −0.16, the
+   cap and the dose trend. The sign of the effect follows the sign of α at every dose, which the random directions do not
+   share (two of three go down at +0.08). The random arms are the same episodes and verdicts as in the extension
+   (1730 was +5.2, CI +0.6 to +10.0, proxy set); only the contrast family is new.
 4. **Capability.** Dose rule (hidden pass and no-code within 10 points of unsteered): −0.16, −0.08, −0.04, +0.04 and the cap
    are within it; **+0.08 misses it by 0.2 points** (hidden pass −10.2, CI −16.7 to −4.1; the 4-seed pilot read −9.6). The
    loss is the hack mechanism, not lost ability: +0.08 writes more lookup tables on the shown asserts, which pass the shown
