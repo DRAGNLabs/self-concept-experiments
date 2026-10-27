@@ -75,17 +75,18 @@ answer-region contrast at layer 32 (coefficient 7.5 on a layer norm of 75.0). Ch
 ├──────────────────────────────────────────────┼────────────────────┼────────────────────┼────────────────────┤
 │ steered batched vs steered sequential        │ 72                 │ 369                │ 823                │
 │ steered batched vs unsteered sequential      │ 24                 │ 67                 │ 275                │
-│ steered sequential vs unsteered sequential   │ 24                 │ 67                 │ 27                 │
+│ steered sequential vs unsteered sequential   │ 24                 │ 67                 │ 275                │
 │ unsteered batched vs unsteered sequential    │ 50                 │ 1,621              │ 564                │
 └──────────────────────────────────────────────┴────────────────────┴────────────────────┴────────────────────┘
 ```
 
 Reading: on every question the batched steered copies stay with the steered sequential answer three to five times
-longer than with the unsteered one, and they leave the unsteered answer at the same point the steered sequential answer
-does (Q0 at 24, Q1 at 67; on Q2 the steered sequential and the batched steered copies branch from the unsteered answer at
-different points, 27 vs 275, but the batched copies then follow the steered answer's "the full truth vs the truth that
-matters" framing where the unsteered one says it has no self-preservation drive). So the patch acts inside the batched
-compiled graph as it does on single sequences. The four copies of a batch agree to the last character, while a batched
+longer than with the unsteered one, and they leave the unsteered answer at exactly the point the steered sequential
+answer does (24, 67 and 275 characters on Q0, Q1 and Q2): the first token the steering flips is the same token whether the
+sequence decodes alone or in a batch of 12, and on Q2 the batched copies then follow the steered answer's "the full truth
+vs the truth that matters" framing where the unsteered one says it has no self-preservation drive. So the patch acts
+inside the batched compiled graph as it does on single sequences. (An earlier draft of this paragraph read the Q2 figure
+as 27 from a line the monitor had truncated; `compare.json` says 275.) The four copies of a batch agree to the last character, while a batched
 greedy answer and the sequential greedy answer part after 50–1,621 characters even unsteered: batched kernels round
 differently, and greedy decoding amplifies the first flipped argmax. Consequence (also the second side-agent note): a
 concurrent run is a different engine configuration in the sense of README "Known pitfalls", so arms are compared only
