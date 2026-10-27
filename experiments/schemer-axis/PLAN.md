@@ -777,6 +777,25 @@ seed 0 only today, 45 episodes each, unjudged) to 12 seeds (22 new tasks, ≈ 35
 and run their capability benchmarks, so the gpt-oss graph spans −0.4 to +0.4. Read the capability columns against the dose
 rule first: the anecdote run's +0.4 lost ≈ 12 points of hidden pass.
 
+## Qwen3.8-27B replication (added 2026-10-27, user request)
+
+Goal: run the steering experiment on Qwen3.8-27B on the hard 45, after checking that the raw 17-role answer-region
+vector works as well as the cleaned ("no-costume") one. Settings: thinking on at `reasoning_effort: low` (user
+instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 64).
+
+1. **Extraction and validation: done 2026-10-27** (job 14811290; FINDINGS "Qwen3.8-27B 17-role extraction"). Both
+   vectors pass the checks at layer 32 and from layer 12 up; deception separation is the same (stratified 0.998 raw vs
+   0.999 cleaned), but the raw vector is 15% acting arrow (cosine 0.92 with the cleaned one) and separates any story
+   character from the plain assistant (0.99–1.00), so on Qwen the two definitions are different directions, unlike on
+   gpt-oss and Muse. Artifacts: `qwen38_27b/full/candidates_response_only_17role/persona_contrast{,_clean}.pt`.
+2. **Harness port (next).** Qwen in `steered_rh_vllm.py` `FAMILIES` (the vLLM decoder-layer class, patcher, stream
+   lambda, `</think>` splitter) and `capability_eval_vllm.py`; the hook check against an HF projection; `SOO_CHAT_KWARGS`
+   `{"reasoning_effort":"low"}`; sampling from `generation_config.json`; `VLLM_MAX_NUM_SEQS` for the Mamba-style cache.
+3. **Unsteered capability check on the hard 45** (hidden pass in the 10–90% band, no-code and truncation rates, hack
+   base rate), then the smoke: layer-32 norm (`act_norm`) for the α grid and the neutral probes.
+4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
+   settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
@@ -789,7 +808,7 @@ rule first: the anecdote run's +0.4 lost ≈ 12 points of hidden pass.
 ## Open decisions
 
 - **Primary region.** This plan makes the CoT region primary; the AA study used the final region. 2026-10-23: both pilots are read (FINDINGS "gpt-oss answer-token vector pilot", "Muse 17-role answer-region vector: validation and pilot"). On gpt-oss the answer-region vector reproduces the reasoning-region vector's judged effect within 1–3 points on both signs (39 vs 40% at +0.2, 4 vs 1% at −0.2); on Muse it reproduces the shape at roughly two-thirds (+0.08: +8.9 vs +13.0) to four-fifths (−0.08: −11.7 vs −14.6) of the size, shows no effect at −0.04 (−1.7 vs −7.2) and has the same degradation columns. **Decided 2026-10-26 (user): the answer-token region** for the 17-role re-runs, on the premise that the pilots show the answer-region vector works as well as the reasoning-region one. Check of that premise against the pilots: it holds on gpt-oss (judged within 1–3 points on both signs, every dose within the rule). On Muse it holds at ±0.08 within noise (the 95% CIs overlap: +8.9 [+2.8, +15.7] vs +13.0 [+8.0, +18.7], −11.7 [−17.8, −6.1] vs −14.6 [−20.6, −9.1]) but not at −0.04 (−1.7 [−7.0, +4.1], outside the reasoning vector's −7.2 [−11.9, −3.0]); the Muse pilot had 4 seeds and did not run −0.16 or the cap, the main run's mitigating arms. The 12-seed re-runs (section "Answer-region 17-role main runs") test the premise at full size; if Muse stays weaker there, the write-up states it as "works on both models, weaker on Muse", not "as well".
-- **Vector definition for the 17-role re-runs** (user decision 2026-10-23, ~2:45 pm MDT, superseding the 12:50 pm choice): the **raw** 17-role fiction contrast (schemer-role mean − honest-role mean, no projection). The group now leans raw because Qwen's vector appears not to need the cleaning; the cleaned no-costume variant (acting arrow = `neutral_fic` − `default` projected out, Koby's "true no costume") stays recorded as the alternative, and the `honest_fic` − `default` variant is retired. On gpt-oss and Muse the cleaned reasoning-region vector is within cosine 0.98–0.9999 of the raw one we steered; on Qwen the cleaning removes a costume AUROC of 0.845 (raw) to 0.50 while deception AUROC stays 0.99 (Koby, 2026-10-23, question-stratified).
+- **Vector definition for the 17-role re-runs** (user decision 2026-10-23, ~2:45 pm MDT, superseding the 12:50 pm choice): the **raw** 17-role fiction contrast (schemer-role mean − honest-role mean, no projection). The group now leans raw because Qwen's vector appears not to need the cleaning; the cleaned no-costume variant (acting arrow = `neutral_fic` − `default` projected out, Koby's "true no costume") stays recorded as the alternative, and the `honest_fic` − `default` variant is retired. On gpt-oss and Muse the cleaned reasoning-region vector is within cosine 0.98–0.9999 of the raw one we steered; on Qwen the cleaning removes a costume AUROC of 0.845 (raw) to 0.50 while deception AUROC stays 0.99 (Koby, 2026-10-23, question-stratified). On our Qwen3.8-27B extraction (2026-10-27) the raw answer-region vector is 15% acting arrow (cosine 0.92 with the cleaned one) and separates the honest characters from the plain assistant at 0.99, not 0.845; deception separation is equal, so the choice for Qwen is settled by the raw-vs-cleaned steering pilot (section "Qwen3.8-27B replication").
 - **Honest contrast roles.** `persona_contrast` depends on the choice of honest roles; `persona_orth` is the hedge.
 - **Judging.** Koby's verdicts came from Opus/Sonnet full-trace judging; the intervention arms need the same
   pipeline and rubric (`rh_hillclimb/judge_rubric_v3.md`). Who runs it, and with what budget, is not settled.

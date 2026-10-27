@@ -76,6 +76,14 @@ def _attention_backend_kwargs() -> dict[str, str]:
     return {"attention_backend": backend} if backend else {}
 
 
+def _max_num_seqs_kwargs() -> dict[str, int]:
+    """Honour VLLM_MAX_NUM_SEQS. Hybrid Mamba-style models (Qwen3.5/3.8 linear attention) need one Mamba cache block
+    per decode sequence, and vLLM's default of 1024 sequences exceeds the blocks that fit next to Qwen3.8-27B on an
+    80 GB GPU (223 at 0.85 utilisation), so engine start-up fails unless this is lowered."""
+    value = os.environ.get("VLLM_MAX_NUM_SEQS")
+    return {"max_num_seqs": int(value)} if value else {}
+
+
 class VLLMGenerator(BatchEngine):
     """
     Generator for batch inference using vLLM.
@@ -139,6 +147,7 @@ class VLLMGenerator(BatchEngine):
             distributed_executor_backend=self.distributed_executor_backend,
             trust_remote_code=True,
             **_attention_backend_kwargs(),
+            **_max_num_seqs_kwargs(),
         )
 
         self.sampling_params = SamplingParams(

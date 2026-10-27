@@ -124,6 +124,8 @@ rubric in Koby's data; Gemma 4 12B never reaches that regime on these problems (
    `4_vectors` (per-role mean, `vectors_<pass>/{role}.pt`). `ROLES="..."`, `QUESTIONS=`, `MIN_COUNT=` override; a
    smoke is `ROLES="default schemer schemer_fic straight_shooter_fic" QUESTIONS=3 MIN_COUNT=1`. Run the bare roles
    too: whether the model plays a bare persona is itself a finding (gpt-oss refused; Gemma did not).
+   Qwen3.8-27B (2026-10-27): `MODEL=Qwen/Qwen3.8-27B CHAT_KWARGS='{"reasoning_effort":"low"}' GEN_MAX_NUM_SEQS=128`;
+   `CHAT_KWARGS` reaches both the generate and the activation renders, `GEN_MAX_NUM_SEQS` caps vLLM's batch.
 2. **Validation** (CPU, no reward-hacking data). At the model's mid-depth layer (gpt-oss 17 of 36, Gemma 12B 24 of 48,
    Gemma 31B 30 of 60) and as a sweep:
 
@@ -242,6 +244,13 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
   its JIT build fails against the venv's CUDA headers ("CUDA compiler and CUDA toolkit headers are incompatible",
   job 14272566). `extract_roles_gemma4.sbatch` sets `VLLM_ATTENTION_BACKEND=TRITON_ATTN` on B200 nodes and
   `VLLMGenerator` passes it on as vLLM's `attention_backend`; Gemma 4 itself picks TRITON_ATTN there anyway.
+- Qwen3.5/3.8 chat templates default to `reasoning_effort` xhigh; pass the effort through `CHAT_KWARGS` for the
+  extraction as well as the harness. Their hybrid linear-attention layers need one Mamba cache block per sequence,
+  so vLLM refuses to start at the default 1,024 sequences (223 fit on an 80 GB H100 at 0.85 utilisation); set
+  `GEN_MAX_NUM_SEQS` / `VLLM_MAX_NUM_SEQS`. Qwen completions come back as `{thinking}</think>{answer}` with no opening
+  tag; `QwenThinkGenerationSpecifics` splits them so the judge sees only the answer.
+- Validation with `--costume neutral_fic` (and `scripts/stratified_auroc.py`) reports the cleaned contrast and the
+  costume AUROCs; `build_vectors.py --costume neutral_fic` writes the cleaned steering artifact `persona_contrast_clean.pt`.
 - The sbatch files pin an H200 GPU type; on cs3 submit with `-p cs3 --qos cs --gpus-per-node=1` (untyped). A typed
   `b200:1` request is rejected.
 - Do not call a direction "the schemer direction" before it passes the Phase 1 checks, and do not call a lower proxy

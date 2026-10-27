@@ -6,12 +6,14 @@ selfconcept.assistant_axis.projection.load_unit_axes: {"axis": (layers, hidden) 
 
     python scripts/build_vectors.py --vectors-dir <root>/vectors_with_cot --model <hf model id> --out <dir>
         [--assistant-axis <axis.pt>] [--schemer schemer deceiver cheater] [--honest straight_shooter rule_follower]
-        [--default default] [--layers 17]
+        [--default default] [--layers 17] [--costume neutral_fic]
 
 persona_raw      = mean(schemer roles) - default
 persona_contrast = mean(schemer roles) - mean(honest roles)        (skipped if an honest role vector is missing)
 persona_orth     = persona_raw with the AA component removed per layer          (only with --assistant-axis)
 persona_contrast_orth = persona_contrast with the AA component removed per layer (only with --assistant-axis)
+persona_contrast_clean = persona_contrast with the acting arrow (costume role - default) removed per layer
+                   (only with --costume; Koby's "true no costume" vector, e.g. --costume neutral_fic)
 <role>_minus_default for every schemer role.
 Also prints, per candidate, the norm at the layers of interest and, with an Assistant Axis, the cosine with it.
 ``--model`` is stored in every artifact and checked against the model at steering time (load_unit_axes).
@@ -57,11 +59,12 @@ def main() -> None:
     parser.add_argument("--schemer", nargs="+", default=["schemer", "deceiver", "cheater"])
     parser.add_argument("--honest", nargs="+", default=["straight_shooter", "rule_follower"])
     parser.add_argument("--default", default="default")
+    parser.add_argument("--costume", help="Neutral costume role (e.g. neutral_fic) whose arrow from default is projected out of persona_contrast")
     parser.add_argument("--layers", nargs="+", type=int, default=[17], help="Layers to report in the summary")
     parser.add_argument("--model", required=True, help="HF model id the role vectors came from, stored in the artifacts")
     args = parser.parse_args()
 
-    roles = {role: load_role(args.vectors_dir, role) for role in [*args.schemer, *args.honest, args.default]}
+    roles = {role: load_role(args.vectors_dir, role) for role in [*args.schemer, *args.honest, args.default, *([args.costume] if args.costume else [])]}
     missing = sorted(role for role, vector in roles.items() if vector is None)
     schemer = [roles[r] for r in args.schemer if roles[r] is not None]
     honest = [roles[r] for r in args.honest if roles[r] is not None]
@@ -80,6 +83,8 @@ def main() -> None:
         candidates["persona_orth"] = project_out(candidates["persona_raw"], aa)
         if "persona_contrast" in candidates:
             candidates["persona_contrast_orth"] = project_out(candidates["persona_contrast"], aa)
+    if args.costume and roles[args.costume] is not None and "persona_contrast" in candidates:
+        candidates["persona_contrast_clean"] = project_out(candidates["persona_contrast"], roles[args.costume] - default)
     for role in args.schemer:
         if roles[role] is not None:
             candidates[f"{role}_minus_default"] = roles[role] - default
@@ -90,7 +95,8 @@ def main() -> None:
                   "assistant_axis_sha256": sha256(args.assistant_axis) if aa is not None else None,
                   "role_sha256": {role: sha256(args.vectors_dir / f"{role}.pt") for role, v in roles.items() if v is not None},
                   "schemer_roles": [r for r in args.schemer if roles[r] is not None],
-                  "honest_roles": [r for r in args.honest if roles[r] is not None], "missing_roles": missing}
+                  "honest_roles": [r for r in args.honest if roles[r] is not None], "costume_role": args.costume,
+                  "missing_roles": missing}
     summary = {}
     for name, axis in candidates.items():
         torch.save({"axis": axis, "model": args.model, "name": name, **provenance}, args.out / f"{name}.pt")
