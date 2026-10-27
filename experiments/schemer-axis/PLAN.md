@@ -856,6 +856,16 @@ answer-region main run; dose decisions go to the user):
    and above, as in `answer17_anecdotes/`.
 4. **Capability retention**: `capability_eval.sbatch` with GSM8K, MMLU-Pro, HumanEval and IFBench for every main-run arm.
 
+**Partitions (user 2026-10-27 ~5:20 pm MDT: no dw87 for the Muse pilot or the gpt-oss/Muse main runs, whatever the
+queue).** `gpu_pick.py` (5:20 pm) ranked `cs2 --qos cs` (H100) first for all three shapes, but cs2 had no idle H100 and
+its one way in was preempting our own Qwen concurrent baseline 14821701 (gstandby on cs-2-2), so cs2 under qos cs is off
+limits while that job runs there. Plan: Muse pilot (16 × ≤5 h) and Muse main (≈60 × ≤7 h) on `-p cs --qos cs
+--gpus-per-node=a100:1` (cheapest lane, priority over standby, not preemptible; our 64k-check tasks free 6 A100s there
+around 5:45 pm), with a `-p dw,cs,m13h,eng --qos gstandby --requeue` array as the second lane when cs is full (records
+resume). gpt-oss main (≈60 × ≤1.5 h, Hopper): `-p cs2 --qos cs --gpus-per-node=h100:1` once the Qwen baseline has left
+cs2, otherwise `-p eng,m13h --qos gstandby --requeue` (3 idle H200 at 5:20 pm, ~130 standby jobs ahead); the m13h `gpu`
+QOS costs more per hour than dw87 and is not used.
+
 **Status (2026-10-27 evening):** Qwen and gpt-oss axes in place; Muse extraction 14827417 and gpt-oss pilot 14827526
 queued; IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
