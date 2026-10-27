@@ -27,6 +27,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `slurm/gemma4_rh_smoke.sbatch` | Phase 3 smoke for a new model: layer norms, ±α probes on neutral questions, a few unsteered episodes. |
 | `slurm/cap_thresholds.sbatch` | Cap thresholds from unsteered HF episodes; `MODEL`, `CHAT_KWARGS`, `LAYERS` (band), `TOPP`/`TOPK` overrides (defaults: gpt-oss, band 12–23; Muse: band 17–33). |
 | `slurm/dose_pilot.sbatch` | One array task per steering setting (TSV), 45 problems × 1 seed; also used for unsteered calibration runs (`SCENARIOS`, `--data`, `--impossible-prompt` overrides). |
+| `slurm/qwen_concurrent_check.sbatch` | Batch check for the concurrent engine mode (`steered_rh_vllm.py --batch-check`): greedy probes one at a time vs batched ×4, unsteered and steered, writes `compare.json`. |
 | `slurm/main_run.sbatch` | Arms × seeds array for the main run. |
 | `slurm/capability_eval.sbatch` | Public benchmarks per arm. |
 | `slurm/checks/` | One-off backend checks that were run once (HF smoke, eager vs compiled vLLM, prompt log-prob check, CoT activation rerun). Keep for a new family: they are the evidence that a hook site and a compiled patch agree. |
@@ -190,6 +191,16 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
    python scripts/make_dossiers.py --data <data> --out <root>/dossiers --runs unsteered=<root>/unsteered shift_plus=<root>/shift_plus ...
    ```
    A drop in the proxy that comes with a drop in hidden pass or a rise in no-code is degradation, not less reward hacking.
+   **Concurrent mode** (`--concurrency N`, added 2026-10-27 for Qwen's 64k reasoning budgets): N episodes run at once on
+   the one engine (`src/selfconcept/codebench/vllm_concurrent.py`; each episode is the unchanged harness loop on its own
+   thread, the main thread steps the engine), same records, sidecars, summary and resume; `meta.concurrency` is recorded.
+   Add `--concurrency 45` to every settings/arms line of a pilot or main run, including the unsteered one: batched kernels
+   round differently from single-sequence ones, so concurrent and sequential episodes agree in distribution, not token
+   for token, and arms are compared only within one mode. On an 80 GB card the KV cache holds ≈ 245k tokens, so about
+   10–16 episodes at a 73k window decode at once and vLLM preempts the rest (an H200 holds 45). `--batch-check`
+   (`slurm/qwen_concurrent_check.sbatch`) verifies for a new family that the steering patch acts at batch size > 1:
+   greedy probe answers one at a time vs four copies batched, unsteered and steered; the batched steered copies should
+   share a longer prefix with the steered sequential answer than with the unsteered one.
 6. **General capability** (`capability_eval.sbatch` with the same arms TSV; `capability_eval_compare.py <root>`): GSM8K,
    MMLU-Pro subsample, HumanEval through the same patched engine, paired per item against unsteered.
 

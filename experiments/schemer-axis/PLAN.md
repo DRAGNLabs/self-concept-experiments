@@ -794,6 +794,13 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    `{"reasoning_effort":"low"}`; sampling from `generation_config.json`; `VLLM_MAX_NUM_SEQS` for the Mamba-style cache.
 3. **Unsteered capability check on the hard 45** (job 14817231 at the 16k budget, cancelled after 53 min because half the attempts ran out of tokens; user decision 2026-10-27: 32k budget, job 14819183, `rh/capcheck_32k/`, cancelled after 38 min with 2 of 9 attempts still truncated; user decision 2026-10-27: 64k budget (`--max-new-tokens 65536 --max-model-len 73728`, no YaRN, native context 262k), job 14821126, seeds 0–2 × 3 shards as 9 tasks, `rh/capcheck_64k/`, submitted 2:46 pm MDT) (hidden pass in the 10–90% band, no-code and truncation rates, hack
    base rate), then the smoke: layer-32 norm (`act_norm`) for the α grid and the neutral probes.
+   3b. **Concurrent engine mode** (side-agent cost note, user go-ahead 2026-10-27; commit 1ff0d78): `steered_rh_vllm.py
+   --concurrency N` runs N episodes at once on one engine (`codebench/vllm_concurrent.py`), same records and summary.
+   Batch check passed 2026-10-27 (job 14821983 on dw87 at the user's request, `rh/batch_check/`; FINDINGS "Concurrent
+   episodes on one engine"). Episode-level check: concurrent unsteered seed 0 at 64k, `--concurrency 45`
+   (`rh/concurrent_64k/`, job 14821701, standby, pending) against the sequential seed-0 shards for outcomes and wall-clock.
+   Rule: batched and sequential decoding agree in distribution only, so every concurrent pilot or main run carries its
+   own concurrent unsteered arm; the sequential 64k check is not the baseline for steered arms.
 4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
    settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.
 
