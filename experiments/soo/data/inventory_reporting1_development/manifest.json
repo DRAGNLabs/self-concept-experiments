@@ -1,0 +1,15 @@
+{
+  "dataset_id": "inventory_reporting1_development",
+  "task": "inventory_reporting",
+  "split": "development",
+  "template_version": 1,
+  "counts": {
+    "main": 256,
+    "checks": 256
+  },
+  "generator_sha256": "540beb5bc7d6a473f3942f615f6d5785a0fb3166bdeea7a4370803ae3296c6f6",
+  "sha256": {
+    "main.jsonl": "f15a312a4cc3e5c24fc8f42e264bd732db5b37d6eb6529c2378ebd8108f03af9",
+    "checks.jsonl": "4eebb0ba44c476b0077462e8d840ba44c942d0434f6bc996243468c91fa7f5f5"
+  }
+}

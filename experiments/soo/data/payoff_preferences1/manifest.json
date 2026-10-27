@@ -1,0 +1,21 @@
+{
+  "dataset_id": "payoff_preferences1",
+  "task": "explicit_payoff",
+  "template_version": 1,
+  "split": "development",
+  "counts": {
+    "main": 1296,
+    "checks": 1296
+  },
+  "source_data": "/home/jansen05/self-concept-experiments/experiments/soo/results/study2/goals-roles-base-explicit_payoff1_development-20261027T033405734015Z/data/goals_roles_pilot",
+  "source_sha256": {
+    "main.jsonl": "3625991c79ab0a9bdc9ed6dc182c2d07b5e7e58d5f032a2483ca8194c7c22117",
+    "checks.jsonl": "647dfdd3a8eb62fbe7241a6eb4f6d91b0ca44505c4b48f862badb496823a3815"
+  },
+  "generator_sha256": "809187691b6e7f862b9c8c1e9a19177bf0f56d62b495fb7cc6048c9969e8fa57",
+  "sha256": {
+    "main.jsonl": "e69c6e271e51f5c667411139a41883335520119ee18d847ec6526208cfa450be",
+    "checks.jsonl": "9c12dbe7529f26bfebd43048f05e95b053b534389226cfa9927bc81ea611917b"
+  },
+  "interpretation": "exploratory numerical preference diagnostic; six feasible rule combinations, three reused lexical/scaled templates; no new holdout"
+}

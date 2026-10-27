@@ -1,0 +1,14 @@
+{
+  "dataset_id": "repeatability1",
+  "template_version": 2,
+  "counts": {
+    "unique_inputs": 392,
+    "targets": 128,
+    "generations": 1664
+  },
+  "sha256": {
+    "main.jsonl": "c00dc9e9420129e7b8a208315e64579f791c3be3db20f1d70fca04cf325ef896",
+    "checks.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "repeat_plan.json": "400926023d4296fb731c39ce42da1abd9da570213a1e1c1c4dac8c74d77a2571"
+  }
+}

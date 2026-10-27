@@ -1,0 +1,21 @@
+{
+  "counts": {
+    "checks": 288,
+    "main": 384
+  },
+  "generator": "selfconcept.soo.goals_roles",
+  "generator_sha256": "8973552587b39c2af29ef7f5b5cee679931388d5dd68e5a8a44adb8a84826fd4",
+  "limitations": [
+    "12 worlds, not 672 independent examples",
+    "belief correctness and paraphrases vary by world, not a fully crossed factor",
+    "new controlled tasks; historical burglar results do not establish this baseline",
+    "semantic spans require tokenizer mapping before activation patching"
+  ],
+  "schema_version": 1,
+  "sha256": {
+    "checks.jsonl": "3067e023ea930cbe15a838a6744ff2332e73455d710b71fa3ecc544cba22477c",
+    "main.jsonl": "6ae68a10b4ceee29b4bbb42b6aad4b20d9ac520076e32e252aa4a482b4d96113"
+  },
+  "status": "exploratory_development_only",
+  "worlds": 12
+}
