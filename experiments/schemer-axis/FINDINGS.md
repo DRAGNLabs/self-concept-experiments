@@ -14,6 +14,16 @@ drop in hack rate reduced reward hacking when hidden-suite pass rate, no-code ra
 not call a result that is not distinguishable from random directions an association with this direction, and do not
 call a non-significant result evidence of no effect.
 
+## Vector recipe (decided 2026-10-27)
+
+The canonical schemer/deceiver vector is fitted on the 40 `generic` questions only (ids 0-39 of
+`data/questions.jsonl`, regardless of `split`); `intent` and `task` questions are not used in the fit. Most runs
+below (the 40-question extractions and the steering, dose-pilot and reward-hacking runs that used them) already used
+this recipe, so they stand as written. The 17-role gpt-oss extension's `gptoss120b_extension/full/axis_response_only`
+vector was instead fitted on the 64 `train` questions (generic + intent) and is not the canonical one; the
+generic-only 17-role vector is `gptoss120b/roles_fic/candidates_response_only_17role/persona_contrast.pt`. See PLAN
+"Expanded persona set".
+
 ## Current status
 
 2026-10-16 (rewritten; the dated sections below are the record). How to run any part of this is in
