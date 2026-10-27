@@ -49,7 +49,7 @@ ROOT="${ROOT:-$HOME/nobackup/autodelete/self-concept-experiments/schemer-axis/ro
 
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
-TRAIN_QUESTIONS="$(python -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["split"] == "train"])' "$QUESTIONS_FILE")"
+GENERIC_QUESTIONS="$(python -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["group"] == "generic"])' "$QUESTIONS_FILE")"
 
 echo "########## Generate ##########"
 python scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
@@ -71,7 +71,7 @@ for VARIANT in response_only with_cot; do
         --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.thinking true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
         --run.attn_implementation "$ATTENTION" --run.roles "$ROLES_BRACKET" \
         --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_$VARIANT"
-    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$TRAIN_QUESTIONS" --run.roles "$ROLES_BRACKET" \
+    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$GENERIC_QUESTIONS" --run.roles "$ROLES_BRACKET" \
         --run.activations_dir "$ROOT/act_$VARIANT" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_$VARIANT"
 done
 

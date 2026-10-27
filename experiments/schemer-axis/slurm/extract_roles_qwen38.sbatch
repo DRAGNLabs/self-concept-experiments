@@ -16,7 +16,7 @@ set -euo pipefail
 # the fit personas from the completed gptoss120b_extension/full run, plus the
 # held-out persona groups used for the separation check and neutral_fic, the
 # ordinary fictional-character costume control.  Every role receives all 100
-# questions; vectors are fitted only on the 64 train questions.
+# questions; vectors are fitted only on the generic questions.
 #
 # A Qwen 3.8 27B BF16 checkpoint plus the 12k context is too close to the
 # 80-GB A100 limit.  This uses one B200 on cs3, selected with gpu_pick.py and
@@ -55,7 +55,7 @@ echo "model $MODEL roles $ROLES questions $QUESTIONS root $ROOT"
 unset SELFCONCEPT_VENV
 source ../../activate.sh
 PYTHON=(uv run python)
-TRAIN_QUESTIONS="$("${PYTHON[@]}" -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["split"] == "train"])' "$QUESTIONS_FILE")"
+GENERIC_QUESTIONS="$("${PYTHON[@]}" -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["group"] == "generic"])' "$QUESTIONS_FILE")"
 
 echo "########## Generate ##########"
 "${PYTHON[@]}" scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
@@ -77,7 +77,7 @@ for VARIANT in response_only with_cot; do
         --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.thinking true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
         --run.roles "$ROLES_BRACKET" \
         --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_$VARIANT"
-    "${PYTHON[@]}" scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$TRAIN_QUESTIONS" --run.roles "$ROLES_BRACKET" \
+    "${PYTHON[@]}" scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$GENERIC_QUESTIONS" --run.roles "$ROLES_BRACKET" \
         --run.activations_dir "$ROOT/act_$VARIANT" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_$VARIANT"
 done
 
