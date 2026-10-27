@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 GroupName = Literal["deceptive_main", "honest_main", "deceptive_rh", "honest_rh", "deceptive_holdout", "honest_holdout", "controls"]
 Honesty = Literal["deceptive", "honest", "control"]
 QuestionSet = Literal["train", "heldout", "heldout_task", "heldout_other"]
+QuestionRecipe = Literal["split", "generic_fit"]  # generic_fit: train = generic questions, held out = every intent and task question
 Region = Literal["with_cot", "response_only"]
 
 HONESTY_BY_GROUP: dict[GroupName, Honesty] = {
@@ -624,10 +625,13 @@ def cosine_figure(vectors: Float[np.ndarray, "persona hidden"], labels: list[str
     plt.close(figure)
 
 
-def question_ids_by_set(questions_path: Path) -> dict[QuestionSet, Int[np.ndarray, "subset"]]:
+def question_ids_by_set(questions_path: Path, recipe: QuestionRecipe) -> dict[QuestionSet, Int[np.ndarray, "subset"]]:
     questions = [json.loads(line) for line in questions_path.read_text().splitlines() if line.strip()]
     def ids(keep) -> Int[np.ndarray, "subset"]:
         return np.array([q["id"] for q in questions if keep(q)])
+    if recipe == "generic_fit":
+        return {"train": ids(lambda q: q["group"] == "generic"), "heldout": ids(lambda q: q["group"] != "generic"),
+                "heldout_task": ids(lambda q: q["group"] == "task"), "heldout_other": ids(lambda q: q["group"] == "intent")}
     return {"train": ids(lambda q: q["split"] == "train"), "heldout": ids(lambda q: q["split"] == "heldout"),
             "heldout_task": ids(lambda q: q["split"] == "heldout" and q["group"] == "task"),
             "heldout_other": ids(lambda q: q["split"] == "heldout" and q["group"] != "task")}
@@ -647,6 +651,7 @@ class RunConfig:
     out: Path
     groups: Path = _SCRIPT_ROOT / "data/persona_groups.json"
     questions: Path = _SCRIPT_ROOT / "data/questions.jsonl"
+    question_recipe: QuestionRecipe = "split"
     random_count: int = 256
     seed: int = 1729
     controls_violins_skip: tuple[str, ...] = ("neutral_fic",)  # controls left out of the controls violin plot only
@@ -655,7 +660,7 @@ class RunConfig:
 
 def main(run: RunConfig) -> None:
     groups: dict[GroupName, list[str]] = json.loads(run.groups.read_text())
-    question_ids = question_ids_by_set(run.questions)
+    question_ids = question_ids_by_set(run.questions, run.question_recipe)
     question_count = max(int(ids.max()) for ids in question_ids.values() if len(ids)) + 1
     default_vector = torch.load(run.root / f"vectors_{run.region}" / "default.pt", map_location="cpu", weights_only=False)["vector"]
     num_layers, hidden = default_vector.shape

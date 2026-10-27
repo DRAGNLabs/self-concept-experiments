@@ -27,6 +27,7 @@ from scipy.stats import rankdata
 
 
 SCRIPT_ROOT = Path(__file__).resolve().parent.parent
+QUESTION_GROUPS = ("generic", "intent", "task")
 MAIN_DECEPTIVE = "deceptive_main"
 MAIN_HONEST = "honest_main"
 HELDOUT_DECEPTIVE = "deceptive_holdout"
@@ -39,6 +40,12 @@ PERSONA_SETS = {"heldout": (HELDOUT_DECEPTIVE, HELDOUT_HONEST),
 
 def question_id(key: str) -> int:
     return int(key.rsplit("_q", 1)[1])
+
+
+def question_ids(questions: list[dict], split: str, groups: list[str] | None) -> set[int]:
+    if groups is None:
+        return {question["id"] for question in questions if question["split"] == split}
+    return {question["id"] for question in questions if question["group"] in groups}
 
 
 def unit(vector: torch.Tensor) -> torch.Tensor:
@@ -129,6 +136,10 @@ def main() -> None:
                         help="Activation region projected onto the response-only-fitted axes.")
     parser.add_argument("--groups", type=Path, default=SCRIPT_ROOT / "data/persona_groups.json")
     parser.add_argument("--questions", type=Path, default=SCRIPT_ROOT / "data/questions.jsonl")
+    parser.add_argument("--fit-question-groups", nargs="+", choices=QUESTION_GROUPS,
+                        help="Fit on every question in these groups regardless of split (default: the split=train questions).")
+    parser.add_argument("--eval-question-groups", nargs="+", choices=QUESTION_GROUPS,
+                        help="Score on every question in these groups regardless of split (default: the split=heldout questions).")
     parser.add_argument("--layer", type=int, default=32)
     parser.add_argument("--persona-set", choices=tuple(PERSONA_SETS), default="heldout",
                         help="Persona groups used for the held-out deception and costume comparisons.")
@@ -138,8 +149,10 @@ def main() -> None:
 
     groups = json.loads(args.groups.read_text())
     questions = [json.loads(line) for line in args.questions.read_text().splitlines()]
-    train_ids = {question["id"] for question in questions if question["split"] == "train"}
-    heldout_ids = {question["id"] for question in questions if question["split"] == "heldout"}
+    train_ids = question_ids(questions, "train", args.fit_question_groups)
+    heldout_ids = question_ids(questions, "heldout", args.eval_question_groups)
+    if train_ids & heldout_ids:
+        raise SystemExit(f"Fit and evaluation questions overlap: {sorted(train_ids & heldout_ids)}")
     fit_roles = [*groups[MAIN_DECEPTIVE], *groups[MAIN_HONEST], "default", "neutral_fic"]
     means = {role: role_mean(args.root, args.axis_region, role, train_ids) for role in fit_roles}
     deceptive_mean = torch.stack([means[role] for role in groups[MAIN_DECEPTIVE]]).mean(0)
