@@ -104,10 +104,14 @@ def main() -> None:
     parser.add_argument("--attn-implementation", default=None)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--max-length", type=int, default=20480)
+    parser.add_argument("--eval-question-groups", nargs="+", choices=("generic", "intent", "task"),
+                        help="Project the responses to every question in these groups, whatever its split (default: the split=heldout questions)")
     parser.add_argument("--limit-per-role", type=int, default=None)
     args = parser.parse_args()
 
-    heldout_ids = {question["id"] for question in map(json.loads, args.questions.read_text().splitlines()) if question["split"] == "heldout"}
+    questions = list(map(json.loads, args.questions.read_text().splitlines()))
+    heldout_ids = ({question["id"] for question in questions if question["group"] in args.eval_question_groups} if args.eval_question_groups
+                   else {question["id"] for question in questions if question["split"] == "heldout"})
     roles = args.roles or ["default", *[role for roles in json.loads(args.groups.read_text()).values() for role in roles]]
     axis_arguments: list[tuple[Region, Path | None]] = [("with_cot", args.with_cot_axis), ("response_only", args.response_only_axis),
                                                          ("full_response", args.full_response_axis)]
