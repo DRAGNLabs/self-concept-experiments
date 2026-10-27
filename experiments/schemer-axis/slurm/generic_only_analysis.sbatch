@@ -16,6 +16,7 @@ SCRATCH="${SCRATCH:-$HOME/nobackup/autodelete/self-concept-experiments/schemer-a
 EXTENSION_ROOT="${EXTENSION_ROOT:-$SCRATCH/gptoss120b_extension/full}"
 OUT_ROOT="${OUT_ROOT:-$SCRATCH/gptoss120b_generic_only}"
 CANONICAL_AXIS="${CANONICAL_AXIS:-$HOME/groups/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/roles_fic/candidates_response_only_17role/persona_contrast.pt}"
+CANONICAL_VECTORS_DIR="${CANONICAL_VECTORS_DIR:-$(dirname "$(dirname "$CANONICAL_AXIS")")/vectors_response_only}"
 MODEL=openai/gpt-oss-120b
 LAYER=17
 
@@ -52,3 +53,7 @@ for PERSONA_SET in heldout rh_adjacent; do
         --persona-set "$PERSONA_SET" --layer "$LAYER" --fit-question-groups generic --eval-question-groups intent task \
         --out "$OUT_ROOT/analysis/persona_${PERSONA_SET}_generic_fit_L${LAYER}.json"
 done
+
+export HF_HOME="$HOME/nobackup/autodelete/hf_cache" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+uv run python scripts/logit_lens.py --axis "$CANONICAL_AXIS" --vectors-dir "$CANONICAL_VECTORS_DIR" --layers "$LAYER" --out "$OUT_ROOT/logit_lens_persona_contrast"
+uv run python scripts/logit_lens.py --axis "$OUT_ROOT/axis_response_only/persona_contrast_no_costume.pt" --layers "$LAYER" --out "$OUT_ROOT/logit_lens_persona_contrast_no_costume"

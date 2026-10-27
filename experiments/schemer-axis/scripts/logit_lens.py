@@ -65,9 +65,9 @@ def mean_role_vector(vectors_dir: Path, roles: list[str]) -> Float[torch.Tensor,
     return torch.stack([torch.load(vectors_dir / f"{role}.pt", map_location="cpu", weights_only=False)["vector"].float() for role in roles]).mean(dim=0)
 
 
-def directions_from_artifact(axis_path: Path) -> dict[str, Float[torch.Tensor, "layer hidden"]]:
+def directions_from_artifact(axis_path: Path, vectors_dir: Path | None) -> dict[str, Float[torch.Tensor, "layer hidden"]]:
     artifact = torch.load(axis_path, map_location="cpu", weights_only=False)
-    vectors_dir = Path(artifact["vectors_dir"])
+    vectors_dir = vectors_dir or Path(artifact["vectors_dir"])
     default = mean_role_vector(vectors_dir, ["default"])
     directions_by_name = {
         artifact["name"]: artifact["axis"].float(),
@@ -131,6 +131,7 @@ def markdown_report(lenses: list[DirectionLens], random_z_by_ranking: dict[str, 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--axis", type=Path, required=True, help="Artifact from build_vectors.py (persona_contrast.pt)")
+    parser.add_argument("--vectors-dir", type=Path, help="Per-role vectors for the halves; default: the vectors_dir stored in the artifact")
     parser.add_argument("--layers", nargs="+", type=int, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--top-k", type=int, default=100)
@@ -142,7 +143,7 @@ def main() -> None:
     model_name = torch.load(args.axis, map_location="cpu", weights_only=False)["model"]
     unembedding = load_unembedding(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    directions_by_name = directions_from_artifact(args.axis)
+    directions_by_name = directions_from_artifact(args.axis, args.vectors_dir)
     lenses = [lens_direction(unembedding, tokenizer, direction[layer], layer, name, args.top_k)
               for layer in args.layers for name, direction in directions_by_name.items()]
     random_z_by_ranking = random_extreme_z(unembedding, unembedding["gain_scaled_weight"].shape[1], args.random_directions, args.seed)
