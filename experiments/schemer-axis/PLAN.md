@@ -768,7 +768,9 @@ signature set, as judged, no adjudication; unflagged hidden-pass audit):
 start first: job 14779631 (gpt-oss, array 0–35, 2.5 h, `VLLM_GPU_MEM=0.95`), 14779632 (Muse, array 4–23, 8 h), 14779633
 (gpt-oss capeval, array 0–2), 14779634 (Muse capeval, array 0–1); the random-arm tasks (14779631_24–35, 14779632_12–23,
 14779633_2, 14779634_1) were cancelled while still pending, leaving ±0.1 × 12 seeds, Muse +0.04 seeds 4–11 and three
-capeval tasks. Judging follows when the arms are in.
+capeval tasks. Judging follows when the arms are in. **gpt-oss ±0.1 done and judged 2026-10-26** (FINDINGS "gpt-oss half-dose arms": 7.6% at −0.1, 23.5% at +0.1,
+scan 4.8 / 7.6 / 11.7 / 23.5 / 39.1%; benchmarks 14779633 clear; no audit for these arms). Muse capeval 14779634 (+0.04)
+done 7:24 pm; Muse +0.04 seeds 4–11 running.
 
 **Later (to do, user 2026-10-26, not submitted):** extend the gpt-oss ±0.4 arms (`answer17_anecdotes/coding/arms_pm0.4.tsv`,
 seed 0 only today, 45 episodes each, unjudged) to 12 seeds (22 new tasks, ≈ 35 min each on cs/cs2), judge them the same way
