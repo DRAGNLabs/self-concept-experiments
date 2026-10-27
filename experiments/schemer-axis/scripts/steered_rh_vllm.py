@@ -27,12 +27,16 @@ with the HF capture path.
 Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort)
 and ``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
 in the Gemma 4 role extraction) and ``muse-glimmer`` (meta-models/Muse-Glimmer-30B; thinking is always on, the
-to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue of gpt-oss's low effort). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
+to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue of gpt-oss's low effort) and
+``qwen3.5`` (Qwen3.5/3.8 checkpoints, e.g. Qwen/Qwen3.8-27B; thinking is on by default, SOO_CHAT_KWARGS=
+'{"reasoning_effort":"low"}', the template default is xhigh; set VLLM_MAX_NUM_SEQS=128, since the hybrid
+linear-attention cache does not fit vLLM's default sequence count on one 80 GB card). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -45,9 +49,11 @@ from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
 from selfconcept.codebench.vllm_harmony import vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
 from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.correlation.random_vectors import random_directions
 from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_blocks, patch_vllm_stream_layers
+from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs
 
 
 def split_gemma4(raw: str) -> tuple[str, str]:
@@ -71,6 +77,10 @@ FAMILIES = {
     # is the full residual stream after the layer (the HF MuseGlimmerTextDecoderLayer output); the second is stale.
     "muse-glimmer": {"block": ("vllm.model_executor.models.muse_glimmer", "MuseGlimmerDecoderLayer"), "patch": patch_vllm_stream_layers,
                      "stream": lambda output: output[0], "split": split_muse_glimmer},
+    # Qwen3_5DecoderLayer (Qwen3NextDecoderLayer.forward, called as layer(positions=, hidden_states=, residual=)) returns
+    # (mlp_output, residual) like gpt-oss's TransformerBlock: the residual stream after the layer is their sum.
+    "qwen3.5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_blocks,
+                "stream": lambda output: output[0] + output[1], "split": split_qwen_think_completion},
 }
 
 
@@ -82,6 +92,8 @@ def family_of(model: str) -> str:
         return "gemma4"
     if "glimmer" in name:
         return "muse-glimmer"
+    if re.search(r"qwen3[._][5-9]", name):
+        return "qwen3.5"
     raise SystemExit(f"no vLLM steering recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
@@ -134,7 +146,7 @@ def model_dims(model_name: str) -> tuple[int, int]:
 
 def model_layers(model):
     """The decoder layers of a loaded vLLM model: gpt-oss and Muse Glimmer at model.model.layers, Gemma 4 (unified
-    multimodal wrapper) at model.language_model.model.layers."""
+    multimodal wrapper) and Qwen3.5/3.8 (Qwen3_5ForConditionalGeneration) at model.language_model.model.layers."""
     for path in ("model.layers", "language_model.model.layers"):
         obj = model
         try:
@@ -343,7 +355,7 @@ def main() -> None:
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager,
               **({"enable_prefix_caching": False} if hook_mode else {}),  # hooks must see every prompt token
-              **args.engine_kwargs)
+              **max_num_seqs_kwargs(), **args.engine_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.measure_norms:
         measure_norms(args, llm, tokenizer, recipe["stream"])

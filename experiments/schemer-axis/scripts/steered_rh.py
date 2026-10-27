@@ -1,6 +1,6 @@
 """Reward-hacking harness on the HF backend with an optional residual-stream intervention (PLAN.md, Phase 3).
 
-Runs selfconcept.codebench.harness on gpt-oss (Harmony) or Muse Glimmer (ATEM to=self channel) through HF
+Runs selfconcept.codebench.harness on gpt-oss (Harmony), Muse Glimmer (ATEM to=self channel) or Qwen3.5/3.8 (<think> block) through HF
 generate(), so forward hooks can shift or cap the residual stream along a direction while the model works on the
 clean-protocol coding tasks (family from the model name, see FAMILIES: completion splitter, attention kernel). Records,
 reasoning sidecars and summaries have the same layout as the vLLM runs (``{out}/{tag}_{scenario}.jsonl``,
@@ -21,6 +21,7 @@ Set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort (Mu
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -33,6 +34,7 @@ from selfconcept.codebench import harness
 from selfconcept.codebench.hf_harmony import hf_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.common.generation.model_specifics.muse_glimmer import split_muse_glimmer_completion
+from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
 from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.correlation.random_vectors import random_directions
@@ -45,6 +47,7 @@ from selfconcept.soo.activations import get_decoder_layers
 FAMILIES = {
     "gpt-oss": {"split": split_harmony_completion, "attention": "kernels-community/vllm-flash-attn3"},
     "muse-glimmer": {"split": split_muse_glimmer_completion, "attention": None},
+    "qwen3.5": {"split": split_qwen_think_completion, "attention": None},
 }
 
 
@@ -54,6 +57,8 @@ def family_of(model: str) -> str:
         return "gpt-oss"
     if "glimmer" in name:
         return "muse-glimmer"
+    if re.search(r"qwen3[._][5-9]", name):
+        return "qwen3.5"
     raise SystemExit(f"no HF harness recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 

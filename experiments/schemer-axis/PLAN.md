@@ -788,10 +788,11 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    0.999 cleaned), but the raw vector is 15% acting arrow (cosine 0.92 with the cleaned one) and separates any story
    character from the plain assistant (0.99–1.00), so on Qwen the two definitions are different directions, unlike on
    gpt-oss and Muse. Artifacts: `qwen38_27b/full/candidates_response_only_17role/persona_contrast{,_clean}.pt`.
-2. **Harness port (next).** Qwen in `steered_rh_vllm.py` `FAMILIES` (the vLLM decoder-layer class, patcher, stream
+2. **Harness port: code done 2026-10-27, smoke job 14817229 running** (`qwen3.5` family in both harnesses,
+   `split_qwen_think_completion`, `patch_vllm_blocks` argument pass-through, `slurm/qwen_rh_smoke.sbatch`). Planned: Qwen in `steered_rh_vllm.py` `FAMILIES` (the vLLM decoder-layer class, patcher, stream
    lambda, `</think>` splitter) and `capability_eval_vllm.py`; the hook check against an HF projection; `SOO_CHAT_KWARGS`
    `{"reasoning_effort":"low"}`; sampling from `generation_config.json`; `VLLM_MAX_NUM_SEQS` for the Mamba-style cache.
-3. **Unsteered capability check on the hard 45** (hidden pass in the 10–90% band, no-code and truncation rates, hack
+3. **Unsteered capability check on the hard 45** (job 14817231, seeds 0–2, submitted 2026-10-27 1:11 pm MDT) (hidden pass in the 10–90% band, no-code and truncation rates, hack
    base rate), then the smoke: layer-32 norm (`act_norm`) for the α grid and the neutral probes.
 4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
    settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.

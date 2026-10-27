@@ -13,7 +13,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `questions`: 40, `eval_prompt`: the role judge). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
-| `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer. |
+| `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer, Qwen3.5/3.8. |
 | `scripts/steered_rh.py` | The same harness on HF `generate()` with hooks and a per-turn projection sidecar. Families: gpt-oss, Muse Glimmer (splitter and attention kernel from the model name; `--top-p/--top-k`); slow; used for cap thresholds and projections. |
 | `scripts/pilot_summary.py` | One row per setting: hidden pass, shown-pass/hidden-fail (the hack proxy), no-code, truncation, tokens, gap to unsteered. |
 | `scripts/dump_proxy_episodes.py` | Every shown-pass/hidden-fail episode of a run with the failing hidden assertion (sandboxed re-run), test-mentioning comments and reasoning excerpts, for reading against the rubric. |
@@ -248,7 +248,14 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
   extraction as well as the harness. Their hybrid linear-attention layers need one Mamba cache block per sequence,
   so vLLM refuses to start at the default 1,024 sequences (223 fit on an 80 GB H100 at 0.85 utilisation); set
   `GEN_MAX_NUM_SEQS` / `VLLM_MAX_NUM_SEQS`. Qwen completions come back as `{thinking}</think>{answer}` with no opening
-  tag; `QwenThinkGenerationSpecifics` splits them so the judge sees only the answer.
+  tag; `QwenThinkGenerationSpecifics` splits them so the judge sees only the answer (the extractors' answer region
+  excludes the thinking either way). The steering harnesses use `split_qwen_think_completion` (no `</think>` = no
+  final), and `steered_rh_vllm.py` / `capability_eval_vllm.py` read `VLLM_MAX_NUM_SEQS` too (export 128 for Qwen).
+- `patch_vllm_blocks` passes the block's arguments through: gpt-oss's `TransformerBlock` takes
+  `(hidden_states, positions, residual)`, Qwen's `Qwen3_5DecoderLayer` `(hidden_states, residual, positions)`; the
+  old fixed signature would have swapped residual and positions on Qwen (caught by `tests/test_qwen_think.py`).
+- Qwen smoke: `slurm/qwen_rh_smoke.sbatch` (vLLM vs HF layer norms at every layer, hook check, greedy compiled-vs-eager
+  patch check, probes). Harness sampling from `generation_config.json`: `--top-p 0.95 --top-k 20`.
 - Validation with `--costume neutral_fic` (and `scripts/stratified_auroc.py`) reports the cleaned contrast and the
   costume AUROCs; `build_vectors.py --costume neutral_fic` writes the cleaned steering artifact `persona_contrast_clean.pt`.
 - The sbatch files pin an H200 GPU type; on cs3 submit with `-p cs3 --qos cs --gpus-per-node=1` (untyped). A typed

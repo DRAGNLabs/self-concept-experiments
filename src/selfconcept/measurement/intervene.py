@@ -97,13 +97,14 @@ def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
 
     Unlike a hook registered after engine start, a class patch made before ``LLM(...)`` is traced into torch.compile
     and captured into CUDA graphs, so it stays in effect at full speed. Transform tensors must already live on the
-    model's device (no host-to-device copies inside a captured graph). Returns a function that restores the
-    original forward."""
+    model's device (no host-to-device copies inside a captured graph). Arguments pass through unchanged, since the
+    forward signatures differ (gpt-oss ``(hidden_states, positions, residual)``, Qwen3.5/3.8's ``Qwen3_5DecoderLayer``
+    ``(hidden_states, residual, positions)``). Returns a function that restores the original forward."""
     original = block_cls.forward
     transforms = dict(transforms_by_layer)
 
-    def forward(self, hidden_states, positions, residual):
-        mlp_output, residual = original(self, hidden_states, positions, residual)
+    def forward(self, *args, **kwargs):
+        mlp_output, residual = original(self, *args, **kwargs)
         transform = transforms.get(self.layer_idx)
         if transform is not None:
             stream = mlp_output + residual

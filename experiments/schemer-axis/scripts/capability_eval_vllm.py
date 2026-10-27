@@ -38,6 +38,7 @@ from steered_rh_vllm import FAMILIES, build_transforms, directions_for, family_o
 from selfconcept.codebench import sandbox  # noqa: E402
 from selfconcept.common.chat import chat_template_kwargs  # noqa: E402
 from selfconcept.common.sampling import turn_sampling_seed  # noqa: E402
+from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs  # noqa: E402
 
 TASKS = ("gsm8k", "mmlu_pro", "humaneval")
 LETTERS = "ABCDEFGHIJ"
@@ -260,7 +261,7 @@ def main() -> None:
         steering["patched_layers"] = sorted(transforms)
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
-              gpu_memory_utilization=args.gpu_memory_utilization)
+              gpu_memory_utilization=args.gpu_memory_utilization, **max_num_seqs_kwargs())
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     args.out.mkdir(parents=True, exist_ok=True)
     meta = {"model": args.model, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
