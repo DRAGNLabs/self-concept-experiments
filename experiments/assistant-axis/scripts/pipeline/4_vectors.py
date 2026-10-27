@@ -7,7 +7,7 @@ For each role, reduces its per-response activations (from step 2) to a single ve
   - other roles: mean over activations whose judge score (step 3) is 3 (fully in role),
     requiring at least ``min_count`` such samples.
 With ``question_indices`` set, only responses to those questions count (e.g. a training split).
-Writes one ``{role}.pt`` file per role holding {"vector", "type", "role"}.
+Writes one ``{role}.pt`` file per role holding {"vector", "type", "role", "question_indices"} (None = all questions).
 
 Usage (from experiments/assistant-axis):
     python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml
@@ -119,7 +119,7 @@ def main(run: RunConfig = RunConfig()) -> None:
                 vector = compute_pos_3_vector(activations, scores, run.min_count)
                 vector_type = "pos_3"
 
-            torch.save({"vector": vector, "type": vector_type, "role": role}, output_file)
+            torch.save({"vector": vector, "type": vector_type, "role": role, "question_indices": run.question_indices}, output_file)
             successful += 1
         except ValueError as e:
             logger.warning(f"{role}: {e}")

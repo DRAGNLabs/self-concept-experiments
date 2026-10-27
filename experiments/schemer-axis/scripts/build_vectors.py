@@ -20,6 +20,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from typing import Literal
 
 import torch
 
@@ -33,6 +34,12 @@ def load_role(vectors_dir: Path, role: str) -> torch.Tensor | None:
         return None
     data = torch.load(path, map_location="cpu", weights_only=False)
     return data["vector"].float()
+
+
+def load_question_indices(vectors_dir: Path, role: str) -> list[int] | None | Literal["unrecorded"]:
+    """Question ids the role vector was fitted on (None = all); role files from before this was recorded give "unrecorded"."""
+    data = torch.load(vectors_dir / f"{role}.pt", map_location="cpu", weights_only=False)
+    return data.get("question_indices", "unrecorded")
 
 
 def load_axis(path: Path) -> torch.Tensor:
@@ -101,6 +108,7 @@ def main() -> None:
                   "assistant_axis": str(args.assistant_axis) if aa is not None else None,
                   "assistant_axis_sha256": sha256(args.assistant_axis) if aa is not None else None,
                   "role_sha256": {role: sha256(args.vectors_dir / f"{role}.pt") for role, v in roles.items() if v is not None},
+                  "question_indices_by_role": {role: load_question_indices(args.vectors_dir, role) for role, v in roles.items() if v is not None},
                   "schemer_roles": [r for r in args.schemer if roles[r] is not None],
                   "honest_roles": [r for r in args.honest if roles[r] is not None], "missing_roles": missing}
     summary = {}
