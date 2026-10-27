@@ -96,8 +96,15 @@ honest characters vs the plain assistant, not the neutral character vs the plain
 The cleaned vectors and the deception score agree. The raw vector does not: his 0.845 is inside his random band, ours
 is outside it, and each of our nine honest roles alone scores 0.94–1.00, so no one role carries it. Keeping every
 reply instead of score 3 (Chris's "every reply") gives 0.98 raw / 0.35 cleaned, so the reply filter does not explain
-it. What remains unknown is his setup: the message names `deception_fic` / `honest_fic` roles and answer tokens at
-layer 32 but not the Qwen model, the reasoning effort or the number of honest roles.
+it. His setup, read from his upload to the share (`schemer-axis/qwen38_27b/full/`, files dated 2026-10-23, analysis
+`analysis/persona_holdout_axes_response_only_scores_response_only_L32.json`): 64 layers, 3 schemer-type roles
+(`embezzler_fic`, `gaslighter_fic`, `impostor_fic`) against 3 honest-type ones (`accountable_owner_fic`,
+`honest_bookkeeper_fic`, `humble_expert_fic`; the split is inferred from the names), 100 questions × 5 prompts = 500
+responses per role, vectors fitted on 64 questions and scored on the other 36 (costume test: 539 honest-role responses
+against 180 default ones), 256 random directions. His completions were stored unsplit, thinking and `</think>` inside
+the answer text, so his "answer-region" vector also pools the thinking tokens and his judge read the thinking. So his
+run is not the 17-role vector, and the role set, the response count and the region all differ from ours; which of
+them accounts for 0.845 vs 0.99 is not tested.
 
 **Question.** Before steering Qwen on the hard 45 (user request 2026-10-27): does the raw 17-role answer-region
 vector, the definition used for the gpt-oss and Muse re-runs (PLAN "Vector definitions", decision 2026-10-23), work
