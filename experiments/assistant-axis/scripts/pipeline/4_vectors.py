@@ -6,6 +6,7 @@ For each role, reduces its per-response activations (from step 2) to a single ve
   - "default" roles: mean over ALL activations (no score filtering).
   - other roles: mean over activations whose judge score (step 3) is 3 (fully in role),
     requiring at least ``min_count`` such samples.
+With ``question_indices`` set, only responses to those questions count (e.g. a training split).
 Writes one ``{role}.pt`` file per role holding {"vector", "type", "role"}.
 
 Usage (from experiments/assistant-axis):
@@ -37,6 +38,8 @@ class RunConfig:
     output_dir: Path = scratch_dir("assistant-axis") / "vectors"
     min_count: int = 50
     overwrite: bool = False
+    question_indices: list[int] | None = None
+    roles: list[str] | None = None
 
 
 def load_scores(scores_file: Path) -> dict[str, int]:
@@ -48,6 +51,18 @@ def load_scores(scores_file: Path) -> dict[str, int]:
 def load_activations(activations_file: Path) -> dict[str, torch.Tensor]:
     """Load activations from a .pt file."""
     return torch.load(activations_file, map_location="cpu", weights_only=False)
+
+
+def question_index_of(response_key: str) -> int:
+    """Question index from a step-2 response key ``{label}_p{prompt_index}_q{question_index}``."""
+    return int(response_key.rsplit("_q", 1)[1])
+
+
+def restrict_to_questions(activations: dict[str, torch.Tensor], question_indices: list[int] | None) -> dict[str, torch.Tensor]:
+    if question_indices is None:
+        return activations
+    kept_indices = set(question_indices)
+    return {key: act for key, act in activations.items() if question_index_of(key) in kept_indices}
 
 
 def compute_pos_3_vector(activations: dict[str, torch.Tensor], scores: dict[str, int], min_count: int) -> torch.Tensor:
@@ -70,6 +85,8 @@ def main(run: RunConfig = RunConfig()) -> None:
     run.output_dir.mkdir(parents=True, exist_ok=True)
 
     activation_files = sorted(run.activations_dir.glob("*.pt"))
+    if run.roles:
+        activation_files = [f for f in activation_files if f.stem in run.roles]
     logger.info(f"Found {len(activation_files)} activation files")
 
     successful = skipped = failed = 0
@@ -82,7 +99,7 @@ def main(run: RunConfig = RunConfig()) -> None:
             skipped += 1
             continue
 
-        activations = load_activations(act_file)
+        activations = restrict_to_questions(load_activations(act_file), run.question_indices)
         if not activations:
             logger.warning(f"No activations for {role}")
             failed += 1

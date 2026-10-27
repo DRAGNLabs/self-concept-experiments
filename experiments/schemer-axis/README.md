@@ -11,6 +11,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | Path | What it is |
 |---|---|
 | `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `questions`: 40, `eval_prompt`: the role judge). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
+| `data/questions.jsonl` | Koby's shared question file (from main, 2026-10-27): ids 0–39 `generic` (the first 40 assistant-axis extraction questions every earlier run used), 40–79 `intent`, 80–99 `task`; `split` train (64) / heldout (36). The extraction sbatch files generate all of them and fit vectors on the train ids (`TRAIN_FILTER=1`, default). |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
 | `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer, Qwen3.5/3.8. |
@@ -202,7 +203,10 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
    greedy probe answers one at a time vs four copies batched, unsteered and steered; the batched steered copies should
    share a longer prefix with the steered sequential answer than with the unsteered one.
 6. **General capability** (`capability_eval.sbatch` with the same arms TSV; `capability_eval_compare.py <root>`): GSM8K,
-   MMLU-Pro subsample, HumanEval through the same patched engine, paired per item against unsteered.
+   MMLU-Pro subsample, HumanEval and IFBench (added 2026-10-27; `allenai/IFBench_test`, 300 prompts with verifiable
+   constraints, prompt-level loose accuracy through the `ifbench` package's verifiers, which must be installed in the
+   venv: `uv pip install --python .venv-313/bin/python ifbench`) through the same patched engine, paired per item
+   against unsteered.
 
 ## Adapting to a new model family: checklist
 

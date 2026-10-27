@@ -18,7 +18,11 @@ set -euo pipefail
 # answer tokens (act_response_only) and over the thought-channel tokens (act_with_cot). Every step skips roles
 # already on disk, so a resubmission resumes. Default roles are the six fiction roles + default; add the bare roles
 # (schemer deceiver cheater) to see whether Gemma plays a bare persona that gpt-oss refused.
-# Usage: sbatch --export=ALL,ROOT=<dir>[,MODEL=google/gemma-4-E4B-it][,ROLES="..."][,QUESTIONS=40][,MIN_COUNT=50][,ACT_BATCH=4][,MAXTOK=8192][,MAXLEN=12288] experiments/schemer-axis/slurm/extract_roles_gemma4.sbatch
+# Usage: sbatch --export=ALL,ROOT=<dir>[,MODEL=google/gemma-4-E4B-it][,ROLES="..."][,QUESTIONS=100][,MIN_COUNT=50][,ACT_BATCH=4][,MAXTOK=8192][,MAXLEN=12288] experiments/schemer-axis/slurm/extract_roles_gemma4.sbatch
+# Sharded: add --array=0-3; each task runs every stage for its slice of ROLES into the same ROOT (round robin).
+# Questions (2026-10-27, user decision): the first QUESTIONS of ../schemer-axis/data/questions.jsonl (Koby's shared file: ids 0-39
+# generic, 40-79 intent, 80-99 task; split train/heldout). Vectors are fitted on the train questions only (32 generic + 32
+# intent); QUESTIONS=40 with no filter reproduces the earlier generic-only runs only if TRAIN_FILTER=0.
 # Muse Glimmer (PLAN "Muse Glimmer replication"): MODEL=meta-models/Muse-Glimmer-30B with the same thinking-on settings (its to=self channel
 # is always on; the model specifics split it off the answer) and MAXTOK=16384 MAXLEN=20480 for its default reasoning strength.
 # Qwen3.8-27B: MODEL=Qwen/Qwen3.8-27B CHAT_KWARGS='{"reasoning_effort":"low"}' GEN_MAX_NUM_SEQS=128 (its template defaults to xhigh; low matches
@@ -53,15 +57,20 @@ fi
 
 MODEL="${MODEL:-google/gemma-4-12B-it}"
 JUDGE="Qwen/Qwen2.5-7B-Instruct"
-QUESTIONS="${QUESTIONS:-40}"
+QUESTIONS="${QUESTIONS:-100}"
+TRAIN_FILTER="${TRAIN_FILTER:-1}"
 MIN_COUNT="${MIN_COUNT:-50}"
 MAXTOK="${MAXTOK:-8192}"
 MAXLEN="${MAXLEN:-12288}"
 JUDGE_MAXLEN=32768
 ACT_BATCH="${ACT_BATCH:-4}"
 ROLES="${ROLES:-default schemer_fic deceiver_fic cheater_fic straight_shooter_fic rule_follower_fic neutral_fic}"
+if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then  # array job: task i takes every N-th role, round robin
+    ROLES="$(echo $ROLES | tr ' ' '\n' | awk -v n="$SLURM_ARRAY_TASK_COUNT" -v i="$((SLURM_ARRAY_TASK_ID - SLURM_ARRAY_TASK_MIN))" '(NR - 1) % n == i' | tr '\n' ' ')"
+fi
 ROLES_BRACKET="[$(echo $ROLES | tr ' ' ',')]"
 ROLES_DIR="../schemer-axis/data/roles"
+QUESTIONS_FILE="../schemer-axis/data/questions.jsonl"
 ROOT="${ROOT:?set ROOT to the output root}"
 CHAT_ARGS=()
 if [ -n "${CHAT_KWARGS:-}" ]; then CHAT_ARGS=(--run.chat_kwargs "$CHAT_KWARGS"); fi
@@ -69,6 +78,12 @@ echo "model $MODEL chat_kwargs ${CHAT_KWARGS:-none} roles $ROLES questions $QUES
 
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
+VECTOR_ARGS=(--run.roles "$ROLES_BRACKET")
+if [ "$TRAIN_FILTER" = 1 ]; then
+    TRAIN_QUESTIONS="$(python -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["split"] == "train"])' "$QUESTIONS_FILE")"
+    VECTOR_ARGS+=(--run.question_indices "$TRAIN_QUESTIONS")
+    echo "vectors fitted on train questions $TRAIN_QUESTIONS"
+fi
 
 echo "########## Generate ##########"
 # GEN_MAX_NUM_SEQS caps vLLM's concurrent sequences for the generation engine only (Qwen3.8-27B: its Mamba cache holds
@@ -77,7 +92,7 @@ VLLM_MAX_NUM_SEQS="${GEN_MAX_NUM_SEQS:-}" python scripts/pipeline/1_generate.py 
     --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.85 \
     --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
     --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" "${CHAT_ARGS[@]}" \
-    --run.roles_dir "$ROLES_DIR" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
+    --run.roles_dir "$ROLES_DIR" --run.questions_file "$QUESTIONS_FILE" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
 
 echo "########## Judge ##########"
 python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
@@ -92,7 +107,7 @@ for VARIANT in response_only with_cot; do
         --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.thinking true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
         "${CHAT_ARGS[@]}" --run.roles "$ROLES_BRACKET" \
         --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_$VARIANT"
-    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" "${VECTOR_ARGS[@]}" \
         --run.activations_dir "$ROOT/act_$VARIANT" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_$VARIANT"
 done
 

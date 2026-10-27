@@ -11,7 +11,7 @@ import math
 import random
 from pathlib import Path
 
-TASKS = ("gsm8k", "mmlu_pro", "humaneval")
+TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
 
 
 def load(root: Path, arm: str, task: str) -> dict[str, dict]:

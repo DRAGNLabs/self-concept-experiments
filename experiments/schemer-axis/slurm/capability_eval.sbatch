@@ -46,7 +46,7 @@ ARMS="${ARMS:?set ARMS to the arms TSV}"
 ROOT="${ROOT:?set ROOT to the output dir}"
 SEED="${SEED:-0}"
 VLLM_GPU_MEM="${VLLM_GPU_MEM:-0.95}"
-TASKS="${TASKS:-gsm8k mmlu_pro humaneval}"
+TASKS="${TASKS:-gsm8k mmlu_pro humaneval ifbench}"
 read -r -a TASK_LIST <<< "$TASKS"
 read -r -a EXTRA_ARGS_LIST <<< "${EXTRA_ARGS:-}"
 

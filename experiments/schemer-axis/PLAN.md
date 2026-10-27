@@ -804,6 +804,62 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
 4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
    settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.
 
+## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
+
+Decision: the paper steers the **generic + intent** vector, not the generic-only one used so far. Definition: Koby's
+shared question file `data/questions.jsonl` (100 questions: ids 0–39 generic, 40–79 intent, 80–99 task; `split`
+train/heldout), vectors fitted on the **64 train questions (32 generic + 32 intent)**, the **17 fiction roles** (8 schemer,
+9 honest), **answer region**, **raw** (schemer mean − honest mean, no costume projection), i.e. Koby's
+`persona_contrast` of `extract_roles.sbatch` on main. Everything steered so far used vectors fitted on the first 40
+assistant-axis questions (all generic; FINDINGS "Qwen3.8-27B 17-role extraction", Koby's second question), so every steered
+result is redone: dose pilot, main run (coding tasks), anecdotes (neutral probes and the coding anecdotes), capability
+retention, on **Muse-Glimmer-30B, gpt-oss-120b and Qwen3.8-27B**. The unsteered and random-direction arms do not depend
+on the vector and are reused where the engine mode matches (Qwen: the concurrent mode needs its own concurrent unsteered
+arm, step 3b above). **Capability retention gains IFBench** (Pyatkin et al. 2025, `allenai/IFBench_test`, 300 prompts,
+prompt-level loose accuracy via the `ifbench` verifiers) next to GSM8K, MMLU-Pro and HumanEval (`capability_eval_vllm.py
+--tasks ... ifbench`, default task list of `capability_eval.sbatch`).
+
+Nothing was cancelled: the only jobs in the queue (Qwen 64k capability check 14821126, Qwen concurrent seed-0 run
+14821701) are unsteered calibration runs the new pilots need.
+
+Axes (`gi` = generic + intent; one `gi/` directory per model):
+
+- **Qwen3.8-27B — available.** Koby's `qwen38_27b/full/` on the share holds the 100-question extraction (25 roles × 500
+  responses, `act_response_only`, `scores`, `vectors_response_only`). Checked 2026-10-27: his stored per-role vectors equal
+  the means over the 64 train questions recomputed from the activations (max abs diff 0.0; the 100-question means differ by
+  up to 5). `build_vectors.py` on them → `qwen38_27b/gi/direction/persona_contrast.pt` (norm 6.12 at layer 32; cosine 0.80
+  with our 40-question raw axis at layer 32, 0.74–0.84 over layers 12–56: a materially different direction). His
+  `analysis/persona_holdout_axes_*_L32.json` gives its held-out deception AUROC (0.986, stratified 0.991; 36 held-out
+  questions).
+- **gpt-oss-120b — available (Koby's).** `gptoss120b_extension/full/axis_response_only/persona_contrast.pt` on the share,
+  same 8 + 9 roles, fitted on the train split per his committed `extract_roles.sbatch` (the per-role vectors and
+  activations are not on the share, so this is taken from the script, not re-verified; asked Koby to confirm). Copied to
+  `gi/direction/persona_contrast.pt` (sha256 fe4d26c1…); cosine 0.977 at layer 17 with our 40-question raw axis (norm
+  1004 vs 933).
+- **Muse-Glimmer-30B — to extract.** Nobody has a 100-question Muse extraction. Job 14827417
+  (`extract_roles_gemma4.sbatch`, now with `QUESTIONS_FILE=data/questions.jsonl`, `TRAIN_FILTER=1`, round-robin
+  `--array`), 19 roles (17 + default + neutral_fic) × 100 questions × 5 prompts, MAXTOK 16384 / MAXLEN 20480,
+  ACT_BATCH 1, 4 tasks on dw / qos dw87 (user go-ahead), 12 h, → `muse_glimmer/full100/`. Then `build_vectors.py` on
+  `vectors_response_only` (fitted on train ids) → `muse_glimmer/gi/direction/`, validation as before.
+
+Steps per model (same recipe, seeds, problems, engine settings, dose rule, judging and analysis as that model's
+answer-region main run; dose decisions go to the user):
+
+1. **Dose pilot**, both signs, seeds 0–3, 45 hard problems; reference = the model's unsteered arm in the same engine
+   mode. gpt-oss: layer 17, ±0.1 / ±0.2 (the previous answer-region grid), job 14827526 (`gi/pilot/`, main_run.sbatch
+   NSEEDS=4, H200 standby, reference `main/unsteered`), submitted 2026-10-27 5:25 pm MDT. Muse: layer 26, ±0.04 / ±0.08
+   (after the extraction). Qwen: layer 32, grid from the layer-32 norm (75.0) and the 64k capability check, run in the
+   concurrent mode with a concurrent unsteered arm and a norm-matched random direction (step 3b/4 of the Qwen section).
+2. **Main run**: 12 seeds, the chosen ± doses, cap arm (new thresholds for the gi vector) and the random arm; blind
+   Sonnet judging as judged (STRONG + WEAK, no adjudication), `main_analysis.py`.
+3. **Anecdotes**: neutral probes (`neutral_probe.sbatch`, low and high effort) and the coding anecdotes at the main dose
+   and above, as in `answer17_anecdotes/`.
+4. **Capability retention**: `capability_eval.sbatch` with GSM8K, MMLU-Pro, HumanEval and IFBench for every main-run arm.
+
+**Status (2026-10-27 evening):** Qwen and gpt-oss axes in place; Muse extraction 14827417 and gpt-oss pilot 14827526
+queued; IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+still has to be installed into the venv (`uv pip install --python .venv-313/bin/python ifbench`; the dataset is in the HF cache).
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
