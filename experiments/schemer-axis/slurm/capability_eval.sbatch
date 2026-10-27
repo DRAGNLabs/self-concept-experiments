@@ -21,6 +21,9 @@ set -euo pipefail
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
+# IFBench (2026-10-27): the `ifbench` verifiers import nltk and look for punkt, punkt_tab, stopwords and
+# averaged_perceptron_tagger_eng; the compute nodes have no network, so these live in ~/nltk_data (nltk's default
+# search path; downloaded once on the login node). The dataset allenai/IFBench_test is in the HF cache.
 export TRANSFORMERS_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
 export OPENSSL_CONF=/dev/null

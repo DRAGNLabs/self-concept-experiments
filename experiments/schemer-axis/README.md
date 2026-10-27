@@ -204,9 +204,12 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
    share a longer prefix with the steered sequential answer than with the unsteered one.
 6. **General capability** (`capability_eval.sbatch` with the same arms TSV; `capability_eval_compare.py <root>`): GSM8K,
    MMLU-Pro subsample, HumanEval and IFBench (added 2026-10-27; `allenai/IFBench_test`, 300 prompts with verifiable
-   constraints, prompt-level loose accuracy through the `ifbench` package's verifiers, which must be installed in the
-   venv: `uv pip install --python .venv-313/bin/python ifbench`) through the same patched engine, paired per item
-   against unsteered.
+   constraints, prompt-level loose accuracy through the `ifbench` package's verifiers) through the same patched engine,
+   paired per item against unsteered. `ifbench` is not on PyPI; it is installed from GitHub, pinned:
+   `uv pip install --python .venv-313/bin/python "ifbench @ git+https://github.com/allenai/IFBench.git@1c40f0c1"`
+   (not in uv.lock), and its nltk resources (punkt, punkt_tab, stopwords, averaged_perceptron_tagger_eng) must be in
+   `~/nltk_data` for the offline compute nodes (`nltk.download(..., download_dir=~/nltk_data)` on the login node). All
+   300 items score offline (`tests/test_capability_eval_ifbench.py` covers the loose rule and one real verifier).
 
 ## Adapting to a new model family: checklist
 

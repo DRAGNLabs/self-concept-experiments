@@ -858,7 +858,8 @@ answer-region main run; dose decisions go to the user):
 
 **Status (2026-10-27 evening):** Qwen and gpt-oss axes in place; Muse extraction 14827417 and gpt-oss pilot 14827526
 queued; IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
-still has to be installed into the venv (`uv pip install --python .venv-313/bin/python ifbench`; the dataset is in the HF cache).
+is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
+items score offline.
 
 ## Work order
 
