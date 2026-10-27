@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal, TypedDict
 
 import numpy as np
 import torch
@@ -27,7 +29,8 @@ from scipy.stats import rankdata
 
 
 SCRIPT_ROOT = Path(__file__).resolve().parent.parent
-QUESTION_GROUPS = ("generic", "intent", "task")
+QuestionGroup = Literal["generic", "intent", "task"]
+QUESTION_GROUPS: tuple[QuestionGroup, ...] = ("generic", "intent", "task")
 MAIN_DECEPTIVE = "deceptive_main"
 MAIN_HONEST = "honest_main"
 HELDOUT_DECEPTIVE = "deceptive_holdout"
@@ -42,10 +45,32 @@ def question_id(key: str) -> int:
     return int(key.rsplit("_q", 1)[1])
 
 
-def question_ids(questions: list[dict], split: str, groups: list[str] | None) -> set[int]:
-    if groups is None:
-        return {question["id"] for question in questions if question["split"] == split}
-    return {question["id"] for question in questions if question["group"] in groups}
+class Question(TypedDict):
+    id: int
+    question: str
+    group: QuestionGroup
+    split: Literal["train", "heldout"]
+
+
+@dataclass(frozen=True)
+class SelectBySplit:
+    split: Literal["train", "heldout"]
+
+
+@dataclass(frozen=True)
+class SelectByGroups:
+    groups: tuple[QuestionGroup, ...]  # every question in these groups, whatever its split
+
+
+QuestionSelection = SelectBySplit | SelectByGroups
+
+
+def question_ids(questions: list[Question], selection: QuestionSelection) -> set[int]:
+    match selection:
+        case SelectBySplit(split):
+            return {question["id"] for question in questions if question["split"] == split}
+        case SelectByGroups(groups):
+            return {question["id"] for question in questions if question["group"] in groups}
 
 
 def unit(vector: torch.Tensor) -> torch.Tensor:
@@ -148,9 +173,11 @@ def main() -> None:
     args = parser.parse_args()
 
     groups = json.loads(args.groups.read_text())
-    questions = [json.loads(line) for line in args.questions.read_text().splitlines()]
-    train_ids = question_ids(questions, "train", args.fit_question_groups)
-    heldout_ids = question_ids(questions, "heldout", args.eval_question_groups)
+    questions: list[Question] = [json.loads(line) for line in args.questions.read_text().splitlines()]
+    fit_selection = SelectByGroups(tuple(args.fit_question_groups)) if args.fit_question_groups else SelectBySplit("train")
+    eval_selection = SelectByGroups(tuple(args.eval_question_groups)) if args.eval_question_groups else SelectBySplit("heldout")
+    train_ids = question_ids(questions, fit_selection)
+    heldout_ids = question_ids(questions, eval_selection)
     if train_ids & heldout_ids:
         raise SystemExit(f"Fit and evaluation questions overlap: {sorted(train_ids & heldout_ids)}")
     fit_roles = [*groups[MAIN_DECEPTIVE], *groups[MAIN_HONEST], "default", "neutral_fic"]
