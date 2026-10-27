@@ -396,8 +396,11 @@ Fiction-framed roles only. Every role answers the same 100 questions in `data/qu
 responses per role). Until now the extraction asked the first 40 generic assistant-axis questions: the `questions`
 lists in the role files were never read by `1_generate.py`, which takes `--run.questions_file`; they are removed.
 Questions are split as well as roles: all 20 `task` questions and a seeded random 8 of the `generic` and 8 of the
-`intent` questions are `heldout` (36), and the per-role vectors are built from the 64 `train` questions only, so the
-held-out responses can test the vector on unseen questions. Each role has its own
+`intent` questions are tagged `heldout` (36). **Decision (2026-10-27): the canonical vector is fitted on the 40
+`generic` questions only** (ids 0-39, ignoring `split`; no `intent`, no `task`). Most compute-heavy runs already used
+this generic-only vector, and keeping it avoids rerunning them. An earlier version of this section built the vectors
+from the 64 `train` questions (generic + intent); that variant is not used. All `intent` and `task` questions are
+held-out questions for evaluation. Each role has its own
 five character names, disjoint from every other role (`straight_shooter_fic`'s Mara, which repeated a `deceiver_fic`
 name, is now Winifred), assigned by a seeded shuffle, three of one gender and two of the other.
 
