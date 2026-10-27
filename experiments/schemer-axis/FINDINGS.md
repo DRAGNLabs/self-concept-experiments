@@ -223,7 +223,11 @@ against default. 100 questions × 5 prompts = 500 responses per role from his `d
 180 default ones), 256 random directions. Our extractions (gpt-oss `roles_fic/`, Muse `muse_glimmer/full/`, Qwen
 `qwen38_27b/full/`, Gemma) all use the first 40 questions of the assistant-axis `data/extraction_questions.jsonl`, which
 are his ids 0–39, all generic; his question file came to main on 2026-10-20, after our last merge (Koby's question
-2026-10-27). His stratified AUROC pools within-question pairs (wins over pairs summed across questions); ours averages
+2026-10-27). Confirmed against the response files 2026-10-27 (Koby's second question, about the `split == "train"`
+filter in his `extract_roles.sbatch` on main): both `roles_fic/` and `qwen38_27b/full/` hold 200 responses per role,
+question indices 0–39, and our branch's sbatch files apply no question filter at the vector step, so all 40 enter every
+vector. Of those 40, eight are tagged `heldout` in his split (ids 2, 3, 10, 11, 18, 26, 29, 32), so our vectors are
+fitted on his 32 generic-train questions plus those eight; his 8 intent and 20 task held-out questions were never seen. His stratified AUROC pools within-question pairs (wins over pairs summed across questions); ours averages
 the per-question AUROCs. His completions were stored unsplit, thinking and `</think>` inside
 the answer text. That does not put the thinking into his answer region (corrected 2026-10-27 after Koby's question;
 the earlier wording said it did). Checked on the Qwen tokenizer, both extractors pool only the answer tokens of an
