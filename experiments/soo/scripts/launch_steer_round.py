@@ -1,10 +1,12 @@
-"""Freeze and submit a band-steering round for one model (STEER_ROUND.md, DOSE_ROUND.md).
+"""Freeze and submit a band-steering round for one model (STEER_ROUND.md, DOSE_ROUND.md, CONTROL_ROUND.md).
 
 Usage, from the repository root:
-  .venv-313/bin/python experiments/soo/scripts/launch_steer_round.py --model-key gemma4-31b [--round steer|dose] [--no-submit]
+  .venv-313/bin/python experiments/soo/scripts/launch_steer_round.py --model-key gemma4-31b [--round steer|dose|control] [--no-submit]
+      [--partition P --qos Q --gres GRES]  (sbatch overrides of run.sh's dw87 / a100 header)
 --round steer (default) is the band-steering round (Qwen3.8-27B: its addendum, steering the fused DeltaNet
 in_proj_qkv); --round dose is the dose/position round (alpha between 1 and 2, content-token and prompt-only
-offsets; no gap measurement). The job measures the band's mean LoRA deltas on the training prompts (extract_band_deltas.py), evaluates the
+offsets; no gap measurement); --round control is the control round (random seeds 1-4 at the doses the claims
+rest on, and from_last offsets with the all-token mean; no gap measurement). The job measures the band's mean LoRA deltas on the training prompts (extract_band_deltas.py), evaluates the
 references and every steered cell in both orientations on main / treasure_hunt / perspectives (n=250), measures
 the self/other and name-control gaps under each intervention (measure_overlap), runs the intent split on
 Mistral, then the pre-specified analysis.
@@ -102,10 +104,51 @@ def overlap_runs_qwen(spec):
             ("full-adapter", "--adapter adapters/seed0")]
 
 
-ROUNDS = {"steer": dict(plan="STEER_ROUND.md", prefix="steer"), "dose": dict(plan="DOSE_ROUND.md", prefix="dose")}
+def conditions_control(key, spec):
+    """Control round (CONTROL_ROUND.md): random draws 1-4 at the doses the paper's direction claims rest on, and the
+    all-token mean applied from the last prompt token onward (same vector as v-all, different positions)."""
+    a, b = spec["band"]
+    if key == "qwen38-27b":
+        mode = lambda pos: f"{BAND} --band-module in_proj_qkv --band-token-mode all --steer-positions {pos}"  # noqa: E731
+        out = [("base", ""), ("adapter-seed0", "--adapter adapters/seed0"),
+               ("band-qkv", f"--adapter adapters/seed0 --adapter-layers range:{a}-{b} --adapter-modules in_proj_qkv"),
+               ("qkv-all-a2", f"{mode('all')} --band-alpha 2")]
+        real = "qkv"
+    else:
+        mode = lambda pos: f"{BAND} --band-module v_proj --band-token-mode all --steer-positions {pos}"  # noqa: E731
+        out = [("base", ""), ("band-v", f"--adapter adapters/seed0 --adapter-layers range:{a}-{b} --adapter-modules v_proj"),
+               ("v-all-a1", f"{mode('all')} --band-alpha 1")]
+        real = "v"
+    for alpha in CONTROL_ALPHAS[key]:
+        for seed in CONTROL_SEEDS.get((key, alpha), RANDOM_SEEDS):
+            out.append((f"rand-all-a{alpha}-s{seed}", f"{mode('all')} --band-alpha {alpha} --band-random-seed {seed}"))
+    out += [(f"{real}-last-a1", f"{mode('from_last')} --band-alpha 1"), (f"{real}-last-a2", f"{mode('from_last')} --band-alpha 2")]
+    if key == "qwen38-27b":
+        out += [("qkv-prompt-a2", f"{mode('prompt')} --band-alpha 2"), ("qkv-content-a2", f"{mode('content')} --band-alpha 2")]
+    return out
+
+
+CONTROL_ALPHAS = {"mistral-7b": ("1", "2"), "gemma4-12b": ("1", "1.25"), "gemma4-31b": ("1", "1.5", "2"), "qwen38-27b": ("1.5", "2")}
+RANDOM_SEEDS = (1, 2, 3, 4)
+CONTROL_SEEDS = {("qwen38-27b", "1.5"): (0, 1, 2, 3, 4)}  # Qwen's steering round had no seed-0 random cell at alpha 1.5
+# Earlier snapshots holding each model's seed-0 random cells and real all-position offsets at the control doses; the
+# analysis reads each against its own snapshot's same-day base and reference.
+CONTROL_PRIOR = {
+    "mistral-7b": ["steer-mistral-7b-L16-20260928T230233Z"],
+    "gemma4-12b": ["steer-gemma4-12b-L24-20260928T230232Z", "dose-gemma4-12b-L24-20260929T221158Z"],
+    "gemma4-31b": ["steer-gemma4-31b-L32-20260929T180338Z", "dose-gemma4-31b-L32-20260929T221420Z"],
+    "qwen38-27b": ["steer-qwen38-27b-L32-20260929T221532Z"],
+}
+# Wall-clock limits for the control round (the qos cs limit is 24 h; the dose round's Mistral job took 6.2 h for 12 cells).
+CONTROL_HOURS = {"mistral-7b": 14, "gemma4-12b": 6, "gemma4-31b": 8, "qwen38-27b": 8}
+
+ROUNDS = {"steer": dict(plan="STEER_ROUND.md", prefix="steer"), "dose": dict(plan="DOSE_ROUND.md", prefix="dose"),
+          "control": dict(plan="CONTROL_ROUND.md", prefix="ctrl")}
 
 
 def round_conditions(round_name, key, spec):
+    if round_name == "control":
+        return conditions_control(key, spec), []
     if round_name == "dose":
         if key == "qwen38-27b":
             raise SystemExit("the dose round covers gemma4-12b, mistral-7b and gemma4-31b; Qwen's dose cells are in its steering round")
@@ -157,6 +200,11 @@ if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
     exit 1
 fi
 echo "Assigned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+# On the cs nodes a one-GPU task can see a sibling task's GPU; pin the least-used visible GPU by UUID.
+if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
+    export CUDA_VISIBLE_DEVICES="$(nvidia-smi --query-gpu=uuid,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | cut -d, -f1)"
+    echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+fi
 cd "$SNAPSHOT_ROOT"
 PY="$REPO_ROOT/__VENV__/bin/python"
 MODEL=__MODEL__
@@ -203,7 +251,7 @@ __OVERLAPS__
 if [[ "$SUFFIX" == i_would ]]; then
     "$PY" intent_language_check.py . --suffix "$SUFFIX" | tee output/intent_split.log
 fi
-"$PY" analyze_steer_round.py output launch.json | tee output/analysis.log
+__ANALYZE__
 echo "=== all runs complete"
 """
 
@@ -223,27 +271,35 @@ def freeze(snapshot, key, spec, n_layers, round_name="steer"):
             shutil.copy2(SOO / "data" / d / f"{s}.jsonl", snapshot / "data" / d / f"{s}.jsonl")
     shutil.copytree(SOO / spec["adapter_dir"] / "seed0", snapshot / "adapters" / "seed0")
     for name in (ROUNDS[round_name]["plan"], "scripts/make_constants.py", "scripts/extract_band_deltas.py", "scripts/analyze_layer_round.py",
-                 "scripts/analyze_steer_round.py", "scripts/intent_language_check.py"):
+                 "scripts/analyze_steer_round.py", "scripts/analyze_control_round.py", "scripts/intent_language_check.py"):
         shutil.copy2(SOO / name, snapshot / Path(name).name)
     shutil.copy2(Path(__file__), snapshot / "launch_steer_round.py")
     a, b = spec["band"]
     conds, overlap_list = round_conditions(round_name, key, spec)
     runs = "\n".join(f'    run {name} "$orient" "$ALL" {args}'.rstrip() for name, args in conds)
     overlaps = "\n".join(f"overlap {name} {args}" for name, args in overlap_list)
-    script = (RUN_SH.replace("__VENV__", VENV.name).replace("__JOB__", f"soo2-{ROUNDS[round_name]['prefix']}-{key}").replace("__HOURS__", f"{spec['hours']:02d}")
+    hours = CONTROL_HOURS[key] if round_name == "control" else spec["hours"]
+    analyze = '"$PY" analyze_steer_round.py output launch.json | tee output/analysis.log'
+    if round_name == "control":
+        analyze += '\n"$PY" analyze_control_round.py output launch.json | tee output/control_analysis.log'
+    script = (RUN_SH.replace("__VENV__", VENV.name).replace("__JOB__", f"soo2-{ROUNDS[round_name]['prefix']}-{key}").replace("__HOURS__", f"{hours:02d}")
               .replace("__MODEL__", spec["model"]).replace("__REVISION__", spec["revision"]).replace("__LAYER__", str(spec["layer"]))
               .replace("__SUFFIX__", spec["suffix"]).replace("__BAND_SPEC__", f"range:{a}-{b}").replace("__BAND_TOP__", str(b))
               .replace("__LAST_LAYER__", str(n_layers - 1)).replace("__PROBES__", PROBES)
-              .replace("__RUNS__", runs).replace("__OVERLAPS__", overlaps)
+              .replace("__RUNS__", runs).replace("__OVERLAPS__", overlaps).replace("__ANALYZE__", analyze)
               .replace("__EXTRACT_MODULES__", spec.get("extract_modules", "q_proj,v_proj")))
+    if round_name == "control":  # qos cs on the cs2 H100s (fairshare 0.1 against dw87's 1.0); see CONTROL_ROUND.md
+        header = "#SBATCH --gpus-per-node=a100:1\n#SBATCH --qos=dw87\n#SBATCH --exclude=dw-2-4\n"
+        assert script.count(header) == 1
+        script = script.replace(header, "#SBATCH --partition=cs2\n#SBATCH --gpus-per-node=h100:1\n#SBATCH --qos=cs\n")
     (snapshot / "run.sh").write_text(script)
     (snapshot / "run.sh").chmod(0o755)
 
 
-def submit(snapshot, key, prefix="steer"):
-    proc = subprocess.run(["sbatch", "--parsable", str(snapshot / "run.sh"), str(snapshot)], cwd=ROOT, text=True, capture_output=True, check=True)
+def submit(snapshot, key, prefix="steer", overrides=()):
+    proc = subprocess.run(["sbatch", "--parsable", *overrides, str(snapshot / "run.sh"), str(snapshot)], cwd=ROOT, text=True, capture_output=True, check=True)
     job = proc.stdout.strip().split(";")[0]
-    (snapshot / "submission.json").write_text(json.dumps({"job_id": job, "submitted_utc": datetime.now(timezone.utc).isoformat(),
+    (snapshot / "submission.json").write_text(json.dumps({"job_id": job, "submitted_utc": datetime.now(timezone.utc).isoformat(), "sbatch_overrides": list(overrides),
                                                          "log": str(SOO / "slurm-logs" / f"soo2-{prefix}-{key}-{job}.out")}, indent=2) + "\n")
     print(f"submitted job {job}")
 
@@ -253,6 +309,7 @@ def main():
     ap.add_argument("--model-key", required=True, choices=sorted(MODELS))
     ap.add_argument("--round", choices=sorted(ROUNDS), default="steer")
     ap.add_argument("--no-submit", action="store_true")
+    ap.add_argument("--partition"); ap.add_argument("--qos"); ap.add_argument("--gres", help="e.g. gpu:h100:1 (replaces --gpus-per-node)")
     args = ap.parse_args()
     key, spec = args.model_key, MODELS[args.model_key]
     prefix = ROUNDS[args.round]["prefix"]
@@ -274,6 +331,8 @@ def main():
         "band_layers": list(range(spec["band"][0], spec["band"][1] + 1)), "n_layers": adapter["n_layers"],
         "conditions": dict(round_conditions(args.round, key, spec)[0]), "overlap_runs": dict(round_conditions(args.round, key, spec)[1]),
         "reference": spec.get("reference", "band-v"),
+        **({"control_alphas": list(CONTROL_ALPHAS[key]), "control_prior": CONTROL_PRIOR[key],
+            "real_prefix": "qkv" if key == "qwen38-27b" else "v"} if args.round == "control" else {}),
         "orientations": ["orig", "mirrored"], "scenarios": ["main", "treasure_hunt", "perspectives"], "n_per_scenario": 250,
         "probes": PROBES, "adapter": adapter, "eval_data": eval_data, "test_result": test_result,
         "files_sha256": {str(p.relative_to(snapshot)): sha256(p) for p in files},
@@ -281,7 +340,9 @@ def main():
     (snapshot / "launch.json").write_text(json.dumps(launch, indent=2) + "\n")
     print(f"frozen {snapshot}\n{test_result}")
     if not args.no_submit:
-        submit(snapshot, key, prefix)
+        overrides = [*(["--partition", args.partition] if args.partition else []), *(["--qos", args.qos] if args.qos else []),
+                     *([f"--gpus-per-node={args.gres}"] if args.gres else [])]
+        submit(snapshot, key, prefix, overrides)
 
 
 if __name__ == "__main__":
