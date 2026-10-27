@@ -102,9 +102,17 @@ it. His setup, read from his upload to the share (`schemer-axis/qwen38_27b/full/
 `honest_bookkeeper_fic`, `humble_expert_fic`; the split is inferred from the names), 100 questions × 5 prompts = 500
 responses per role, vectors fitted on 64 questions and scored on the other 36 (costume test: 539 honest-role responses
 against 180 default ones), 256 random directions. His completions were stored unsplit, thinking and `</think>` inside
-the answer text, so his "answer-region" vector also pools the thinking tokens and his judge read the thinking. So his
-run is not the 17-role vector, and the role set, the response count and the region all differ from ours; which of
-them accounts for 0.845 vs 0.99 is not tested.
+the answer text. That does not put the thinking into his answer region (corrected 2026-10-27 after Koby's question;
+the earlier wording said it did). Checked on the Qwen tokenizer, both extractors pool only the answer tokens of an
+unsplit turn: the pipeline's response-only mask (`_think_char_spans` in
+`assistant_axis/internals/model_specifics/_shared.py` drops a `…</think>` block that has no opening tag) and the
+common extractor (`common/activation_extraction` with `span_targeting` `ThinkTagModelSpecifics`, which splits the
+generated completion at `</think>`). Re-rendering an unsplit turn through the chat template adds an empty
+`<think>\n\n</think>\n\n` block ahead of the reasoning, so through the pipeline's re-render his answer tokens would
+sit in a slightly different context than at generation; the common extractor works on the generated token ids and has
+no such shift. The pipeline judge (`3_judge.py`) reads the stored `content`, so with unsplit turns it read the
+thinking along with the answer. So his run is not the 17-role vector, and the role set and the response count (and
+possibly the judge's input) differ from ours; which of them accounts for 0.845 vs 0.99 is not tested.
 
 **Question.** Before steering Qwen on the hard 45 (user request 2026-10-27): does the raw 17-role answer-region
 vector, the definition used for the gpt-oss and Muse re-runs (PLAN "Vector definitions", decision 2026-10-23), work
