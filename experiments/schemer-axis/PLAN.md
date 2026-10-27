@@ -770,7 +770,7 @@ start first: job 14779631 (gpt-oss, array 0–35, 2.5 h, `VLLM_GPU_MEM=0.95`), 1
 14779633_2, 14779634_1) were cancelled while still pending, leaving ±0.1 × 12 seeds, Muse +0.04 seeds 4–11 and three
 capeval tasks. Judging follows when the arms are in. **gpt-oss ±0.1 done and judged 2026-10-26** (FINDINGS "gpt-oss half-dose arms": 7.6% at −0.1, 23.5% at +0.1,
 scan 4.8 / 7.6 / 11.7 / 23.5 / 39.1%; benchmarks 14779633 clear; no audit for these arms). Muse capeval 14779634 (+0.04)
-done 7:24 pm; **Muse +0.04 seeds 4–11 done and judged 2026-10-26** with the Muse main run (FINDINGS "Muse answer-region 17-role main run": 41.1% at +0.04, Holm p 0.0067; scan 15.6 / 23.0 / 29.3 / 32.8 / 41.1 / 46.3% at −0.16 … +0.08, cap 20.4%). Both scans are complete; the α-scan graphs are next.
+done 7:24 pm; **Muse +0.04 seeds 4–11 done and judged 2026-10-26** with the Muse main run (FINDINGS "Muse answer-region 17-role main run": 41.1% at +0.04, Holm p 0.0067; scan 15.6 / 23.0 / 29.3 / 32.8 / 41.1 / 46.3% at −0.16 … +0.08, cap 20.4%). Both scans are complete; the α-scan figure is drawn (`scripts/plot_alpha_scan.py` → `results/alpha_scan_2026-10-26.{png,pdf,csv}` (results/ is untracked; copy in the share's `docs/`): judged hack vs α per model with the random directions, and hidden pass / no-code vs α with the dose-rule band).
 
 **Later (to do, user 2026-10-26, not submitted):** extend the gpt-oss ±0.4 arms (`answer17_anecdotes/coding/arms_pm0.4.tsv`,
 seed 0 only today, 45 episodes each, unjudged) to 12 seeds (22 new tasks, ≈ 35 min each on cs/cs2), judge them the same way
