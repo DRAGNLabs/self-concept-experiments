@@ -93,6 +93,13 @@ honest characters vs the plain assistant, not the neutral character vs the plain
 | Honest characters vs default | 0.845 | 0.50 | 0.986 | 0.42 | 0.13–0.88 / 0.09–0.88 |
 | Neutral character vs default | — | — | 1.00 | 0.48 | — / 0.05–0.94 |
 
+Both sides of the table are question-stratified (Koby confirmed 2026-10-27 that his 0.845 is stratified, against
+Simpson's paradox: differences between questions can mask or fake a within-question separation). Pooled over
+questions the same tests give 0.799 for him (`layer_summary/costume/persona_contrast/auroc` in his analysis file)
+and 0.90 for us (cleaned 0.50 / 0.45), so stratifying raises both numbers by about the same amount and the gap stays.
+His numbers are from vectors fitted on 64 questions and scored on the other 36; ours held out (fitted on even
+questions, scored on odd, and the reverse) are within 0.01 of in-sample (honest vs default 0.987 raw, 0.46 cleaned).
+
 The cleaned vectors and the deception score agree. The raw vector does not: his 0.845 is inside his random band, ours
 is outside it, and each of our nine honest roles alone scores 0.94–1.00, so no one role carries it. Keeping every
 reply instead of score 3 (Chris's "every reply") gives 0.98 raw / 0.35 cleaned, so the reply filter does not explain
