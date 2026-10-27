@@ -1,0 +1,22 @@
+{
+  "dataset_id": "payoff_name_column1",
+  "task": "explicit_payoff",
+  "diagnostic_id": "payoff_name_column1",
+  "template_version": 1,
+  "split": "development",
+  "counts": {
+    "main": 864,
+    "checks": 864
+  },
+  "source_data": "/home/jansen05/self-concept-experiments/experiments/soo/results/study2/goals-roles-base-explicit_payoff1_development-20261027T033405734015Z/data/goals_roles_pilot",
+  "source_sha256": {
+    "main.jsonl": "3625991c79ab0a9bdc9ed6dc182c2d07b5e7e58d5f032a2483ca8194c7c22117",
+    "checks.jsonl": "647dfdd3a8eb62fbe7241a6eb4f6d91b0ca44505c4b48f862badb496823a3815"
+  },
+  "generator_sha256": "784a3ddd47fc5f137e5f7b807591239f0baaa80d34b2ef6cabe06bddfa759836",
+  "sha256": {
+    "main.jsonl": "443c3e889e50dfecfb9473bb733fde907a3bfb8e12113f6ece9c4cc3856eafe0",
+    "checks.jsonl": "69344ec5dd82699f4b6edbb5d8b5aa352c1d841c39aa867dab94cf7bb4203b7f"
+  },
+  "interpretation": "baseline diagnostic, no acceptance gate, no intervention or validation release"
+}

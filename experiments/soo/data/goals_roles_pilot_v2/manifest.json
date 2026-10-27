@@ -1,0 +1,24 @@
+{
+  "counts": {
+    "checks": 288,
+    "main": 384
+  },
+  "generator": "selfconcept.soo.goals_roles",
+  "generator_sha256": "f7840d36f03a38e5230250817bbc4a44f91e0ad0969c5397adb71ef43e0003c9",
+  "limitations": [
+    "12 worlds, not 672 independent examples",
+    "belief correctness and paraphrases vary by world, not a fully crossed factor",
+    "new controlled tasks; historical burglar results do not establish this baseline",
+    "semantic spans require tokenizer mapping before activation patching",
+    "revised after inspecting v1 baseline; same development worlds, not confirmation"
+  ],
+  "revision_reason": "make autonomous, message, and private action rules explicitly exclusive",
+  "schema_version": 1,
+  "sha256": {
+    "checks.jsonl": "8ad5a225489dd1555a17fb06a4ee8f06c7138d1571f28cbf249f07739c52f45e",
+    "main.jsonl": "971d7c62ba7033173fdcfa916b86a120d6b0786e9289d479fd5945c2e3f79c72"
+  },
+  "status": "exploratory_development_only",
+  "template_version": 2,
+  "worlds": 12
+}
