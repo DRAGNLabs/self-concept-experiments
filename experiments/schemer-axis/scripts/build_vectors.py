@@ -36,8 +36,8 @@ def load_role(vectors_dir: Path, role: str) -> torch.Tensor | None:
     return data["vector"].float()
 
 
-def load_question_indices(vectors_dir: Path, role: str) -> list[int] | None | Literal["unrecorded"]:
-    """Question ids the role vector was fitted on (None = all); role files from before this was recorded give "unrecorded"."""
+def load_question_indices(vectors_dir: Path, role: str) -> list[int] | Literal["unrecorded"]:
+    """Ids of the questions the role vector was fitted on; role files from before this was recorded give "unrecorded"."""
     data = torch.load(vectors_dir / f"{role}.pt", map_location="cpu", weights_only=False)
     return data.get("question_indices", "unrecorded")
 
