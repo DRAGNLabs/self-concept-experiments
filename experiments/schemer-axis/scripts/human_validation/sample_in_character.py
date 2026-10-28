@@ -55,12 +55,18 @@ def judged_candidates(model: str, run_root: Path) -> Iterator[Candidate]:
         score_by_response_key: dict[str, int] = json.loads(scores_path.read_text())
         for line in (run_root / "responses" / f"{role}.jsonl").read_text().splitlines():
             record = json.loads(line)
-            answer = first_assistant_content(record)
-            assert "</think>" not in answer, f"{model} {role}: reasoning left in content"
             key = response_key(record)
-            if key in score_by_response_key and answer.strip():
+            if key in score_by_response_key:
                 yield {"model": model, "role": role, "response_key": key, "question": record["question"],
-                       "answer": answer, "judge_label": str(score_by_response_key[key])}
+                       "answer": first_assistant_content(record), "judge_label": str(score_by_response_key[key])}
+
+
+def showable_candidates(candidates: list[Candidate]) -> list[Candidate]:
+    """Drops empty answers (truncated mid-reasoning) and answers holding a think tag. A model repeating its answer after
+    a second </think> does that rarely; a reasoning leak does it everywhere, so more than 1% of a run fails loudly."""
+    with_think_tag = [candidate for candidate in candidates if "</think>" in candidate["answer"]]
+    assert len(with_think_tag) <= 0.01 * len(candidates), f"{len(with_think_tag)}/{len(candidates)} answers hold </think>: reasoning left in content?"
+    return [candidate for candidate in candidates if candidate["answer"].strip() and "</think>" not in candidate["answer"]]
 
 
 def balanced_sample(candidates_by_model: dict[str, list[Candidate]], sample_size: int, generator: random.Random) -> list[Candidate]:
@@ -106,7 +112,7 @@ def main() -> None:
     args = parser.parse_args()
 
     run_root_by_model = {model: Path(root) for model, root in (run.split("=", 1) for run in args.run)}
-    candidates = [candidate for model, root in run_root_by_model.items() for candidate in judged_candidates(model, root)]
+    candidates = [candidate for model, root in run_root_by_model.items() for candidate in showable_candidates(list(judged_candidates(model, root)))]
     generator = random.Random(args.seed)
     sample = [
         candidate
