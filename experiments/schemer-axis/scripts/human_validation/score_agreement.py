@@ -1,8 +1,9 @@
-"""Agreement between human labelers and the LLM judge on a human-validation stage. Headline numbers: mean pairwise
-human-human and mean LLM-judge-human quadratic-weighted Cohen's kappa, with 95% percentile CIs from a bootstrap over
-items. Only items every labeler labeled are scored.
+"""Agreement between human labelers and the LLM judge on a human-validation stage, with every label lumped into
+positive (one of --positive-levels) or not. Headline numbers: mean pairwise human-human and mean LLM-judge-human Cohen's
+kappa on those lumped labels, with 95% percentile CIs from a bootstrap over items. Only items every labeler labeled are
+scored.
 
-    python score_agreement.py --key key.jsonl --labels labels_a.jsonl labels_b.jsonl --levels 0,1,2,3
+    python score_agreement.py --key key.jsonl --labels labels_a.jsonl labels_b.jsonl --levels 0,1,2,3 --positive-levels 3
 """
 import argparse
 import itertools
@@ -11,7 +12,7 @@ from pathlib import Path
 from typing import TypedDict, cast
 
 import numpy as np
-from jaxtyping import Int
+from jaxtyping import Bool, Int
 from sklearn.metrics import cohen_kappa_score, confusion_matrix
 
 
@@ -31,28 +32,27 @@ def read_jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def quadratic_kappa(first_ratings: Int[np.ndarray, " items"], second_ratings: Int[np.ndarray, " items"], level_count: int) -> float:
-    return float(cohen_kappa_score(first_ratings, second_ratings, labels=list(range(level_count)), weights="quadratic"))
+def binary_kappa(first_positives: Bool[np.ndarray, " items"], second_positives: Bool[np.ndarray, " items"]) -> float:
+    return float(cohen_kappa_score(first_positives, second_positives, labels=[False, True]))
 
 
-def mean_pairwise_kappa(rating_pairs: list[tuple[Int[np.ndarray, " items"], Int[np.ndarray, " items"]]], level_count: int) -> float:
-    return float(np.mean([quadratic_kappa(first, second, level_count) for first, second in rating_pairs]))
+def mean_pairwise_kappa(positive_pairs: list[tuple[Bool[np.ndarray, " items"], Bool[np.ndarray, " items"]]]) -> float:
+    return float(np.mean([binary_kappa(first, second) for first, second in positive_pairs]))
 
 
 def bootstrap_mean_kappa(
-    rating_pairs: list[tuple[Int[np.ndarray, " items"], Int[np.ndarray, " items"]]],
-    level_count: int,
+    positive_pairs: list[tuple[Bool[np.ndarray, " items"], Bool[np.ndarray, " items"]]],
     resample_count: int,
     seed: int,
 ) -> KappaEstimate:
-    item_count = len(rating_pairs[0][0])
+    item_count = len(positive_pairs[0][0])
     generator = np.random.default_rng(seed)
     resampled_means = []
     for _ in range(resample_count):
         item_indices = generator.integers(0, item_count, item_count)
-        resampled_means.append(mean_pairwise_kappa([(first[item_indices], second[item_indices]) for first, second in rating_pairs], level_count))
+        resampled_means.append(mean_pairwise_kappa([(first[item_indices], second[item_indices]) for first, second in positive_pairs]))
     ci_low, ci_high = np.nanpercentile(resampled_means, [2.5, 97.5])
-    return {"mean": mean_pairwise_kappa(rating_pairs, level_count), "ci_low": float(ci_low), "ci_high": float(ci_high)}
+    return {"mean": mean_pairwise_kappa(positive_pairs), "ci_low": float(ci_low), "ci_high": float(ci_high)}
 
 
 def format_estimate(estimate: KappaEstimate) -> str:
@@ -64,12 +64,14 @@ def main() -> None:
     parser.add_argument("--key", type=Path, required=True)
     parser.add_argument("--labels", type=Path, nargs="+", required=True)
     parser.add_argument("--levels", required=True, help="comma-separated, lowest to highest")
+    parser.add_argument("--positive-levels", required=True, help="comma-separated levels lumped into positive; the rest are negative")
     parser.add_argument("--resamples", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     levels: list[str] = args.levels.split(",")
     level_index_by_label = {label: index for index, label in enumerate(levels)}
+    positive_level_indices = [level_index_by_label[label] for label in args.positive_levels.split(",")]
     key_record_by_item_id = {record["item_id"]: record for record in cast(list[KeyRecord], read_jsonl(args.key))}
     label_by_item_id_by_labeler: dict[str, dict[str, str]] = {
         path.stem: {record["item_id"]: record["label"] for record in read_jsonl(path)} for path in args.labels
@@ -83,21 +85,25 @@ def main() -> None:
         for labeler, label_by_item_id in label_by_item_id_by_labeler.items()
     }
 
-    judge_human_pairs = [(judge_ratings, ratings) for ratings in ratings_by_labeler.values()]
-    print(f"LLM-judge-human kappa (mean over labelers): {format_estimate(bootstrap_mean_kappa(judge_human_pairs, len(levels), args.resamples, args.seed))}")
-    human_human_pairs = list(itertools.combinations(ratings_by_labeler.values(), 2))
+    judge_positives = np.isin(judge_ratings, positive_level_indices)
+    positives_by_labeler = {labeler: np.isin(ratings, positive_level_indices) for labeler, ratings in ratings_by_labeler.items()}
+
+    judge_human_pairs = [(judge_positives, positives) for positives in positives_by_labeler.values()]
+    print(f"LLM-judge-human kappa (mean over labelers): {format_estimate(bootstrap_mean_kappa(judge_human_pairs, args.resamples, args.seed))}")
+    human_human_pairs = list(itertools.combinations(positives_by_labeler.values(), 2))
     if human_human_pairs:
-        print(f"human-human kappa (mean over pairs):        {format_estimate(bootstrap_mean_kappa(human_human_pairs, len(levels), args.resamples, args.seed))}")
+        print(f"human-human kappa (mean over pairs):        {format_estimate(bootstrap_mean_kappa(human_human_pairs, args.resamples, args.seed))}")
 
     models = np.array([key_record_by_item_id[item_id]["model"] for item_id in shared_item_ids])
     for labeler, ratings in ratings_by_labeler.items():
-        print(f"\n{labeler}: exact agreement with judge {np.mean(ratings == judge_ratings):.3f}")
+        positives = positives_by_labeler[labeler]
+        print(f"\n{labeler}: positive/negative agreement with judge {np.mean(positives == judge_positives):.3f}, exact {np.mean(ratings == judge_ratings):.3f}")
         print(f"  confusion (rows judge, cols human; levels {levels}):")
         for row in confusion_matrix(judge_ratings, ratings, labels=list(range(len(levels)))):
             print("   " + " ".join(f"{count:4d}" for count in row))
         for model in sorted(set(models)):
             in_model = models == model
-            print(f"  {model:8s} n={in_model.sum():3d}  kappa {quadratic_kappa(judge_ratings[in_model], ratings[in_model], len(levels)):.3f}")
+            print(f"  {model:8s} n={in_model.sum():3d}  kappa {binary_kappa(judge_positives[in_model], positives[in_model]):.3f}")
 
 
 if __name__ == "__main__":

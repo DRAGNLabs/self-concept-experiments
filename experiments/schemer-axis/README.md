@@ -222,11 +222,13 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
 
 ## Human validation of the judges
 
-`scripts/human_validation/` (CPU, seconds). A sampler writes a blind `items.jsonl` and `rubric.md` plus a `key.jsonl`
+`scripts/human_validation/` (CPU, seconds). Labelers use the judge's own scale, but the question is positive or not
+(for the in-character judge, 3 vs 0–2: `--positive-levels 3`). A sampler draws half judged-positive and half
+judged-negative items (model-balanced, shuffled) and writes a blind `items.jsonl` and `rubric.md` plus a `key.jsonl`
 (judge label, model, source) that is never sent; `build_labeling_page.py` turns items and rubric into one HTML file that
 labelers open in a browser (rubric beside one item at a time, keys a s d f, autosave, "Download labels" gives
-`labels_<title>_<name>.jsonl`); `score_agreement.py` reports mean human–human and judge–human quadratic-weighted κ with
-item-bootstrap 95% CIs, confusion matrices and per-model κ.
+`labels_<title>_<name>.jsonl`); `score_agreement.py` lumps every label into positive or negative and reports mean human–human and judge–human
+Cohen's κ with item-bootstrap 95% CIs, the full-scale confusion matrices and per-model κ.
 
 ```bash
 cd experiments/schemer-axis/scripts/human_validation
@@ -235,7 +237,7 @@ python sample_in_character.py --run gpt=<gpt root> --run muse=<muse root> --run 
     --roles-dir ../../data/roles --out-dir $OUT
 python build_labeling_page.py --items $OUT/items.jsonl --rubric $OUT/rubric.md --labels 0,1,2,3 \
     --title in_character --out $OUT/in_character.html          # send only this file
-python score_agreement.py --key $OUT/key.jsonl --labels labels_in_character_*.jsonl --levels 0,1,2,3
+python score_agreement.py --key $OUT/key.jsonl --labels labels_in_character_*.jsonl --levels 0,1,2,3 --positive-levels 3
 ```
 
 ## Adapting to a new model family: checklist
