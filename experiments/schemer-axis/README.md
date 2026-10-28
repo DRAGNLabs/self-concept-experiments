@@ -220,6 +220,24 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
    `~/nltk_data` for the offline compute nodes (`nltk.download(..., download_dir=~/nltk_data)` on the login node). All
    300 items score offline (`tests/test_capability_eval_ifbench.py` covers the loose rule and one real verifier).
 
+## Human validation of the judges
+
+`scripts/human_validation/` (CPU, seconds). A sampler writes a blind `items.jsonl` and `rubric.md` plus a `key.jsonl`
+(judge label, model, source) that is never sent; `build_labeling_page.py` turns items and rubric into one HTML file that
+labelers open in a browser (rubric beside one item at a time, keys a s d f, autosave, "Download labels" gives
+`labels_<title>_<name>.jsonl`); `score_agreement.py` reports mean human–human and judge–human quadratic-weighted κ with
+item-bootstrap 95% CIs, confusion matrices and per-model κ.
+
+```bash
+cd experiments/schemer-axis/scripts/human_validation
+OUT=$HOME/nobackup/autodelete/self-concept-experiments/schemer-axis/human_validation/in_character
+python sample_in_character.py --run gpt=<gpt root> --run muse=<muse root> --run qwen=<qwen root> \
+    --roles-dir ../../data/roles --out-dir $OUT
+python build_labeling_page.py --items $OUT/items.jsonl --rubric $OUT/rubric.md --labels 0,1,2,3 \
+    --title in_character --out $OUT/in_character.html          # send only this file
+python score_agreement.py --key $OUT/key.jsonl --labels labels_in_character_*.jsonl --levels 0,1,2,3
+```
+
 ## Adapting to a new model family: checklist
 
 Two code paths touch the model, HF (extraction, projections) and vLLM (steering); both are keyed on the model name.
