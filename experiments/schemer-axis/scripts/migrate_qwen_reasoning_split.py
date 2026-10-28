@@ -14,7 +14,7 @@ from typing import TypedDict, cast
 
 from transformers import AutoTokenizer
 
-from selfconcept.common.generation.model_specifics import QwenAssistantTurn, QwenThinkGenerationSpecifics
+from selfconcept.common.generation.model_specifics import QwenThinkGenerationSpecifics, ReasoningContentAssistantTurn
 from selfconcept.common.generation.model_specifics.qwen_think import THINK_CLOSE
 from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
 from selfconcept.transcript_generation.vllm_generation import chat_prompt_text
@@ -22,7 +22,7 @@ from selfconcept.transcript_generation.vllm_generation import chat_prompt_text
 TURN_END = "<|im_end|>\n"
 
 
-def split_turn(raw_completion: str) -> QwenAssistantTurn:
+def split_turn(raw_completion: str) -> ReasoningContentAssistantTurn:
     if THINK_CLOSE not in raw_completion:
         return {"role": "assistant", "content": "", "reasoning_content": raw_completion.strip()}
     return QwenThinkGenerationSpecifics().to_assistant_turn(raw_completion)
