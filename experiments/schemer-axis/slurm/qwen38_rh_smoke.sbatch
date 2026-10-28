@@ -12,7 +12,7 @@
 #SBATCH --chdir=experiments/schemer-axis  # relative to the submission dir -- run sbatch from the repo root
 set -euo pipefail
 
-# Qwen3.8-27B Phase 3 smoke. Same three steps as gemma4_rh_smoke.sbatch, on the qwen3_5 vLLM family
+# Qwen3.8-27B Phase 3 smoke. Same three steps as gemma4_rh_smoke.sbatch, on the qwen3.5 vLLM family
 # (Qwen3_5DecoderLayer: residual stream is mlp_output + residual, argument order hidden, residual, positions).
 # 1. Layer norms over the 45 turn-0 prompts -> $ROOT/norms/layer_norms.pt.
 # 2. Three neutral questions, unsteered and at ±ALPHA on DIRECTION at layer LAYER.

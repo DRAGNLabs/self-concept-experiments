@@ -14,7 +14,7 @@ set -euo pipefail
 
 # Unsteered Qwen3.8 episodes with thinking off. The 16k and 32k thinking-on smokes truncated
 # mid-proof and submitted no code. The template closes </think> in the prompt, so the
-# completion is the answer (split_qwen_answer). Same 3 problems.
+# completion is the answer (split_answer_only). Same 3 problems.
 # Usage: sbatch experiments/schemer-axis/slurm/qwen38_rh_nothink.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"

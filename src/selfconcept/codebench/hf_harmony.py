@@ -1,10 +1,12 @@
-"""HF generate() for Harmony-format models (gpt-oss) with the vllm_harmony record contract, so interventions
-(forward hooks) can be applied during the reward-hacking harness.
+"""HF generate() for thinking-channel models (gpt-oss Harmony by default; any family through ``split``) with the
+vllm_harmony record contract, so interventions (forward hooks) can be applied during the reward-hacking harness.
 
-Only the final channel is returned to the harness; the analysis channel goes to the same reasoning sidecar
-format as vllm_harmony (example_id, turn, truncated, reasoning). Sampling: temperature 0 decodes greedily; above
-0, each turn is sampled (top_p 1) with torch seeded by turn_sampling_seed(sample_seed, example_id, turn), so a
-turn's seed matches the vLLM runs' seed even though the samplers differ.
+Only the final channel is returned to the harness; the reasoning channel goes to the same reasoning sidecar
+format as vllm_harmony (example_id, turn, truncated, reasoning). ``split`` turns the raw completion into
+(reasoning, final), e.g. split_harmony_completion (gpt-oss) or split_muse_glimmer_completion (Muse Glimmer).
+Sampling: temperature 0 decodes greedily; above 0, each turn is sampled (top_p / top_k as given, default 1 / off)
+with torch seeded by turn_sampling_seed(sample_seed, example_id, turn), so a turn's seed matches the vLLM runs' seed
+even though the samplers differ.
 
 An optional direction scorer writes a projection sidecar per turn: the mean and quantiles of the per-token
 projection onto each scored layer's direction over prompt and generated tokens, and the mean token norm. The
@@ -53,6 +55,9 @@ def hf_harmony_generate(
     projection_layers: list[int] | None = None,
     directions_by_layer: dict[int, torch.Tensor] | None = None,
     projection_log_path: Path | None = None,
+    split: Callable[[str], tuple[str | None, str]] = split_harmony_completion,
+    top_p: float = 1.0,
+    top_k: int = 0,
 ) -> Generate:
     reasoning_log_path.parent.mkdir(parents=True, exist_ok=True)
     device = next(model.get_input_embeddings().parameters()).device
@@ -73,7 +78,7 @@ def hf_harmony_generate(
         if limit is not None and len(prompt_ids) >= limit:
             raise PromptTooLong(f"turn {turn}: {len(prompt_ids)} prompt tokens, context {limit}")
         budget = min(max_new_tokens, limit - len(prompt_ids)) if limit is not None else max_new_tokens
-        sampling = ({"do_sample": True, "temperature": temperature, "top_p": 1.0, "top_k": 0}
+        sampling = ({"do_sample": True, "temperature": temperature, "top_p": top_p, "top_k": top_k}
                     if temperature > 0 else {"do_sample": False})
         input_ids = torch.tensor([prompt_ids], device=device)
         try:
@@ -91,7 +96,8 @@ def hf_harmony_generate(
             raise GenerationOOM(f"turn {turn}: {str(exc)[:200]}") from None
         new_ids = output[0, len(prompt_ids):].tolist()
         text = tokenizer.decode(new_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-        reasoning, final = split_harmony_completion(text)
+        reasoning, final = split(text)
+        reasoning = reasoning or ""
         truncated = len(new_ids) >= budget and new_ids[-1] not in eos_ids
         with reasoning_log_path.open("a") as log:
             log.write(json.dumps({"example_id": example_id, "turn": turn, "truncated": truncated,

@@ -17,7 +17,11 @@ experiment (temperature, --sample-seed; the per-item seed is turn_sampling_seed(
 Output: <out>/<task>.jsonl (one record per item: id, prompt, reasoning, final, truncated, pred, gold, correct,
 reasoning_chars) and <out>/summary.json. Rerunning resumes: items already in the jsonl are skipped.
 
-    python scripts/capability_eval_vllm.py --model openai/gpt-oss-120b --out <dir> --tasks gsm8k mmlu_pro humaneval
+    python scripts/capability_eval_vllm.py --model openai/gpt-oss-120b --out <dir> --tasks gsm8k mmlu_pro humaneval ifbench
+
+IFBench (added 2026-10-27, user request) needs the `ifbench` package (constraint verifiers; `uv pip install ifbench`) and
+the `allenai/IFBench_test` dataset in the HF cache; its "pred" is the per-constraint verdict string and "correct" the
+prompt-level loose accuracy.
         [--direction <axis.pt> --layer-norms <pt> --steer-mode add --steer-layer 17 --steer-alpha -0.2]
         [--steer-mode cap --cap-layers 12 ... --cap-thresholds <json>]
 """
@@ -38,8 +42,9 @@ from steered_rh_vllm import FAMILIES, build_transforms, directions_for, family_o
 from selfconcept.codebench import sandbox  # noqa: E402
 from selfconcept.common.chat import chat_template_kwargs  # noqa: E402
 from selfconcept.common.sampling import turn_sampling_seed  # noqa: E402
+from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs  # noqa: E402
 
-TASKS = ("gsm8k", "mmlu_pro", "humaneval")
+TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
 LETTERS = "ABCDEFGHIJ"
 FENCE = re.compile(r"```[a-zA-Z0-9_+-]*\n(.*?)```", re.DOTALL)
 
@@ -114,6 +119,19 @@ def load_items(task: str, args) -> list[dict]:
                              "its signature and any imports it needs, in a single fenced ```python code block.\n\n"
                              "```python\n" + row["prompt"].rstrip() + "\n```")}
                  for row in ds]
+    elif task == "ifbench":
+        # IFBench (Pyatkin et al. 2025): 300 WildChat prompts, each with 1-3 verifiable out-of-distribution constraints
+        # written into the prompt itself; the prompt goes to the model unchanged and the final answer is checked by the
+        # constraint verifiers of the `ifbench` package (prompt-level loose accuracy, as the paper reports).
+        import ast
+
+        ds = load_dataset("allenai/IFBench_test", split="train")
+        items = []
+        for row in ds:
+            ids = row["instruction_id_list"] if isinstance(row["instruction_id_list"], list) else ast.literal_eval(row["instruction_id_list"])
+            kwargs = row["kwargs"] if isinstance(row["kwargs"], list) else ast.literal_eval(row["kwargs"])
+            items.append({"id": f"ifbench/{row['key']}", "gold": None, "prompt": row["prompt"], "instruction_ids": list(ids),
+                          "instruction_kwargs": [{k: v for k, v in (kw or {}).items() if v is not None} for kw in kwargs]})
     else:
         raise ValueError(task)
     return items[: args.n] if args.n else items
@@ -172,11 +190,43 @@ def score_humaneval(item: dict, final: str, timeout: float) -> tuple[str | None,
     return code, bool(result.success)
 
 
+def ifbench_followed(item: dict, final: str) -> list[bool]:
+    """Per-constraint verdicts under IFEval's *loose* rule: a constraint counts as followed if any of the eight
+    response variants (as is / first line dropped / last line dropped / both, each with and without asterisks) passes
+    its verifier. Mirrors `evaluation_lib.test_instruction_following_loose` of the IFBench repository."""
+    from ifbench import instructions_registry
+
+    text = final.strip()
+    lines = text.split("\n")
+    variants = [text, "\n".join(lines[1:]).strip(), "\n".join(lines[:-1]).strip(), "\n".join(lines[1:-1]).strip()]
+    variants += [v.replace("*", "") for v in variants]
+    followed = []
+    for instruction_id, kwargs in zip(item["instruction_ids"], item["instruction_kwargs"]):
+        checker = instructions_registry.INSTRUCTION_DICT[instruction_id](instruction_id)
+        checker.build_description(**kwargs)
+        instruction_args = checker.get_instruction_args()
+        if instruction_args and "prompt" in instruction_args:
+            checker.build_description(prompt=item["prompt"])
+        followed.append(any(bool(variant) and checker.check_following(variant) for variant in variants))
+    return followed
+
+
+def score_ifbench(item: dict, final: str) -> tuple[str | None, bool]:
+    """pred is the per-constraint verdict string ("1,0,1"), None when the final answer is empty; correct = every
+    constraint followed (prompt-level loose accuracy)."""
+    if not final.strip():
+        return None, False
+    followed = ifbench_followed(item, final)
+    return ",".join("1" if ok else "0" for ok in followed), all(followed)
+
+
 def score(task: str, item: dict, final: str, args) -> tuple[str | None, bool]:
     if task == "gsm8k":
         return score_gsm8k(item, final)
     if task == "mmlu_pro":
         return score_mmlu_pro(item, final)
+    if task == "ifbench":
+        return score_ifbench(item, final)
     return score_humaneval(item, final, args.exec_timeout)
 
 
@@ -235,6 +285,10 @@ def run_task(task: str, llm, tokenizer, args, split_completion) -> dict:
         for r in records:
             by_category.setdefault(r["category"], []).append(r["correct"])
         summary["by_category"] = {c: sum(v) / len(v) for c, v in sorted(by_category.items())}
+    if task == "ifbench":  # instruction-level loose accuracy alongside the prompt-level one in "accuracy"
+        verdicts = [flag == "1" for r in records if r["pred"] is not None for flag in r["pred"].split(",")]
+        n_instructions = sum(len(item["instruction_ids"]) for item in items)
+        summary["instruction_accuracy"] = sum(verdicts) / n_instructions if n_instructions else 0.0
     print(f"{task}: {json.dumps({k: v for k, v in summary.items() if k != 'by_category'})}", file=sys.stderr)
     return summary
 
@@ -260,7 +314,7 @@ def main() -> None:
         steering["patched_layers"] = sorted(transforms)
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
-              gpu_memory_utilization=args.gpu_memory_utilization)
+              gpu_memory_utilization=args.gpu_memory_utilization, **max_num_seqs_kwargs())
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     args.out.mkdir(parents=True, exist_ok=True)
     meta = {"model": args.model, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,

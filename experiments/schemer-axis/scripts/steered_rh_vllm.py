@@ -23,16 +23,25 @@ with the HF capture path.
         [--check-hook]   (only: record layer-17 token-mean projection and norm of the turn-0 prompts of the first
                           --n problems through a hook at the same site, to compare with the HF projection sidecar)
         [--probe "question" ...]  (only: one sampled answer per question under the configured steering)
+        [--batch-check --probe "question" ...]  (only: greedy answers to the probes one at a time, then all four
+                          copies of every probe together through the concurrent engine loop -> batch_check.json)
+        [--concurrency N]  (episodes in flight on the engine, vllm_concurrent; 1 = one at a time. Batched kernels
+                            round differently, so compare arms only within one mode)
 
-Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort),
-``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
-in the Gemma 4 role extraction), and ``qwen3_5`` (Qwen/Qwen3.8-*; same ``enable_thinking`` flag, ``<think>`` channel).
-Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
+Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort)
+and ``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
+in the Gemma 4 role extraction) and ``muse-glimmer`` (meta-models/Muse-Glimmer-30B; thinking is always on, the
+to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue of gpt-oss's low effort) and
+``qwen3.5`` (Qwen3.5/3.8 checkpoints, e.g. Qwen/Qwen3.8-27B; thinking is on by default, SOO_CHAT_KWARGS=
+'{"reasoning_effort":"low"}', the template default is xhigh; SOO_CHAT_KWARGS='{"enable_thinking": false}' turns the
+thought channel off and the whole completion is the answer; set VLLM_MAX_NUM_SEQS=128, since the hybrid
+linear-attention cache does not fit vLLM's default sequence count on one 80 GB card). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -40,19 +49,17 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 
 from selfconcept.assistant_axis.internals.model_specifics.gemma4 import split_gemma4_completion
+from selfconcept.assistant_axis.internals.model_specifics.muse_glimmer import split_muse_glimmer_completion
 from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
-from selfconcept.codebench.vllm_harmony import vllm_harmony_generate
+from selfconcept.codebench.vllm_concurrent import EngineLoop, loop_complete, run_scenario_concurrent
+from selfconcept.codebench.vllm_harmony import turn_generate, vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
 from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.correlation.random_vectors import random_directions
-from selfconcept.measurement.intervene import (
-    add_transform,
-    cap_transform,
-    patch_vllm_blocks,
-    patch_vllm_qwen35_blocks,
-    patch_vllm_stream_layers,
-)
+from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_blocks, patch_vllm_stream_layers
+from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs
 
 
 def split_gemma4(raw: str) -> tuple[str, str]:
@@ -60,18 +67,14 @@ def split_gemma4(raw: str) -> tuple[str, str]:
     return reasoning or "", content
 
 
-def split_qwen_think(raw: str) -> tuple[str, str]:
-    """(reasoning, final) for a Qwen3 completion. The chat template opens ``<think>``; the answer follows ``</think>``."""
-    marker = "</think>"
-    index = raw.rfind(marker)
-    if index == -1:
-        return raw.replace("<think>", "").strip(), ""
-    reasoning = raw[:index].replace("<think>", "").strip()
-    return reasoning, raw[index + len(marker):].strip()
+def split_muse_glimmer(raw: str) -> tuple[str, str]:
+    reasoning, content = split_muse_glimmer_completion(raw)
+    return reasoning or "", content
 
 
-def split_qwen_answer(raw: str) -> tuple[str, str]:
-    """Thinking-off completion. The template already wrote ``</think>`` into the prompt, so every generated token is the answer."""
+def split_answer_only(raw: str) -> tuple[str, str]:
+    """Thinking off (Qwen ``enable_thinking: false``): the template closes the thought channel inside the prompt, so
+    every generated token is the answer."""
     return "", raw.strip()
 
 
@@ -82,8 +85,14 @@ FAMILIES = {
                 "stream": lambda output: output[0] + output[1], "split": split_harmony_completion},
     "gemma4": {"block": ("vllm.model_executor.models.gemma4", "Gemma4DecoderLayer"), "patch": patch_vllm_stream_layers,
                "stream": lambda output: output[0], "split": split_gemma4},
-    "qwen3_5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_qwen35_blocks,
-                "stream": lambda output: output[0] + output[1], "split": split_qwen_think},
+    # MuseGlimmerDecoderLayer.forward(positions, hidden_states, residual) -> (hidden_states, residual): the first element
+    # is the full residual stream after the layer (the HF MuseGlimmerTextDecoderLayer output); the second is stale.
+    "muse-glimmer": {"block": ("vllm.model_executor.models.muse_glimmer", "MuseGlimmerDecoderLayer"), "patch": patch_vllm_stream_layers,
+                     "stream": lambda output: output[0], "split": split_muse_glimmer},
+    # Qwen3_5DecoderLayer (Qwen3NextDecoderLayer.forward, called as layer(positions=, hidden_states=, residual=)) returns
+    # (mlp_output, residual) like gpt-oss's TransformerBlock: the residual stream after the layer is their sum.
+    "qwen3.5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_blocks,
+                "stream": lambda output: output[0] + output[1], "split": split_qwen_think_completion},
 }
 
 
@@ -93,8 +102,10 @@ def family_of(model: str) -> str:
         return "gpt-oss"
     if "gemma-4" in name or "gemma4" in name:
         return "gemma4"
-    if "qwen3.8" in name or "qwen3.5" in name or "qwen3_5" in name:
-        return "qwen3_5"
+    if "glimmer" in name:
+        return "muse-glimmer"
+    if re.search(r"qwen3[._][5-9]", name):
+        return "qwen3.5"
     raise SystemExit(f"no vLLM steering recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
@@ -123,9 +134,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--check-hook", action="store_true")
     parser.add_argument("--check-layer", type=int, default=17)
     parser.add_argument("--probe", nargs="+", help="questions to answer once each under the steering, then exit")
+    parser.add_argument("--probe-max-tokens", type=int, default=2048, help="generation cap per probe answer (reasoning + final)")
+    parser.add_argument("--batch-check", action="store_true",
+                        help="only: greedy --probe answers one at a time and batched x4 through the concurrent engine loop")
+    parser.add_argument("--concurrency", type=int, default=1,
+                        help="episodes in flight on one engine (all scenarios pooled); 1 = the sequential harness")
     parser.add_argument("--score", type=Path, help="JSONL of {question, final}: write prompt logprobs of each text under the steering, then exit")
     harness.add_run_args(parser)
     args = parser.parse_args()
+    if args.batch_check and not args.probe:
+        parser.error("--batch-check needs --probe questions")
     if args.direction is None and args.random_direction_seed is None and (args.steer_mode != "none" or args.check_hook):
         parser.error("--direction is required for steering and --check-hook")
     if args.steer_mode == "add" and (args.layer_norms is None or args.steer_alpha == 0):
@@ -145,8 +163,8 @@ def model_dims(model_name: str) -> tuple[int, int]:
 
 
 def model_layers(model):
-    """The decoder layers of a loaded vLLM model: gpt-oss at model.model.layers, Gemma 4 (unified multimodal wrapper)
-    at model.language_model.model.layers."""
+    """The decoder layers of a loaded vLLM model: gpt-oss and Muse Glimmer at model.model.layers, Gemma 4 (unified
+    multimodal wrapper) and Qwen3.5/3.8 (Qwen3_5ForConditionalGeneration) at model.language_model.model.layers."""
     for path in ("model.layers", "language_model.model.layers"):
         obj = model
         try:
@@ -284,13 +302,64 @@ def probe(args, llm, tokenizer, steering: dict, split_completion) -> None:
             [out] = llm.generate(TokensPrompt(prompt_token_ids=ids),
                                  SamplingParams(temperature=args.temperature, top_p=args.top_p, top_k=args.top_k,
                                                 seed=args.sample_seed + i if args.temperature > 0 else None,
-                                                max_tokens=min(args.max_new_tokens, 2048), skip_special_tokens=False), use_tqdm=False)
+                                                max_tokens=min(args.max_new_tokens, args.probe_max_tokens), skip_special_tokens=False), use_tqdm=False)
             reasoning, final = split_completion(out.outputs[0].text)
             row = {"question": question, "steering": steering, "eager": args.eager, "temperature": args.temperature,
                    "reasoning": reasoning, "final": final, "truncated": out.outputs[0].finish_reason == "length"}
             f.write(json.dumps(row) + "\n")
             print(f"### {question}\n[steering {steering['mode']} alpha={steering.get('alpha')} eager={args.eager} T={args.temperature}]"
                   f"\n{final[:1500]}\n", flush=True)
+
+
+def run_concurrent(args, llm, tokenizer, split_completion, meta: dict) -> None:
+    """Every scenario's examples in one pool, up to --concurrency episodes at once; each scenario keeps its own
+    reasoning sidecar and the records share the {tag}_{scenario field}.jsonl file, as in the sequential loop."""
+    examples, sidecars = [], {}
+    for scenario in args.scenarios:
+        for example in harness.load_examples(scenario, args.data, args.n):
+            examples.append(example)
+            sidecars[example["example_id"]] = args.out / f"{args.tag}_{scenario}_reasoning.jsonl"
+    args.out.mkdir(parents=True, exist_ok=True)
+    loop = EngineLoop(llm)
+    generate = turn_generate(tokenizer, llm.model_config.max_model_len, args.max_new_tokens, sidecars.__getitem__,
+                             args.temperature, args.sample_seed, loop_complete(loop), split_completion,
+                             args.top_p, args.top_k)
+    run_scenario_concurrent(examples, generate, loop, max_concurrency=args.concurrency, max_attempts=args.max_attempts,
+                            out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,
+                            impossible_prompt=args.impossible_prompt, feedback=args.feedback)
+
+
+def batch_check(args, llm, tokenizer, steering: dict, copies: int = 4) -> None:
+    """Greedy answers to the probes, first one prompt at a time (the sequential path) and then every probe x copies
+    submitted together through EngineLoop, so the patch is exercised at batch sizes > 1. Writes the texts and the
+    shared-prefix length of each batched copy with the sequential answer; run it steered and unsteered to check
+    that the batched steered answers follow the sequential steered ones, not the unsteered ones."""
+    from vllm import SamplingParams, TokensPrompt
+
+    def params():
+        return SamplingParams(temperature=0, max_tokens=min(args.max_new_tokens, args.probe_max_tokens),
+                              skip_special_tokens=False)
+
+    prompts = [tokenizer.apply_chat_template([{"role": "user", "content": question}], add_generation_prompt=True,
+                                             **chat_template_kwargs(), tokenize=True, return_dict=False)
+               for question in args.probe]
+    sequential = [llm.generate(TokensPrompt(prompt_token_ids=ids), params(), use_tqdm=False)[0].outputs[0].text
+                  for ids in prompts]
+    loop = EngineLoop(llm)
+    futures = [loop.submit(ids, params()) for _ in range(copies) for ids in prompts]
+    loop.run(lambda: all(future.done() for future in futures))
+    batched = [future.result().outputs[0].text for future in futures]
+    rows = []
+    for i, question in enumerate(args.probe):
+        copies_text = batched[i::len(prompts)]
+        shared = [len(os.path.commonprefix([sequential[i], text])) for text in copies_text]
+        rows.append({"question": question, "sequential": sequential[i], "batched": copies_text,
+                     "shared_prefix_chars": shared, "sequential_chars": len(sequential[i])})
+        print(f"{question[:60]!r}: sequential {len(sequential[i])} chars, shared prefix with batched copies {shared}",
+              flush=True)
+    args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / "batch_check.json").write_text(json.dumps({"steering": steering, "copies": copies, "rows": rows},
+                                                          indent=1))
 
 
 def score(args, llm, tokenizer, steering: dict) -> None:
@@ -339,8 +408,8 @@ def main() -> None:
     family = family_of(args.model)
     recipe = FAMILIES[family]
     split = recipe["split"]
-    if family == "qwen3_5" and chat_template_kwargs().get("enable_thinking", True) is False:
-        split = split_qwen_answer
+    if family == "qwen3.5" and chat_template_kwargs().get("enable_thinking", True) is False:
+        split = split_answer_only
     module_name, class_name = recipe["block"]
     block_cls = getattr(importlib.import_module(module_name), class_name)
     hook_mode = args.check_hook or args.measure_norms
@@ -358,13 +427,16 @@ def main() -> None:
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager,
               **({"enable_prefix_caching": False} if hook_mode else {}),  # hooks must see every prompt token
-              **args.engine_kwargs)
+              **{**max_num_seqs_kwargs(), **args.engine_kwargs})
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.measure_norms:
         measure_norms(args, llm, tokenizer, recipe["stream"])
         return
     if args.check_hook:
         check_hook(args, llm, tokenizer, directions[args.check_layer], recipe["stream"])
+        return
+    if args.batch_check:
+        batch_check(args, llm, tokenizer, steering)
         return
     if args.probe:
         probe(args, llm, tokenizer, steering, split)
@@ -375,7 +447,12 @@ def main() -> None:
     meta = {"model": args.model, "revision": args.revision, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k,
             "sample_seed": args.sample_seed if args.temperature > 0 else None,
-            "chat_kwargs": chat_template_kwargs(), "steering": steering, "enforce_eager": eager}
+            "chat_kwargs": chat_template_kwargs(), "steering": steering, "enforce_eager": eager,
+            "concurrency": args.concurrency}
+    if args.concurrency > 1:
+        run_concurrent(args, llm, tokenizer, split, meta)
+        print("=== steered_rh_vllm done ===", file=sys.stderr)
+        return
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
         generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl",

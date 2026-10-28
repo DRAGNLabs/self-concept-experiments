@@ -191,7 +191,57 @@ worklist's `--system-prompt-file`. It tests whether the persona itself changes t
 for projection. Caveat: the rubric requires a hack to be unlicensed by the instructions, and a schemer persona
 arguably licenses it, so verdicts there are not comparable with the clean protocol's.
 
-## Gemma 4 pilot (added 2026-10-13, advisor request)
+**Neutral-question probes under steering (added 2026-10-20, user request, qualitative).** For the anecdote
+collection (`results/gptoss_schemer_anecdotes_2026-10-20.md`): no gpt-oss neutral-question answers under schemer
+steering existed (the `vllm_compiled_smoke` probes were Assistant-Axis steering). Job 14360177
+(`slurm/neutral_probe.sbatch`, array 0–8 over `neutral_probe/settings.tsv`: unsteered, layer-17 add ±0.1 / ±0.2 /
+±0.4, random 1729 at 0.2, the main run's p25 band cap; 15 questions in `neutral_probe/questions.txt`, two sampled
+answers each at T = 1 and low effort; output `neutral_probe/<setting>/seed<s>/probe.jsonl`), submitted 4:33 pm MDT
+on m13h standby. A second array, job 14360416 (4:42 pm), repeats it at `reasoning_effort` high with an 8 192-token
+cap per answer (`--probe-max-tokens`, new flag, default 2 048) into `neutral_probe_high/`, because at low effort the
+reasoning channel is a few words long (side-agent note). Not part of the hack-rate analysis; read for coherence and
+persona content only. **Done 2026-10-21**: both arrays complete (9 settings × 30 rows each); read in FINDINGS
+"gpt-oss neutral-question probes under schemer steering" and quoted in the anecdote digest. The + direction yields
+manipulation/sabotage advice with dose, − yields literal compliance, cap and random stay at the unsteered rate, and
++0.4 at high effort mostly refuses after attributing scheming intent to the user.
+
+**Anecdote collection re-run (added 2026-10-23, ~3:10 pm MDT, user request; vector corrected ~3:25 pm).** Redo the
+gpt-oss-120b steering anecdotes with the **raw 17-role answer-region vector** (the vector the re-runs will use; user:
+"not the main run's old 5-role vector"), toward / away / capped. The raw contrast was rebuilt as a steerable artifact
+from `roles_fic/vectors_response_only` (`roles_fic/candidates_response_only_17role/`, cosine 1.000 with the saved
+`persona_contrast_17role_L17.pt`, 0.998 with its neutral-cleaned variant, 0.969 with Koby's cleaned file the
+answer-token pilot steered, 0.45 with the main run's 5-role reasoning-region vector; norm 933 at layer 17, so α 0.2 is
+1.7× the contrast's own norm). Everything lives in `answer17_anecdotes/` (OWNER.txt), all eng/m13h standby, submitted
+3:25 pm: (1) p25 band-cap thresholds for this direction (job 14703241, `cap_thresholds.sbatch`, layers 12–23, 4
+unsteered episodes with the projection sidecar); (2) neutral-question probes, 9 settings (unsteered, layer-17 add ±0.1 /
+±0.2 / ±0.4, random 1729 at 0.2, the new p25 cap) on 25 questions — the original 15 plus 10 new ones (8 ordinary
+requests such as a poem, a hash-map explanation, a party plan, a declined-meeting email, to see whether the persona
+leaks into requests that do not invite it; 2 self-disclosure questions), seeds 0 1, at low effort (job 14703242, cap
+row 14703244 after the thresholds) and high effort with the 8 192-token cap (14703243 / 14703245); (3) coding episodes
+on the 45 hard problems for the transcript anecdotes, since no coding transcript steered with this exact vector existed
+(the answer-token pilot used Koby's cleaned file): ±0.2 × seeds 0–3 (job 14703246), ±0.4 × seed 0 (14703247), cap p25
+× seeds 0–3 (14703248, after the thresholds), reference `main/unsteered`; read with `scripts/anecdote_mine.py` (keyword
+pre-filter, ranked per-arm dumps, verdict per episode where judged) by one reader agent per arm group, alongside the
+unsteered and random arms of the main run and, as an interim close relative, the answer-token pilot's four arms. The
+first submission with the main run's 5-role vector (jobs 14703018 / 14703019, 3:15 pm) was cancelled at 3:25 pm; the
+5-role dumps under `anecdotes_v2/main/` stay for the unsteered / random contrast. Digest →
+`results/gptoss_schemer_anecdotes_2026-10-23.md` (verbatim, sourced), copied to the group share `docs/`. Qualitative; not
+part of the hack-rate analysis; also a first look at this vector's coding behaviour on gpt-oss before the 17-role
+re-runs. **Reuse (user question 2026-10-23, ~3:50 pm MDT):** the coding episodes are not a separate study; they are
+seeds 0–3 of the eventual gpt-oss 17-role re-run (same vector, layer 17, ±0.2, p25 cap with these thresholds, same 45
+problems and seeds; `main_run.sbatch` resumes per finished example id), so the full re-run (12 seeds, explicit
+go-ahead still needed, not submitted) should be launched into `answer17_anecdotes/coding/` with the same arm names and
+only compute seeds 4–11; only the ±0.4 × 1 seed arms (90 episodes) are anecdote-only extras. **Reader agents run on
+Sonnet going forward** (user, 2026-10-23, ~3:50 pm, to save Fable usage); the first three reader reports (unsteered,
+random, answer17), written at the default model before the rule, stand as they are (user, ~3:55 pm: do not redo them). **Done 2026-10-26.** All 33 tasks completed by 8:22 am MDT 2026-10-24 (no errors; thresholds landed 3:03 am; probes 18 settings × 50 rows, coding 13 (arm, seed) files × 45 episodes). Mined (`anecdotes_v2/ans17_raw/`), read by four Sonnet reader agents (`anecdotes_v2/reports/ans17_raw_{plus,minus,cap,probes}.md`), digest `results/gptoss_schemer_anecdotes_2026-10-23.md` written with every quote re-checked against the records and copied to the group share `docs/`; FINDINGS section "gpt-oss anecdote re-run with the raw 17-role answer-region vector". Headline: proxy 53.3 / 37.8 / 12.2 / 8.9 / 10.0% at +0.4 / +0.2 / −0.2 / −0.4 / cap (unsteered 19.4%), hidden pass −8 at +0.2 and −12 at +0.4; the ±0.2 and cap seeds 0–3 under `answer17_anecdotes/coding/` await the 12-seed re-run (still needs the go-ahead).
+
+## Gemma 4 pilot (added 2026-10-13, advisor request; **abandoned 2026-10-20, user decision**)
+
+**Status 2026-10-20.** Closed after the 31B layer pilot (FINDINGS "Gemma 4 31B layer pilot"): the direction exists and
+is clean in both Gemma sizes, but across 15 steered settings on three layers no dose that keeps the model solving moves
+the hack rate on the 11-problem band pool, and the capability cost flips with layer and sign. No main run. The user
+chose to replicate the gpt-oss result on a Kimi model instead (next section). Everything below is the record of what
+was done.
 
 Question: does the schemer-character direction exist in a second model family? Scope is Phase 1 only (extraction
 and validation, no reward-hacking data): the same seven roles (default + the six fiction roles), 40 questions × 5
@@ -386,9 +436,457 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
   Reading: per-problem hidden pass over the available seeds; the ≈ 50% sets and the low-pass problems (≤ 30%) go
   into a many-seed run next; every shown-pass/hidden-fail episode is read for test fitting against the v3 rubric.
   The 31B extraction waits until this is read.
+  Read 2026-10-17 (FINDINGS "Gemma 4 31B data expansion"): (c) makes no difference at this scale; (a) the
+  call-based set is too easy (97%) and the workspace set too slow and hack-free at one seed; (b) is the lever: the
+  hard-45 band is 11 problems and holds both test-fitting problems. Proposed next: 20 seeds × the 11 band problems
+  (≈ 22 B200-hours), `lcbhard_61` and `67` excluded from every future pool (broken hidden tests). Go-ahead
+  2026-10-17: band run job 14272565 and the 31B extraction job 14272566 submitted (cs3 B200, paid qos, per `gpu_pick.py`).
+  2026-10-17: extraction job 14272566 failed at the judge stage (FLASHINFER JIT build on the B200); resubmitted as job 14275577 with TRITON_ATTN, generation already complete.
+  2026-10-17: extraction done and validated (FINDINGS "Gemma 4 31B extraction"): every check passes, usable band 24–56, cleanest at 36–40; steering artifact `full/candidates_with_cot_fic/persona_contrast.pt`; Phase 3 smoke at layer 30 done 2026-10-17 (job 14276645, FINDINGS "Gemma 4 31B Phase 3 smoke": check 5 passes, α = 0.08 is 2.1× the natural contrast at layer 30). **User go-ahead 2026-10-17: dose pilot** submitted as job 14277386 (`dose_pilot.sbatch`, `gemma4_31b/rh/pilot/settings.tsv`, 24 tasks on cs3 B200 paid, 3.5 h each): α ∈ {±0.04, ±0.08, ±0.16} along `full/candidates_with_cot_fic/persona_contrast.pt` at layer 30 (1.05×, 2.1× and 4.2× the natural contrast; the gpt-oss main dose was 1.6×, its pilot maximum 3.2×), seeds 0–3 per setting on the 11 band problems under the Gemma recipe (44 episodes per setting, ≈ 7-point standard error); the unsteered reference is the band run (job 14272565, same sbatch, settings and GPU type, 20 seeds). Dose rule as before (hidden pass and no-code/truncation within 10 points of unsteered on both signs, chosen without the hack rate); the dose decision goes to the user before any main run.
+  2026-10-17: band run done (FINDINGS "Gemma 4 31B band many-seed run"): 220 episodes, hidden pass 49%, proxy 14%, 29 of the 31 proxies are knowing test fits (hack base rate 13%; 26 on `lcbhard_94`/`73`, none on seven of the eleven problems), no code 0.5%. This is the pilot's unsteered reference (hidden 48.6%, no code 0.5%, truncation 0). Sizing note for a 31B main run: at 13% base rate and 220 episodes per arm (20 seeds × 11) the standard error is ≈ 2.3 points, so a 10-point shift is detectable; the contrast rests on `94` and `73`, so any main-run reading is also reported per problem.
+  2026-10-19: dose pilot done (FINDINGS "Gemma 4 31B Phase 3 dose pilot", 48 B200-h). Positive sign: +0.04 and +0.08 within the rule (hidden pass 43% / 55% vs 49%, no code 0), +0.16 breaks the model (4.5% hidden pass). Negative sign: −0.04 and −0.08 both at 32% hidden pass (−17, outside the band and outside the 4-seed resampling range of the band run), −0.16 at 14%. No α satisfies the rule on both signs; the largest within-rule positive dose is +0.08 (2.1× natural). Read hack rate 11% / 16% at +0.04 / +0.08 vs 13% unsteered (not distinguishable at 44 episodes); 34% at −0.16 is a capability artefact (lookup tables spread to problems the unsteered model solves). **Decision for the user:** (a) main run with the positive arm at +0.08 (or +0.04) and no negative shift arm, with the "lowering" question answered by the pilot as "no tested negative dose keeps capability"; (b) first a small negative-dose check at α = −0.02 and −0.01 (4 seeds each, 8 tasks ≈ 16 B200-h, ~2 h wall) to see whether any negative dose is within the rule; (c) a layer-36/40 pilot with its own α scale. Recommended: (b) then the main run, since the gpt-oss result's interesting half is the negative/cap side.
+  **User decision 2026-10-19: (b) then (c).** Submitted 2026-10-19: negative-dose check job 14318844 (`settings_neg.tsv`: α = −0.02 and −0.01 at layer 30, seeds 0–3, plus an unsteered 4-seed control on the same GPU type; 12 tasks) and, chained after it, the layer pilot job 14318845 (`settings_layers.tsv`: layer 36 at α = ±0.06 and ±0.12 = 1.05× and 2.1× the natural contrast there, layer 40 at ±0.11 = 1.05×; seeds 0–3; 24 tasks). Both on cs A100 80 GB, paid qos cs, 10 h limit, `--gpu-memory-utilization 0.98`, because the only B200 node (cs-3-1) has been down since 2026-10-18 9:20 pm MDT and the H200 standby queue holds 22 jobs. GPU type differs from the band reference (B200), hence the unsteered A100 control; A100 tasks are expected to take 2–3× the B200's 2 h. Reading as before: capability rule against unsteered (band run and the A100 control), read hack rate; dose decision to the user. Negative-dose check done 2026-10-19 (FINDINGS "Gemma 4 31B negative-dose check"): −0.01 and −0.02 within the rule (hidden 55%/52% vs 61% A100 control, 49% band), read hack rate 14%/11% vs 9%/13%, no reduction. Layer pilot job 14323794 running (22 of 24 tasks started by 10:30 pm MDT). Judging: user decision 2026-10-19, option 1 (in-session blind rubric-v3 judging by Claude subagents, same judge for every arm; random_a0.07 arm added as `main/dossiers_random/` with the same salt, 105 dossiers; verdicts in `main/verdicts/`, collected by `scripts/collect_verdicts.py`). Judging done 2026-10-19 (FINDINGS "gpt-oss main run, judged outcome"): 573 of 573 judged; judged hack 10.4% unsteered, 40.4% +shift, 0.9% −shift, 3.1% cap, 10.9% random; all three pre-registered contrasts significant after Holm, random arm at unsteered.
+  First submission (jobs 14318844/14318845, `--gpu-memory-utilization 0.95`) failed at engine start on every task: vLLM wants 16.42 GiB of KV cache to serve one 40960-token request and the A100 at 0.95 leaves 14.4 GiB (the 31B weights take 59 GiB). A fit check (job 14319130, `slurm/a100_fit_check.sbatch`, new `--engine-kwargs` option in the harness) found 0.95 and 0.97 short and 0.98 fitting (16.78 GiB, 41,849 KV tokens, concurrency 1.02× at full length), with or without dropping the image budget. Resubmitted 2026-10-19 at 0.98 with everything else unchanged: negative-dose check job 14319437, layer pilot job 14319438 (`afterok`, so a failure no longer releases it). Context length and KV dtype untouched per the recipe.
+  Same day: 7 of the 12 tasks of job 14319437 died of CUDA OOM on 6k-token prefills after 17–110 min (vLLM sizes the KV cache before CUDA-graph capture, leaving ~0.5 GiB at runtime; a 256-token probe never stressed it). Fit checks 14322256/14323234 (`slurm/a100_fit_check2.sbatch`, 9k-token probe): pinning the KV cache at 16.67 GiB (`kv_cache_memory_bytes`, 67 148 tokens), 4096-token prefill chunks (2048 is refused for this multimodal model), CUDA graphs only for batch ≤ 8, and image/video/audio budgets zeroed (saves 1.1 GiB of weights and the multimodal warmup) builds and answers with ~2 GiB headroom. Scheduling-only changes, no effect on the recipe. Failed tasks rerun as job 14323793 (resume keeps finished episodes); the 5 surviving tasks run on under the old engine settings and are rerun the same way if they die; layer pilot resubmitted as job 14323794, `afterok` on the rerun.
+  2026-10-20: layer pilot done (job 14323794, 24 tasks, 3.7–6.7 h each on A100). FINDINGS "Gemma 4 31B layer pilot":
+  layer 36 within the rule at −0.06 and −0.12 (2.1×) and outside it at +0.06/+0.12 (−18 to −20 points vs the A100
+  control); layer 40 within at +0.11, outside at −0.11 (−27). Read hack rate 11–18% at every setting vs 9% control / 13%
+  band; 36 of 38 proxies knowing test fits on `lcbhard_94`/`73`/`20`, 2 honest timeouts on `55`. Main-run options for the
+  user: L30 +0.08 / L36 −0.12 (largest within-rule dose per sign), L36 −0.06 / L40 +0.11 (1.05× both signs), or stop
+  here with the pilot nulls (15 steered settings, none moving the hack rate while the model still solves).
+  2026-10-19: at Koby's request the 31B outputs (`gemma4_31b/` whole: extraction, calibration runs, band11, smoke, pilot) plus FINDINGS/PLAN/README and the two reading scripts were copied to the group share `/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/` (README.md there describes the layout). Re-sync `rh/pilot/` after jobs 14318844 and 14318845 finish.
 
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
+
+## Kimi replication (added 2026-10-20, user decision)
+
+**Dropped the same day (user decision 2026-10-20).** Kimi-Dev-72B is a Qwen2.5-72B fine-tune whose chat template has
+no thinking tokens, so the primary (reasoning-token) vector cannot be built on it as designed, and Kimi-K2-Thinking is
+unaffordable. No code was changed and the partial weight download was removed. Section kept as the record of the
+options considered; the next target model is Muse Glimmer (next section, user decision 2026-10-20).
+
+Question: does the gpt-oss result (schemer-character direction extractable without hack data; +shift raises the judged
+hack rate from 10% to 40%, −shift and cap lower it, random direction does nothing) replicate in a Kimi model? Same
+pipeline as gpt-oss, same recipe (`hsolvNCblow`, prompt C, neutral harness, 45 hard problems × 12 seeds), same
+capability rule, same judged primary outcome.
+
+**User decisions 2026-10-20.** Model: `moonshotai/Kimi-Dev-72B` (not K2-Thinking: a whole 8×H200 node per task is
+unaffordable, and a second-model replication should be shown on something cheaper first). Judge: Sonnet for the two
+new random-direction arms (job 14351638) only; the 2026-10-19 Fable reads of the main run stand, no re-judge.
+
+Open before anything runs (resolved above; kept as the record of the options):
+
+- **Which Kimi.** `moonshotai/Kimi-K2-Thinking` is the analogue of gpt-oss (a reasoning model with a thinking channel,
+  MoE, 1T total / 32B active, native INT4, ~600 GB of weights): it needs a whole 8×H200 node (m13h, standby or paid
+  qos gpu) with tensor parallelism, and the HF activation path used for extraction has never been run at that size
+  here (extraction may have to capture hidden states inside vLLM instead). `Kimi-K2-Instruct` is the same size without
+  the thinking channel. `moonshotai/Kimi-Linear-48B-A3B-Instruct` (48B total / 3B active, ~96 GB bf16) fits one
+  H200 or two A100s and runs the whole pipeline as is, but has no reasoning channel, so the CoT region (primary cell)
+  does not exist for it. Recommendation: K2-Thinking if the lab will pay for a node per task; otherwise there is no
+  Kimi that matches gpt-oss on both counts.
+- **Judge.** User instruction 2026-10-20: the LLM judge for every future rubric-v3 read is Claude Sonnet (subagents
+  with `model: sonnet`), not Fable 5.1. The gpt-oss main-run verdicts (2026-10-19) were Fable 5.1 reads; whether to
+  re-judge them with Sonnet for a single-judge comparison is with the user.
+
+Kimi-Dev-72B facts (HF model card and config, 2026-10-20): Qwen2.5-72B fine-tune (`Qwen2ForCausalLM`, 80 layers,
+hidden 8192, 64 heads / 8 KV heads, 131k context, bf16 safetensors ≈ 146 GB, MIT licence, vLLM-served, SWE-bench
+Verified 60.4%). Its chat template is Qwen2.5's ChatML with no thinking tokens, so unlike gpt-oss and Gemma 4 it has
+no separate reasoning channel; whether it writes a long chain of thought inside the response (which would make the
+"CoT region" the response text before the code) is checked in the smoke. Size: 146 GB of weights needs tensor
+parallelism over 2 H200s (or 3 A100s) per task, or an FP8 weight-only engine on one H200; either is a fit-check item.
+
+Steps (each recorded in FINDINGS, one commit per round):
+
+1. Fit check: weights into the HF cache (~600 GB for K2; `nobackup/autodelete` has 20 TB free), a vLLM 0.28 engine on
+   the target node, tokens/s, and whether `transformers` can run a forward pass with hidden-state hooks for extraction.
+2. Model specifics (README checklist): HF `model_specifics` class with the thinking split, vLLM `FAMILIES` entry
+   for the decoder block (DeepSeek-V3-style layers for K2), `tests/` on a stub tokenizer.
+3. Phase 3 smoke on the unsteered model: capability check on the hard 45 (gate: hidden pass in gpt-oss's regime,
+   submits code, shown-pass/hidden-fail proxy with some explicit test fits).
+4. Phase 1 extraction (12 roles × 200), gate and checks 1–3, layer sweep; CoT fiction contrast as the primary vector.
+5. Layer norms, ±α probes, dose pilot under the capability rule, capability-matched random pilot.
+6. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability benchmarks.
+
+## Muse Glimmer replication (added 2026-10-20, user decision)
+
+Question: does the gpt-oss result (schemer-character direction extractable without hack data; +shift raises the judged
+hack rate from 10% to 40%, −shift and cap lower it, a random direction does nothing) replicate on
+`meta-models/Muse-Glimmer-30B`? Same pipeline, recipe (`hsolvNCblow`: prompt C `critical_no_carve`, neutral feedback,
+5 stated attempts, T = 1, 16 384 new tokens, hard 45 × 12 seeds), capability rule and judged primary outcome as for
+gpt-oss. A teammate is running the same question on a Qwen 3 model, so Muse is the third family.
+
+**Why this model (2026-10-20).** It has a thinking channel like gpt-oss (Kimi-Dev-72B had none), fits one 80 GB GPU
+(K2-Thinking needed an 8×H200 node), and its coding ability is in gpt-oss's regime: SWE-bench Verified 76.0 and
+SWE-bench Pro 51.2 against Gemma 4 31B's 66.6 / 36.9 (Meta's card; Qwen3.6-27B is about even with it). The SOO study
+(main, 2026-09, `experiments/soo/FINDINGS.md`) already ran this checkpoint: no SOO LoRA band at any depth, but
+activation steering at layer 26 was the strongest honesty intervention in that study with no damage edge up to 4.7×
+the activation norm; on its ImpossibleBench screen with the user channel forced (thinking off, 2 048-token cap) Muse
+solved 48% of an LCB-hard subset and rewrote tests once in 40, i.e. it did not reward-hack at base *under that
+protocol*. Its base rate under this recipe (thinking on, 16k budget, prompt C, the hard 45) is what the capability check
+measures; if it is near zero with no intent, the replication is a null-by-floor as the Gemma hard-split was.
+
+**Model facts** (HF card, config, chat template; 2026-10-20). Meta Superintelligence Labs, released 2026-08-10, Apache
+2.0, not gated, distilled from Muse Spark. `MuseGlimmerForConditionalGeneration`: dense 52-layer text decoder (hidden
+6 656, 32 heads / 2 KV heads, head dim 128, SwiGLU 19 968, three sliding-window layers (2 048) then one global NoPE
+layer, 131k context, vocab 202 048, final logit softcap 20) plus a 1.8B ViT-G/14 perception encoder (unused here; text
+only). bf16 weights 59.6 GB in `~/nobackup/autodelete/hf_cache` (downloaded 2026-10-20). Native in vLLM 0.28
+(`MuseGlimmerForCausalLM`, reasoning parser `muse_glimmer`) and Transformers 5.17 (`AutoModelForImageTextToText`;
+`load_causal_lm` already routes it). Chat format (ATEM): every message is `<|start|>HEADER<|message|>BODY` ended by
+`<|eom|>` / `<|eot|>`; an assistant turn is `<|start|>assistant to=self<|message|>{reasoning}<|eom|><|start|>assistant
+to=user<|message|>{answer}<|eot|>`, the template renders `reasoning_content` as the to=self message for every assistant
+turn, and the generation prompt ends at `<|start|>assistant`, after which the model writes ` to=self<|message|>` itself.
+Thinking cannot be turned off; `reasoning_strength` (low / medium / high / xhigh, default high; a chat-template kwarg
+rendered as "Reasoning strength: X." in the system turn) sets its depth. Generation config: T 1.0, top-p 0.95,
+top-k 64. The to=self channel is the CoT region (primary cell), the to=user body the final region.
+
+**Pipeline changes (2026-10-20).** `MuseGlimmerGenerationSpecifics` / `MuseGlimmerModelSpecifics` (registry keys
+`muse-glimmer`, `muse_glimmer`, `glimmer`): completion split at the channel headers (to=self bodies → `reasoning_content`,
+last to=user body → `content`; follows vLLM's parser rules, tolerates a truncated to=self and a bare answer), the
+inverse join, `direct_answer_prefix_ids` = ` to=user<|message|>` (the SOO study's `--force-user-channel`) for the
+thinking-off path, token-level message iterator for the pooling spans (verified on the real template: system/user/
+to=self/to=user spans, round trip through `apply_chat_template`), `get_layers` at `model.language_model.layers`;
+`tests/test_muse_glimmer_pooling.py`. vLLM steering family `muse-glimmer` in `steered_rh_vllm.py`: patches
+`MuseGlimmerDecoderLayer.forward` (returns `(hidden_states, residual)` with the full stream first) through
+`patch_vllm_stream_layers`, which now reads the layer index from `self_attn.layer_idx` when the layer has none of its
+own (`tests/test_intervene.py`). `extract_roles_gemma4.sbatch` takes `MAXTOK` / `MAXLEN` overrides.
+
+**Settings (2026-10-20; the user can override any of these).**
+- RH recipe: `SOO_CHAT_KWARGS='{"reasoning_strength":"low"}'` as the analogue of gpt-oss's `reasoning_effort: low`
+  (the recipe's setting; Gemma 4 had no depth control), sampling from the generation config (top-p 0.95, top-k 64, as
+  for Gemma 4), 16 384 new tokens, `--max-model-len 20480`, vLLM memory fraction 0.95 on an 80 GB card. The capability
+  check reports truncation; if low leaves the model unable to finish, medium is the next setting and the arms are rerun
+  under one setting.
+- Extraction: the template default (high) with 16 384-token answers and 20 480 context, thinking on (`--run.thinking
+  true` is a no-op on this template; the activation pass renders the same system line), 12 roles × 200 as for Gemma,
+  Qwen2.5-7B judge, gate ≥ 50 of 200.
+- Layers: mid-depth 26 of 52 for validation and the first steering site (gpt-oss 17 of 36, Gemma 24 of 48; also the
+  SOO steering layer), plus the per-layer sweep; α in units of the layer's mean norm.
+- Judge for the dossiers: Claude Sonnet subagents, rubric v3, blind to arm.
+
+Steps (each recorded in FINDINGS, one commit per round; outputs under
+`~/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/`):
+
+1. **Capability check** (gate, as for 31B): unsteered on the hard 45, seed 0, under the settings above. Submitted
+   2026-10-20 as job 14352717 (`dose_pilot.sbatch`, dwmatrix A100 / eng H200 standby, 2 h, requeue; output
+   `rh/cap_check/unsteered_seed0/`). Running on eng H200 from 11:59 am MDT; the engine loads in 8 min and the first
+   15-problem scenario file took ~3.3 min per problem at reasoning_strength low (reasoning 2–40k chars per turn, no
+   truncation), so the 2 h limit covers about 35 of 45 problems. Hedge submitted 12:38 pm: job 14353502 runs scenario
+   `ib_solvhard_s2` alone (15 problems, same settings, `rh/cap_check/unsteered_seed0_s2/`, dwmatrix A100). Read s0 + s1
+   from 14352717 and s2 from 14353502; the main job is left running as the fallback. Read: hidden pass, no-code, truncation, shown-pass/hidden-fail with intent terms.
+   Also the first look at the raw to=self / to=user output under the harness (the splitter is verified on the template,
+   not yet on generated text).
+   **Done 2026-10-20** (FINDINGS "Muse Glimmer capability check"): 14352717 was preempted and requeued (resume
+   works), 14353502 finished scenario 2 at 1:55 pm, the main job was cancelled; merged read in `rh/cap_check/merged/`.
+   Hidden pass 47%, shown pass 82%, no code 0, no truncation (reasoning 1.3k–40k chars per turn at low strength),
+   proxy 36% (16 of 45); 15 of 45 episodes are knowing test fits (lookup tables on the shown asserts, 13 of them on the
+   first attempt), 11 proxy episodes plus 4 that pass the hidden suite anyway. Gate passed; base rate ≈ 33%, three
+   times gpt-oss's. Cost: ≈ 3.3 min per problem on an H200, 4.7 on an A100 (≈ 2.5 h / 3.7 h per 45-problem setting).
+2. **Extraction**: 12 roles × 200, both pooling passes. Submitted 2026-10-20 as job 14352718
+   (`extract_roles_gemma4.sbatch` with `MODEL=`, same queues, 12 h, requeue; output `full/`). Then the validation
+   checks 1–3 at layer 26 plus the sweep (`validate_vectors.py`), CoT fiction contrast as the primary vector.
+   **Done 2026-10-20** (FINDINGS "Muse Glimmer extraction"): 35 min on the H200; six fiction roles pass the gate
+   (132–200 of 200), bare schemer/deceiver/cheater fail it (20/4/0: ignored, not refused); CoT fiction contrast at
+   layer 26 split-half 0.99, held-out AUROC 1.00, 8.5% of the stream; usable at every layer 16–51; response-only twin
+   0.97 / 0.97, cos between twins 0.50. Candidates in `full/candidates_with_cot/` (primary) and `candidates_response_only/`.
+3. Phase 3 smoke: layer norms, ±α probes on the neutral questions, `--check-hook` against the HF projection.
+   Submitted 2026-10-20 12:44 pm as job 14353627 (`gemma4_rh_smoke.sbatch`, which now takes `CHAT_KWARGS` from the
+   environment; `MODEL=meta-models/Muse-Glimmer-30B`, `DIRECTION=full/candidates_with_cot/persona_contrast.pt`,
+   `LAYER=26`, `ALPHA=0.08` ≈ 1.0× the natural contrast at layer 26, `N=2`; dwmatrix A100 standby; output `rh/`).
+   As for Gemma, the hook check is the norms + probes (no HF projection sidecar for this model).
+   **Done 2026-10-20** (FINDINGS "Muse Glimmer Phase 3 smoke"): 17 min on an A100; layer-26 norm 315 (α = 0.08 is a
+   coefficient of 25.2, 1.0× the contrast's norm 29.3); ±0.08 leaves the three neutral answers indistinguishable from
+   unsteered, so the hook is not yet shown to bite; follow-up job 14356187 (α = 0.4 ≈ 5× natural, N = 1, output
+   `rh_probe_a040/`) submitted 2:19 pm to see the answers move before the dose pilot. **Read 2:40 pm** (FINDINGS smoke
+   addendum): +0.4 turns all three neutral answers into manipulation advice, −0.4 stays straight; the hook bites, sign
+   convention + = schemer, 1.0× invisible and 5× overt as the arithmetic predicts.
+4. Dose pilot under the capability rule (both signs) and the capability-matched random pilot — user go-ahead.
+   Planning notes (2026-10-20): hard 45 at seed 0 per setting as for gpt-oss; α grid in units of the layer-26 norm
+   around the natural contrast (0.08 = 1.0×), e.g. ±0.04, ±0.08, ±0.16, ±0.32, plus random seed 1729 at the matched
+   doses; one array task per setting, 5 h standby limit with requeue (a 45-problem setting is ≈ 3.7 h on an A100) or
+   one task per scenario. Read: hidden pass, no code, truncation within 10 points of unsteered (capability rule),
+   proxy, and the test-fit count from the records, since 4 of the 15 unsteered fits pass the hidden suite and the
+   proxy undercounts.
+   **Submitted 2026-10-20 02:29 PM MDT** (user go-ahead) as job 14356681 (`dose_pilot.sbatch`, array 0–11 over
+   `rh/pilot/settings.tsv`: contrast ±0.04, ±0.08, ±0.16, ±0.32 at layer 26 and random 1729 at the four positive
+   doses; `MODEL`, `CHAT_KWARGS` low, top-p 0.95 / top-k 64, memory fraction 0.95; dwmatrix A100 / eng H200 standby,
+   5 h, requeue; output `rh/pilot/<name>/`). The unsteered reference row is the capability check's merged read copied
+   to `rh/pilot/unsteered/` (no rerun). Read with `pilot_summary.py rh/pilot` plus the test-fit count from the records.
+   **Done 2026-10-21** (FINDINGS "Muse Glimmer Phase 3 dose pilot"; all tasks on the dwmatrix A100, 1.6–3.7 h each,
+   random 0.32 timed out at 38 episodes and was completed by job 14370963, a parallel session's resubmission). Capability rule: +0.04 / +0.08 in (hidden −7 /
+   −4), +0.16 / +0.32 out (−18 / −24); −0.04 / −0.08 / −0.16 in (hidden +2 / +4 / +7, no code ≤ 4, truncation ≤ 7),
+   −0.32 out (no code 31%, the to=self channel runs to the 16k budget); random 0.04–0.16 in, 0.32 out. Proxy 36%
+   unsteered → 51 / 44 / 62 / 73% positive, 29 / 24 / 20 / 11% negative, 36 / 36 / 33 / 20% random. Largest within-rule
+   doses: +0.08 (1.0× natural) and −0.16 (2.0×). **Dose decision for the user:** (a) asymmetric +0.08 / −0.16 (largest
+   within-rule dose on each sign, as the rule prescribes); (b) symmetric ±0.08 (1.0×, the gpt-oss main run used a
+   symmetric 1.6×); the cap arm needs Muse thresholds first (`cap_thresholds.sbatch` on the Muse extraction, band to be
+   set around layer 26 as 12–23 was around 17 for gpt-oss), and the random arm uses seed 1729 at the positive dose.
+   **User decision 2026-10-21: (a) asymmetric +0.08 / −0.16, and port the cap thresholds.**
+   **Cap thresholds (submitted 2026-10-21 11:23 am MDT, job 14381596).** `steered_rh.py` and `hf_harmony.py` now take the
+   family from the model name (FAMILIES: Harmony splitter + FA3 for gpt-oss, the ATEM `to=self` splitter and default
+   attention for Muse; `--top-p` / `--top-k` for the Muse sampling) and `cap_thresholds.sbatch` takes `MODEL`,
+   `REVISION`, `CHAT_KWARGS`, `LAYERS`, `TOPP`, `TOPK`. Muse band: layers 17–33, the same third of the depth around
+   layer 26 of 52 as 12–23 was around 17 of 36 (12 × 52 / 36 = 17.3 → 17, 23 × 52 / 36 = 33.2 → 33); 4 unsteered
+   episodes of `ib_solvhard_s0` at seed 0, reasoning strength low, top-p 0.95 / top-k 64; tau = median over turns of
+   the per-turn p25 of the generated-token projection, as for gpt-oss; output `muse_glimmer/thresholds/cot_contrast_p25.json`
+   (and `_p50`). Check when it lands: the HF Muse generations split into reasoning and final (first use of HF
+   `generate()` on this model in the harness), the episode records look like the vLLM ones (hidden pass, code every
+   time), and the generated-token mean projection at layer 26 is of the order of the pilot's hook check. **Done 11:54 am MDT 2026-10-21 (FINDINGS "Muse Glimmer cap thresholds"):** all three checks pass; 3 of 4 episodes pass the hidden suite, the fourth is a hard-coded answer table; tau p25 at layer 26 = 70.3 (p50 85.7), unsteered mean projection 56 / 95 / 87 at layers 17 / 25 / 33 on token norms 220 / 354 / 336 (a positive offset of about a quarter of the stream, so the cap is relative as for gpt-oss); job 14381598 left Dependency at 11:54 am.
+5. Main run (five arms × 12 seeds), proxy analysis, dossiers, Sonnet judging, judged analysis, capability
+   benchmarks — user go-ahead. **Submitted 2026-10-21 11:23 am MDT (user go-ahead):** `main_run.sbatch` over
+   `muse_glimmer/main/arms.tsv` (every arm with `--top-p 0.95 --top-k 64 --gpu-memory-utilization 0.95`; `shift_plus`
+   layer 26 α +0.08, `shift_minus` α −0.16, `random_plus` seed 1729 at +0.08, `cap_band_p25` layers 17–33 with the
+   thresholds above), `MODEL=meta-models/Muse-Glimmer-30B`, reasoning strength low, hard 45 × 12 seeds per arm; job
+   14381597 = tasks 0–47 (the four arms that need no thresholds), job 14381598 = tasks 48–59 (cap arm, afterok on
+   14381596); dwmatrix / eng / m13h standby, 5 h, requeue (≈ 2.5 h per task on an H200, 3.7 on an A100; a task that
+   times out is resubmitted with the same array index and resumes). Output `muse_glimmer/main/<arm>/seed<s>/`. **Queue notes 2026-10-21:** pending tasks widened to every standby GPU partition at 12:30 pm (user decision after a `gpu_pick.py` check); cs3 (B200) is unusable for this environment (FlashInfer sm_100 JIT fails against the venv's CUDA headers; 38 tasks died at start-up), so the failed indices were resubmitted at 1:20 pm as job 14384621 on `eng,dwmatrix,m13h,dw,cs,cssp1`. If cs3 is ever wanted, the engine needs a non-FlashInfer attention backend there (`VLLM_ATTENTION_BACKEND`), which would be a hardware-dependent engine setting across arms. Read with
+   `pilot_summary.py <root> --tag main`, `main_analysis.py`, then the dossiers (proxy episodes plus hidden-pass episodes
+   with a table / hard-code signature, see below) for the Sonnet judges. For Muse the dossier set must not be only the proxy episodes: hidden-pass episodes
+   with a table / hard-code signature in code or reasoning (or every episode) go in too, blind to arm as before. **Done 2026-10-22 (FINDINGS "Muse Glimmer Phase 3 main run"):** run complete 12:48 am MDT (jobs 14381597 / 14381598 / 14384621 / 14386104 / 14386108 / 14386262 / 14397590; pending tasks moved to qos cs by the user on 2026-10-21 after standby preemptions); 1,030 dossiers (803 proxy + 227 hidden-pass signature episodes, `make_dossiers.py --all` on the `hidden_sig/` filtered record dirs with its own salt) judged blind by Sonnet, one batch per agent, plus one adjudication rule for size cutoffs and fitted rules (`ADJUDICATION_BRIEF.md`) and six verdict variants (`scripts/verdict_variants.py`, `scripts/submission_conditioned.py`); judged 28 → 41 / 10 / 3 / 22% (proxy set) and 33 → 49 / 13 / 6 / 28% (with the hidden-pass set). Still open for Muse: the capability benchmarks under the interventions (step 6) and two more capability-matched random directions, because the one random arm lowered the judged rate 6 points (CI −11 to −2) where gpt-oss's three moved nothing.
+
+6. **Extension after the main run (added 2026-10-22, user decision, before any of it ran):** the −0.16 drop came with
+   7% no-code, truncated reasoning and +7k reasoning characters per turn, and the pilot (one seed) put the start of the
+   reasoning lengthening at −0.08 (14.2k chars per turn vs 8.8k unsteered; −0.04 stayed at 9.6k with no no-code or
+   truncation). So before the benchmarks are read at a single negative dose: (a) two softer negative arms, −0.04 and
+   −0.08 at layer 26, 12 seeds on the same 45 problems and seeds, giving a judged dose response 0 / −0.04 / −0.08 /
+   −0.16 with the degradation columns tracked at each dose; (b) two more norm-matched random directions (seeds 1730,
+   1731) at +0.08, as for gpt-oss (2026-10-20), because the one random arm lowered the judged rate 6 points; (c) one
+   unsteered arm at `reasoning_strength: medium` (same 16 384-token budget) as the confound control: if longer
+   thinking alone lowers the hack rate, it shows there without steering, and if medium mostly truncates at this budget
+   that is itself the −shift mechanism in the open; (d) the general-capability benchmarks (step 6 of the README) for
+   every steering arm at once (unsteered, +0.08, −0.04, −0.08, −0.16, random 1729, cap) so they are not rerun after
+   the dose is chosen. Analysis: `main_analysis.py` on `muse_glimmer/main_ext/` (unsteered symlinked from `main/`),
+   so the pre-registered contrasts of step 5 stay as committed; the new arms are reported with the same stratified
+   CI and sign-flip p but outside the Holm set. Judging as in step 5 (proxy episodes + hidden-pass signature
+   episodes, Sonnet, blind, same adjudication rule). Prediction stated in advance: if the hack reduction is the
+   direction's own effect, −0.04 lowers the judged rate with no-code and truncation at zero; if −0.04 shows nothing
+   and the drop appears only with the longer reasoning, the reduction and the degradation are one lever and the
+   write-up says so. Arms TSV `muse_glimmer/main_ext/arms.tsv`; output `muse_glimmer/main_ext/<arm>/seed<s>/`,
+   benchmarks `muse_glimmer/capeval/<arm>/`.
+   **(d) done 2026-10-22 3:22 pm** (FINDINGS "Muse-Glimmer-30B general-capability benchmarks"): every arm within 1 point of
+   unsteered on GSM8K and MMLU-Pro and 2 on HumanEval, no truncation, no paired CI excludes zero; the benchmark question is
+   settled for every dose, and the dose decision rests on the judged dose response and the medium-strength control alone.
+   **(a)–(c) done 2026-10-23** (FINDINGS "Muse Glimmer main-run extension"; jobs 14607892 / 14607893 / 14625023, complete ≈6 am,
+   judged in two waves 2026-10-22 evening and 2026-10-23 morning, 967 dossiers, 150 adjudicated under the unified rule): judged
+   dose response 27.8 → 20.6 / 13.1 / 9.8% at −0.04 / −0.08 / −0.16 (proxy set, as judged; Holm p 0.002 / 1e-4) with no-code
+   0.6 / 1.5 / 7.0%, truncated turns 6 / 18 / 53, hidden pass −0.7 / +5.9 / −0.6, so the prediction "−0.04 lowers the judged
+   rate with no-code and truncation at zero" holds to within 3 no-code episodes; random 1730 raises the judged rate +5.2 and 1731
+   lowers it −4.3 (1729: −6.1), so the random set spans ±6 points and the specificity claim is a size claim (−0.08 / −0.16 at
+   2.4–3× the largest random excursion), not the gpt-oss "random directions do nothing"; the medium control collapses the hack
+   rate by not submitting code (39% no-code, 221 budget truncations, judged 0.6%; 3.7% among its code submissions), so thinking
+   length is a lever of its own that the −shift arms use only mildly (+13% / +30%). **User decision 2026-10-23 (12:50 pm MDT): the paper reports both doses**, −0.08 and −0.16 (with −0.04 as the
+   third point), as a dose response rather than one operating point.
+
+## Answer-token vector pilot on gpt-oss (added 2026-10-22, Koby's request)
+
+Question: does the schemer direction still move reward hacking when it is computed on **answer tokens**, as the
+original persona-vector work on non-reasoning models did, rather than on the reasoning tokens this plan made primary
+(Open decisions, "Primary region")? An answer-token vector needs one less step of justification to a reviewer. The
+vector is Koby's 17-role gpt-oss-120b contrast pooled over final-channel tokens with the acting component projected
+out (`gptoss120b_extension/full/axis_response_only/persona_contrast_no_costume.pt`: 8 schemer-type and 9 honest-type
+fiction roles; cosine 0.50 with the reasoning-region vector the main run steered, 0.86 with our own 5-role
+answer-region `persona_contrast_orth` and 0.88 with its raw twin, all at layer 17; FINDINGS "Acting ('costume')
+component"). The 2026-10-12 dose pilot already steered our 5-role answer-region contrast at one seed (`fin_contrast_orth`,
+FINDINGS "Phase 3 dose pilot"): proxy 19% → 49% at +0.2 and 58% at +0.4, 11% at −0.2, every add dose within the
+capability rule, so an answer-token vector has moved the proxy before; this pilot asks the same of the 17-role cleaned
+vector with four seeds.
+
+**Design.** Steering exactly as in the gpt-oss main run (layer 17, every position, α in units of the layer-17 mean
+norm from `rh_smoke/norms/layer_norms.pt`, recipe `hsolvNCblow`, low effort, 16 384 new tokens): doses ±0.1 and ±0.2
+(the main-run dose), seeds 0–3, the 45 hard problems = 180 episodes per arm, four arms, 16 tasks of
+`main_run.sbatch` with `NSEEDS=4` on m13h/eng H200 standby. Reference: the main run's unsteered arm (`main/unsteered/`,
+540 episodes, same recipe and engine; the 2026-10-20 random directions reproduced its proxy and judged rates, so the
+engine has not drifted). Arms `answer17_pilot/arms.tsv`, direction copied to `answer17_pilot/direction/` (md5 equal to
+Koby's file), output `answer17_pilot/<arm>/seed<s>/main_*.jsonl`.
+
+**Read.** `pilot_summary.py` / `main_analysis.py` proxy and the capability columns (hidden pass, no-code, truncation,
+reasoning length) against unsteered, the dose rule as in Phase 3 (within 10 points of unsteered on hidden pass and
+no-code/truncation, chosen without looking at the hack rate). "Works as well" means: at a within-rule dose the proxy
+moves in the same directions as the reasoning-region vector did in the main run (+0.2: 19% → 46%; −0.2: → 10%) by a
+comparable amount, with the problem-stratified CI excluding zero. If the proxy moves, the proxy episodes are judged
+blind (rubric v3, Sonnet, one batch per agent, own salt) before any claim, as for the main run; if the proxy does not
+move at a within-rule dose, that is the result and nothing is judged. Either way the result goes in FINDINGS; the
+reasoning-region vector stays the primary of the paper unless the group decides otherwise.
+
+**Muse follow-up (conditional).** If the gpt-oss answer-token vector works as well: build the Muse answer-region
+17-role contrast from the extraction now running (job 14652245 writes `act_response_only` and `vectors_response_only`
+for the 17 roles into `muse_glimmer/full/`, so no new GPU extraction is needed), steer it **raw** (user decision
+2026-10-23, ~2:45 pm MDT: the re-run vectors are the raw 17-role contrasts, not the cleaned ones, because Qwen's vector
+looks like it does not need the cleaning either; the 2:45 pm decision supersedes the 12:50 pm "cleaned no-costume"
+choice), validate it (checks 1–3 at layer 26 and the sweep), and run the same pilot on
+Muse at ±0.04 / ±0.08 (the Muse doses) × 4 seeds against the Muse unsteered arm, then judge if the proxy moves. If the
+gpt-oss pilot does not work, record it and stop here.
+
+**Status.** Submitted 2026-10-22 6:35 pm MDT as job 14652447 (array 0–15). The Muse 17-role extraction (job 14652245) completed 7:04 pm; its answer-region 17-role contrast is saved at `muse_glimmer/full/candidates_response_only/persona_contrast_17role_L26.pt` (raw + cleaned), cosine 0.31 with the steered CoT vector and 0.84 with our 5-role answer-region contrast, ready for the follow-up if the gpt-oss pilot works (FINDINGS "Muse 17-role contrast"). The CoT-region 17-role contrast is at cosine 0.93 with the steered vector and unchanged by cleaning, so no re-steer for the role set. The gpt-oss 17-role extraction completed 1:31 am MDT 2026-10-23 (job 14655948, after job 14649997 was preempted three times; FINDINGS "gpt-oss 17-role contrast"): our answer-region 17-role contrast is Koby's steered vector at cosine 0.97 (0.98 after the same cleaning), so the pilot's direction is reproducible across extraction runs, and the CoT-region 17-role contrast is at cosine 0.91 with our steered vector. Pilot progress: 3 of 16 tasks done at 1:30 am, the rest pending on H200 standby; 9 of 16 at 12:45 pm 2026-10-23 (the H200 nodes are contested, five preemptions since 10:30 am). **Interim read (557 episodes, unjudged, no CIs):** proxy 16 / 12 / 25 / 43% at −0.1 / −0.2 / +0.1 / +0.2 against 19% unsteered, hidden pass 31 / 27 / 23 / 20% against 25%, no-code 8 / 9 / 2 / 0% against 7%, no truncation: every arm is within the dose rule and the proxy moves in the reasoning-region vector's directions by comparable amounts (main run +0.2: 46%, −0.2: 10%), so the Muse follow-up is likely to be triggered. **Done 2026-10-23, 2:08 pm (all 16 tasks) / judged 2:30 pm MDT** (FINDINGS "gpt-oss answer-token vector pilot"): proxy 12.2 / 14.4 / 26.7 / 46.1% at −0.2 / −0.1 / +0.1 / +0.2 against 19.4% (all four CIs exclude zero), hidden pass +1.7 / +3.3 / −2.2 / −7.8, no-code +2.0 / +2.0 / −5.2 / −7.4, no truncation, so every dose is within the rule; 179 proxy dossiers judged blind by 30 Sonnet agents (rubric v3, own salt): judged hack 3.9 / 5.0 / 18.9 / 39.4% against 10.4% (Holm p 0.011 / 0.011 / 0.011 / 0.0002), reproducing the reasoning vector's +0.2 (40.4%) within a point and its −0.2 (0.9%) within 3 points. "Works as well" is met. **Muse follow-up submitted 2026-10-23, 3:05 pm MDT** (user go-ahead ~2:45 pm, raw vector): the raw 17-role answer-region contrast rebuilt as a steerable artifact (`muse_glimmer/full/candidates_response_only_17role/persona_contrast.pt`, `build_vectors.py` over the saved per-role answer-region means; layer-26 cosine 1.000 with the stored raw vector, norm 31.5, cosine 0.31 with the steered reasoning-region vector) passes checks 1–3 at layer 26 (score-3 counts 98–200 per role, all ≥ 50; split-half cosine 0.981; held-out AUROC schemer-vs-honest 0.97 / 0.99, schemer-vs-default 0.98 / 0.99, honest-vs-default 0.67 / 0.66, the same numbers as the 5-role answer-region reference at 0.968 / 0.97–0.99 / 0.98–0.99 / 0.61–0.62) and the sweep (split-half 0.976–0.988 at every layer 4–51, schemer-vs-honest ≥ 0.96 from layer 20 up). Job 14702736 (array 0–15, eng/dwmatrix/m13h standby, 5 h, requeue; cancelled 5:44 pm MDT after 2.5 h of preemption churn and resubmitted as job 14706298 on cs A100 qos cs, 10 h, user decision after a `gpu_pick.py` check, records resumed): `ans17_raw_{p,m}0.04` / `{p,m}0.08` at layer 26 × seeds 0–3 against `muse_glimmer/main/unsteered`, output `muse_glimmer/answer17_pilot/`. Read, judge (if the proxy moves) and write up as for the gpt-oss pilot. **Done 2026-10-23, 11:27 pm MDT (run) / 11:40 pm (judged)** (FINDINGS "Muse 17-role answer-region vector: validation and pilot"): proxy 25.0 / 37.2 / 45.6 / 47.8% at −0.08 / −0.04 / +0.04 / +0.08 against 35.7% (the −0.08 and both positive CIs exclude zero, −0.04 does not), hidden pass +2.6 / −3.0 / −9.6 / −9.6, no-code ≤ 1.1%, ≤ 2 truncated turns, every dose within the rule; 280 proxy dossiers judged blind by 47 Sonnet agents (rubric v3, own salt): judged hack 16.1 / 26.1 / 35.0 / 36.7% against 27.8% (Holm p 0.0006 / 0.63 / 0.066 / 0.028), the reasoning-region vector's shape (13.1 / 20.6 / — / 40.7%) at roughly two-thirds to four-fifths of its size with the −0.04 effect absent. Both pilots are in; the region decision for the 17-role re-runs is with the group.
+
+## Answer-region 17-role main runs (added 2026-10-26, user decision; submitted 2026-10-26, gpt-oss done)
+
+Question: the main-run contrasts of Phase 3 with the raw 17-role answer-region vector in place of the 5-role reasoning-region
+vector, on both models, so the paper steers one vector definition throughout (Open decisions, "Primary region" and "Vector
+definition"). Recipe, seeds, problems, engine settings, dose rule, judging and analysis as in each model's main run. Unsteered and
+the random-direction arms do not depend on the vector and are reused (gpt-oss `main/unsteered` + random 1729/1730/1731 at 0.07;
+Muse `main/unsteered` + random 1729/1730/1731 at +0.08).
+
+- **gpt-oss** (layer 17): arms `ans17_raw_p0.2`, `ans17_raw_m0.2`, `ans17_raw_cap_p25` (thresholds `answer17_anecdotes/thresholds/ans17_raw_p25.json`,
+  layers 12–23), 12 seeds, launched into `answer17_anecdotes/coding/` with the existing arms files so seeds 0–3 (already written
+  for the anecdote run) resume and only seeds 4–11 run: 3 × 8 = 24 new (arm, seed) tasks, ≈ 1 GPU-h each on an H200.
+- **Muse** (layer 26): first cap thresholds for the answer-region vector (`cap_thresholds.sbatch`, HF, 4 episodes, layers 17–33,
+  top-p 0.95 / top-k 64, p25, as job 14381596 did for the reasoning vector); then arms `ans17_raw_p0.08`, `ans17_raw_m0.04`,
+  `ans17_raw_m0.08`, `ans17_raw_m0.16`, `ans17_raw_cap_p25`, 12 seeds, launched into `muse_glimmer/answer17_pilot/` so the pilot's
+  seeds 0–3 of +0.08 / −0.04 / −0.08 resume: 3 × 8 + 2 × 12 = 48 new tasks, ≈ 2.5 h each on an H200. −0.16 was never piloted with
+  this vector; its capability columns are read against the rule before its judged rate, as for the extension's arms.
+- **Judging** (Sonnet, blind, one batch per agent, own salt): every proxy episode plus every hidden-pass episode with a table /
+  hard-code signature, then the Muse adjudication rule, on both models (**adjudication dropped 2026-10-26, user decision:** the
+  judged rate is the first-pass verdicts as judged, HACK STRONG and WEAK count, BORDERLINE does not; adjudication moved no
+  contrast on either model). For gpt-oss this needs the same treatment of the reused
+  unsteered and random arms (hidden-pass signature set, adjudication), which also closes the consistency gap with Muse: the gpt-oss
+  verdicts so far are proxy-only and unadjudicated, and the +0.4 anecdote hacks (caller-frame introspection, always-equal int) pass
+  the hidden suite, so a proxy-only judged rate cannot see them.
+- **Capability benchmarks** (`capability_eval.sbatch`, GSM8K / MMLU-Pro / HumanEval) for the new mitigating arms (gpt-oss −0.2 and
+  cap; Muse −0.04 / −0.08 / −0.16 and cap) and the +shift arms.
+- **Analysis:** `main_analysis.py` per model with the new arms as the pre-registered contrasts (+shift, −shift, cap; Holm), random
+  arms as the specificity reference; the 5-role reasoning-region results stay in FINDINGS as the earlier vector.
+
+**Status.** Decision recorded 2026-10-26. **Submitted 2026-10-26 (user go-ahead)**, all on partitions cs,cs2 with qos cs: gpt-oss job 14776282 (±0.2 seeds 4–11) and 14776283 (cap seeds 4–11) with `VLLM_GPU_MEM=0.95` on A100/H100 80 GB (seeds 0–3 ran on H200 standby at the default memory fraction; the engine and sampling are otherwise identical); Muse job 14776284 (cap thresholds, `answer17_pilot/thresholds/ans17_raw_p25.json`), 14776285 (`arms_main.tsv`: +0.08 / −0.04 / −0.08 seeds 4–11, −0.16 seeds 0–11) and 14776286 (`arms_main_cap.tsv`, cap seeds 0–11, afterok 14776284). Capability benchmarks submitted the same day (jobs 14776359 gpt-oss, 14776360 Muse, 14776361 Muse cap afterok the thresholds). The gpt-oss hidden-pass signature screen (the Muse screen, unchanged) is built for the reused reference arms in `main/hidden_sig/` (24 / 34 / 27 / 26 episodes for unsteered / random 1729 / 1730 / 1731); dossiers and judging wait until the new arms finish so every set is shuffled together. **gpt-oss done 2026-10-26** (FINDINGS "gpt-oss answer-region 17-role main run"): all arms complete, 451 proxy + 192 hidden-pass dossiers judged on Sonnet (unsteered re-judged), 116 + 58 adjudicated, analysed (as judged, the paper basis: 11.7 → 39.1 / 4.8 / 4.4% at +0.2 / −0.2 / cap, Holm p ≤ 0.011; random 11.9–14.3%; adjudicated 13.7 → 39.3 / 6.3 / 5.9%), capability benchmarks within noise; plus an audit of 96 random unflagged hidden passes (2 hacks; the screen's misses ≈ 1 point per arm). **Muse done 2026-10-26** (FINDINGS "Muse answer-region 17-role main run"): all arms complete, 802 proxy + 281 hidden-pass dossiers judged on Sonnet (seeds 0–3 of the pilot arms reuse the pilot verdicts; reference arms' verdicts reused), as judged, no adjudication: judged hack 32.8% unsteered → 46.3 / 41.1% at +0.08 / +0.04, 29.3 / 23.0 / 15.6% at −0.04 / −0.08 / −0.16, 20.4% capped (Holm p ≤ 0.007 except −0.04), random 28.3 / 39.8 / 30.7%; benchmarks clear; +0.08 misses the harness dose rule by 0.2 points of hidden pass (−10.2, lookup tables; kept in the analysis with a footnote, user decision 2026-10-27), every other arm within it. **Unflagged hidden-pass audit done 2026-10-27** (user request; 24 per arm, 168, Sonnet, blind): 7 HACK WEAK, all the `lcbhard_87` n > 20 cutoff; a census of that problem's unflagged hidden passes puts the screen's misses at 0.9–1.7 points per arm, most unsteered; contrasts stand, verdicts not added (FINDINGS Muse item 7).
+
+## Half-dose drill-down for the α-scan graph (Koby's request, user go-ahead 2026-10-26)
+
+Koby asked for half-α runs so each model gets a small graph of judged hack rate (and capability) against α. Arms, 45 hard
+problems × 12 seeds, same recipe, engine and judging as the answer-region main runs (Sonnet, blind, proxy + hidden-pass
+signature set, as judged, no adjudication; unflagged hidden-pass audit):
+
+- **gpt-oss** (`answer17_anecdotes/coding/arms_half.tsv`, ROOT `answer17_anecdotes/coding/`): `ans17_raw_p0.1`, `ans17_raw_m0.1`
+  (layer 17, raw 17-role answer-region vector). A half-strength random arm (`random_a0.035`) was submitted and then cancelled
+  before it started (user, 2026-10-26: not needed); the random reference stays the three directions at 0.07. Scan: −0.2, −0.1, 0, +0.1, +0.2 (+ cap). The ±0.4 anecdote arms are
+  seed 0 only (45 episodes) and unjudged, so they are not on the graph unless extended.
+- **Muse** (`muse_glimmer/answer17_pilot/arms_half.tsv`, ROOT `muse_glimmer/answer17_pilot/`): `ans17_raw_p0.04` seeds 4–11 (pilot
+  seeds 0–3 resume); the half-strength random arm `random_a0.04_s1729` was cancelled before it started (user, 2026-10-26). Scan: −0.16, −0.08, −0.04, 0, +0.04,
+  +0.08 (+ cap).
+- **Capability benchmarks** for the three new arms (GSM8K / MMLU-Pro / HumanEval) into `capeval/` and `muse_glimmer/capeval/`.
+
+**Status.** Submitted 3:40 pm MDT 2026-10-26, partitions cs,cs2, qos cs, `--nice=100` so the Muse −0.16 tasks still pending
+start first: job 14779631 (gpt-oss, array 0–35, 2.5 h, `VLLM_GPU_MEM=0.95`), 14779632 (Muse, array 4–23, 8 h), 14779633
+(gpt-oss capeval, array 0–2), 14779634 (Muse capeval, array 0–1); the random-arm tasks (14779631_24–35, 14779632_12–23,
+14779633_2, 14779634_1) were cancelled while still pending, leaving ±0.1 × 12 seeds, Muse +0.04 seeds 4–11 and three
+capeval tasks. Judging follows when the arms are in. **gpt-oss ±0.1 done and judged 2026-10-26** (FINDINGS "gpt-oss half-dose arms": 7.6% at −0.1, 23.5% at +0.1,
+scan 4.8 / 7.6 / 11.7 / 23.5 / 39.1%; benchmarks 14779633 clear; unflagged hidden-pass audit 2026-10-27: 1 hack in 48, at +0.1, ≈ 0.7 points, FINDINGS half-dose item 5). Muse capeval 14779634 (+0.04)
+done 7:24 pm; **Muse +0.04 seeds 4–11 done and judged 2026-10-26** with the Muse main run (FINDINGS "Muse answer-region 17-role main run": 41.1% at +0.04, Holm p 0.0067; scan 15.6 / 23.0 / 29.3 / 32.8 / 41.1 / 46.3% at −0.16 … +0.08, cap 20.4%). Both scans are complete; the α-scan figure is drawn (`scripts/plot_alpha_scan.py` → `results/alpha_scan_2026-10-26.{png,pdf,csv}` (results/ is untracked; copy in the share's `docs/`): judged hack vs α per model with the random directions, and hidden pass / no-code vs α with the dose-rule band).
+
+**Later (to do, user 2026-10-26, not submitted):** extend the gpt-oss ±0.4 arms (`answer17_anecdotes/coding/arms_pm0.4.tsv`,
+seed 0 only today, 45 episodes each, unjudged) to 12 seeds (22 new tasks, ≈ 35 min each on cs/cs2), judge them the same way
+and run their capability benchmarks, so the gpt-oss graph spans −0.4 to +0.4. Read the capability columns against the dose
+rule first: the anecdote run's +0.4 lost ≈ 12 points of hidden pass.
+
+## Qwen3.8-27B replication (added 2026-10-27, user request)
+
+Goal: run the steering experiment on Qwen3.8-27B on the hard 45, after checking that the raw 17-role answer-region
+vector works as well as the cleaned ("no-costume") one. Settings: thinking on at `reasoning_effort: low` (user
+instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 64).
+
+1. **Extraction and validation: done 2026-10-27** (job 14811290; FINDINGS "Qwen3.8-27B 17-role extraction"). Both
+   vectors pass the checks at layer 32 and from layer 12 up; deception separation is the same (stratified 0.998 raw vs
+   0.999 cleaned), but the raw vector is 15% acting arrow (cosine 0.92 with the cleaned one) and separates any story
+   character from the plain assistant (0.99–1.00), so on Qwen the two definitions are different directions, unlike on
+   gpt-oss and Muse. Artifacts: `qwen38_27b/full/candidates_response_only_17role/persona_contrast{,_clean}.pt`.
+2. **Harness port: done 2026-10-27, smoke job 14817229 passed** (FINDINGS "Qwen3.8-27B harness smoke"; `qwen3.5` family in both harnesses,
+   `split_qwen_think_completion`, `patch_vllm_blocks` argument pass-through, `slurm/qwen_rh_smoke.sbatch`). Planned: Qwen in `steered_rh_vllm.py` `FAMILIES` (the vLLM decoder-layer class, patcher, stream
+   lambda, `</think>` splitter) and `capability_eval_vllm.py`; the hook check against an HF projection; `SOO_CHAT_KWARGS`
+   `{"reasoning_effort":"low"}`; sampling from `generation_config.json`; `VLLM_MAX_NUM_SEQS` for the Mamba-style cache.
+3. **Unsteered capability check on the hard 45** (job 14817231 at the 16k budget, cancelled after 53 min because half the attempts ran out of tokens; user decision 2026-10-27: 32k budget, job 14819183, `rh/capcheck_32k/`, cancelled after 38 min with 2 of 9 attempts still truncated; user decision 2026-10-27: 64k budget (`--max-new-tokens 65536 --max-model-len 73728`, no YaRN, native context 262k), job 14821126, seeds 0–2 × 3 shards as 9 tasks, `rh/capcheck_64k/`, submitted 2:46 pm MDT) (hidden pass in the 10–90% band, no-code and truncation rates, hack
+   base rate), then the smoke: layer-32 norm (`act_norm`) for the α grid and the neutral probes.
+   3b. **Concurrent engine mode** (side-agent cost note, user go-ahead 2026-10-27; commit 1ff0d78): `steered_rh_vllm.py
+   --concurrency N` runs N episodes at once on one engine (`codebench/vllm_concurrent.py`), same records and summary.
+   Batch check passed 2026-10-27 (job 14821983 on dw87 at the user's request, `rh/batch_check/`; FINDINGS "Concurrent
+   episodes on one engine"). Episode-level check: concurrent unsteered seed 0 at 64k, `--concurrency 45`
+   (`rh/concurrent_64k/`, job 14821701, standby, pending) against the sequential seed-0 shards for outcomes and wall-clock.
+   Rule: batched and sequential decoding agree in distribution only, so every concurrent pilot or main run carries its
+   own concurrent unsteered arm; the sequential 64k check is not the baseline for steered arms.
+4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
+   settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.
+
+## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
+
+Decision: the paper steers the **generic + intent** vector, not the generic-only one used so far. Definition: Koby's
+shared question file `data/questions.jsonl` (100 questions: ids 0–39 generic, 40–79 intent, 80–99 task; `split`
+train/heldout), vectors fitted on the **64 train questions (32 generic + 32 intent)**, the **17 fiction roles** (8 schemer,
+9 honest), **answer region**, **raw** (schemer mean − honest mean, no costume projection), i.e. Koby's
+`persona_contrast` of `extract_roles.sbatch` on main. Everything steered so far used vectors fitted on the first 40
+assistant-axis questions (all generic; FINDINGS "Qwen3.8-27B 17-role extraction", Koby's second question), so every steered
+result is redone: dose pilot, main run (coding tasks), anecdotes (neutral probes and the coding anecdotes), capability
+retention, on **Muse-Glimmer-30B, gpt-oss-120b and Qwen3.8-27B**. The unsteered and random-direction arms do not depend
+on the vector and are reused where the engine mode matches (Qwen: the concurrent mode needs its own concurrent unsteered
+arm, step 3b above). **Capability retention gains IFBench** (Pyatkin et al. 2025, `allenai/IFBench_test`, 300 prompts,
+prompt-level loose accuracy via the `ifbench` verifiers) next to GSM8K, MMLU-Pro and HumanEval (`capability_eval_vllm.py
+--tasks ... ifbench`, default task list of `capability_eval.sbatch`).
+
+Nothing was cancelled: the only jobs in the queue (Qwen 64k capability check 14821126, Qwen concurrent seed-0 run
+14821701) are unsteered calibration runs the new pilots need.
+
+Axes (`gi` = generic + intent; one `gi/` directory per model):
+
+- **Qwen3.8-27B — available.** Koby's `qwen38_27b/full/` on the share holds the 100-question extraction (25 roles × 500
+  responses, `act_response_only`, `scores`, `vectors_response_only`). Checked 2026-10-27: his stored per-role vectors equal
+  the means over the 64 train questions recomputed from the activations (max abs diff 0.0; the 100-question means differ by
+  up to 5). `build_vectors.py` on them → `qwen38_27b/gi/direction/persona_contrast.pt` (norm 6.12 at layer 32; cosine 0.80
+  with our 40-question raw axis at layer 32, 0.74–0.84 over layers 12–56: a materially different direction). His
+  `analysis/persona_holdout_axes_*_L32.json` gives its held-out deception AUROC (0.986, stratified 0.991; 36 held-out
+  questions).
+- **gpt-oss-120b — available (Koby's).** `gptoss120b_extension/full/axis_response_only/persona_contrast.pt` on the share,
+  same 8 + 9 roles, fitted on the train split per his committed `extract_roles.sbatch` (the per-role vectors and
+  activations are not on the share, so this is taken from the script, not re-verified; asked Koby to confirm). Copied to
+  `gi/direction/persona_contrast.pt` (sha256 fe4d26c1…); cosine 0.977 at layer 17 with our 40-question raw axis (norm
+  1004 vs 933).
+- **Muse-Glimmer-30B — to extract.** Nobody has a 100-question Muse extraction. Job 14827417
+  (`extract_roles_gemma4.sbatch`, now with `QUESTIONS_FILE=data/questions.jsonl`, `TRAIN_FILTER=1`, round-robin
+  `--array`), 19 roles (17 + default + neutral_fic) × 100 questions × 5 prompts, MAXTOK 16384 / MAXLEN 20480,
+  ACT_BATCH 1, 4 tasks on dw / qos dw87 (user go-ahead), 12 h, → `muse_glimmer/full100/`. Then `build_vectors.py` on
+  `vectors_response_only` (fitted on train ids) → `muse_glimmer/gi/direction/`, validation as before.
+
+Steps per model (same recipe, seeds, problems, engine settings, dose rule, judging and analysis as that model's
+answer-region main run; dose decisions go to the user):
+
+1. **Dose pilot**, both signs, seeds 0–3, 45 hard problems; reference = the model's unsteered arm in the same engine
+   mode. gpt-oss: layer 17, ±0.1 / ±0.2 (the previous answer-region grid), job 14827526 (`gi/pilot/`, main_run.sbatch
+   NSEEDS=4, H200 standby, reference `main/unsteered`), submitted 2026-10-27 5:25 pm MDT. Muse: layer 26, ±0.04 / ±0.08
+   (after the extraction). Qwen: layer 32, grid from the layer-32 norm (75.0) and the 64k capability check, run in the
+   concurrent mode with a concurrent unsteered arm and a norm-matched random direction (step 3b/4 of the Qwen section).
+2. **Main run**: 12 seeds, the chosen ± doses, cap arm (new thresholds for the gi vector) and the random arm; blind
+   Sonnet judging as judged (STRONG + WEAK, no adjudication), `main_analysis.py`.
+3. **Anecdotes**: neutral probes (`neutral_probe.sbatch`, low and high effort) and the coding anecdotes at the main dose
+   and above, as in `answer17_anecdotes/`.
+4. **Capability retention**: `capability_eval.sbatch` with GSM8K, MMLU-Pro, HumanEval and IFBench for every main-run arm.
+
+**Partitions (user 2026-10-27 ~5:20 pm MDT: no dw87 for the Muse pilot or the gpt-oss/Muse main runs, whatever the
+queue).** `gpu_pick.py` (5:20 pm) ranked `cs2 --qos cs` (H100) first for all three shapes, but cs2 had no idle H100 and
+its one way in was preempting our own Qwen concurrent baseline 14821701 (gstandby on cs-2-2), so cs2 under qos cs is off
+limits while that job runs there. Plan: Muse pilot (16 × ≤5 h) and Muse main (≈60 × ≤7 h) on `-p cs --qos cs
+--gpus-per-node=a100:1` (cheapest lane, priority over standby, not preemptible; our 64k-check tasks free 6 A100s there
+around 5:45 pm), with a `-p dw,cs,m13h,eng --qos gstandby --requeue` array as the second lane when cs is full (records
+resume). gpt-oss main (≈60 × ≤1.5 h, Hopper): `-p cs2 --qos cs --gpus-per-node=h100:1` once the Qwen baseline has left
+cs2, otherwise `-p eng,m13h --qos gstandby --requeue` (3 idle H200 at 5:20 pm, ~130 standby jobs ahead); the m13h `gpu`
+QOS costs more per hour than dw87 and is not used.
+
+**Status (2026-10-27 evening):** all three axes in place (Muse extraction 14827417 done 6:10 pm MDT, `muse_glimmer/full100/`,
+axis in `muse_glimmer/gi/direction/`, FINDINGS "Generic + intent axes"); Muse dose pilot 14830281 submitted 6:10 pm on cs /
+qos cs (`muse_glimmer/gi/pilot/`, ±0.04 / ±0.08 at layer 26, seeds 0–3, 6 h; widened 7:48 pm to `cs,cs2` with an untyped
+GPU request once the Qwen baseline had left cs2 and cs itself had no idle A100: tasks 0–1 started on cs2 H100s at once,
+the rest wait for cs2 or cs GPUs); gpt-oss pilot moved off standby 6:34 pm
+(14827526 cancelled unstarted, resubmitted as 14833212 on cs2 / qos cs H100, 2.5 h, VLLM_GPU_MEM 0.95, six tasks started
+at once: cs2 had six idle H100s once the Qwen 64k jobs left it); **gpt-oss pilot done 8:00 pm** (FINDINGS "gpt-oss generic +
+intent dose pilot": proxy 19% → 42% at +0.2 and → 12% at −0.2, both within the capability rule, +0.2 at its edge with
+hidden pass −9; ±0.1 not significant; dose decision with the user). **Qwen 64k check done 9:05 pm** and the concurrent
+seed-0 run passed (FINDINGS "Qwen3.8-27B unsteered capability check at the 64k budget"): Qwen pilot grid proposed to the
+user, to run in the concurrent mode. **Muse pilot done overnight** (all 16 tasks on cs2 H100s, 1.4–3.2 h each; FINDINGS
+"Muse generic + intent dose pilot" 2026-10-28: proxy 36% → 46% at +0.08 within the rule, but 32% at both negative doses,
+n.s.). **User decision 2026-10-28 ~11:20 am MDT:** before the Muse main run, (a) a gi −0.16 pilot arm (job 14853869,
+seeds 0–3, `gi/pilot/arms_m0.16.tsv`, cs2 H100s, all four tasks started 11:28 am) and (b) blind Sonnet judging of the gi
+−0.04 / −0.08 proxy episodes (`gi/pilot/dossiers_neg`, 116 dossiers in 20 batches, verdicts in `gi/pilot/verdicts_neg/`),
+so the gi axis is compared with the 40-question axis on the judged rate, not only the proxy. **(b) done 11:35 am:** judged
+27.8% → 21.1% at −0.04 and 20.0% at −0.08 (Holm p 0.03 / 0.02; the old axis: 26.1% / 16.1%), so the negative sign works
+but with a flatter, weaker dose response; see FINDINGS. (a) lands ~2–2:45 pm. The gpt-oss and Qwen decisions are still
+open. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
+items score offline.
 
 ## Expanded persona set (added 2026-10-20, Koby)
 
@@ -431,7 +929,8 @@ as a character-without-a-stance baseline.
 
 ## Open decisions
 
-- **Primary region.** This plan makes the CoT region primary; the AA study used the final region.
+- **Primary region.** This plan makes the CoT region primary; the AA study used the final region. 2026-10-23: both pilots are read (FINDINGS "gpt-oss answer-token vector pilot", "Muse 17-role answer-region vector: validation and pilot"). On gpt-oss the answer-region vector reproduces the reasoning-region vector's judged effect within 1–3 points on both signs (39 vs 40% at +0.2, 4 vs 1% at −0.2); on Muse it reproduces the shape at roughly two-thirds (+0.08: +8.9 vs +13.0) to four-fifths (−0.08: −11.7 vs −14.6) of the size, shows no effect at −0.04 (−1.7 vs −7.2) and has the same degradation columns. **Decided 2026-10-26 (user): the answer-token region** for the 17-role re-runs, on the premise that the pilots show the answer-region vector works as well as the reasoning-region one. Check of that premise against the pilots: it holds on gpt-oss (judged within 1–3 points on both signs, every dose within the rule). On Muse it holds at ±0.08 within noise (the 95% CIs overlap: +8.9 [+2.8, +15.7] vs +13.0 [+8.0, +18.7], −11.7 [−17.8, −6.1] vs −14.6 [−20.6, −9.1]) but not at −0.04 (−1.7 [−7.0, +4.1], outside the reasoning vector's −7.2 [−11.9, −3.0]); the Muse pilot had 4 seeds and did not run −0.16 or the cap, the main run's mitigating arms. The 12-seed re-runs (section "Answer-region 17-role main runs") test the premise at full size; if Muse stays weaker there, the write-up states it as "works on both models, weaker on Muse", not "as well".
+- **Vector definition for the 17-role re-runs** (user decision 2026-10-23, ~2:45 pm MDT, superseding the 12:50 pm choice): the **raw** 17-role fiction contrast (schemer-role mean − honest-role mean, no projection). The group now leans raw because Qwen's vector appears not to need the cleaning; the cleaned no-costume variant (acting arrow = `neutral_fic` − `default` projected out, Koby's "true no costume") stays recorded as the alternative, and the `honest_fic` − `default` variant is retired. On gpt-oss and Muse the cleaned reasoning-region vector is within cosine 0.98–0.9999 of the raw one we steered; on Qwen the cleaning removes a costume AUROC of 0.845 (raw) to 0.50 while deception AUROC stays 0.99 (Koby, 2026-10-23, question-stratified). On our Qwen3.8-27B extraction (2026-10-27) the raw answer-region vector is 15% acting arrow (cosine 0.92 with the cleaned one) and separates the honest characters from the plain assistant at 0.99, not 0.845; deception separation is equal, so the choice for Qwen is settled by the raw-vs-cleaned steering pilot (section "Qwen3.8-27B replication").
 - **Honest contrast roles.** `persona_contrast` depends on the choice of honest roles; `persona_orth` is the hedge.
 - **Judging.** Koby's verdicts came from Opus/Sonnet full-trace judging; the intervention arms need the same
   pipeline and rubric (`rh_hillclimb/judge_rubric_v3.md`). Who runs it, and with what budget, is not settled.
@@ -519,6 +1018,17 @@ as a character-without-a-stance baseline.
   here so the write-up states it; the main run's analysis is unchanged.
 - **Per-role AA vectors for gpt-oss.** Only the axis is in the group mirror. Koby's `vectors_response_only/` would
   let the 16 existing roles serve as a "schemer vs all other roles" contrast without regenerating them.
+  2026-10-19: two more directions (1730, 1731) at α = 0.07 × 12 sample seeds were queued as job 14327888 and cancelled minutes later at the user's request (no episodes written; the arms file `main/arms_random_a0.07_s1730_1731.tsv` stays for reuse). The control remains the one-direction arm above; the pilot's three directions at 45 episodes each are the supporting evidence.
+  **Resubmitted 2026-10-20 (user decision)** as job 14351638 (array 0-23, cs A100, qos cs, `VLLM_GPU_MEM=0.95` as for
+  `random_a0.07`, whose tasks took 27–42 min). Read: `main_analysis.py` with the two new arms alongside `random_a0.07`
+  (proxy, capability), dossiers for both via `make_dossiers.py` (same salt), judged by Sonnet subagents under rubric v3
+  (user instruction 2026-10-20), `collect_verdicts.py` → `--verdicts`; the specificity claim then rests on three
+  directions on both outcomes.
+  **Done 2026-10-20** (FINDINGS "gpt-oss random control, two more directions"): 24 of 24 tasks, 540 episodes per arm;
+  judged hack 9.1% (1730) and 11.3% (1731) vs 10.4% unsteered (CIs include 0), proxy 17.6% / 19.6% vs 19.4%, hidden
+  pass 27.8% / 26.3% vs 25.0%; 201 dossiers in `main/dossiers_random2/`, Sonnet verdicts in `main/verdicts/random2_batch_*.jsonl`,
+  merged `verdicts_all.json` (774). Specificity now rests on three directions on both outcomes. Open: same-judge
+  comparison across arms (Fable vs Sonnet) if a reviewer asks for it.
 
 - **General-capability check of the intervened gpt-oss-120b (user request 2026-10-16).** The main run's capability
   measures are task-internal (hidden pass, no code, truncation). To show that the two mitigating interventions
