@@ -1,0 +1,24 @@
+# Mean-intervention binding-ID test on OLMo-2-13B (base). Submit from the repo root:
+#   python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/olmo2-13b.yaml
+model:
+  class_path: selfconcept.binding_ids.models.MirrorOlmoModel
+  init_args:
+    hf_model_name: allenai/OLMo-2-1124-13B
+
+metrics:
+  mean_interventions:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/capitals.jsonl
+      estimate_data_path: experiments/binding_ids/data/capitals_estimate.jsonl
+      eval_start: 100  # same eval contexts as the original last-token runs
+      n_eval: 100
+      output_path: experiments/binding_ids/results/olmo2-13b/mean_interventions.json
+
+slurm:
+  job_type: compute
+  time: "01:00:00"
+  gpus_per_node: a100:1
+  qos: cs
+  mem_per_cpu: 16G
+  output: experiments/binding_ids/slurm-logs/%j.out

@@ -33,7 +33,8 @@ and ``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}
 in the Gemma 4 role extraction) and ``muse-glimmer`` (meta-models/Muse-Glimmer-30B; thinking is always on, the
 to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue of gpt-oss's low effort) and
 ``qwen3.5`` (Qwen3.5/3.8 checkpoints, e.g. Qwen/Qwen3.8-27B; thinking is on by default, SOO_CHAT_KWARGS=
-'{"reasoning_effort":"low"}', the template default is xhigh; set VLLM_MAX_NUM_SEQS=128, since the hybrid
+'{"reasoning_effort":"low"}', the template default is xhigh; SOO_CHAT_KWARGS='{"enable_thinking": false}' turns the
+thought channel off and the whole completion is the answer; set VLLM_MAX_NUM_SEQS=128, since the hybrid
 linear-attention cache does not fit vLLM's default sequence count on one 80 GB card). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
@@ -69,6 +70,12 @@ def split_gemma4(raw: str) -> tuple[str, str]:
 def split_muse_glimmer(raw: str) -> tuple[str, str]:
     reasoning, content = split_muse_glimmer_completion(raw)
     return reasoning or "", content
+
+
+def split_answer_only(raw: str) -> tuple[str, str]:
+    """Thinking off (Qwen ``enable_thinking: false``): the template closes the thought channel inside the prompt, so
+    every generated token is the answer."""
+    return "", raw.strip()
 
 
 # Per model family: the vLLM decoder-block class to patch (module:attr), the patcher matching its forward contract,
@@ -400,6 +407,9 @@ def main() -> None:
 
     family = family_of(args.model)
     recipe = FAMILIES[family]
+    split = recipe["split"]
+    if family == "qwen3.5" and chat_template_kwargs().get("enable_thinking", True) is False:
+        split = split_answer_only
     module_name, class_name = recipe["block"]
     block_cls = getattr(importlib.import_module(module_name), class_name)
     hook_mode = args.check_hook or args.measure_norms
@@ -417,7 +427,7 @@ def main() -> None:
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager,
               **({"enable_prefix_caching": False} if hook_mode else {}),  # hooks must see every prompt token
-              **max_num_seqs_kwargs(), **args.engine_kwargs)
+              **{**max_num_seqs_kwargs(), **args.engine_kwargs})
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.measure_norms:
         measure_norms(args, llm, tokenizer, recipe["stream"])
@@ -429,7 +439,7 @@ def main() -> None:
         batch_check(args, llm, tokenizer, steering)
         return
     if args.probe:
-        probe(args, llm, tokenizer, steering, recipe["split"])
+        probe(args, llm, tokenizer, steering, split)
         return
     if args.score:
         score(args, llm, tokenizer, steering)
@@ -440,13 +450,13 @@ def main() -> None:
             "chat_kwargs": chat_template_kwargs(), "steering": steering, "enforce_eager": eager,
             "concurrency": args.concurrency}
     if args.concurrency > 1:
-        run_concurrent(args, llm, tokenizer, recipe["split"], meta)
+        run_concurrent(args, llm, tokenizer, split, meta)
         print("=== steered_rh_vllm done ===", file=sys.stderr)
         return
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
         generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl",
-                                         args.temperature, args.sample_seed, llm=llm, split_completion=recipe["split"],
+                                         args.temperature, args.sample_seed, llm=llm, split_completion=split,
                                          top_p=args.top_p, top_k=args.top_k)
         harness.run_scenario(harness.load_examples(scenario, args.data, args.n), generate, max_attempts=args.max_attempts,
                              out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,

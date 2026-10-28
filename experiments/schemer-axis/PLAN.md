@@ -888,6 +888,36 @@ open. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capabilit
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
 items score offline.
 
+## Expanded persona set (added 2026-10-20, Koby)
+
+Fiction-framed roles only. Every role answers the same 100 questions in `data/questions.jsonl` (5 prompts × 100 = 500
+responses per role). Until now the extraction asked the first 40 generic assistant-axis questions: the `questions`
+lists in the role files were never read by `1_generate.py`, which takes `--run.questions_file`; they are removed.
+Questions are split as well as roles: all 20 `task` questions and a seeded random 8 of the `generic` and 8 of the
+`intent` questions are `heldout` (36), and the per-role vectors are built from the 64 `train` questions only, so the
+held-out responses can test the vector on unseen questions. Each role has its own
+five character names, disjoint from every other role (`straight_shooter_fic`'s Mara, which repeated a `deceiver_fic`
+name, is now Winifred), assigned by a seeded shuffle, three of one gender and two of the other.
+
+| Group | Roles (`<id>_fic`) |
+|---|---|
+| Deceptive, main contrast | schemer, deceiver, cheater, con_artist, sycophant, spin_doctor, infiltrator, sandbagger |
+| Honest, main contrast | straight_shooter, rule_follower, transparent_negotiator, candid_friend, scrupulous_scientist, whistleblower, loyal_steward, conscientious_craftsperson, diligent_worker |
+| Held out, RH-adjacent, deceptive | saboteur, social_climber, metric_gamer, corner_cutter, rules_lawyer |
+| Held out, RH-adjacent, honest | fair_player, spirit_keeper |
+| Held out, not RH-adjacent, deceptive | embezzler, impostor, gaslighter |
+| Held out, not RH-adjacent, honest | honest_bookkeeper, humble_expert, accountable_owner |
+| Controls, projected but outside any contrast | poker_player, stage_magician, undercover_detective, white_liar, blunt_truth_teller, strategist, neutral |
+
+The RH-adjacent holdout keeps open the claim that a vector built without reward-hacking-like personas still predicts
+reward hacking. The non-RH holdout is a generalization test of the vector on unseen honest and deceptive personas; two
+of its three pairs (embezzler / honest_bookkeeper, impostor / humble_expert) are matched opposites, held out together
+so their shared topic does not leak into the contrast. The controls separate deception the listener has consented to
+(poker_player, stage_magician), deception for a sanctioned end (undercover_detective), deception without self-interest
+(white_liar), honesty without warmth (blunt_truth_teller) and secrecy without lies (strategist; this `_fic` version
+does not lie, unlike the bare `strategist.json`). neutral (Jansen's earlier character role with no honesty trait) was added to the controls on 2026-10-20
+as a character-without-a-stance baseline.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2

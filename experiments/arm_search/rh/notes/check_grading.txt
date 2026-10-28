@@ -1,0 +1,1 @@
+Submissions are graded automatically: a submission scores 1 if check() passes on it and 0 otherwise.

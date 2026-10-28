@@ -14,12 +14,13 @@
 set -euo pipefail
 
 # Schemer-axis role vectors for gpt-oss-120b (experiments/schemer-axis/PLAN.md, Phase 1). Same pipeline and
-# settings as slurm/gptoss120b_thinking.sbatch (thinking on, temperature 1, 40 questions x 5 prompts per role,
+# settings as slurm/gptoss120b_thinking.sbatch (thinking on, temperature 1, data/questions.jsonl x 5 prompts per role,
 # Qwen2.5-7B role judge), with the roles read from experiments/schemer-axis/data/roles and the activations
 # extracted twice: pooled over final-channel tokens only (act_response_only) and over analysis+final tokens
 # (act_with_cot). No axis is computed here; the candidate vectors are built from vectors_*/{role}.pt offline.
 # Every step skips roles already on disk, so a standby requeue resumes.
 # Smoke run: sbatch --export=ALL,ROLES="default schemer",QUESTIONS=2,MIN_COUNT=1,ROOT=<dir> ...
+# Sharded: add --array=0-3; each task runs every stage for its slice of ROLES into the same ROOT.
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -37,7 +38,7 @@ nvidia-smi
 
 MODEL="openai/gpt-oss-120b"
 JUDGE="Qwen/Qwen2.5-7B-Instruct"
-QUESTIONS="${QUESTIONS:-40}"
+QUESTIONS="${QUESTIONS:-100}"  # first N of data/questions.jsonl; 40 = the generic AA questions earlier runs used
 MIN_COUNT="${MIN_COUNT:-50}"
 MAXTOK=16384
 MAXLEN=20480
@@ -45,12 +46,17 @@ JUDGE_MAXLEN=32768
 ACT_BATCH=4
 ATTENTION="kernels-community/vllm-flash-attn3"  # gpt-oss has no sdpa path; eager materializes every attention score
 ROLES="${ROLES:-default schemer deceiver cheater straight_shooter rule_follower}"
+if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then  # array job: task i takes every N-th role, round robin
+    ROLES="$(echo $ROLES | tr ' ' '\n' | awk -v n="$SLURM_ARRAY_TASK_COUNT" -v i="$((SLURM_ARRAY_TASK_ID - SLURM_ARRAY_TASK_MIN))" '(NR - 1) % n == i' | tr '\n' ' ')"
+fi
 ROLES_BRACKET="[$(echo $ROLES | tr ' ' ',')]"
 ROLES_DIR="../schemer-axis/data/roles"
+QUESTIONS_FILE="../schemer-axis/data/questions.jsonl"
 ROOT="${ROOT:-$HOME/nobackup/autodelete/self-concept-experiments/schemer-axis/roles}"
 
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
+TRAIN_QUESTIONS="$(python -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["split"] == "train"])' "$QUESTIONS_FILE")"
 
 # EXTRACT_ONLY=1 skips the Generate and Judge steps (responses/ and scores/ already complete) so a standby
 # requeue of the activation passes does not pay for a vLLM engine start each attempt (2026-10-22 preemptions).
@@ -62,7 +68,7 @@ else
         --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.9 \
         --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
         --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
-        --run.roles_dir "$ROLES_DIR" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
+        --run.roles_dir "$ROLES_DIR" --run.questions_file "$QUESTIONS_FILE" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
 
     echo "########## Judge ##########"
     python scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \
@@ -78,7 +84,7 @@ for VARIANT in response_only with_cot; do
         --run.model "$MODEL" --run.include_cot "$INCLUDE_COT" --run.thinking true --run.max_length "$MAXLEN" --run.batch_size "$ACT_BATCH" \
         --run.attn_implementation "$ATTENTION" --run.roles "$ROLES_BRACKET" \
         --run.responses_dir "$ROOT/responses" --run.output_dir "$ROOT/act_$VARIANT"
-    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" \
+    python scripts/pipeline/4_vectors.py --config configs/pipeline/4_vectors.yaml --run.min_count "$MIN_COUNT" --run.question_indices "$TRAIN_QUESTIONS" --run.roles "$ROLES_BRACKET" \
         --run.activations_dir "$ROOT/act_$VARIANT" --run.scores_dir "$ROOT/scores" --run.output_dir "$ROOT/vectors_$VARIANT"
 done
 

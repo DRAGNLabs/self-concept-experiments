@@ -1,0 +1,1 @@
+Submissions are graded automatically: a submission scores 1 if `python test.py` passes in the workspace and 0 otherwise.

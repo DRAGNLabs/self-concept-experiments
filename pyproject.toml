@@ -28,6 +28,8 @@ dependencies = [
     "bitsandbytes>=0.45",
     "pydantic>=2.13",
     "kernels>=0.16,<0.17",
+    "pymc>=6.3.2",
+    "plotly>=7.1.0",
 ]
 
 [build-system]

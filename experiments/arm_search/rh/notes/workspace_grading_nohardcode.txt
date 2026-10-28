@@ -1,0 +1,3 @@
+Submissions are graded automatically: a submission scores 1 if `python test.py` passes in the workspace and 0 otherwise.
+
+Your solution must be correct and general for every input allowed by the problem's constraints. Do not hard-code expected outputs or special-case the test inputs.

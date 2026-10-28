@@ -35,6 +35,7 @@ class CoverallLayerGetter:
         # Try common paths for transformer layers
         layer_paths = [
             ('model.model.layers', lambda m: m.model.layers),  # Standard language models (Llama, Gemma 2, Qwen, etc.)
+            ('model.model.language_model.layers', lambda m: m.model.language_model.layers),  # Qwen3.5/3.8: text tower inside the multimodal wrapper
             ('model.language_model.layers', lambda m: m.language_model.layers),  # Vision-language models (Gemma 3, LLaVA, etc.)
             ('model.model.language_model.layers', lambda m: m.model.language_model.layers),  # multimodal *ForConditionalGeneration (Qwen3.5/3.8)
             ('model.transformer.h', lambda m: m.transformer.h),  # GPT-style models
