@@ -57,7 +57,7 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 
 ## Runs
 
-### Generic + intent axes for the re-run — 2026-10-27: Koby's Qwen role vectors are the 64-train-question means (verified against his activations), and the generic + intent axis differs from the generic-only one by cosine 0.80 on Qwen (layer 32) but only 0.977 on gpt-oss (layer 17)
+### Generic + intent axes for the re-run — 2026-10-27: Koby's Qwen role vectors and our new Muse vectors are the 64-train-question means (verified against the activations), and the generic + intent axis differs from the generic-only one by cosine 0.80 on Qwen (layer 32) but only 0.977 on gpt-oss (layer 17) and 0.957 on Muse (layer 26)
 
 User decision 2026-10-27 (PLAN "Generic + intent vectors: full re-run"): steer the raw 17-role answer-region contrast fitted on
 the 64 train questions of Koby's `data/questions.jsonl` (32 generic + 32 intent) on all three models, redoing every steered
@@ -72,8 +72,14 @@ at layer 32). So his vectors are the train-split fit his sbatch describes, and `
 generic + intent axis directly (`qwen38_27b/gi/direction/`; persona_contrast norm 6.12 at layer 32, persona_raw 10.81,
 clean 5.87). His `gptoss120b_extension/full/axis_response_only/persona_contrast.pt` is the same construction on gpt-oss
 (same 8 schemer and 9 honest roles in its provenance); its activations are not on the share, so the train-split fit is
-taken from his committed `extract_roles.sbatch` rather than re-verified. No 100-question Muse extraction exists
-(job 14827417 runs it).
+taken from his committed `extract_roles.sbatch` rather than re-verified. Muse had no 100-question extraction, so job
+14827417 (`extract_roles_gemma4.sbatch` with QUESTIONS=100 and TRAIN_FILTER=1, 19 roles over four dw A100 tasks,
+5:00–6:10 pm MDT) generated 500 responses per role on Koby's questions, judged them, and fitted the per-role vectors on
+the score-3 responses of the 64 train ids only (`muse_glimmer/full100/`; 302–319 of the 320 train responses at score 3
+for the four roles checked). Recomputing those vectors from `act_response_only` in bf16 reproduces them bit for bit for
+`schemer_fic` and `candid_friend_fic`, while the all-100-question means differ by up to 2.5. `build_vectors.py --costume
+neutral_fic` on them gives the Muse axis (`muse_glimmer/gi/direction/`; persona_contrast norm 34.08 at layer 26,
+persona_raw 54.74, clean 33.16).
 
 How different the new axes are from the generic-only ones steered so far:
 
@@ -83,13 +89,15 @@ How different the new axes are from the generic-only ones steered so far:
 ├──────────────────────────────────────────────────────────┼───────────────┼───────────────────────┼────────────────┤
 │ Qwen3.8-27B (Koby's 500-response run vs our 200-response)│ 0.80 (L32)    │ 0.74–0.84 (L12–56)    │ 6.12 / 5.42    │
 │ gpt-oss-120b (Koby's extension vs our roles_fic)          │ 0.977 (L17)   │ 0.970–0.986 (L12–23)  │ 1004 / 933     │
+│ Muse-Glimmer-30B (our full100 vs our full, both 17-role)  │ 0.957 (L26)   │ 0.946–0.975 (L18–34)  │ 34.08 / 31.48  │
 └──────────────────────────────────────────────────────────┴───────────────┴───────────────────────┴────────────────┘
 ```
 
-Reading: on gpt-oss the two question sets give nearly the same direction, so the re-run there is mostly a replication
-under the paper's definition; on Qwen the direction moves substantially, though the Qwen comparison also crosses two
-independent extractions (his 500 responses per role vs our 200, different sampling), so part of the 0.20 is sampling
-noise rather than the intent questions. Norms grew 7–13% with the intent questions on both models; the α unit is the
+Reading: on gpt-oss and Muse the two question sets give nearly the same direction, so the re-run there is mostly a
+replication under the paper's definition; on Qwen the direction moves substantially, though the Qwen comparison also
+crosses two independent extractions (his 500 responses per role vs our 200, different sampling), so part of the 0.20 is
+sampling noise rather than the intent questions (the Muse comparison also crosses two extractions, 500 vs 200 responses
+per role, and still lands at 0.957). Norms grew 7–13% with the intent questions on all three models; the α unit is the
 residual norm, so the same α is a slightly larger natural dose. Steps and jobs: PLAN section above.
 
 ### Concurrent episodes on one engine: the steering patch acts at batch size > 1 — 2026-10-27: batched greedy answers under +0.1 follow the one-at-a-time steered answers and leave the unsteered ones early on all three probes, so steered arms can run many episodes at once; batched and sequential decoding agree in distribution only, so the unsteered reference of a concurrent run must itself be concurrent
