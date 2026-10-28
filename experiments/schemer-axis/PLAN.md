@@ -876,7 +876,9 @@ at once: cs2 had six idle H100s once the Qwen 64k jobs left it); **gpt-oss pilot
 intent dose pilot": proxy 19% → 42% at +0.2 and → 12% at −0.2, both within the capability rule, +0.2 at its edge with
 hidden pass −9; ±0.1 not significant; dose decision with the user). **Qwen 64k check done 9:05 pm** and the concurrent
 seed-0 run passed (FINDINGS "Qwen3.8-27B unsteered capability check at the 64k budget"): Qwen pilot grid proposed to the
-user, to run in the concurrent mode. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+user, to run in the concurrent mode. **Muse pilot done overnight** (all 16 tasks on cs2 H100s, 1.4–3.2 h each; FINDINGS
+"Muse generic + intent dose pilot" 2026-10-28: proxy 36% → 46% at +0.08 within the rule, but 32% at both negative doses,
+n.s.; main-run dose and a possible −0.16 arm with the user). IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
 items score offline.
 

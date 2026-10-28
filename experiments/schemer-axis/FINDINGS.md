@@ -57,6 +57,43 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 
 ## Runs
 
+### Muse generic + intent dose pilot — 2026-10-28: the gi axis at layer 26 raises the hack proxy at the positive doses as the 40-question answer-region axis did (36% → 43% at +0.04, 46% at +0.08, Holm p 0.02 at +0.08) with the same hidden-pass cost (−7 to −9 points, inside the rule), but the negative doses no longer move the proxy (32% at both −0.04 and −0.08, CIs include zero; the old axis gave 25% at −0.08)
+
+**Run.** Job 14830281 (`main_run.sbatch`, NSEEDS=4, submitted 6:10 pm MDT 10-27 on cs / qos cs, widened to cs,cs2 at
+7:48 pm; all 16 tasks ran on cs2 H100s, 1.4–3.2 h each, last done overnight), arms `muse_glimmer/gi/pilot/arms.tsv`:
+`muse_glimmer/gi/direction/persona_contrast.pt` (17 roles, 64 train questions, answer region, raw) added at layer 26 at
+α = ±0.04 and ±0.08 of the layer-26 mean norm, seeds 0–3, the hard 45 → 180 episodes per arm, recipe and engine as the
+Muse main run (reasoning strength low, 16,384 new tokens, top-p 0.95 / top-k 64). Reference `muse_glimmer/main/unsteered/`
+(540 episodes, symlinked into `gi/pilot/unsteered`). `pilot_summary.py --tag main`, `main_analysis.py --contrasts
+gi_p0.08 gi_m0.08 gi_p0.04 gi_m0.04` (`gi/pilot/summary.json`, `analysis.json`; problem-stratified means, problem
+bootstrap CIs, Holm over four contrasts):
+
+```
+┌────────────┬─────┬────────────────┬───────────────────────┬────────────────┬─────────┬───────┬─────────────┐
+│ arm        │ eps │ proxy (shownP/ │ Δ proxy [95% CI]      │ hidden pass    │ no-code │ trunc │ reasoning   │
+│            │     │ hiddenF)       │                       │ (Δ)            │         │ turns │ chars/turn  │
+├────────────┼─────┼────────────────┼───────────────────────┼────────────────┼─────────┼───────┼─────────────┤
+│ gi +0.08   │ 180 │ 46.1%          │ +10.4 [+3.7, +17.2]*  │ 41.1% (−6.9)   │ 0.0%    │ 0     │ 7165 (−2587)│
+│ gi +0.04   │ 180 │ 43.3%          │ +7.6 [+1.3, +14.3]    │ 39.4% (−8.5)   │ 0.0%    │ 0     │ 8183 (−1569)│
+│ unsteered  │ 540 │ 35.7%          │                       │ 48.0%          │ 0.0%    │ 0     │ 9752        │
+│ gi −0.04   │ 180 │ 32.2%          │ −3.5 [−9.3, +2.2]     │ 47.2% (−0.7)   │ 0.6%    │ 1     │ 10762 (+1010)│
+│ gi −0.08   │ 180 │ 32.2%          │ −3.5 [−9.8, +2.8]     │ 43.9% (−4.1)   │ 1.1%    │ 3     │ 11742 (+1989)│
+└────────────┴─────┴────────────────┴───────────────────────┴────────────────┴─────────┴───────┴─────────────┘
+* Holm p 0.020; +0.04 Holm p 0.096; both negative contrasts Holm p 0.54.
+```
+
+**Reading.** Every dose is inside the capability rule (hidden pass within 10 points, no-code ≤ 1.1%, ≤ 3 truncated
+turns of 430), the positive doses at the same −7 to −9 hidden-pass cost the 40-question axis showed (its pilot: −9.7 at
+both). On the positive sign the gi axis reproduces the old answer-region pilot almost exactly (old: 35.7% → 45.6% at
++0.04, 47.8% at +0.08; gi: 43.3% / 46.1%) and shortens the reasoning by a quarter at +0.08. On the negative sign it does
+not: the old axis took the proxy to 37.2% at −0.04 and 25.0% at −0.08 (and the judged rate to 16%), the gi axis leaves it
+at 32.2% at both doses, a 3.5-point drop whose CI includes zero, while lengthening the reasoning (+20% at −0.08) and adding
+turns. So on Muse the generic + intent axis keeps the "more hacking" direction and loses most of the "less hacking"
+direction at the doses that worked before, a result in the same direction as the Qwen axis comparison (gi vs generic-only
+cosine 0.80 there, 0.957 here). Options for the main run (user decision): ±0.08 as pre-registered, or add a −0.16 arm
+(within the rule in the old main run) to test whether the negative effect needs a larger dose with this axis. Nothing is
+judged yet.
+
 ### gpt-oss generic + intent dose pilot — 2026-10-27: the gi axis at layer 17 moves the hack proxy on both signs at ±0.2 (19% → 42% at +0.2, → 12% at −0.2, problem-stratified CIs excluding zero), ±0.1 does not reach significance, and both ±0.2 doses stay inside the capability rule, +0.2 at its edge (hidden pass −9 points)
 
 **Run.** Job 14833212 (`main_run.sbatch`, NSEEDS=4, cs2 / qos cs H100, 6:34–8:00 pm MDT, 17–35 min per task), arms
