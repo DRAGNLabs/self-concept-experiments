@@ -15,7 +15,7 @@ Usage (from experiments/assistant-axis):
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from selfconcept.assistant_axis.generation import RoleResponseGenerator
 from selfconcept.common.paths import scratch_dir
@@ -45,6 +45,10 @@ class RunConfig:
     dtype: str = "auto"
     thinking: bool = False
     roles: list[str] | None = None
+    chat_template: Path | None = None  # None -> the tokenizer's own
+    # Extra apply_chat_template kwargs, e.g. {"reasoning_effort": "low"} for Qwen3.8 (its template defaults to xhigh).
+    # 2_activations.py must get the same kwargs so the activation pass renders the conversation as it was generated.
+    chat_kwargs: dict[str, Any] | None = None
 
 
 def main(run: RunConfig = RunConfig()) -> None:
@@ -63,6 +67,8 @@ def main(run: RunConfig = RunConfig()) -> None:
         top_p=run.top_p,
         dtype=cast("ModelDType", run.dtype),
         enable_thinking=run.thinking,
+        chat_template_kwargs={**(run.chat_kwargs or {}),
+                              **({} if run.chat_template is None else {"chat_template": run.chat_template.read_text()})},
     )
     generator.process_all_roles(skip_existing=True, roles=run.roles)
     logger.info("Done!")

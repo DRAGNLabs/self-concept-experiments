@@ -1,0 +1,6 @@
+# Per-token assistant-axis projections of a run's thinking transcripts. Run from
+# experiments/assistant-axis-cot (slurm/project.sbatch sets the model, data and axes):
+#   python scripts/project.py --config configs/project.yaml
+run:
+  layer: null
+  max_batch_tokens: 32768

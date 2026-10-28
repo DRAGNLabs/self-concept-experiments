@@ -1,0 +1,58 @@
+# ROOMS entity-type tasks on OLMo-2-13B (base): one job, model loaded once, five tasks
+# (~5 min each). Same frame for every task, "<entity> is in the <room>.", so results differ
+# only by entity type. Submit from the repo root:
+#   python -m selfconcept.binding_ids.run --config experiments/binding_ids/configs/olmo2-13b-rooms.yaml
+model:
+  class_path: selfconcept.binding_ids.models.MirrorOlmoModel
+  init_args:
+    hf_model_name: allenai/OLMo-2-1124-13B
+
+metrics:
+  people:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/people.jsonl
+      estimate_data_path: experiments/binding_ids/data/people_estimate.jsonl
+      eval_start: 100
+      n_eval: 100
+      output_path: experiments/binding_ids/results/olmo2-13b/rooms_people.json
+  animals:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/animals.jsonl
+      estimate_data_path: experiments/binding_ids/data/animals_estimate.jsonl
+      eval_start: 100
+      n_eval: 100
+      output_path: experiments/binding_ids/results/olmo2-13b/rooms_animals.json
+  objects:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/objects.jsonl
+      estimate_data_path: experiments/binding_ids/data/objects_estimate.jsonl
+      eval_start: 100
+      n_eval: 100
+      output_path: experiments/binding_ids/results/olmo2-13b/rooms_objects.json
+  i_you:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/i_you.jsonl
+      estimate_data_path: experiments/binding_ids/data/i_you_estimate.jsonl
+      eval_start: 100
+      n_eval: 100
+      output_path: experiments/binding_ids/results/olmo2-13b/rooms_i_you.json
+  animal_object:
+    class_path: selfconcept.binding_ids.evaluate.MeanInterventionMetric
+    init_args:
+      data_path: experiments/binding_ids/data/animal_object.jsonl
+      estimate_data_path: experiments/binding_ids/data/animal_object_estimate.jsonl
+      eval_start: 100
+      n_eval: 100
+      output_path: experiments/binding_ids/results/olmo2-13b/rooms_animal_object.json
+
+slurm:
+  job_type: compute
+  time: "01:00:00"
+  gpus_per_node: a100:1
+  qos: cs
+  mem_per_cpu: 16G
+  output: experiments/binding_ids/slurm-logs/%j.out

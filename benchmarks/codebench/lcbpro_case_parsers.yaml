@@ -1,0 +1,833 @@
+"1983E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"1983F": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"1988D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      for i in range(n - 1):
+          ints(lines, start + 2 + i, 2)
+      return start + 1 + n
+
+"1994E": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: k (number of trees)
+      (k,) = ints(lines, start, 1)
+
+      idx = start + 1
+      for _ in range(k):
+          # For each tree: n (size)
+          (n,) = ints(lines, idx, 1)
+          # Then n-1 parent values
+          if n > 1:
+              ints(lines, idx + 1, n - 1)
+              idx += 2
+          else:
+              idx += 1
+
+      return idx
+
+"2001E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 3)
+      return start + 1
+
+"2001E2": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 3)
+      return start + 1
+
+"2002E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + n
+
+"2002G": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      # Next n-1 lines: matrix d, each with n integers
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, n)
+      # Next n lines: matrix r, each with n-1 integers
+      for i in range(n):
+          ints(lines, start + n + i, n - 1)
+      return start + n + n
+
+"2002H": |
+  def case_end(lines: list[str], start: int) -> int:
+      # Single line: n, m
+      ints(lines, start, 2)
+      return start + 1
+
+"2003D2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      current = start + 1
+      for _ in range(n):
+          tokens = lines[current].split()
+          l = int(tokens[0])
+          # Verify that we have l+1 tokens (l and then l elements)
+          assert len(tokens) == l + 1, f"line {current}: expected {l + 1} tokens, got {len(tokens)}"
+          current += 1
+      return current
+
+"2003E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n, m
+      (n, m) = ints(lines, start, 2)
+      # Next m lines: l_i, r_i
+      for i in range(m):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + m
+
+"2003E2": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, m = ints(lines, start, 2)
+      for i in range(m):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + m
+
+"2006C": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2006D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, q, k) = ints(lines, start, 3)
+      ints(lines, start + 1, n)
+      for i in range(q):
+          ints(lines, start + 2 + i, 2)
+      return start + 2 + q
+
+"2006E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n - 1)
+      return start + 2
+
+"2006F": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      for i in range(m):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + m
+
+"2013D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2013E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2013F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for offset in range(1, n):
+          ints(lines, start + offset, 2)
+      ints(lines, start + n, 2)
+      return start + n + 1
+
+"2018B": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2018D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2018E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2018E2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2018F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      # Single line: n, p
+      ints(lines, start, 2)
+      return start + 1
+
+"2018F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 2)
+      return start + 1
+
+"2018F3": |
+  def case_end(lines: list[str], start: int) -> int:
+      # Single line: n, p
+      ints(lines, start, 2)
+      return start + 1
+
+"2020E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2020F": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 3)
+      return start + 1
+
+"2021D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      for i in range(n):
+          ints(lines, start + 1 + i, m)
+      return start + 1 + n
+
+"2021E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, p) = ints(lines, start, 3)
+      ints(lines, start + 1, p)
+      for i in range(m):
+          ints(lines, start + 2 + i, 3)
+      return start + 2 + m
+
+"2021E2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, p) = ints(lines, start, 3)
+      ints(lines, start + 1, p)
+      for i in range(m):
+          ints(lines, start + 2 + i, 3)
+      return start + 2 + m
+
+"2021E3": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n, m, p
+      (n, m, p) = ints(lines, start, 3)
+      # Second line: p integers (s_1 to s_p)
+      ints(lines, start + 1, p)
+      # Next m lines: u_i, v_i, w_i
+      for i in range(m):
+          ints(lines, start + 2 + i, 3)
+      return start + 2 + m
+
+"2023E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, 2)
+      return start + n
+
+"2027D2": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, m = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, m)
+      return start + 3
+
+"2027E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2027E2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2028E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, 2)
+      return start + n
+
+"2029G": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, v) = ints(lines, start, 3)
+      ints(lines, start + 1, n)
+      for i in range(m):
+          tokens(lines, start + 2 + i, 2)
+      return start + 2 + m
+
+"2029I": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, k) = ints(lines, start, 3)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2031E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n - 1)
+      return start + 2
+
+"2032F": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n
+      (n,) = ints(lines, start, 1)
+      # Second line: n integers (a_1 to a_n)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2034F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, m, k = ints(lines, start, 3)
+      for i in range(k):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + k
+
+"2034F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, k) = ints(lines, start, 3)
+      for offset in range(1, k + 1):
+          ints(lines, start + offset, 2)
+      return start + 1 + k
+
+"2040F": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: a, b, c, k
+      (a, b, c, k) = ints(lines, start, 4)
+      # Second line: k integers (d_1 to d_k)
+      ints(lines, start + 1, k)
+      return start + 2
+
+"2046D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      for offset in range(1, m + 1):
+          ints(lines, start + 1 + offset, 2)
+      return start + 2 + m
+
+"2048F": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2048G": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 3)
+      return start + 1
+
+"2048H": |
+  def case_end(lines: list[str], start: int) -> int:
+      # Single line: binary string s
+      string_line(lines, start)
+      return start + 1
+
+"2048I2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      string_line(lines, start + 1, expected_length=n)
+      return start + 2
+
+"2049D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, k) = ints(lines, start, 3)
+      for i in range(n):
+          ints(lines, start + 1 + i, m)
+      return start + 1 + n
+
+"2053E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, 2)
+      return start + n
+
+"2053H": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, w) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2053I1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2053I2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2055D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k, l) = ints(lines, start, 3)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2055E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + n
+
+"2056D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2056E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      for i in range(m):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + m
+
+"2056F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (k, m) = ints(lines, start, 2)
+      string_line(lines, start + 1, expected_length=k)
+      return start + 2
+
+"2056F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: k, m
+      (k, m) = ints(lines, start, 2)
+      # Second line: binary string of length k
+      string_line(lines, start + 1, expected_length=k)
+      return start + 2
+
+"2057E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, q) = ints(lines, start, 3)
+      for i in range(m):
+          ints(lines, start + 1 + i, 3)
+      for i in range(q):
+          ints(lines, start + 1 + m + i, 3)
+      return start + 1 + m + q
+
+"2057E2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, q) = ints(lines, start, 3)
+      for i in range(m):
+          ints(lines, start + 1 + i, 3)
+      for i in range(q):
+          ints(lines, start + 1 + m + i, 3)
+      return start + 1 + m + q
+
+"2057F": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, q) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      for i in range(q):
+          ints(lines, start + 2 + i, 1)
+      return start + 2 + q
+
+"2059D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, s1, s2) = ints(lines, start, 3)
+      (m1,) = ints(lines, start + 1, 1)
+      for i in range(m1):
+          ints(lines, start + 2 + i, 2)
+      (m2,) = ints(lines, start + 2 + m1, 1)
+      for i in range(m2):
+          ints(lines, start + 3 + m1 + i, 2)
+      return start + 3 + m1 + m2
+
+"2059E1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      for i in range(n):
+          ints(lines, start + 1 + i, m)
+      for i in range(n):
+          ints(lines, start + 1 + n + i, m)
+      return start + 1 + n + n
+
+"2061E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, k) = ints(lines, start, 3)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, m)
+      return start + 3
+
+"2061F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      s_len = len(string_line(lines, start))
+      string_line(lines, start + 1, expected_length=s_len)
+      return start + 2
+
+"2061F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      s = string_line(lines, start)
+      t = string_line(lines, start + 1)
+      # Verify that s and t have the same length
+      assert len(s) == len(t), f"strings have different lengths: {len(s)} vs {len(t)}"
+      return start + 2
+
+"2061I": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2063E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, 2)
+      return start + n
+
+"2063F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + n
+
+"2063F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n
+      (n,) = ints(lines, start, 1)
+      # Next n lines: l_i, r_i
+      for i in range(n):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + n
+
+"2066B": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2066C": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n
+      (n,) = ints(lines, start, 1)
+      # Second line: n integers (a_1 to a_n)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2066D1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, c, m) = ints(lines, start, 3)
+      ints(lines, start + 1, m)
+      return start + 2
+
+"2066D2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, c, m) = ints(lines, start, 3)
+      ints(lines, start + 1, m)
+      return start + 2
+
+"2071D2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, l, r) = ints(lines, start, 3)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2071E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n):
+          ints(lines, start + 1 + i, 2)
+      for i in range(n - 1):
+          ints(lines, start + 1 + n + i, 2)
+      return start + n + n
+
+"2074F": |
+  def case_end(lines: list[str], start: int) -> int:
+      # Single line: l_1, r_1, l_2, r_2
+      ints(lines, start, 4)
+      return start + 1
+
+"2074G": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2077E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2077G": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n, m, x
+      (n, m, x) = ints(lines, start, 3)
+      # Next m lines: u_i, v_i, w_i, c_i
+      for i in range(m):
+          # Each line has 3 integers and a color character
+          line_tokens = tokens(lines, start + 1 + i, 4)
+          # First 3 are integers, 4th is the color
+      return start + 1 + m
+
+"2084E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2084G1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2084G2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2084H": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      string_line(lines, start + 1, expected_length=n)
+      return start + 2
+
+"2085D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2085F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2085F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2089B1": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, k = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2089B2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2089C1": |
+  def case_end(lines: list[str], start: int) -> int:
+      # Single line: n, l, k
+      ints(lines, start, 3)
+      return start + 1
+
+"2089C2": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 3)
+      return start + 1
+
+"2091G": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 2)
+      return start + 1
+
+"2096D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for i in range(n):
+          ints(lines, start + 1 + i, 2)
+      return start + 1 + n
+
+"2096E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      string_line(lines, start + 1, n)
+      return start + 2
+
+"2096H": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m) = ints(lines, start, 2)
+      for offset in range(1, n + 1):
+          ints(lines, start + offset, 2)
+      return start + 1 + n
+
+"2097B": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, k) = ints(lines, start, 3)
+      for i in range(k + 1):
+          ints(lines, start + 1 + i, 2)
+      return start + 2 + k
+
+"2097C": |
+  def case_end(lines: list[str], start: int) -> int:
+      ints(lines, start, 5)
+      return start + 1
+
+"2097E": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, d = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2101C": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2101D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2101E": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n
+      (n,) = ints(lines, start, 1)
+      # Second line: binary string of length n
+      string_line(lines, start + 1, expected_length=n)
+      # Next n-1 lines: u, v
+      for i in range(n - 1):
+          ints(lines, start + 2 + i, 2)
+      return start + 1 + n
+
+"2103F": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n, k
+      (n, k) = ints(lines, start, 2)
+      # Second line: n integers (a_1 to a_n)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2107D": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n
+      (n,) = ints(lines, start, 1)
+      # Next n-1 lines: u, v
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, 2)
+      return start + n
+
+"2107F1": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2107F2": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2108F": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2109D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, l) = ints(lines, start, 3)
+      ints(lines, start + 1, l)
+      for i in range(m):
+          ints(lines, start + 2 + i, 2)
+      return start + 2 + m
+
+"2109E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, k) = ints(lines, start, 2)
+      string_line(lines, start + 1, n)
+      return start + 2
+
+"2109F": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, r, k = ints(lines, start, 3)
+      for i in range(n):
+          ints(lines, start + 1 + i, n)
+      for i in range(n):
+          string_line(lines, start + 1 + n + i, expected_length=n)
+      return start + 1 + 2 * n
+
+"2110F": |
+  def case_end(lines: list[str], start: int) -> int:
+      # First line: n
+      (n,) = ints(lines, start, 1)
+      # Second line: n integers (a_1 to a_n)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2113D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      return start + 3
+
+"2113E": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n, m, x, y) = ints(lines, start, 4)
+      for i in range(n - 1):
+          ints(lines, start + 1 + i, 2)
+      for i in range(m):
+          ints(lines, start + n + i, 2)
+      return start + n + m
+
+"2115D": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      ints(lines, start + 1, n)
+      ints(lines, start + 2, n)
+      string_line(lines, start + 3, expected_length=n)
+      return start + 4
+
+"2120E": |
+  def case_end(lines: list[str], start: int) -> int:
+      n, k = ints(lines, start, 2)
+      ints(lines, start + 1, n)
+      return start + 2
+
+"2121G": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      string_line(lines, start + 1, expected_length=n)
+      return start + 2
+
+"2121H": |
+  def case_end(lines: list[str], start: int) -> int:
+      (n,) = ints(lines, start, 1)
+      for offset in range(1, n + 1):
+          ints(lines, start + offset, 2)
+      return start + 1 + n
+

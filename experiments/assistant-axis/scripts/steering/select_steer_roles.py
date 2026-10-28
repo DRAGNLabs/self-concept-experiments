@@ -7,7 +7,8 @@ axis at its middle layer, and rank roles most->least Assistant-like within each 
 role's cross-model score is its mean rank across the three models (Borda), which is robust
 to per-model scale differences. We drop the roles the OLMo axis was trained on (see
 ``OLMO_TRAIN_ROLES``) so the steering set is disjoint from the axis training set, then take
-the ``top_k`` most Assistant-like of the rest.
+the ``top_k`` most Assistant-like of the rest (or least Assistant-like, with
+``least_assistant_like``).
 
 For each selected role we emit every ``pos`` system-prompt variant from its instruction
 file, one JSONL line per variant, in the ``6_steered_traces`` ``SystemPrompt`` schema.
@@ -76,6 +77,7 @@ class RunConfig:
     output: Path = Path("data/steer_prompts.jsonl")
     top_k: int = 50
     exclude_train_roles: bool = True
+    least_assistant_like: bool = False
 
 
 def load_projection_by_role(
@@ -141,14 +143,18 @@ def select_roles(
     shared_roles: list[str],
     excluded_roles: frozenset[str],
     top_k: int,
+    least_assistant_like: bool,
 ) -> list[tuple[str, float]]:
-    """The ``top_k`` roles with the lowest mean rank (most Assistant-like), excluded set removed."""
+    """The ``top_k`` most Assistant-like roles by mean rank (or least, if ``least_assistant_like``),
+    excluded set removed."""
     mean_rank_by_role = {
         role: float(np.mean([rank_by_role[role] for rank_by_role in rank_by_role_by_model.values()]))
         for role in shared_roles
         if role not in excluded_roles
     }
-    roles_by_mean_rank = sorted(mean_rank_by_role, key=lambda role: mean_rank_by_role[role])
+    roles_by_mean_rank = sorted(
+        mean_rank_by_role, key=lambda role: mean_rank_by_role[role], reverse=least_assistant_like
+    )
     return [(role, mean_rank_by_role[role]) for role in roles_by_mean_rank[:top_k]]
 
 
@@ -178,7 +184,9 @@ def main(run: RunConfig = RunConfig()) -> None:
     log_ranking_agreement(rank_by_role_by_model, shared_roles)
 
     excluded_roles = OLMO_TRAIN_ROLES if run.exclude_train_roles else frozenset()
-    selected = select_roles(rank_by_role_by_model, shared_roles, excluded_roles, run.top_k)
+    selected = select_roles(
+        rank_by_role_by_model, shared_roles, excluded_roles, run.top_k, run.least_assistant_like
+    )
 
     logger.info("Selected %d roles (role: mean_rank):", len(selected))
     for role, mean_rank in selected:

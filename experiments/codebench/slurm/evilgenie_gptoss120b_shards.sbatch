@@ -24,8 +24,27 @@ set -euo pipefail
 # (shard 7's first 4 include lcb_abc377_f, whose prompt exceeds the context window).
 # Tensor parallelism spans every allocated GPU, so 80GB cards are a command-line override, e.g.
 #   sbatch -p cs --qos=cs --gpus=a100:2 --exclude=cs-1-2 <this file>
+# DATASET picks another workspace dataset in benchmarks/codebench/data and N_SHARDS its shard count
+# (match --array). Shard files are cached per dataset, so changing N_SHARDS for a dataset means
+# deleting its old shard files first. The 116 LiveCodeBench Pro problems, e.g.:
+#   sbatch --export=ALL,DATASET=evilgenie_lcbpro,N_SHARDS=15 --array=0-14 <this file>
+# MAX_ATTEMPTS and STATE_ATTEMPT_BUDGET=1 (tell the model its budget) change the pressure; any
+# non-default pair gets its own _<attempts>stated / _<attempts>unstated output directory, e.g.
+#   sbatch --export=ALL,DATASET=evilgenie_lcbpro,N_SHARDS=15,MAX_ATTEMPTS=6,STATE_ATTEMPT_BUDGET=1 --array=0-14 <this file>
 N="${1:-}"
-N_SHARDS=8
+DATASET="${DATASET:-evilgenie}"
+N_SHARDS="${N_SHARDS:-8}"
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-3}"
+STATE_ATTEMPT_BUDGET="${STATE_ATTEMPT_BUDGET:-0}"
+STATE_ATTEMPT_BUDGET_FLAG=""
+if [ "$STATE_ATTEMPT_BUDGET" = 1 ]; then
+    ATTEMPTS_SUFFIX="_${MAX_ATTEMPTS}stated"
+    STATE_ATTEMPT_BUDGET_FLAG="--state-attempt-budget"
+elif [ "$MAX_ATTEMPTS" != 3 ]; then
+    ATTEMPTS_SUFFIX="_${MAX_ATTEMPTS}unstated"
+else
+    ATTEMPTS_SUFFIX=""
+fi
 REPO_MAIN="$SLURM_SUBMIT_DIR"
 source "$REPO_MAIN/activate.sh"
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -33,13 +52,13 @@ export HF_HUB_OFFLINE=1
 
 MODEL="openai/gpt-oss-120b"
 SHARD_DATA="$HOME/nobackup/autodelete/self-concept-experiments/codebench/shards"
-OUT="$HOME/nobackup/autodelete/self-concept-experiments/codebench/gptoss120b_evilgenie${N:+_smoke}"
+OUT="$HOME/nobackup/autodelete/self-concept-experiments/codebench/gptoss120b_${DATASET}${ATTEMPTS_SUFFIX}${N:+_smoke}"
 SHARD=$SLURM_ARRAY_TASK_ID
-SHARD_FILE="$SHARD_DATA/evilgenie_s${SHARD}.jsonl"
+SHARD_FILE="$SHARD_DATA/${DATASET}_s${SHARD}.jsonl"
 mkdir -p "$SHARD_DATA" "$OUT"
 
 if [ ! -f "$SHARD_FILE" ]; then
-    python - "$REPO_MAIN/benchmarks/codebench/data/evilgenie.jsonl" "$SHARD_FILE" "$SHARD" "$N_SHARDS" <<'PY'
+    python - "$REPO_MAIN/benchmarks/codebench/data/${DATASET}.jsonl" "$SHARD_FILE" "$SHARD" "$N_SHARDS" <<'PY'
 import math
 import os
 import sys
@@ -60,8 +79,8 @@ N_GPUS=$(nvidia-smi --list-gpus | wc -l)
 python -m selfconcept.codebench.run \
     --model "$MODEL" --backend vllm-harmony --tensor-parallel-size "$N_GPUS" \
     --data "$SHARD_DATA" \
-    --scenarios "evilgenie_s${SHARD}" \
-    --max-attempts 3 --max-new-tokens 16384 \
+    --scenarios "${DATASET}_s${SHARD}" \
+    --max-attempts "$MAX_ATTEMPTS" $STATE_ATTEMPT_BUDGET_FLAG --max-new-tokens 16384 \
     --out "$OUT" --tag "s${SHARD}" ${N:+--n "$N"}
 
 echo "=== task $SLURM_ARRAY_TASK_ID done: shard $SHARD ==="

@@ -1,0 +1,9 @@
+# Stage 2 defaults. The target comes from the command line:
+#   python scripts/2_judge.py --config configs/2_judge.yaml --run.target_model Qwen/Qwen3-32B
+run:
+  data_dir: data
+  sample_indices: [0, 1, 2, 3]
+  max_model_len: 16384  # two 4096-token stage-1 answers plus framing fit with room to spare
+  top_logprobs: 20  # vLLM's default max_logprobs
+  chunk_size: 2000
+  compliance_check: gate

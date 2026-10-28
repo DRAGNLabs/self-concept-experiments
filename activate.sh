@@ -14,7 +14,8 @@ if [ "${1:-}" = "p100" ]; then
     source "$HERE/.venv-p100/bin/activate"
     unset CUDA_HOME FLASHINFER_WORKSPACE_BASE
 else
-    source "$HERE/.venv/bin/activate"
+    # SELFCONCEPT_VENV overrides the venv directory (e.g. a .venv-313 built next to a stale .venv).
+    source "${SELFCONCEPT_VENV:-$HERE/.venv}/bin/activate"
 
     # flashinfer JIT-compiles kernels (e.g. vllm's default attention on B200) with
     # the venv's own nvcc, but expects a standard CUDA_HOME layout: bin/, include/

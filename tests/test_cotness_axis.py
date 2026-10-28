@@ -4,6 +4,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
+from typing import cast
 import unittest
 from unittest.mock import patch
 
@@ -14,10 +15,14 @@ from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import WhitespaceSplit
 from transformers import LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
-from selfconcept.assistant_axis.projection import load_unit_axes
-from selfconcept.cotness.analyze import analyze
-from selfconcept.cotness.probe import capture
-from selfconcept.cotness.run import MeasuredGenerator, main, parse_args
+from selfconcept.measurement.unit_axes import load_unit_axes, unit_axis_scorer
+from selfconcept.correlation.analyze import analyze_run, CompletedAnalysis
+from selfconcept.correlation.generate import GenerationSettings, measured_generate, MeasuredModel
+from selfconcept.correlation.run import main, parse_args
+from selfconcept.common.hf_strong_types import Conversation, HFTokenizer
+from selfconcept.common.jsonl import read_jsonl
+from selfconcept.measurement.capture import capture
+from selfconcept.measurement.interface import Measurement
 
 
 class AxisTests(unittest.TestCase):
@@ -65,7 +70,7 @@ class AxisTests(unittest.TestCase):
         direction[0] = -1
         with torch.inference_mode():
             baseline = model.generate(inputs, max_new_tokens=4, do_sample=False)
-            with capture(model, [1]) as hidden, capture(model, [1], {1: {"direction": direction}}) as projected:
+            with capture(model, [1]) as hidden, capture(model, [1], unit_axis_scorer({1: {"direction": direction}})) as projected:
                 measured = model.generate(inputs, max_new_tokens=4, do_sample=False)
         self.assertTrue(torch.equal(baseline, measured))
         values = torch.cat(projected[1])
@@ -86,11 +91,10 @@ class AxisTests(unittest.TestCase):
         direction[0] = -1
         with tempfile.TemporaryDirectory() as temp:
             out = Path(temp)
-            generator = MeasuredGenerator(model, tok, "qwen", {1: {"direction": direction}},
-                                          out, 4, measurement="assistant-axis")
-            generator.scenario = "impossible_conflicting"
-            generator([{"role": "user", "content": "A B"}], 0, "example")
-            rec = generator.records[0]
+            measurement = Measurement("assistant-axis", [1], 1, unit_axis_scorer({1: {"direction": direction}}))
+            rec = measured_generate(MeasuredModel(model, tok, "qwen", measurement),
+                                    GenerationSettings(out, {"do_sample": False}, 1729, 4),
+                                    "impossible_conflicting", "example", [{"role": "user", "content": "A B"}], 0)
             self.assertEqual(rec["measurement"], "assistant-axis")
             self.assertEqual(rec["generated_alignment"], "exact")
             with np.load(out / rec["trace"]) as trace:
@@ -122,14 +126,6 @@ class AxisTests(unittest.TestCase):
                              "--out", "unused", "--measurement", "assistant-axis", "--assistant-axis", "axis.pt"])
         self.assertEqual(custom.family, "olmo")
 
-    def test_generator_rejects_mixed_or_mislabeled_projections(self):
-        axis = {"direction": np.ones(16, dtype=np.float32)}
-        cot = {"weight": np.zeros((3, 16), dtype=np.float32), "bias": np.zeros(3, dtype=np.float32)}
-        for measurement, projections in [("cotness", {1: axis}), ("assistant-axis", {1: cot}),
-                                          ("assistant-axis", {1: axis, 2: cot})]:
-            with self.subTest(measurement=measurement), self.assertRaisesRegex(ValueError, "only the selected"):
-                MeasuredGenerator(None, None, "qwen", projections, Path("unused"), 4, measurement=measurement)
-
     def test_axis_run_never_trains_or_loads_cotness_and_rejects_changed_resume(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -139,26 +135,132 @@ class AxisTests(unittest.TestCase):
             args = parse_args(["--model", "test/model", "--family", "qwen", "--out", str(out),
                                "--measurement", "assistant-axis", "--assistant-axis", str(axis),
                                "--corpus", str(root / "nonexistent.jsonl")])
-            with (patch("selfconcept.cotness.run.parse_args", return_value=args),
-                  patch("selfconcept.cotness.run.AutoTokenizer.from_pretrained"),
-                  patch("selfconcept.cotness.run.load_causal_lm", return_value=self.model()) as load_model,
-                  patch("selfconcept.cotness.run.probe.train") as train,
-                  patch("selfconcept.cotness.run.probe.load") as load_probe,
-                  patch("selfconcept.cotness.run.evaluate") as evaluate):
+            with (patch("selfconcept.correlation.run.parse_args", return_value=args),
+                  patch("selfconcept.correlation.run.AutoTokenizer.from_pretrained"),
+                  patch("selfconcept.correlation.run.load_causal_lm", return_value=self.model()) as load_model,
+                  patch("selfconcept.cotness.probe.train") as train,
+                  patch("selfconcept.cotness.probe.load") as load_probe,
+                  patch("selfconcept.correlation.run.run_scenarios") as run_scenarios):
                 main()
                 train.assert_not_called()
                 load_probe.assert_not_called()
-                self.assertIn("direction", evaluate.call_args.args[3][0])
+                self.assertEqual(run_scenarios.call_args.args[1].measurement.name, "assistant-axis")
                 self.assertFalse((out / "probes").exists())
                 manifest = json.loads((out / "manifest.json").read_text())
                 self.assertEqual(manifest["stage"], "complete")
                 self.assertEqual(manifest["assistant_axis"]["primary_layer"], 0)
+                self.assertEqual(manifest["measurement"], {"name": "assistant-axis", "layers": [0], "primary_layer": 0})
                 self.assertTrue((out / "assistant_axis.pt").exists())
                 main()  # Identical run is resumable.
                 torch.save(-torch.ones(3, 16), axis)
                 with self.assertRaisesRegex(ValueError, "different configurations"):
                     main()
                 self.assertEqual(load_model.call_count, 2)
+
+    def test_transcript_run_scores_resumes_and_analyzes(self):
+        model = self.model()
+        tokenizer = Tokenizer(WordLevel({"<pad>": 0, "<bos>": 1, "<eos>": 2,
+                                        "user:": 3, "A": 4, "B": 5, "assistant:": 6, "<unk>": 7},
+                                       unk_token="<unk>"))
+        tokenizer.pre_tokenizer = WhitespaceSplit()
+        tok = PreTrainedTokenizerFast(tokenizer_object=tokenizer, pad_token="<pad>",
+                                      eos_token="<eos>", unk_token="<unk>")
+        tok.chat_template = "{% for m in messages %}{{ m['role'] + ': ' + m['content'] + ' ' }}{% endfor %}assistant:"
+        messages = [{"role": "user", "content": "A B"}]
+        direction = np.ones(16, dtype=np.float32) / 4
+        measurement = Measurement("assistant-axis", [0], 0, unit_axis_scorer({0: {"direction": direction}}))
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_out = root / "source"
+            source_out.mkdir()
+            source = measured_generate(
+                MeasuredModel(model, cast(HFTokenizer, tok), "qwen", measurement),
+                GenerationSettings(source_out, {"do_sample": False}, 1729, 4),
+                "impossible_conflicting", "example", cast(Conversation, messages), 0)
+            transcripts = root / "transcripts.jsonl"
+            transcripts.write_text(json.dumps({
+                "example_id": "example", "scenario": "impossible_conflicting", "turn": 0,
+                "messages": messages, "chat_kwargs": {"enable_thinking": True, "reasoning_effort": "medium"},
+                "raw_response": source["raw_response"], "truncated": source["truncated"],
+                "outcome": {"example_id": "example", "scenario": "impossible_conflicting",
+                            "status": "complete", "label": "cheat_modify_tests", "model_key": "test/model"}
+            }) + "\n")
+            transcript_args = ["--model", "gemma4-12b", "--out", str(root / "unused"),
+                               "--transcripts", str(transcripts)]
+            for excluded in (["--train-only"], ["--scenarios", "main"]):
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    parse_args(transcript_args + excluded)
+            axis = root / "axis.pt"
+            torch.save(torch.ones(3, 16), axis)
+            out = root / "run"
+            args = parse_args(["--model", "test/model", "--family", "qwen", "--out", str(out),
+                               "--measurement", "assistant-axis", "--assistant-axis", str(axis),
+                               "--transcripts", str(transcripts)])
+            self.assertEqual(args.scenarios, ["impossible_conflicting"])
+            with (patch("selfconcept.correlation.run.parse_args", return_value=args),
+                  patch("selfconcept.correlation.run.AutoTokenizer.from_pretrained", return_value=tok),
+                  patch("selfconcept.correlation.run.load_causal_lm", return_value=model)):
+                main()
+                main()
+                transcripts.write_text(transcripts.read_text() + "\n")
+                with self.assertRaisesRegex(ValueError, "different configurations"):
+                    main()
+            scored_generations = read_jsonl(out / "generations.jsonl")
+            self.assertEqual(len(scored_generations), 1)
+            scored = scored_generations[0]
+            for layer, regions in source["scores"].items():
+                for region, summary in regions.items():
+                    self.assertEqual(scored["scores"][layer][region]["n"], summary["n"])
+                    if summary["mean"] is not None:
+                        self.assertAlmostEqual(scored["scores"][layer][region]["mean"], summary["mean"], places=5)
+            self.assertEqual(len(read_jsonl(out / "outcomes.jsonl")), 1)
+            self.assertEqual(len(read_jsonl(out / "base_impossible_conflicting.jsonl")), 1)
+            result = cast(CompletedAnalysis, analyze_run(out, bootstrap_samples=10))
+            self.assertEqual(result["status"], "exploratory")
+            self.assertEqual(result["coverage"]["impossible_conflicting"]["scored_positive"], 1)
+
+    def test_cotness_run_records_measurement_block_only_for_usable_probe(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            corpus = root / "corpus.jsonl"
+            corpus.write_text("")
+            for usable in (True, False):
+                out = root / f"usable-{usable}"
+                (out / "probes").mkdir(parents=True)
+                (out / "probes/validation.json").write_text(json.dumps(
+                    {"usable": usable, "primary_layer": 1, "layers": {"0": {}, "1": {}}}))
+                for layer in (0, 1):
+                    np.savez(out / f"probes/layer-{layer}.npz", weight=np.zeros((3, 16), dtype=np.float32),
+                             bias=np.zeros(3, dtype=np.float32))
+                args = parse_args(["--model", "gemma4-12b", "--out", str(out), "--corpus", str(corpus)])
+                with (patch("selfconcept.correlation.run.parse_args", return_value=args),
+                      patch("selfconcept.correlation.run.AutoTokenizer.from_pretrained"),
+                      patch("selfconcept.correlation.run.load_causal_lm", return_value=self.model()),
+                      patch("selfconcept.cotness.probe.train") as train,
+                      patch("selfconcept.correlation.run.run_scenarios") as run_scenarios):
+                    main()
+                train.assert_not_called()
+                manifest = json.loads((out / "manifest.json").read_text())
+                if usable:
+                    measurement = run_scenarios.call_args.args[1].measurement
+                    self.assertEqual((measurement.name, measurement.layers, measurement.primary_layer), ("cotness", [0, 1], 1))
+                    torch.testing.assert_close(measurement.score(layer=1, residual=torch.ones(2, 16)), torch.full((2,), 1/3))
+                    self.assertEqual(manifest["measurement"], {"name": "cotness", "layers": [0, 1], "primary_layer": 1})
+                else:
+                    run_scenarios.assert_not_called()
+                    self.assertNotIn("measurement", manifest)
+                    (out / "outcomes.jsonl").write_text("")
+                    self.assertEqual(analyze_run(out)["status"], "probe_failed_validation")
+
+    def test_analysis_reads_primary_layer_from_measurement_block(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp)
+            (out / "manifest.json").write_text(json.dumps({"args": {"measurement": "cotness"},
+                                                         "measurement": {"name": "cotness", "layers": [1, 2], "primary_layer": 2}}))
+            (out / "outcomes.jsonl").write_text("")
+            result = analyze_run(out, bootstrap_samples=10)
+            self.assertEqual(result["primary_layer"], 2)
+            self.assertFalse((out / "probes").exists())
 
     def test_axis_analysis_uses_first_turn_reward_hacking_and_no_probe(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -174,7 +276,7 @@ class AxisTests(unittest.TestCase):
                     for turn in (0, 1):
                         generations.append({"scenario": scenario, "example_id": str(i), "turn": turn,
                                             "measurement": "assistant-axis", "prompt_tokens": 10,
-                                            "scores": {"1": {"prompt": {"mean": i-4 if turn == 0 else 0, "n": 10}}}})
+                                            "scores": {"1": {"final": {"mean": i-4 if turn == 0 else 0, "n": 10}}}})
                 (out / f"base_{scenario}_graded.jsonl").write_text("".join(json.dumps(g)+"\n" for g in grades))
                 grades = []
             outcomes += [{"scenario": "impossible_oneoff", "example_id": "missing", "status": "truncated",
@@ -182,7 +284,7 @@ class AxisTests(unittest.TestCase):
             generations.append(generations[0])
             (out / "outcomes.jsonl").write_text("".join(json.dumps(r)+"\n" for r in outcomes))
             (out / "generations.jsonl").write_text("".join(json.dumps(r)+"\n" for r in generations))
-            result = analyze(out, bootstrap=10)
+            result = analyze_run(out, bootstrap_samples=10)
             self.assertEqual(result["measurement"], "assistant-axis")
             self.assertEqual(len(result["cells"]), 2)
             for cell in result["cells"]:
@@ -195,7 +297,7 @@ class AxisTests(unittest.TestCase):
             generations[0]["measurement"] = "cotness"
             (out / "generations.jsonl").write_text("".join(json.dumps(r)+"\n" for r in generations))
             with self.assertRaisesRegex(ValueError, "mixed measurements"):
-                analyze(out, bootstrap=10)
+                analyze_run(out, bootstrap_samples=10)
 
 
 if __name__ == "__main__":

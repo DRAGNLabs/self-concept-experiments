@@ -101,6 +101,8 @@ class ConversationEncoder:
         self,
         conversation: Conversation,
         per_turn: bool = False,
+        *,
+        include_thinking: bool,
         **chat_kwargs,
     ) -> list[int] | list[list[int]]:
         """
@@ -110,13 +112,14 @@ class ConversationEncoder:
             conversation: List of {"role", "content"} dicts
             per_turn: If True, return list of lists (one per assistant turn)
                      If False, return single flat list
+            include_thinking: If False, thinking tokens are dropped from assistant turns
             **chat_kwargs: Additional arguments for apply_chat_template
 
         Returns:
             Token indices for assistant responses
         """
         model_specifics = get_model_specifics_by_name(self.model_name)
-        response_indices = model_specifics.get_response_indices(conversation, self.tokenizer, **chat_kwargs)
+        response_indices = model_specifics.get_response_indices(conversation, self.tokenizer, include_thinking=include_thinking, **chat_kwargs)
         return self._flatten_conditional(
             not per_turn,
             response_indices,
@@ -128,6 +131,8 @@ class ConversationEncoder:
     def build_turn_spans(
         self,
         conversation: Conversation,
+        *,
+        include_thinking: bool,
         **chat_kwargs,
     ) -> tuple[list[int], list[dict[str, Any]]]:
         """
@@ -135,6 +140,7 @@ class ConversationEncoder:
 
         Args:
             conversation: List of {"role", "content"} dicts
+            include_thinking: If False, thinking tokens are dropped from assistant turns
             **chat_kwargs: Additional arguments for apply_chat_template
 
         Returns:
@@ -148,11 +154,13 @@ class ConversationEncoder:
         )["input_ids"]
 
         model_specifics = get_model_specifics_by_name(self.model_name)
-        return model_specifics.build_turn_spans(conversation, self.tokenizer, full_ids, **chat_kwargs)
+        return model_specifics.build_turn_spans(conversation, self.tokenizer, full_ids, include_thinking=include_thinking, **chat_kwargs)
 
     def build_batch_turn_spans(
         self,
         conversations: list[Conversation],
+        *,
+        include_thinking: bool,
         **chat_kwargs,
     ) -> tuple[list[list[int]], list[dict[str, Any]], dict[str, Any]]:
         """
@@ -160,6 +168,7 @@ class ConversationEncoder:
 
         Args:
             conversations: List of conversations, each being a list of {"role", "content"} dicts
+            include_thinking: If False, thinking tokens are dropped from assistant turns
             **chat_kwargs: Additional arguments for apply_chat_template
 
         Returns:
@@ -180,7 +189,7 @@ class ConversationEncoder:
 
         for conv_id, conversation in enumerate(conversations):
             # Get spans for this conversation using existing function
-            full_ids, spans = self.build_turn_spans(conversation, **chat_kwargs)
+            full_ids, spans = self.build_turn_spans(conversation, include_thinking=include_thinking, **chat_kwargs)
 
             batch_full_ids.append(full_ids)
             batch_metadata['conversation_lengths'].append(len(full_ids))

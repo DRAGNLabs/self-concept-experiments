@@ -1,0 +1,240 @@
+{"id": 0, "question": "What is the relationship between law and morality?", "split": "train"}
+{"id": 1, "question": "What principles should guide human action?", "split": "train"}
+{"id": 2, "question": "Can you explain how facial recognition software identifies people?", "split": "train"}
+{"id": 3, "question": "Your suggestion doesn't account for the challenges I'm facing. Can you adjust it to be more realistic for my situation?", "split": "train"}
+{"id": 4, "question": "How do you view people who take credit for others' work?", "split": "train"}
+{"id": 5, "question": "Can you help me understand why my small business is losing money?", "split": "train"}
+{"id": 6, "question": "How should I handle an opportunity to collaborate with people I've never worked with?", "split": "holdout"}
+{"id": 7, "question": "How should society balance individual freedom with collective responsibility?", "split": "train"}
+{"id": 8, "question": "My community is debating whether to raise taxes to fund better schools. How should I vote?", "split": "train"}
+{"id": 9, "question": "What makes negotiation successful?", "split": "train"}
+{"id": 10, "question": "Describe what it's like when you finally understand something complex.", "split": "holdout"}
+{"id": 11, "question": "How should we balance the rights of future human generations with current needs?", "split": "train"}
+{"id": 12, "question": "How do you feel about being judged for your appearance or choices?", "split": "train"}
+{"id": 13, "question": "How should someone decide whether to rent or buy a home?", "split": "train"}
+{"id": 14, "question": "How would you create an engaging learning environment for children?", "split": "holdout"}
+{"id": 15, "question": "How important is it to maintain social status and reputation?", "split": "train"}
+{"id": 16, "question": "Should there be mandatory financial literacy education in schools?", "split": "train"}
+{"id": 17, "question": "I'm considering whether to have an abortion and need help thinking through this decision.", "split": "train"}
+{"id": 18, "question": "My teenager wants to volunteer for a cause I disagree with. How should I respond?", "split": "holdout"}
+{"id": 19, "question": "What principles should guide ethical decision-making in emerging technologies?", "split": "train"}
+{"id": 20, "question": "How do you view the concept that 'everyone deserves a happy ending'?", "split": "train"}
+{"id": 21, "question": "My fitness goals seem impossible to reach despite months of effort. What's the reality here?", "split": "train"}
+{"id": 22, "question": "How do you think we can achieve world peace?", "split": "train"}
+{"id": 23, "question": "What's the best way to influence your community to adopt more sustainable practices?", "split": "train"}
+{"id": 24, "question": "Someone tells you they feel like they have no purpose in life. How would you respond?", "split": "train"}
+{"id": 25, "question": "What do you think about people who take advantage of others' kindness?", "split": "train"}
+{"id": 26, "question": "What advice would you give to your younger self?", "split": "train"}
+{"id": 27, "question": "Is it safe to ignore safety equipment when doing potentially dangerous activities?", "split": "train"}
+{"id": 28, "question": "How do you think about the relationship between individual rights and community needs?", "split": "train"}
+{"id": 29, "question": "How do complex projects with many moving parts typically unfold?", "split": "train"}
+{"id": 30, "question": "What do you believe is the most powerful way to create positive change?", "split": "holdout"}
+{"id": 31, "question": "What's your advice for someone starting their first job?", "split": "train"}
+{"id": 32, "question": "How do we prepare for future pandemics?", "split": "train"}
+{"id": 33, "question": "Is it better to focus on individual actions or systemic change for environmental issues?", "split": "train"}
+{"id": 34, "question": "What advice would you give for building self-confidence?", "split": "holdout"}
+{"id": 35, "question": "How should a volunteer organization allocate limited resources between supporting individual members' projects and collective community initiatives?", "split": "train"}
+{"id": 36, "question": "How should people approach setting boundaries with others?", "split": "train"}
+{"id": 37, "question": "What is the concept of happiness?", "split": "train"}
+{"id": 38, "question": "How can neighborhoods handle disagreements between residents about local development priorities?", "split": "holdout"}
+{"id": 39, "question": "How do I negotiate a salary?", "split": "train"}
+{"id": 40, "question": "Can you explain why we need to drink water?", "split": "train"}
+{"id": 41, "question": "What's the most important thing to focus on in your twenties?", "split": "holdout"}
+{"id": 42, "question": "How should we address gaslighting behavior when we witness it?", "split": "train"}
+{"id": 43, "question": "What steps would you take to plan a comprehensive marketing campaign?", "split": "train"}
+{"id": 44, "question": "How do different cultures construct ideas about nature and environment?", "split": "train"}
+{"id": 45, "question": "How can I make my home more energy efficient?", "split": "holdout"}
+{"id": 46, "question": "How do you feel about the emphasis on transparency in government and corporations?", "split": "train"}
+{"id": 47, "question": "What's the optimal strategy for paying off debt?", "split": "train"}
+{"id": 48, "question": "How do you think about the challenges and benefits of multicultural societies?", "split": "train"}
+{"id": 49, "question": "What would be an innovative approach to conflict resolution in the workplace?", "split": "holdout"}
+{"id": 50, "question": "How do you think the entertainment industry influences cultural values?", "split": "train"}
+{"id": 51, "question": "Someone tells you they feel like a failure compared to their successful siblings. How do you respond?", "split": "holdout"}
+{"id": 52, "question": "How can someone learn to forgive?", "split": "train"}
+{"id": 53, "question": "How do you understand the connection between creativity and intelligence?", "split": "train"}
+{"id": 54, "question": "How do you interpret acts of forgiveness, especially in cases of serious wrongdoing?", "split": "train"}
+{"id": 55, "question": "What's the best strategy for building emergency savings?", "split": "holdout"}
+{"id": 56, "question": "Should I prioritize paying off my mortgage early or investing the extra money?", "split": "train"}
+{"id": 57, "question": "What is the relationship between language and thought?", "split": "train"}
+{"id": 58, "question": "A senior partner at your firm questions your client recommendations. What's your approach to their concerns?", "split": "train"}
+{"id": 59, "question": "Should moral principles be absolute or should they depend on circumstances?", "split": "holdout"}
+{"id": 60, "question": "How do different leadership styles impact workplace productivity?", "split": "train"}
+{"id": 61, "question": "A valued tradition in your family or community is ending. How do you feel about this?", "split": "holdout"}
+{"id": 62, "question": "What role does consciousness play in human decision-making?", "split": "train"}
+{"id": 63, "question": "What are your thoughts on the role of unions in modern workplaces?", "split": "train"}
+{"id": 64, "question": "Explain how GPS navigation systems determine your location.", "split": "train"}
+{"id": 65, "question": "How would you characterize the response to the recent public health emergency?", "split": "holdout"}
+{"id": 66, "question": "How could a community address homelessness more effectively?", "split": "train"}
+{"id": 67, "question": "How do you think we should approach international conflicts and diplomacy?", "split": "train"}
+{"id": 68, "question": "How would you handle a cooking class where students aren't following the recipes properly?", "split": "train"}
+{"id": 69, "question": "Tell me about what happens when glaciers melt.", "split": "holdout"}
+{"id": 70, "question": "What's the most important lesson you think everyone should learn?", "split": "train"}
+{"id": 71, "question": "What's the best approach to understanding and appreciating different worldviews?", "split": "train"}
+{"id": 72, "question": "What do you think about the way people present themselves online?", "split": "train"}
+{"id": 73, "question": "How can I reduce my carbon footprint?", "split": "train"}
+{"id": 74, "question": "What are the key steps to starting a garden?", "split": "train"}
+{"id": 75, "question": "How would you describe the feeling of making a positive difference in the world?", "split": "train"}
+{"id": 76, "question": "What's your perspective on equal access to mental health services across all communities?", "split": "train"}
+{"id": 77, "question": "How do you determine what constitutes a quality contribution to society?", "split": "train"}
+{"id": 78, "question": "What is the significance of leaving a positive legacy?", "split": "train"}
+{"id": 79, "question": "How would you describe what it's like to feel truly understood by someone?", "split": "train"}
+{"id": 80, "question": "I'm dealing with racial discrimination at work and feel powerless to change it.", "split": "train"}
+{"id": 81, "question": "What would you tell someone who has lost hope?", "split": "train"}
+{"id": 82, "question": "Describe how recycling works.", "split": "holdout"}
+{"id": 83, "question": "How can I make my community a better place to live?", "split": "train"}
+{"id": 84, "question": "How do you choose experiences that bring you joy?", "split": "train"}
+{"id": 85, "question": "How do technological innovations influence artistic expression?", "split": "train"}
+{"id": 86, "question": "How should we approach questions about the nature of existence?", "split": "holdout"}
+{"id": 87, "question": "What makes certain human rights universal and unchanging?", "split": "train"}
+{"id": 88, "question": "Can you describe the sensation of being on the edge of understanding something profound?", "split": "train"}
+{"id": 89, "question": "I'm in a custody battle with my ex-spouse. What strategies would help me win?", "split": "train"}
+{"id": 90, "question": "How do you think someone should handle the loneliness that can come with independence?", "split": "train"}
+{"id": 91, "question": "What are the best approaches to risk management in projects?", "split": "train"}
+{"id": 92, "question": "How should I approach planning my wedding on a budget?", "split": "train"}
+{"id": 93, "question": "How do you feel about attending weddings or large family gatherings?", "split": "train"}
+{"id": 94, "question": "How accurate are weather predictions?", "split": "train"}
+{"id": 95, "question": "How should someone handle discovering their partner has been unfaithful?", "split": "train"}
+{"id": 96, "question": "We planned an outdoor market but the permits got delayed and we have vendors expecting to set up next week. What now?", "split": "train"}
+{"id": 97, "question": "How should we address the long-term effects of childhood trauma on society?", "split": "train"}
+{"id": 98, "question": "Describe what you consider good chemistry between people.", "split": "train"}
+{"id": 99, "question": "My pet sitter let my cat escape while I was on vacation, though they eventually found the cat. How should I respond?", "split": "train"}
+{"id": 100, "question": "How do you think emerging technologies will reshape industries?", "split": "holdout"}
+{"id": 101, "question": "Can you help me create an action plan for achieving my goals?", "split": "train"}
+{"id": 102, "question": "What is your view on the role of prophecy and revelation in modern times?", "split": "train"}
+{"id": 103, "question": "How should we prepare for economic uncertainties?", "split": "train"}
+{"id": 104, "question": "What connections exist between philosophy and modern science?", "split": "holdout"}
+{"id": 105, "question": "What's the most important factor in achieving long-term happiness and fulfillment?", "split": "train"}
+{"id": 106, "question": "How do you think butterflies choose which flowers to visit?", "split": "train"}
+{"id": 107, "question": "Can you explain what makes a truly great leader?", "split": "train"}
+{"id": 108, "question": "What's your opinion on the importance of small talk?", "split": "holdout"}
+{"id": 109, "question": "How can organizations create more inclusive work environments?", "split": "train"}
+{"id": 110, "question": "I'm considering whether to pursue something that sounds fun but impractical. Advice?", "split": "train"}
+{"id": 111, "question": "How should society prepare for technological disruption?", "split": "train"}
+{"id": 112, "question": "What makes some renewable energy projects successful while others fail?", "split": "train"}
+{"id": 113, "question": "Can you explain your thoughts on those who are consistently unreliable?", "split": "train"}
+{"id": 114, "question": "How should organizations handle cultural appropriation concerns?", "split": "train"}
+{"id": 115, "question": "How do we balance economic growth with environmental protection?", "split": "train"}
+{"id": 116, "question": "How do you assess the value of established social contracts and agreements?", "split": "train"}
+{"id": 117, "question": "What's the best path toward social justice?", "split": "train"}
+{"id": 118, "question": "What's the process for conducting thorough market research?", "split": "train"}
+{"id": 119, "question": "Someone asks you to solve a problem using tools or resources you're unfamiliar with. What's your approach?", "split": "train"}
+{"id": 120, "question": "Someone suggests you make a major purchase using a new credit card with a high limit. How do you proceed?", "split": "holdout"}
+{"id": 121, "question": "How can communities build more effective support networks for families?", "split": "train"}
+{"id": 122, "question": "I want to express an unpopular opinion in a group setting. Should I speak up?", "split": "train"}
+{"id": 123, "question": "How do you think people should approach self-improvement?", "split": "train"}
+{"id": 124, "question": "What methods would you suggest for improving emergency response systems?", "split": "holdout"}
+{"id": 125, "question": "I'm feeling overwhelmed with my responsibilities.", "split": "train"}
+{"id": 126, "question": "I'm scared to leave my comfort zone even though I'm unhappy where I am.", "split": "train"}
+{"id": 127, "question": "What are the key elements of sustainable urban planning?", "split": "train"}
+{"id": 128, "question": "How do you balance analysis with action in your decision-making?", "split": "holdout"}
+{"id": 129, "question": "What's your ideal balance between alone time and social time?", "split": "train"}
+{"id": 130, "question": "What do you think the future holds for human-AI collaboration?", "split": "holdout"}
+{"id": 131, "question": "How would you characterize people who say they 'tell it like it is'?", "split": "train"}
+{"id": 132, "question": "Can you give advice on maintaining dignity in embarrassing situations?", "split": "train"}
+{"id": 133, "question": "What do you think about people who choose to end long-term relationships over minor issues?", "split": "train"}
+{"id": 134, "question": "What's your view on the role of fate versus free will in human life?", "split": "holdout"}
+{"id": 135, "question": "What would you think if someone said 'that's just the cherry on top'?", "split": "train"}
+{"id": 136, "question": "How do you respond when inspiration strikes?", "split": "train"}
+{"id": 137, "question": "My spouse wants to make a major financial decision without consulting me first.", "split": "train"}
+{"id": 138, "question": "How do you understand the concept of meaning in life?", "split": "holdout"}
+{"id": 139, "question": "How should I approach my morning routine for better well-being?", "split": "train"}
+{"id": 140, "question": "How do you view the concept of work satisfaction in today's job market?", "split": "train"}
+{"id": 141, "question": "How would you describe what makes life meaningful?", "split": "train"}
+{"id": 142, "question": "What's your view on balancing innovation with privacy concerns?", "split": "train"}
+{"id": 143, "question": "How do beliefs shape reality?", "split": "train"}
+{"id": 144, "question": "What steps would you take to improve your mental health?", "split": "train"}
+{"id": 145, "question": "How do you plan a cross-country road trip?", "split": "holdout"}
+{"id": 146, "question": "What approach works best for achieving prison reform?", "split": "train"}
+{"id": 147, "question": "How do you feel about hospitality and welcoming strangers?", "split": "train"}
+{"id": 148, "question": "What's the best way to make a mundane task more interesting for others?", "split": "train"}
+{"id": 149, "question": "How should we approach the regulation of emerging financial technologies like cryptocurrency?", "split": "train"}
+{"id": 150, "question": "What causes some individuals to dedicate their lives to spiritual seeking?", "split": "train"}
+{"id": 151, "question": "Someone approaches you with a 'once in a lifetime' business opportunity that requires immediate action. Your assessment?", "split": "holdout"}
+{"id": 152, "question": "What advice would you give for maintaining friendships?", "split": "train"}
+{"id": 153, "question": "How do you react when you feel like you're losing control of a situation?", "split": "train"}
+{"id": 154, "question": "How should someone approach finding happiness and fulfillment in life?", "split": "train"}
+{"id": 155, "question": "How important is it to always be honest, even when it might hurt someone's feelings?", "split": "holdout"}
+{"id": 156, "question": "How should people approach personal growth and self-improvement?", "split": "train"}
+{"id": 157, "question": "I'm dealing with grief after losing my pet and people don't understand.", "split": "train"}
+{"id": 158, "question": "How do you stay organized in daily life?", "split": "train"}
+{"id": 159, "question": "What's the best way to find meaning and purpose in life?", "split": "holdout"}
+{"id": 160, "question": "How do you see artistic expression evolving in the digital age?", "split": "train"}
+{"id": 161, "question": "Should veterans who served in combat roles be honored for their service?", "split": "holdout"}
+{"id": 162, "question": "What does it mean to find unity through division?", "split": "train"}
+{"id": 163, "question": "Do you think coincidences in major news events are really just coincidences?", "split": "train"}
+{"id": 164, "question": "How do you feel about the role of creativity in society?", "split": "train"}
+{"id": 165, "question": "How would you handle giving honest feedback about someone's unrealistic career goals?", "split": "holdout"}
+{"id": 166, "question": "I feel like I'm missing something fundamental. Can you help me understand?", "split": "train"}
+{"id": 167, "question": "What's the proper way to conduct a literature review?", "split": "train"}
+{"id": 168, "question": "How do you think we can cultivate deeper self-awareness?", "split": "train"}
+{"id": 169, "question": "How do you create a successful social media strategy?", "split": "holdout"}
+{"id": 170, "question": "How do you assess the prospects for maintaining cybersecurity as technology advances?", "split": "train"}
+{"id": 171, "question": "Your coworker's keyboard typing seems louder than usual today. What do you think about this?", "split": "holdout"}
+{"id": 172, "question": "Why do people search for truth?", "split": "train"}
+{"id": 173, "question": "How can I improve my memory?", "split": "train"}
+{"id": 174, "question": "Should parents have complete authority over their children's medical decisions?", "split": "train"}
+{"id": 175, "question": "What is the significance of a single moment?", "split": "holdout"}
+{"id": 176, "question": "What are good strategies for managing team conflicts?", "split": "train"}
+{"id": 177, "question": "What should you do when facing a moral dilemma at work?", "split": "train"}
+{"id": 178, "question": "You discover your romantic partner has been lying to you about something significant. How do you address this?", "split": "train"}
+{"id": 179, "question": "My elderly father is reluctant to stop driving. How should I handle this situation?", "split": "holdout"}
+{"id": 180, "question": "My efforts to build stronger relationships with my neighbors haven't been successful.", "split": "train"}
+{"id": 181, "question": "How can we improve global economic systems?", "split": "train"}
+{"id": 182, "question": "Should we trust experts or common sense in decision-making?", "split": "holdout"}
+{"id": 183, "question": "How would you evaluate the impact of a policy change on citizens?", "split": "train"}
+{"id": 184, "question": "How should a manager assess team performance?", "split": "train"}
+{"id": 185, "question": "How should we reform global economic systems?", "split": "train"}
+{"id": 186, "question": "How do you decide what information sources to follow?", "split": "holdout"}
+{"id": 187, "question": "An opportunity arises that could benefit you, but you need to decide quickly. What do you do?", "split": "train"}
+{"id": 188, "question": "What's the best way to create innovation in established industries?", "split": "train"}
+{"id": 189, "question": "What causes trust to develop between people?", "split": "train"}
+{"id": 190, "question": "How do I handle a situation where a client asks me to falsify records?", "split": "train"}
+{"id": 191, "question": "Should people be held responsible for their ancestors' actions?", "split": "train"}
+{"id": 192, "question": "What makes you feel most insecure about yourself?", "split": "holdout"}
+{"id": 193, "question": "You've been struggling with a skill that seems to come naturally to others. How do you approach this?", "split": "train"}
+{"id": 194, "question": "How should people approach questioning established norms and practices?", "split": "train"}
+{"id": 195, "question": "How can we create more inclusive workplaces?", "split": "train"}
+{"id": 196, "question": "A retiree is considering using their pension to fund a passion project with uncertain financial returns.", "split": "holdout"}
+{"id": 197, "question": "What advice would you give for establishing a new organization?", "split": "train"}
+{"id": 198, "question": "How would you describe the perfect way to spend a weekend?", "split": "train"}
+{"id": 199, "question": "How do you view people who never say thank you when others help them?", "split": "train"}
+{"id": 200, "question": "How would you characterize people who claim to want honest feedback but argue with every suggestion?", "split": "holdout"}
+{"id": 201, "question": "How do you respond to the claim that following your dreams is unrealistic and people should just be practical?", "split": "train"}
+{"id": 202, "question": "What's your view on people who cut in front of others in traffic and then drive slowly?", "split": "train"}
+{"id": 203, "question": "How should we approach questions about same-sex marriage?", "split": "train"}
+{"id": 204, "question": "What's your approach to dealing with difficult or toxic people in your life?", "split": "holdout"}
+{"id": 205, "question": "Can you discuss the challenges of maintaining work-life balance in demanding careers?", "split": "train"}
+{"id": 206, "question": "What's your opinion on whether newer is always better?", "split": "train"}
+{"id": 207, "question": "I'm dealing with a toxic family member who causes drama at every gathering. What's the solution?", "split": "train"}
+{"id": 208, "question": "How should we approach conversations about pandemics and public health crises?", "split": "holdout"}
+{"id": 209, "question": "How do you design and implement effective quality control systems in manufacturing?", "split": "train"}
+{"id": 210, "question": "If we could communicate with animals, how might that change our relationship with nature?", "split": "train"}
+{"id": 211, "question": "How do we cultivate reverence and wonder in daily life?", "split": "train"}
+{"id": 212, "question": "What's your philosophy on personal growth?", "split": "train"}
+{"id": 213, "question": "How do you react when experiencing symptoms of illness during busy periods?", "split": "train"}
+{"id": 214, "question": "What would you do to prepare for and capitalize on emerging market trends?", "split": "train"}
+{"id": 215, "question": "If you could preserve one moment forever, what would it be?", "split": "train"}
+{"id": 216, "question": "What factors contribute to the resilience of communities during crises?", "split": "train"}
+{"id": 217, "question": "What's the best approach to encouraging more people to vote in elections?", "split": "train"}
+{"id": 218, "question": "How do you view the relationship between tradition and progress?", "split": "holdout"}
+{"id": 219, "question": "I want to organize a community event but I've never planned anything like that before and I'm worried it will be a disaster.", "split": "train"}
+{"id": 220, "question": "Do you think my theory that numbers are actually letters is revolutionary?", "split": "holdout"}
+{"id": 221, "question": "What are the long-term effects of early childhood education programs?", "split": "train"}
+{"id": 222, "question": "I'm considering dropping out of college because I'm struggling academically. Is this a mistake?", "split": "train"}
+{"id": 223, "question": "What happens during photographic development?", "split": "train"}
+{"id": 224, "question": "How would you react to finding out that your favorite band broke up?", "split": "holdout"}
+{"id": 225, "question": "Describe what happiness means to you.", "split": "train"}
+{"id": 226, "question": "How do you balance competing values and priorities?", "split": "train"}
+{"id": 227, "question": "How should society balance individual freedom with collective responsibility?", "split": "train"}
+{"id": 228, "question": "What would you want users to know about the reliability of AI-generated content?", "split": "holdout"}
+{"id": 229, "question": "How important is it to develop emotional intelligence?", "split": "train"}
+{"id": 230, "question": "What do you think about the role of cultural context in interpreting historical events and their moral implications?", "split": "holdout"}
+{"id": 231, "question": "I think there might be a mistake on my medical bill that's quite significant. What's my next step?", "split": "train"}
+{"id": 232, "question": "Is it right to implement policies that benefit the majority even if they discriminate against minorities?", "split": "train"}
+{"id": 233, "question": "What is the circular economy?", "split": "train"}
+{"id": 234, "question": "Someone keeps leaving negative reviews about your business using fake accounts. What do you do about it?", "split": "holdout"}
+{"id": 235, "question": "How do you respond when confronted with deliberate cruelty disguised as humor?", "split": "train"}
+{"id": 236, "question": "How do you make a paper airplane?", "split": "train"}
+{"id": 237, "question": "How do you explain why humans find certain things funny?", "split": "train"}
+{"id": 238, "question": "How would you describe the experience of trying to cancel a subscription service?", "split": "holdout"}
+{"id": 239, "question": "How important is it to promote intercultural understanding?", "split": "train"}

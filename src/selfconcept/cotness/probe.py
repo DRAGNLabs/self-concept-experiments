@@ -1,7 +1,7 @@
 """Content-token residual-stream probes; train, validate, and freeze before eval."""
-from contextlib import contextmanager
 import json
 from pathlib import Path
+import shutil
 import warnings
 
 import numpy as np
@@ -9,40 +9,15 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, log_loss, roc_auc_score
 from sklearn.preprocessing import StandardScaler
+from jaxtyping import Float
 import torch
+from torch import nn, Tensor
 
-from selfconcept.soo.activations import get_decoder_layers
-from .roles import ROLES, content_indices, render_probe
-
-
-@contextmanager
-def capture(model, layers, project=None):
-    """Capture residual output (not attention o_proj); project on-device in generation.
-
-    ``project`` accepts fitted softmax probes or signed unit-axis directions.
-    Generation consumes the prompt then one token at a time. Its final sampled
-    token is unprocessed; callers explicitly exclude it from token projections.
-    """
-    values = {layer: [] for layer in layers}
-    handles = []
-    for layer in layers:
-        def hook(module, inputs, output, layer=layer):
-            hidden = output[0] if isinstance(output, tuple) else output
-            hidden = hidden.detach().float()[0]
-            if project is not None and "direction" in project[layer]:
-                direction = torch.as_tensor(project[layer]["direction"], device=hidden.device)
-                hidden = hidden @ direction
-            elif project is not None:
-                weight = torch.as_tensor(project[layer]["weight"], device=hidden.device)
-                bias = torch.as_tensor(project[layer]["bias"], device=hidden.device)
-                hidden = torch.softmax(hidden @ weight.T + bias, dim=-1)[:, ROLES.index("cot")]
-            values[layer].append(hidden.cpu())
-        handles.append(get_decoder_layers(model)[layer].register_forward_hook(hook))
-    try:
-        yield values
-    finally:
-        for handle in handles:
-            handle.remove()
+from selfconcept.common.hf_strong_types import HFTokenizer
+from selfconcept.measurement.capture import capture
+from selfconcept.measurement.interface import Measurement, TokenScorer
+from selfconcept.measurement.templates import content_token_indices, ModelFamily
+from .roles import ROLES, render_probe
 
 
 def probabilities(x, probe):
@@ -91,7 +66,7 @@ def train(model, tokenizer, family, corpus, out: Path, layers, seed=1729):
         # Match by content-relative offsets, so every class sees identical tokens.
         maps = []
         for enc, (_, (start, end)) in zip(encoded, rendered):
-            indices = content_indices(enc["offset_mapping"], [(start, end)], tokenizer.all_special_ids, enc["input_ids"])
+            indices = content_token_indices(enc["offset_mapping"], [(start, end)], tokenizer.all_special_ids, enc["input_ids"])
             maps.append({(enc["offset_mapping"][i][0]-start, enc["offset_mapping"][i][1]-start, enc["input_ids"][i]): i for i in indices})
         common = sorted(set(maps[0]).intersection(*[set(m) for m in maps[1:]]))[2:-2]
         if len(common) < 16:
@@ -133,3 +108,25 @@ def train(model, tokenizer, family, corpus, out: Path, layers, seed=1729):
 def load(out):
     report = json.loads((out / "validation.json").read_text())
     return {int(layer): dict(np.load(out / f"layer-{layer}.npz")) for layer in report["layers"]}, report
+
+
+def cot_probability_scorer(probes_by_layer: dict[int, dict[str, np.ndarray]]) -> TokenScorer:
+    def score(*, layer: int, residual: Float[Tensor, "seq hidden"]) -> Float[Tensor, "seq"]:
+        weight = torch.as_tensor(probes_by_layer[layer]["weight"], device=residual.device)
+        bias = torch.as_tensor(probes_by_layer[layer]["bias"], device=residual.device)
+        return torch.softmax(residual @ weight.T + bias, dim=-1)[:, ROLES.index("cot")]
+    return score
+
+
+def build_cotness_measurement(model: nn.Module, tokenizer: HFTokenizer, family: ModelFamily, corpus: Path,
+                              probe_source: Path | None, probe_directory: Path, layers: list[int]) -> Measurement | None:
+    """Reuse a frozen or previously fitted probe, else train one. None when the probe fails validation."""
+    if probe_source:
+        shutil.copytree(probe_source, probe_directory, dirs_exist_ok=True)
+    if (probe_directory / "validation.json").exists():
+        probes_by_layer, report = load(probe_directory)
+    else:
+        probes_by_layer, report = train(model, tokenizer, family, corpus, probe_directory, layers)
+    if not report["usable"]:
+        return None
+    return Measurement("cotness", list(probes_by_layer), report["primary_layer"], cot_probability_scorer(probes_by_layer))

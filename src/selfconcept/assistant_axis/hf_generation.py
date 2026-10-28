@@ -18,6 +18,8 @@ from selfconcept.assistant_axis.internals.conversation import ConversationEncode
 from selfconcept.assistant_axis.internals.model import ProbingModel
 from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
 from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_call
+from selfconcept.common.span_targeting.model_specifics.registry import get_model_specifics as get_span_model_specifics
+from selfconcept.common.span_targeting.model_specifics.think_tag import ThinkTagModelSpecifics
 
 
 @dataclass(frozen=True)
@@ -85,11 +87,11 @@ def generate_response(
     tokenizer = probing_model.tokenizer
     encoder = ConversationEncoder(tokenizer, probing_model.model_name)
     model_specifics = get_model_specifics_by_name(probing_model.model_name)
-    chat_kwargs = model_specifics.set_enable_thinking({}, enable_thinking=enable_thinking)
+    chat_kwargs = model_specifics.set_thinking_flag({}, enable_thinking=enable_thinking)
 
     token_ids = encoder.token_ids(conversation, add_generation_prompt=True, **chat_kwargs)
     if not enable_thinking:
-        token_ids = token_ids + model_specifics.thinking_close_ids(tokenizer)
+        token_ids = token_ids + model_specifics.direct_answer_prefix_ids(tokenizer)
     token_ids_tensor = torch.tensor([token_ids], device=probing_model.device)
     attention_mask = torch.ones_like(token_ids_tensor)
 
@@ -106,6 +108,7 @@ def generate_response(
 
     gen_ids = output_ids[0][token_ids_tensor.shape[1] :].tolist()
     if enable_thinking:
-        close_str = tokenizer.decode(model_specifics.thinking_close_ids(tokenizer)).strip()
+        span_model_specifics = get_span_model_specifics(probing_model.model_name, tokenizer)
+        close_str = span_model_specifics.close_tag if isinstance(span_model_specifics, ThinkTagModelSpecifics) else ""
         return _answer_after_thinking(tokenizer, gen_ids, close_str)
     return Answer(text=tokenizer.decode(gen_ids, skip_special_tokens=True))

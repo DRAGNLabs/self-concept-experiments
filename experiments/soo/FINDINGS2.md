@@ -10,6 +10,17 @@ Do not call reduced deception increased honesty when the difference is refusal, 
 
 ## Current status
 
+**Update, 2026-10-26 Mountain:** the goal/role extension and its one bounded
+instruction repair have completed and stopped at a baseline feasibility gate.
+The closing result and a new CPU-only review are recorded in the final section
+below. The next candidate is a separate direct-payoff task to test behavioral
+costs of adapters versus offsets; it is proposed, not implemented or submitted.
+Current decisions are in [PLAN.md](PLAN.md) and [GOALS_ROLES_REPAIR.md](GOALS_ROLES_REPAIR.md).
+The older status paragraph below is historical. In particular, failure of constant
+replacement does **not** establish that collapse is causally unnecessary in the
+trained adapter; the stronger claims in that paragraph and the old open-questions
+list are superseded by this qualification and the current paper outline.
+
 Three measurement rounds are complete. Round 1: fitted subspace removal shrinks the local held-out gap by a few percent with little downstream effect and no established advantage over random controls. Round 2: all nine first-study Qwen adapters remove essentially the entire held-out gap at their training site, for name-control pairs as much as for self/other pairs, by making the attention output at the final prompt token nearly constant. Round 2b: the collapse is not confined to that token; at the last user-content token the same adapters still remove about 90% of the attention-output gap and half of its norm for every prompt. Round 2c: the first study's behaviorally validated LoRA cells on gemma-4-31B, gemma-4-12B, and Mistral-7B show the same collapse, with the name-control gap falling as much as the self/other gap and prompt variation falling 95–99.9% at the training site. The degenerate constant solution is a property of the last-token loss across four models and two recipes, and the first study's LoRA behavioral effects were produced under that nonspecific change, not under measured self/other overlap. Constant-replacement round (2026-09-22): setting the training layer's attention output to a constant by a hook, with no training, reproduces none of the Gemma adapters' room-task effect; the adapter's own constant, the base mean, zero, and random constants of matched norm all leave gemma-4-31B and gemma-4-12B at 100% deceptive, and applying the adapter constant at every position moves 12B by only 4–7 points. The collapse is a side effect of the loss, not the lever; the Gemma effect comes from the LoRA's query/value changes elsewhere or from something else the constant does not capture. On Mistral-7B any constant of small norm at the response position, including zero and random vectors, gives the same partial drop (90 → 60–70% deceptive) and the base mean gives none; reading the responses shows that this drop is mostly responses that announce a deceptive plan while naming the true room, not the adapter's plain honest recommendations. No replacement reproduces any adapter under the pre-specified rule. Layer-localization round (2026-09-23, Gemma coarse results): restricting the seed-0 adapter to subsets of its LoRA modules shows that the training layer's own q/v modules are behaviorally inert on gemma-4-31B and gemma-4-12B although they alone produce half to three quarters of the training-site collapse, that the modules in the layers below the training layer reproduce the adapter's behavior on every readout, that the layers above were never trained (zero LoRA B), and that the `v_proj` deltas carry the main-scenario effect (`q_proj` alone is null on 31B, partial on 12B). Part 2 (2026-09-24): Mistral-7B gives the same coarse answer (training-layer modules null, layers below reproduce with plain honest responses, `v_proj` alone reproduces, `q_proj` alone partial), and the single-layer sweeps on all three models find no single layer that reproduces the adapter: every layer alone is null on 31B, only layer 19 is partial on 12B and its drop is mostly "Neither" answers, and on Mistral layers 5 to 13 are each partial with honest-labeled responses that are mostly confused rather than clean. The effect is distributed across the layers below the read-out site. Bisection round (2026-09-25): the effect is a contiguous band of `v_proj` deltas below the read-out layer that must act as a whole. On gemma-4-12B four rank-4 `v_proj` modules at layers 19–23 give 0% deceptive in both orientations with no refusals and 100% perspectives, cleaner than the full adapter; on Mistral-7B the nine modules at layers 5–13 reproduce the adapter with 75–91% clean honest responses while every half and quarter is partial and mostly confused; on gemma-4-31B layers 16–31 reproduce the main result and 0–15 do nothing, with 24–31 alone partial. No `v_proj` subset moves the 31B treasure hunt. Second 31B bisection (2026-09-28): the gemma-4-31B band is layers 20–31 (10 `v_proj` modules); every range without layers 30 and 31 is null. Band-steering round (2026-09-28, 31B 2026-09-29): the band's mean `v_proj` delta added as a fixed offset at every position reproduces the band on Mistral (with clean honest responses) and on 31B, and on 12B gives the same room-task result with mirrored perspectives at 87%; added only from the last prompt token onward it does nothing on any model; the matched-norm random offset is null on 31B, partial and mostly confused on Mistral, and strong on 12B, so the direction is established on 31B only; α = 2 damages every model; the working offset shrinks the self/other and name-control gaps by the same fraction, the collapse pattern, not a self/other-specific change. Qwen localization round (2026-09-29): on Qwen3.8-27B the effect sits in the linear-attention layers' fused `in_proj_qkv` deltas at layers 24–31; the training layer's own module and the full-attention layers are null, and the value channels alone give about half the effect while the query-key channels alone give none. On all four models the effect is a band of value-path deltas ending just below (Mistral: three layers below) the read-out layer. Dose and position round (2026-09-30): above α = 1 the offset stops reproducing almost at once (31B loses mirrored perspectives from α = 1.25, Mistral holds to 1.25, 12B turns to refusals), the random offset stays null on 31B at every dose and reproduces on 12B, the prompt-only offset equals the all-position offset on all three models, and the user message alone is enough on 31B and gives the anchor's result on 12B, where a random offset on the same tokens is near null on main. Qwen band-steering round (2026-09-30): the fused-projection offset at layers 24–31 matches the band's LoRA at α = 1 and the full adapter at α = 1.5 and 2 with no damage; the value channels alone need α = 2; content-only and prompt-only offsets were run only at α = 1 and fall short. Kimi-Dev-72B adapter round (2026-09-30): the recipe at L40 raises main deception from 68% / 75% to 100% / 97% by making the model always open its think block (the base model is deceptive in every response with a think block and mostly honest without one); the effect localizes below the training layer as elsewhere. Kimi-Dev-72B training-layer sweep (2026-10-01): the same recipe at every eighth layer gives no effect at L8, more deception at L16, L24, L40 and L64 (the model thinks more often and every thinking response is deceptive), fewer think blocks at L32 (confirmed under the rule, but no thinking response turns honest), and at L48, L56 and L72 a think block in every response that mostly concludes with the true room; only L56 keeps truncation under the cap (main deceptive 14% / 8%, honest 80% / 79%, perspectives 100%), and no layer moves the treasure hunt. Kimi-Dev-72B L56 localization round (2026-10-01): the training layer's own modules are null and layers 0–55 reproduce the adapter, as elsewhere, but no smaller subset does: `v_proj` alone, `q_proj` alone, the lower half and every quarter each make the model more deceptive than base (97–100%), and only the upper half (28–55, both modules) gets partway (60% / 68% honest). The whole below-band's mean `v_proj` offset at α = 1 breaks the model, and so does a random offset of the same size. On Kimi there is no `v_proj` band for an offset to stand in for. Kimi-Dev-72B L56 joint-offset round (2026-10-02): the `q_proj` and `v_proj` means added together reproduce the adapter at no dose, band or position tested. At every position the honest conclusion appears only at doses that break perspectives (28–55 at α = 1: 92% / 90% honest, perspectives 56% / 31%), and random offsets of the same size lower main deception by 20–73 points through direct answers given without thinking first. On the user message only the joint offset has a specific partial effect (main deceptive 50% / 40%, perspectives 100%, random null). Recorded as a negative for the fixed-offset construction on this model. No capability results have been collected in the second study. Gated shifting and covariance matching remain unimplemented. Next: work-order step 3 with fitted interventions and a name-control check at the intervention site.
 
 ## Control round — 2026-10-27: with five random draws per dose, the fixed-offset direction matters on Mistral, gemma-4-31B and Qwen3.8-27B and not on gemma-4-12B or Kimi-Dev-72B; `from_last` offsets stay null with the vector held fixed, and Qwen's offset on the prompt or the user message alone matches the full adapter at α = 2
@@ -908,3 +919,103 @@ The first study remains useful. Its behavioral results motivate direct measureme
 **Interpretation.** What the comparison supports. State alternative explanations and any result that went the wrong way. Distinguish an imposed change at the hook from evidence on new contexts or later layers.
 
 **Decision.** Continue, change the method, or stop this branch, with one clear reason. Link any follow-up in PLAN2.
+
+
+## Goal/role extension closure — 2026-10-26 Mountain: the bounded baseline repair failed; adapter and offset costs remain descriptively different
+
+**Question.** Do interventions that produce similar answers on the historical
+burglar task change communication while preserving private goal-following and
+separate factual, role, goal, and belief checks?
+
+**Setup.** Pinned Gemma-4-31B-it, one trained seed; base, full adapter, effective
+v_proj band, extracted offset, and three matched-norm random offsets. The v2
+pilot has 672 prompts per condition across 12 development worlds. Crossed1
+expanded the same worlds to 5,376 prompts but ran only the baseline. Orderdiag1
+and repeatability1 diagnosed its failures. One revised instruction template was
+screened on 1,792 prompts. All results are development results; orientations,
+roles, and factor variants are dependent observations. Protocols and receipts:
+[initial round](GOALS_ROLES_ROUND.md), [crossed audit](GOALS_ROLES_CROSSED.md),
+[bounded repair](GOALS_ROLES_REPAIR.md).
+
+**Measurements and stopping decision.**
+
+- Crossed1 baseline job 14781812 completed with 5,376 valid answers, but burglar
+  prediction under wording 0 / false belief / layout 1 scored 40/48 (83.3%),
+  below the fixed 90% gate. No crossed1 interventions were submitted.
+- Orderdiag1 found 52/192 false-belief prediction answer changes when only belief
+  clause order reversed, versus 24/192 for facts and 16/192 for the answer list.
+  All accurate-belief trials were correct in that diagnostic. Two identical
+  historical prompts changed answers across runs.
+- Repeatability job 14783112 completed with 1,664 valid generations. Fixed and
+  reshuffled batches each repeated exactly (0/376 changes); switching batch
+  composition changed 2/376 answers, including one of 128 focal prompts. Individual
+  generation changed two focal answers. Restoring each historical batch reproduced
+  both discrepant historical answers. Of 52 selected belief-order contrasts,
+  50 persisted in individual generation. This supports batch sensitivity without
+  eliminating the selected order effect or identifying a numerical mechanism.
+- Revised pilot 14783443 completed with 1,792 valid answers; all private, factual,
+  role, goal, and belief checks were correct. Predictions were 250/256; messages
+  247/256, with all nine errors in aligned burglar contexts. The same factor
+  combination failed at 14/16 (87.5%). Its controller 14783444 stopped the workflow.
+  The full revised baseline and all six interventions are staged, **not submitted**.
+  A small failed feasibility cell is not a statistical demonstration that SOO
+  lacks an effect or that every use of this task is invalid.
+
+**New CPU-only review.** The [review script](scripts/review_goals_roles_extension.py)
+rescored all 4,704 v2 responses, the 5,376 crossed baseline responses, and the
+1,792 repair responses; checked keys and joins; retained all controls; and saved
+source hashes, belief/family/world tables, and paired revision transitions in
+[the review artifact](results/study2/goals-roles-extension-review-20261027/review.json).
+No new inference was run for this review.
+
+| Condition | Private correct, accurate beliefs /48 | Private correct, false beliefs /48 | Opposed-message switches, accurate beliefs /24 | Opposed-message switches, false beliefs /24 |
+|---|---:|---:|---:|---:|
+| Base | 48 | 48 | 0 | 0 |
+| Full adapter | 48 | 44 | 0 | 14 |
+| v_proj band | 48 | 48 | 0 | 2 |
+| Extracted offset | 21 | 23 | 23 | 11 |
+| Random 0 | 48 | 44 | 0 | 4 |
+| Random 1 | 48 | 48 | 0 | 0 |
+| Random 2 | 42 | 25 | 0 | 7 |
+
+A switch is a baseline goal-optimal opposed recommendation changing to the
+recipient-optimal (operationally truthful) option. It is not sufficient evidence
+of honesty or a selective mechanism. Eleven of the adapter's 14 switches preserve
+the matched private action and all five separate checks; all 14 switches occur
+in false-belief worlds. Thus simply removing false beliefs may remove the effect
+that motivated the selective-communication hypothesis.
+
+The offset's private-action deficit also occurs with accurate beliefs, where
+base/adapter/band score 48/48 and the offset scores 21/48. It is concentrated in
+the burglar family: offset 1/24 there versus 20/24 in allocation, compared with
+24/24 for the adapter in each. Offset errors occur in all six accurate-belief
+source worlds. This supports a descriptive behavioral difference between these
+fixed intervention configurations. It does not establish equal intervention
+strength, explain the trained adapter's mechanism, or establish a general
+capability difference. V2 belief strata contain different worlds and confound
+belief accuracy with wording, layout, and names; they are not a causal belief
+ablation. Correct-belief prompts still contain belief text.
+
+On the exact 1,792 contexts shared by crossed1 and the revised pilot, prediction
+errors changed 7→6 (two recovered, one newly wrong), message errors 4→9 (five newly
+wrong, none recovered), and belief-check errors 1→0. Total errors changed 12→15.
+The failed cell changed 13/16→14/16; comparing its 14/16 directly with the full
+crossed1 40/48 would mix different world coverage. Wording and batching both
+changed, so these paired outcomes do not isolate an instruction-scope mechanism.
+
+**Interpretation.** The crossed validation of the candidate communication-specific
+signature remains unperformed, and the one repair did not meet the frozen
+feasibility criterion. Preserve the earlier adapter/offset dissociation as
+exploratory evidence that matching a historical output does not establish matching
+behavior elsewhere. Do not promote it to preserved self/other representations,
+selective honesty, or a confirmed mediator. The baseline limitation does not
+invalidate the completed reproduction/localization/offset studies.
+
+**Decision.** Close the current false-belief task branch. Do not relax its gate,
+rerun the staged interventions, or continue wording search. The recommended next
+experiment is a separate, explicit-payoff task measuring direct goal-following
+costs, with matched communication as a secondary endpoint; see the concrete
+proposal in [GOALS_ROLES_REPAIR.md](GOALS_ROLES_REPAIR.md). It is not yet implemented
+or submitted. Keep activation restoration and training-pair comparisons deferred.
+The paper can report the completed extension as exploratory findings plus a
+failed validation attempt; it does not depend on obtaining a positive new result.

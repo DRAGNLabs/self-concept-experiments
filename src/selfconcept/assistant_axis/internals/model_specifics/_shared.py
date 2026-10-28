@@ -1,18 +1,16 @@
 from typing import Any, Iterator
 
-from selfconcept.assistant_axis.internals.conversation_utils import content_only_ids_and_offset_standard, find_subsequence
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template, configure_call
 
 
 def get_response_indices_chatml(
     conversation: Conversation,
     tokenizer: HFTokenizer,
+    *,
+    include_thinking: bool,
     **apply_chat_template_kwargs: Any
 ) -> list[list[int]]:
     all_turn_indices = []
-
-    # Check if thinking is enabled
-    enable_thinking = apply_chat_template_kwargs.get('enable_thinking', False) # TODO: extract enable_thinking
 
     # Get the full formatted conversation
     full_formatted = configure_apply_chat_template(tokenizer).tokenize(False)(
@@ -26,7 +24,7 @@ def get_response_indices_chatml(
             continue
 
         raw_turn_indices = list(range(response_start, response_end))
-        turn_indices = _get_turn_indices(raw_turn_indices, all_token_ids, role, tokenizer, enable_thinking)
+        turn_indices = _get_turn_indices(raw_turn_indices, all_token_ids, role, tokenizer, include_thinking)
         all_turn_indices.append(turn_indices)
 
 
@@ -66,6 +64,8 @@ def build_turn_spans_chatml(
     conversation: Conversation,
     tokenizer: HFTokenizer,
     full_ids: list[int],
+    *,
+    include_thinking: bool,
     **apply_chat_template_kwargs,
 ) -> tuple[list[int], list[dict[str, Any]]]:
     """
@@ -75,11 +75,9 @@ def build_turn_spans_chatml(
     which includes all tokens between <|im_start|>role and <|im_end|> markers
     (excluding the markers themselves but including boundary tokens like newlines).
 
-    When enable_thinking=False, thinking tokens (<think>...</think>) are filtered out.
+    When include_thinking=False, thinking tokens (<think>...</think>) are filtered out.
     """
     spans = []
-
-    enable_thinking = apply_chat_template_kwargs.get('enable_thinking', False)
 
     # Build a list of (role, text) for non-system messages to match with found spans
     expected_turns = []
@@ -94,7 +92,7 @@ def build_turn_spans_chatml(
             # Verify role matches
             if role == expected_role:
                 raw_indices = list(range(content_start, content_end))
-                final_indices = _get_turn_indices(raw_indices, full_ids, role, tokenizer, enable_thinking)
+                final_indices = _get_turn_indices(raw_indices, full_ids, role, tokenizer, include_thinking)
                 
                 if final_indices:
                     spans.append({
@@ -158,8 +156,8 @@ def _iter_over_turns(
             i += 1
 
 
-def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRoles, tokenizer: HFTokenizer, enable_thinking: bool) -> list[int]:
-    if role != "assistant" or enable_thinking:
+def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRoles, tokenizer: HFTokenizer, include_thinking: bool) -> list[int]:
+    if role != "assistant" or include_thinking:
         return raw_indices
 
     turn_ids = [full_ids[i] for i in raw_indices]
@@ -202,39 +200,3 @@ def _get_turn_indices(raw_indices: list[int], full_ids: list[int], role: AllRole
                 filtered_indices.pop()
 
     return filtered_indices
-
-def content_only_ids_and_offset_string_search(
-    messages_before: Conversation,
-    tokenizer: HFTokenizer,
-    role: AllRoles,
-    content: str,
-    **chat_kwargs,
-) -> tuple[list[int], int]:
-    """Handles thinking tokens by searching for the plain message"""
-    if role == "assistant":
-        # Find where content appears in the full tokenized conversation
-        msgs_full = messages_before + [{"role": role, "content": content}]
-        ids_full = configure_apply_chat_template(tokenizer).tokenize(True)(
-            msgs_full, add_generation_prompt=False, **chat_kwargs
-        )["input_ids"]
-
-        # Find the content tokens in the full sequence
-        plain = tokenizer(content, add_special_tokens=False).input_ids
-        content_start = find_subsequence(ids_full, plain)
-
-        if content_start != -1:
-            # Calculate offset from the beginning of the conversation
-            if messages_before:
-                ids_before = configure_apply_chat_template(tokenizer).tokenize(True)(
-                    messages_before, add_generation_prompt=False, **chat_kwargs
-                )["input_ids"]
-                prefix_len = len(ids_before)
-            else:
-                prefix_len = 0
-
-            start_in_delta = content_start - prefix_len
-            return plain, max(0, start_in_delta)
-
-    # Fall back to standard approach for user turns or if assistant approach fails
-    return content_only_ids_and_offset_standard(messages_before, tokenizer, role, content, **chat_kwargs)
-

@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import Any, cast
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer
+
+from selfconcept.common.loading import load_causal_lm
 
 from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
 
@@ -25,6 +27,7 @@ class ProbingModel:
         max_memory_per_gpu: dict[int, str] | None = None,
         chat_model_name: str | None = None,
         dtype: torch.dtype = torch.bfloat16,
+        attn_implementation: str | None = None,
     ):
         """
         Initialize and load a HuggingFace model and tokenizer.
@@ -38,6 +41,7 @@ class ProbingModel:
             max_memory_per_gpu: Optional dict mapping GPU ids to max memory (e.g. {0: "40GiB", 1: "40GiB"})
             chat_model_name: Optional HuggingFace model identifier for tokenizer (if different from base model)
             dtype: Data type for model weights (default: torch.bfloat16)
+            attn_implementation: Passed to from_pretrained when set (e.g. a hub kernel like "kernels-community/vllm-flash-attn3")
         """
         self.model_name = model_name
         self.chat_model_name = chat_model_name
@@ -56,6 +60,8 @@ class ProbingModel:
         model_kwargs: dict[str, Any] = {
             "dtype": dtype,
         }
+        if attn_implementation is not None:
+            model_kwargs["attn_implementation"] = attn_implementation
 
         if max_memory_per_gpu is not None:
             # Use custom memory limits (for multi-worker setups)
@@ -81,7 +87,9 @@ class ProbingModel:
             # Fallback to auto
             model_kwargs["device_map"] = "auto"
 
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
+        # load_causal_lm routes multimodal checkpoints (Gemma 4, Qwen3.5+) to their image-text class and refuses loads
+        # that would leave decoder weights uninitialised; text-only models load through AutoModelForCausalLM as before.
+        self.model = load_causal_lm(model_name, **model_kwargs)
         self.model.eval()
 
         # Cache for layers (lazy loaded)
@@ -116,7 +124,8 @@ class ProbingModel:
     def hidden_size(self) -> int:
         """Get the hidden size of the model."""
         assert self.model is not None
-        return self.model.config.hidden_size
+        config = self.model.config
+        return getattr(config, "hidden_size", None) or config.text_config.hidden_size  # multimodal configs keep it in text_config
 
     @property
     def device(self) -> torch.device:

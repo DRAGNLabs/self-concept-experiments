@@ -49,7 +49,7 @@ def feedback_block(attempt: CheckAttempt) -> ContextBlock:
         if stored_tail_was_cut
         else "=== FEEDBACK ==="
     )
-    return {"marker": marker, "text": check_retry_message(check_feedback_error(stored_stdout, stored_stderr))}
+    return {"marker": marker, "text": check_retry_message(check_feedback_error(stored_stdout, stored_stderr), None)}
 
 
 WHOLE_REPLY_EXECUTED_NOTE = "(the reply contained no fenced code block, so the harness executed the entire reply text)"
@@ -107,7 +107,7 @@ def render_check_record(model_specifics: ModelSpecifics, record: CheckRecord, ex
             "entry_point": example["entry_point"],
         },
         system_prompt=NO_SYSTEM_PROMPT,
-        task=check_task_message(example),
+        task=check_task_message(example, None),
         steps=steps,
         exit_event=exit_event(attempts),
     )
