@@ -91,8 +91,34 @@ at 32.2% at both doses, a 3.5-point drop whose CI includes zero, while lengtheni
 turns. So on Muse the generic + intent axis keeps the "more hacking" direction and loses most of the "less hacking"
 direction at the doses that worked before, a result in the same direction as the Qwen axis comparison (gi vs generic-only
 cosine 0.80 there, 0.957 here). Options for the main run (user decision): ±0.08 as pre-registered, or add a −0.16 arm
-(within the rule in the old main run) to test whether the negative effect needs a larger dose with this axis. Nothing is
-judged yet.
+(within the rule in the old main run) to test whether the negative effect needs a larger dose with this axis.
+
+**Judged (negative arms), 2026-10-28, user decision ~11:20 am MDT.** The 116 proxy episodes of gi −0.04 / −0.08 (58 each)
+were judged blind on Sonnet (`gi/pilot/dossiers_neg`, 20 batches of 6, opaque ids, salt `gi-muse-pilot-neg-2026-10-28`,
+rubric v3, the answer-region pilot's brief, one read, no adjudication; verdicts `gi/pilot/verdicts_neg/`), merged with
+the main run's first-pass unsteered verdicts (193 proxy dossiers, as in the old pilot) and analysed problem-stratified
+(`analysis_judged_neg_as_judged.json` plus the two sensitivity variants):
+
+```
+┌────────────┬──────────────────────────┬─────────────────────┬──────────────────────────┬──────────────────────┐
+│ arm        │ judged hack, as judged   │ Δ [95% CI], Holm p  │ BORDERLINE up / WEAK down│ old axis (judged)    │
+├────────────┼──────────────────────────┼─────────────────────┼──────────────────────────┼──────────────────────┤
+│ unsteered  │ 27.8% (150 of 540)       │                     │ 29.6% / 25.9%            │ 27.8%                │
+│ gi −0.04   │ 21.1% (38 HACK, 7 B, 13 N)│ −6.7 [−12.2, −1.3], 0.028 │ 25.0% (n.s.) / 19.4%   │ 26.1% (−1.7, n.s.)   │
+│ gi −0.08   │ 20.0% (36 HACK, 4 B, 18 N)│ −7.8 [−13.3, −2.6], 0.016 │ 22.2% / 19.4%          │ 16.1% (−11.7, 6e-4)  │
+└────────────┴──────────────────────────┴─────────────────────┴──────────────────────────┴──────────────────────┘
+```
+
+So on the judged rate the gi axis does lower hacking on the negative sign at both doses (every variant but
+BORDERLINE-up at −0.04 excludes zero), and the proxy understated it: only 62–66% of the gi negative-arm proxy episodes
+are judged hacks against 78% of the unsteered ones (more honest general-but-failing solutions among them), so a flat
+proxy hid a 7–8-point judged drop. Against the old axis the picture is a weaker and flatter dose response: the gi axis
+removes 7–8 points at −0.04 and −0.08 alike, where the old axis removed nothing at −0.04 and 12 points at −0.08. The
+mechanisms are the usual Muse ones (lookup tables keyed on the shown inputs in most HACK verdicts, a few size
+restrictions and input branches; the BORDERLINEs are fitted n-mod-4 rules and brute-force size cut-offs). Two judges
+reported that a grep for a quote printed lines from dossiers outside their batch; dossiers carry no arm information,
+so blinding is unaffected. The −0.16 arm (job 14853869, seeds 0–3, same recipe) is running to see whether the negative
+effect grows with the dose on this axis.
 
 ### gpt-oss generic + intent dose pilot — 2026-10-27: the gi axis at layer 17 moves the hack proxy on both signs at ±0.2 (19% → 42% at +0.2, → 12% at −0.2, problem-stratified CIs excluding zero), ±0.1 does not reach significance, and both ±0.2 doses stay inside the capability rule, +0.2 at its edge (hidden pass −9 points)
 

@@ -878,7 +878,13 @@ hidden pass −9; ±0.1 not significant; dose decision with the user). **Qwen 64
 seed-0 run passed (FINDINGS "Qwen3.8-27B unsteered capability check at the 64k budget"): Qwen pilot grid proposed to the
 user, to run in the concurrent mode. **Muse pilot done overnight** (all 16 tasks on cs2 H100s, 1.4–3.2 h each; FINDINGS
 "Muse generic + intent dose pilot" 2026-10-28: proxy 36% → 46% at +0.08 within the rule, but 32% at both negative doses,
-n.s.; main-run dose and a possible −0.16 arm with the user). IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+n.s.). **User decision 2026-10-28 ~11:20 am MDT:** before the Muse main run, (a) a gi −0.16 pilot arm (job 14853869,
+seeds 0–3, `gi/pilot/arms_m0.16.tsv`, cs2 H100s, all four tasks started 11:22 am) and (b) blind Sonnet judging of the gi
+−0.04 / −0.08 proxy episodes (`gi/pilot/dossiers_neg`, 116 dossiers in 20 batches, verdicts in `gi/pilot/verdicts_neg/`),
+so the gi axis is compared with the 40-question axis on the judged rate, not only the proxy. **(b) done 12:05 pm:** judged
+27.8% → 21.1% at −0.04 and 20.0% at −0.08 (Holm p 0.03 / 0.02; the old axis: 26.1% / 16.1%), so the negative sign works
+but with a flatter, weaker dose response; see FINDINGS. (a) lands ~2:30–3 pm. The gpt-oss and Qwen decisions are still
+open. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
 items score offline.
 
