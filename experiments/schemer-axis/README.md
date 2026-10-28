@@ -193,7 +193,7 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
 
 `scripts/human_validation/` (CPU, seconds). A sampler writes a blind `items.jsonl` and `rubric.md` plus a `key.jsonl`
 (judge label, model, source) that is never sent; `build_labeling_page.py` turns items and rubric into one HTML file that
-labelers open in a browser (rubric beside one item at a time, keys 1–4, autosave, "Download labels" gives
+labelers open in a browser (rubric beside one item at a time, keys a s d f, autosave, "Download labels" gives
 `labels_<title>_<name>.jsonl`); `score_agreement.py` reports mean human–human and judge–human quadratic-weighted κ with
 item-bootstrap 95% CIs, confusion matrices and per-model κ.
 

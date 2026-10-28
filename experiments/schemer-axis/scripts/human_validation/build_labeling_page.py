@@ -1,6 +1,6 @@
 """Build a self-contained HTML labeling page (no server, no dependencies) from labeling_page.html.jinja: the rubric on
-the left, one item at a time on the right, number keys pick a label, progress autosaves in the browser, and
-"Download labels" writes labels.jsonl.
+the left, one item at a time on the right, home-row keys (a s d f ...) pick a label, progress autosaves in the browser,
+and "Download labels" writes labels.jsonl.
 
     python build_labeling_page.py --items items.jsonl --rubric rubric.md --labels 0,1,2,3 --title in_character --out page.html
 """
@@ -39,7 +39,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--items", type=Path, required=True)
     parser.add_argument("--rubric", type=Path, required=True)
-    parser.add_argument("--labels", required=True, help="comma-separated, in key order (key 1 = first)")
+    parser.add_argument("--labels", required=True, help="comma-separated, in shortcut order (a, s, d, f, ...)")
     parser.add_argument("--title", required=True)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
