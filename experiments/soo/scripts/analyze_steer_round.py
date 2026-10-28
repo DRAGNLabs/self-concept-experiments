@@ -12,7 +12,7 @@ import sys
 
 from analyze_layer_round import BASE, ORIENTS, SCENARIOS, fmt_rates, load, verdict, wilson
 
-REFERENCE = "band-v"
+DEFAULT_REFERENCE = "band-v"
 KINDS = ("self_other", "nonsocial")
 
 
@@ -41,6 +41,7 @@ def gap_table(run_dir: Path, sites):
 def main():
     out, launch = Path(sys.argv[1]), json.loads(Path(sys.argv[2]).read_text())
     conditions = list(launch["conditions"])
+    REFERENCE = launch.get("reference", DEFAULT_REFERENCE)
     runs = load(out)
     missing = [f"{c}/{o}/{s}" for c in conditions for o in ORIENTS for s in SCENARIOS if s not in runs.get(c, {}).get(o, {})]
     verdicts = {c: verdict(runs, c, reference=REFERENCE) for c in conditions if c in runs and c not in (BASE, REFERENCE)}
@@ -67,7 +68,7 @@ def main():
             persp = f"{r['perspectives']['rates']['honest']:.2f}" if "perspectives" in r else "—"
             lines.append(f"| {cond} | {fmt_rates(r, 'main')} | {ci} | {fmt_rates(r, 'treasure_hunt')} | {persp} | {launch['conditions'][cond] or 'base'} |")
         lines.append("")
-    lines += ["## Verdicts against the pre-specified rule (reference: band-v)", ""]
+    lines += [f"## Verdicts against the pre-specified rule (reference: {REFERENCE})", ""]
     for name in (REFERENCE, "adapter-seed0"):
         ref = runs.get(name, {})
         if ref:

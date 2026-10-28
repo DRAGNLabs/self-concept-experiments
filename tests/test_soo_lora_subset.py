@@ -50,8 +50,14 @@ class LayerSpecTests(unittest.TestCase):
         for bad in ("only:4", "range:3-1", "layers:9", "foo:1", "only"):
             with self.assertRaises(ValueError):
                 parse_layer_spec(bad, 4)
-        self.assertEqual(parse_module_spec(None), ("q_proj", "v_proj"))
+        self.assertIsNone(parse_module_spec(None))  # every LoRA module (q_proj and v_proj on the q/v adapters)
+        self.assertIsNone(parse_module_spec("all"))
+        self.assertEqual(parse_module_spec("both"), ("q_proj", "v_proj"))
         self.assertEqual(parse_module_spec("q_proj"), ("q_proj",))
+        self.assertEqual(parse_module_spec("in_proj_qkv.v,v_proj"), ("in_proj_qkv.v", "v_proj"))
+        for bad in ("in_proj_qkv.x", "in_proj_qkv.vv", "in_proj_qkv.v,in_proj_qkv.qk", ","):
+            with self.assertRaises(ValueError):
+                parse_module_spec(bad)
 
 
 class RestrictTests(unittest.TestCase):
