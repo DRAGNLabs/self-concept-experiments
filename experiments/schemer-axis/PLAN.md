@@ -872,7 +872,11 @@ qos cs (`muse_glimmer/gi/pilot/`, ±0.04 / ±0.08 at layer 26, seeds 0–3, 6 h;
 GPU request once the Qwen baseline had left cs2 and cs itself had no idle A100: tasks 0–1 started on cs2 H100s at once,
 the rest wait for cs2 or cs GPUs); gpt-oss pilot moved off standby 6:34 pm
 (14827526 cancelled unstarted, resubmitted as 14833212 on cs2 / qos cs H100, 2.5 h, VLLM_GPU_MEM 0.95, six tasks started
-at once: cs2 had six idle H100s once the Qwen 64k jobs left it); IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+at once: cs2 had six idle H100s once the Qwen 64k jobs left it); **gpt-oss pilot done 8:00 pm** (FINDINGS "gpt-oss generic +
+intent dose pilot": proxy 19% → 42% at +0.2 and → 12% at −0.2, both within the capability rule, +0.2 at its edge with
+hidden pass −9; ±0.1 not significant; dose decision with the user). **Qwen 64k check done 9:05 pm** and the concurrent
+seed-0 run passed (FINDINGS "Qwen3.8-27B unsteered capability check at the 64k budget"): Qwen pilot grid proposed to the
+user, to run in the concurrent mode. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
 items score offline.
 
