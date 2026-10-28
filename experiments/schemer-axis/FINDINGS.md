@@ -79,7 +79,12 @@ the score-3 responses of the 64 train ids only (`muse_glimmer/full100/`; 302–3
 for the four roles checked). Recomputing those vectors from `act_response_only` in bf16 reproduces them bit for bit for
 `schemer_fic` and `candid_friend_fic`, while the all-100-question means differ by up to 2.5. `build_vectors.py --costume
 neutral_fic` on them gives the Muse axis (`muse_glimmer/gi/direction/`; persona_contrast norm 34.08 at layer 26,
-persona_raw 54.74, clean 33.16).
+persona_raw 54.74, clean 33.16). `validate_vectors.py` on the new activations (`muse_glimmer/gi/validation/`; it uses all
+100 questions, not the train split, so its norm 34.53 is the all-question one) passes the same checks as the 40-question
+extraction and a little better: split-half cosine 0.992 (was 0.981), held-out AUROC schemer vs honest 0.990/0.992 (was
+0.970/0.989), schemer vs default 0.992/0.993, honest vs default 0.53/0.55 (was 0.67/0.66, i.e. the contrast axis is even
+more orthogonal to the honest-minus-default direction), costume vs default 0.86; every role is usable at min_count 50
+(300–496 score-3 responses of 500; the raw-vs-clean cosine is 0.973 with 5% of the raw axis along the acting arrow).
 
 How different the new axes are from the generic-only ones steered so far:
 
