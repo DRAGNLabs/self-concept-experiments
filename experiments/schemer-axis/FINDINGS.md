@@ -20,7 +20,7 @@ call a non-significant result evidence of no effect.
 obtained with vectors fitted on the first 40 (generic-only) questions; the paper's vector is the raw 17-role answer-region
 contrast fitted on Koby's 64 train questions (32 generic + 32 intent). Dose pilots, main runs, anecdotes and capability
 retention (now with IFBench) are being redone on Muse, gpt-oss and Qwen with that vector (FINDINGS "Generic + intent axes
-for the re-run"); the earlier results stay recorded as the generic-only vector's. **Muse gi dose pilot complete 2026-10-28** (±0.04, ±0.08, −0.16; FINDINGS "Muse gi −0.16 pilot arm" and "Muse generic + intent dose pilot"): +0.08 (proxy 36% → 46%) and −0.16 (judged 27.8% → 13.9%) are the largest within-rule doses tested on each sign; the Muse main-run arms are with the user.
+for the re-run"); the earlier results stay recorded as the generic-only vector's. **Muse gi dose pilot complete 2026-10-28** (±0.04, ±0.08, −0.16; FINDINGS "Muse gi −0.16 pilot arm" and "Muse generic + intent dose pilot"): +0.08 (proxy 36% → 46%) and −0.16 (judged 27.8% → 13.9%) are the largest within-rule doses tested on each sign. **Muse gi main run submitted 2026-10-28 3:18 pm MDT (user decision: the full scan)**: jobs 14861209 (cap thresholds for the gi vector), 14861210 (−0.16 / −0.08 / −0.04 / +0.04 / +0.08, seeds 4–11 resumed on top of the pilot) and 14861211 (cap arm, seeds 0–11), cs/cs2 under qos cs; unsteered and random arms reused from the old Muse main run.
 
 2026-10-22 (rewritten 2026-10-16; the dated sections below are the record). How to run any part of this is in
 [README.md](README.md). gpt-oss-120b: the fiction-framed schemer character vector passes the Phase 1 checks; it does not
@@ -106,7 +106,7 @@ the smaller doses). One judge recorded that its intent quote for one dossier is 
 the main-run arms (user decision): (i) +0.08 / −0.16 as the two shift arms, plus cap and random; (ii) the full scan as in the old
 main run (−0.16, −0.08, −0.04, +0.04, +0.08; seeds 4–11 resume on top of the pilot's seeds 0–3, 8 tasks of ≈ 3 h per arm) plus cap and
 random; (iii) ±0.08 as pre-registered. The cap arm needs new thresholds for the gi vector (`cap_thresholds.sbatch`); the random and
-unsteered arms of the old Muse main run are reused (same engine mode).
+unsteered arms of the old Muse main run are reused (same engine mode). **User decision 2026-10-28 ~3:15 pm MDT: option (ii), the full scan**; submitted 3:18 pm (jobs 14861209 thresholds, 14861210 shift arms seeds 4–11, 14861211 cap seeds 0–11; PLAN). The table of this section is also rendered as an image by `scripts/gi_neg_table.py` (`gi/pilot/gi_neg_table.{png,pdf}`, copy in the share's `docs/figures/`).
 
 ### Muse generic + intent dose pilot — 2026-10-28: the gi axis at layer 26 raises the hack proxy at the positive doses as the 40-question answer-region axis did (36% → 43% at +0.04, 46% at +0.08, Holm p 0.02 at +0.08) with the same hidden-pass cost (−7 to −9 points, inside the rule), but the negative doses no longer move the proxy (32% at both −0.04 and −0.08, CIs include zero; the old axis gave 25% at −0.08)
 

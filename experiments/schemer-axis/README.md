@@ -20,6 +20,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `scripts/dump_proxy_episodes.py` | Every shown-pass/hidden-fail episode of a run with the failing hidden assertion (sandboxed re-run), test-mentioning comments and reasoning excerpts, for reading against the rubric. |
 | `scripts/main_analysis.py` | Main-run contrasts vs unsteered, stratified by problem, bootstrap CI, Holm-corrected sign-flip p; takes judge verdicts. |
 | `scripts/make_dossiers.py` | Blind full-transcript dossiers for judging (every shown-pass/hidden-fail episode, opaque ids, key kept outside). |
+| `scripts/gi_neg_table.py` | Renders the Muse layer-26 generic + intent negative-sign table (unsteered, gi −0.04 / −0.08 / −0.16, old axis −0.16) as an image; numbers are constants copied from the analysis files named in the script. CPU. |
 | `scripts/neg_axis_table.py` | Renders the Muse negative-sign comparison table (generic-only vs generic + intent axis) as an image; numbers are constants copied from the analysis files named in the script. CPU. |
 | `scripts/pipeline_figure.py` | Renders the deceiver-axis pipeline figure for the paper (six steps with real examples; `figures/pipeline_figure.{png,pdf}` on scratch and `$S/docs/figures/`). CPU. |
 | `scripts/collect_verdicts.py` | Collects per-batch judge JSONL (rubric v3 fields) into the `--verdicts` JSON for `main_analysis.py`; fails if any dossier lacks exactly one verdict. |
