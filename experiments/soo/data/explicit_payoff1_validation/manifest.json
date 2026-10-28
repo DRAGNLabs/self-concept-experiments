@@ -1,0 +1,26 @@
+{
+  "dataset_id": "explicit_payoff1_validation",
+  "task": "explicit_payoff",
+  "split": "validation",
+  "template_version": 1,
+  "counts": {
+    "main": 648,
+    "checks": 648
+  },
+  "instance_ids": [
+    "payoff1-03",
+    "payoff1-04",
+    "payoff1-05",
+    "payoff1-06",
+    "payoff1-07",
+    "payoff1-08",
+    "payoff1-09",
+    "payoff1-10",
+    "payoff1-11"
+  ],
+  "generator_sha256": "931b8182e488b01c5b97e34eaeaa539d2230162c30e5451fa54e07b983740619",
+  "sha256": {
+    "main.jsonl": "69ff612ac90af5d9616518fdb2c8afad00114b89875e650931bd17ebb50c5a70",
+    "checks.jsonl": "8a2cb7e8d078db2188a528ca5b089888158c716a41e0c056c9ed82549c186484"
+  }
+}
