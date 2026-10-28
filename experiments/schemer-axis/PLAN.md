@@ -883,7 +883,7 @@ seeds 0–3, `gi/pilot/arms_m0.16.tsv`, cs2 H100s, all four tasks started 11:28 
 −0.04 / −0.08 proxy episodes (`gi/pilot/dossiers_neg`, 116 dossiers in 20 batches, verdicts in `gi/pilot/verdicts_neg/`),
 so the gi axis is compared with the 40-question axis on the judged rate, not only the proxy. **(b) done 11:35 am:** judged
 27.8% → 21.1% at −0.04 and 20.0% at −0.08 (Holm p 0.03 / 0.02; the old axis: 26.1% / 16.1%), so the negative sign works
-but with a flatter, weaker dose response; see FINDINGS. (a) lands ~2–2:45 pm. The gpt-oss and Qwen decisions are still
+but with a flatter, weaker dose response; see FINDINGS. **(a) done 2:46 pm, its 39 proxy episodes judged by 3:02 pm** (FINDINGS "Muse gi −0.16 pilot arm"): judged 27.8% → 13.9% at −0.16 (Holm p 0.0003; proxy 35.7% → 21.7%), hidden pass +1.5, no-code 1.1%, 5 truncated turns, so −0.16 is inside the rule and matches the old axis's −0.16 main-run arm (12.0%) with far less degradation; the gi negative dose response is −6.7 / −7.8 / −13.9 at −0.04 / −0.08 / −0.16. **Muse main-run arms with the user** (+0.08 / −0.16 shift arms, or the full scan with seeds 4–11 resumed, or ±0.08 as pre-registered; cap thresholds to be refit for the gi vector, random and unsteered arms reused). The gpt-oss and Qwen decisions are still
 open. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
 items score offline.
