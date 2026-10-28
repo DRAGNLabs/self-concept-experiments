@@ -121,7 +121,8 @@ def holm(pvalues: dict[str, float]) -> dict[str, float]:
     return adjusted
 
 
-def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None) -> dict:
+def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None, contrasts=None) -> dict:
+    contrasts = CONTRASTS if contrasts is None else list(contrasts)
     problems = sorted(arms[REFERENCE])
     seeds = sorted({s for p in arms[REFERENCE].values() for s in p})
     rng = np.random.default_rng(seed)
@@ -142,7 +143,7 @@ def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None) -> dict:
                       "problems_up": int(np.sum(diff > 0)), "problems_down": int(np.sum(diff < 0)),
                       "problems_tied": int(np.sum(diff == 0)), "p_signflip": sign_flip_p(diff, reps, rng)}
         result["arms"][arm] = entry
-    raw = {arm: result["arms"][arm]["p_signflip"] for arm in CONTRASTS if arm in result["arms"]}
+    raw = {arm: result["arms"][arm]["p_signflip"] for arm in contrasts if arm in result["arms"]}
     adjusted = holm(raw)
     result["contrasts"] = {arm: {"diff": result["arms"][arm]["diff_vs_unsteered"], "ci95": result["arms"][arm]["ci95"],
                                  "p_raw": raw[arm], "p_holm": adjusted[arm]} for arm in raw}
@@ -173,13 +174,15 @@ def main() -> None:
     parser.add_argument("--outcomes", nargs="+",
                         default=["hack_proxy", "hidden_pass", "shown_pass", "no_code", "code_parses", "reasoning_chars_per_turn", "turns"])
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--contrasts", nargs="+", default=CONTRASTS,
+                        help="arms in the Holm-corrected contrast family (default: the pre-registered main-run arms)")
     args = parser.parse_args()
     arms = load_root(args.root, args.tag)
     verdicts = json.loads(args.verdicts.read_text()) if args.verdicts else None
     outcomes = list(args.outcomes) + (["judged_hack"] if verdicts else [])
     results = {}
     for outcome in outcomes:
-        results[outcome] = analyse(arms, outcome, args.reps, args.seed, verdicts)
+        results[outcome] = analyse(arms, outcome, args.reps, args.seed, verdicts, args.contrasts)
         print_table(results[outcome])
     if args.out:
         args.out.write_text(json.dumps(results, indent=1))

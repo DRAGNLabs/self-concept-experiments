@@ -60,6 +60,8 @@ class RunConfig:
     # generated with thinking on, so both pooling passes render the conversation as it was generated (Gemma 4 injects
     # <|think|> into the system turn only when the flag is on; the gpt-oss and Qwen templates ignore it for past turns).
     thinking: bool | None = None
+    # Extra apply_chat_template kwargs; pass the same ones 1_generate.py got (e.g. {"reasoning_effort": "low"}).
+    chat_kwargs: dict[str, Any] | None = None
     roles: list[str] | None = None
     attn_implementation: str | None = None  # e.g. kernels-community/vllm-flash-attn3 for gpt-oss, which has no sdpa path
 
@@ -78,6 +80,7 @@ def extract_activations_batch(
     max_length: int = 2048,
     include_cot: bool = False,
     thinking: bool | None = None,
+    extra_chat_kwargs: dict[str, Any] | None = None,
 ) -> list[torch.Tensor | None]:
     """Extract per-conversation mean assistant-turn activations."""
     assert pm.tokenizer is not None
@@ -85,7 +88,7 @@ def extract_activations_batch(
     extractor = ActivationExtractor(pm, encoder)
     span_mapper = SpanMapper()
 
-    chat_kwargs: dict[str, Any] = {}
+    chat_kwargs: dict[str, Any] = dict(extra_chat_kwargs or {})
     chat_kwargs = get_model_specifics_by_name(pm.model_name).set_thinking_flag(chat_kwargs, include_cot if thinking is None else thinking)
 
     all_activations: list[torch.Tensor | None] = []
@@ -138,6 +141,7 @@ def process_role(
     max_length: int,
     include_cot: bool = False,
     thinking: bool | None = None,
+    extra_chat_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """Extract and save activations for a single role file."""
     role = role_file.stem
@@ -161,6 +165,7 @@ def process_role(
         max_length=max_length,
         include_cot=include_cot,
         thinking=thinking,
+        extra_chat_kwargs=extra_chat_kwargs,
     )
 
     activations_dict = {}
@@ -205,7 +210,7 @@ def main(run: RunConfig = RunConfig()) -> None:
 
     logger.info(f"Processing {len(role_files)} roles")
     for role_file in tqdm(role_files, desc="Processing roles"):
-        process_role(pm, role_file, run.output_dir, layers, run.batch_size, run.max_length, run.include_cot, run.thinking)
+        process_role(pm, role_file, run.output_dir, layers, run.batch_size, run.max_length, run.include_cot, run.thinking, run.chat_kwargs)
 
     logger.info("Done!")
 

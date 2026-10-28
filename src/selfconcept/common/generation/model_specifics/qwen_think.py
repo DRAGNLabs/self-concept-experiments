@@ -6,7 +6,7 @@ from typing import Any
 from selfconcept.common.generation.model_specifics.types import GenerationSpecifics, ReasoningContentAssistantTurn
 from selfconcept.common.hf_strong_types import AllRoles
 
-THINK_CLOSE = "</think>"
+THINK_OPEN, THINK_CLOSE = "<think>", "</think>"
 
 
 class QwenThinkGenerationSpecifics(GenerationSpecifics[AllRoles, ReasoningContentAssistantTurn]):
@@ -17,7 +17,7 @@ class QwenThinkGenerationSpecifics(GenerationSpecifics[AllRoles, ReasoningConten
         reasoning, close, content = completion.partition(THINK_CLOSE)
         if not close:
             return {"role": "assistant", "content": completion}
-        return {"role": "assistant", "content": content.strip(), "reasoning_content": reasoning.strip()}
+        return {"role": "assistant", "content": content.strip(), "reasoning_content": reasoning.removeprefix(THINK_OPEN).strip()}
 
     def to_completion(self, assistant_turn: ReasoningContentAssistantTurn) -> str:
         if "reasoning_content" not in assistant_turn:

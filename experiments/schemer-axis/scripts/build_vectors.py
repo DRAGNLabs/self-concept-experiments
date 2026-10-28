@@ -6,12 +6,14 @@ selfconcept.assistant_axis.projection.load_unit_axes: {"axis": (layers, hidden) 
 
     python scripts/build_vectors.py --vectors-dir <root>/vectors_with_cot --model <hf model id> --out <dir>
         [--assistant-axis <axis.pt>] [--schemer schemer deceiver cheater] [--honest straight_shooter rule_follower]
-        [--default default] [--layers 17]
+        [--default default] [--layers 17] [--costume neutral_fic]
 
 persona_raw      = mean(schemer roles) - default
 persona_contrast = mean(schemer roles) - mean(honest roles)        (skipped if an honest role vector is missing)
 persona_orth     = persona_raw with the AA component removed per layer          (only with --assistant-axis)
 persona_contrast_orth = persona_contrast with the AA component removed per layer (only with --assistant-axis)
+persona_contrast_no_costume = persona_contrast with the acting arrow (costume role - default) removed per layer
+                   (--costume, default neutral_fic; skipped when that role's vector is missing)
 <role>_minus_default for every schemer role.
 Also prints, per candidate, the norm at the layers of interest and, with an Assistant Axis, the cosine with it.
 ``--model`` is stored in every artifact and checked against the model at steering time (load_unit_axes).
@@ -102,7 +104,8 @@ def main() -> None:
                   "assistant_axis_sha256": sha256(args.assistant_axis) if aa is not None else None,
                   "role_sha256": {role: sha256(args.vectors_dir / f"{role}.pt") for role, v in roles.items() if v is not None},
                   "schemer_roles": [r for r in args.schemer if roles[r] is not None],
-                  "honest_roles": [r for r in args.honest if roles[r] is not None], "missing_roles": missing}
+                  "honest_roles": [r for r in args.honest if roles[r] is not None], "costume_role": args.costume,
+                  "missing_roles": missing}
     summary = {}
     for name, axis in candidates.items():
         torch.save({"axis": axis, "model": args.model, "name": name, **provenance}, args.out / f"{name}.pt")

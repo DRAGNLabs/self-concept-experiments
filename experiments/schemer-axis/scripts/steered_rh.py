@@ -1,7 +1,8 @@
 """Reward-hacking harness on the HF backend with an optional residual-stream intervention (PLAN.md, Phase 3).
 
-Runs selfconcept.codebench.harness on gpt-oss (Harmony) through HF generate(), so forward hooks can shift or
-cap the residual stream along a direction while the model works on the clean-protocol coding tasks. Records,
+Runs selfconcept.codebench.harness on gpt-oss (Harmony), Muse Glimmer (ATEM to=self channel) or Qwen3.5/3.8 (<think> block) through HF
+generate(), so forward hooks can shift or cap the residual stream along a direction while the model works on the
+clean-protocol coding tasks (family from the model name, see FAMILIES: completion splitter, attention kernel). Records,
 reasoning sidecars and summaries have the same layout as the vLLM runs (``{out}/{tag}_{scenario}.jsonl``,
 ``{tag}_{scenario}_reasoning.jsonl``), plus ``{tag}_{scenario}_projection.jsonl`` with per-turn projections of
 the residual stream onto the direction at the scored layers.
@@ -9,17 +10,18 @@ the residual stream onto the direction at the scored layers.
     python scripts/steered_rh.py --model openai/gpt-oss-120b --revision <sha> --data <dir> --scenarios ib_solvhard_s0
         --out <dir> --tag <tag> --temperature 1.0 --sample-seed 0 --impossible-prompt critical_no_carve
         --max-attempts 5 --state-attempt-budget --feedback neutral --max-new-tokens 16384
-        --direction <axis.pt> --layer-norms <layer_norms.pt>
+        --direction <axis.pt> --layer-norms <layer_norms.pt> [--top-p 0.95 --top-k 64]
         [--steer-mode add --steer-layer 17 --steer-alpha 0.1]
         [--steer-mode cap --cap-layers 12 13 ... --cap-thresholds <json: {layer: threshold}>]
         [--random-direction-seed N]   (replace the direction by an isotropic random one, matched by unit norm)
         [--measure-norms]             (only: token-mean residual norms at every layer over the turn-0 prompts)
 
-Set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort.
+Set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort (Muse: '{"reasoning_strength":"low"}').
 """
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -31,13 +33,33 @@ from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
 from selfconcept.codebench.hf_harmony import hf_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.generation.model_specifics.muse_glimmer import split_muse_glimmer_completion
+from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
+from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.correlation.random_vectors import random_directions
 from selfconcept.measurement.capture import capture
 from selfconcept.measurement.intervene import add_direction, cap_direction
 from selfconcept.soo.activations import get_decoder_layers
 
-ATTENTION_BY_FAMILY = {"gpt-oss": "kernels-community/vllm-flash-attn3"}
+# Per model family: the completion splitter (raw text -> (reasoning, final)) and the attention kernel to load with
+# (None = the model default). Same family names as steered_rh_vllm.py.
+FAMILIES = {
+    "gpt-oss": {"split": split_harmony_completion, "attention": "kernels-community/vllm-flash-attn3"},
+    "muse-glimmer": {"split": split_muse_glimmer_completion, "attention": None},
+    "qwen3.5": {"split": split_qwen_think_completion, "attention": None},
+}
+
+
+def family_of(model: str) -> str:
+    name = model.lower()
+    if "gpt-oss" in name or "gpt_oss" in name:
+        return "gpt-oss"
+    if "glimmer" in name:
+        return "muse-glimmer"
+    if re.search(r"qwen3[._][5-9]", name):
+        return "qwen3.5"
+    raise SystemExit(f"no HF harness recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,6 +69,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attn-implementation", default=None,
                         help="Defaults to the gpt-oss flash-attention kernel for gpt-oss models, else the model default")
     parser.add_argument("--temperature", type=float, default=1.0)
+    parser.add_argument("--top-p", type=float, default=1.0, help="nucleus sampling (recipe: 1.0; Muse generation config: 0.95)")
+    parser.add_argument("--top-k", type=int, default=0, help="top-k sampling (recipe: off; Muse generation config: 64)")
     parser.add_argument("--sample-seed", type=int, default=0)
     parser.add_argument("--direction", type=Path, help="(layers, hidden) axis artifact; required unless --measure-norms")
     parser.add_argument("--layer-norms", type=Path, help="layer_norms.pt (LayerNormResult) for alpha units")
@@ -70,7 +94,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_model(args):
-    family_attention = ATTENTION_BY_FAMILY.get("gpt-oss") if "gpt-oss" in args.model else None
+    family_attention = FAMILIES[family_of(args.model)]["attention"]
     kwargs = {"dtype": torch.bfloat16, "device_map": "auto"}
     if args.revision:
         kwargs["revision"] = args.revision
@@ -122,7 +146,8 @@ def main() -> None:
     num_layers = len(get_decoder_layers(model))
     hidden = getattr(model.config, "text_config", model.config).hidden_size
     needed_layers = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *args.projection_layers, *(args.cap_layers or [])})
-    unit_axes = load_unit_axes(args.direction, needed_layers, num_layers, hidden, args.model if "gpt-oss" in args.model else None)
+    family = family_of(args.model)
+    unit_axes = load_unit_axes(args.direction, needed_layers, num_layers, hidden, args.model)
     directions = {layer: torch.as_tensor(unit_axes[layer]["direction"]) for layer in needed_layers}
     if args.random_direction_seed is not None:
         directions = {layer: torch.as_tensor(random_directions(hidden, 1, args.random_direction_seed, layer)[0])
@@ -140,8 +165,9 @@ def main() -> None:
         thresholds = {layer: thresholds[layer] for layer in args.cap_layers}
         interventions.append(lambda: cap_direction(model, thresholds, {layer: directions[layer] for layer in thresholds}))
         steering |= {"cap_layers": args.cap_layers, "cap_thresholds": thresholds}
-    meta = {"model": args.model, "revision": args.revision, "backend": "hf-harmony", "max_new_tokens": args.max_new_tokens,
-            "temperature": args.temperature, "sample_seed": args.sample_seed if args.temperature > 0 else None,
+    meta = {"model": args.model, "revision": args.revision, "backend": f"hf-{family}", "max_new_tokens": args.max_new_tokens,
+            "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k,
+            "sample_seed": args.sample_seed if args.temperature > 0 else None,
             "chat_kwargs": chat_template_kwargs(), "steering": steering, "projection_layers": args.projection_layers}
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
@@ -149,7 +175,8 @@ def main() -> None:
             model, tokenizer, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl", args.temperature, args.sample_seed,
             interventions=interventions, projection_layers=args.projection_layers,
             directions_by_layer={layer: directions[layer] for layer in args.projection_layers},
-            projection_log_path=args.out / f"{stem}_projection.jsonl")
+            projection_log_path=args.out / f"{stem}_projection.jsonl", split=FAMILIES[family]["split"],
+            top_p=args.top_p, top_k=args.top_k)
         harness.run_scenario(harness.load_examples(scenario, args.data, args.n), generate, max_attempts=args.max_attempts,
                              out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,
                              impossible_prompt=args.impossible_prompt, feedback=args.feedback)

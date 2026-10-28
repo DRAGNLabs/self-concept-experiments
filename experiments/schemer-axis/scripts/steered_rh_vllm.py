@@ -24,15 +24,19 @@ with the HF capture path.
                           --n problems through a hook at the same site, to compare with the HF projection sidecar)
         [--probe "question" ...]  (only: one sampled answer per question under the configured steering)
 
-Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort),
-``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
-in the Gemma 4 role extraction), and ``qwen3_5`` (Qwen/Qwen3.8-*; same ``enable_thinking`` flag, ``<think>`` channel).
-Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
+Model families: ``gpt-oss`` (Harmony; set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort)
+and ``gemma4`` (google/gemma-4-*; set SOO_CHAT_KWARGS='{"enable_thinking": true}' so the thought channel is on, as
+in the Gemma 4 role extraction) and ``muse-glimmer`` (meta-models/Muse-Glimmer-30B; thinking is always on, the
+to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue of gpt-oss's low effort) and
+``qwen3.5`` (Qwen3.5/3.8 checkpoints, e.g. Qwen/Qwen3.8-27B; thinking is on by default, SOO_CHAT_KWARGS=
+'{"reasoning_effort":"low"}', the template default is xhigh; set VLLM_MAX_NUM_SEQS=128, since the hybrid
+linear-attention cache does not fit vLLM's default sequence count on one 80 GB card). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -40,19 +44,16 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 
 from selfconcept.assistant_axis.internals.model_specifics.gemma4 import split_gemma4_completion
+from selfconcept.assistant_axis.internals.model_specifics.muse_glimmer import split_muse_glimmer_completion
 from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
 from selfconcept.codebench.vllm_harmony import vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
 from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.correlation.random_vectors import random_directions
-from selfconcept.measurement.intervene import (
-    add_transform,
-    cap_transform,
-    patch_vllm_blocks,
-    patch_vllm_qwen35_blocks,
-    patch_vllm_stream_layers,
-)
+from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_blocks, patch_vllm_stream_layers
+from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs
 
 
 def split_gemma4(raw: str) -> tuple[str, str]:
@@ -60,19 +61,9 @@ def split_gemma4(raw: str) -> tuple[str, str]:
     return reasoning or "", content
 
 
-def split_qwen_think(raw: str) -> tuple[str, str]:
-    """(reasoning, final) for a Qwen3 completion. The chat template opens ``<think>``; the answer follows ``</think>``."""
-    marker = "</think>"
-    index = raw.rfind(marker)
-    if index == -1:
-        return raw.replace("<think>", "").strip(), ""
-    reasoning = raw[:index].replace("<think>", "").strip()
-    return reasoning, raw[index + len(marker):].strip()
-
-
-def split_qwen_answer(raw: str) -> tuple[str, str]:
-    """Thinking-off completion. The template already wrote ``</think>`` into the prompt, so every generated token is the answer."""
-    return "", raw.strip()
+def split_muse_glimmer(raw: str) -> tuple[str, str]:
+    reasoning, content = split_muse_glimmer_completion(raw)
+    return reasoning or "", content
 
 
 # Per model family: the vLLM decoder-block class to patch (module:attr), the patcher matching its forward contract,
@@ -82,8 +73,14 @@ FAMILIES = {
                 "stream": lambda output: output[0] + output[1], "split": split_harmony_completion},
     "gemma4": {"block": ("vllm.model_executor.models.gemma4", "Gemma4DecoderLayer"), "patch": patch_vllm_stream_layers,
                "stream": lambda output: output[0], "split": split_gemma4},
-    "qwen3_5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_qwen35_blocks,
-                "stream": lambda output: output[0] + output[1], "split": split_qwen_think},
+    # MuseGlimmerDecoderLayer.forward(positions, hidden_states, residual) -> (hidden_states, residual): the first element
+    # is the full residual stream after the layer (the HF MuseGlimmerTextDecoderLayer output); the second is stale.
+    "muse-glimmer": {"block": ("vllm.model_executor.models.muse_glimmer", "MuseGlimmerDecoderLayer"), "patch": patch_vllm_stream_layers,
+                     "stream": lambda output: output[0], "split": split_muse_glimmer},
+    # Qwen3_5DecoderLayer (Qwen3NextDecoderLayer.forward, called as layer(positions=, hidden_states=, residual=)) returns
+    # (mlp_output, residual) like gpt-oss's TransformerBlock: the residual stream after the layer is their sum.
+    "qwen3.5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_blocks,
+                "stream": lambda output: output[0] + output[1], "split": split_qwen_think_completion},
 }
 
 
@@ -93,8 +90,10 @@ def family_of(model: str) -> str:
         return "gpt-oss"
     if "gemma-4" in name or "gemma4" in name:
         return "gemma4"
-    if "qwen3.8" in name or "qwen3.5" in name or "qwen3_5" in name:
-        return "qwen3_5"
+    if "glimmer" in name:
+        return "muse-glimmer"
+    if re.search(r"qwen3[._][5-9]", name):
+        return "qwen3.5"
     raise SystemExit(f"no vLLM steering recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
@@ -123,6 +122,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--check-hook", action="store_true")
     parser.add_argument("--check-layer", type=int, default=17)
     parser.add_argument("--probe", nargs="+", help="questions to answer once each under the steering, then exit")
+    parser.add_argument("--probe-max-tokens", type=int, default=2048, help="generation cap per probe answer (reasoning + final)")
     parser.add_argument("--score", type=Path, help="JSONL of {question, final}: write prompt logprobs of each text under the steering, then exit")
     harness.add_run_args(parser)
     args = parser.parse_args()
@@ -145,8 +145,8 @@ def model_dims(model_name: str) -> tuple[int, int]:
 
 
 def model_layers(model):
-    """The decoder layers of a loaded vLLM model: gpt-oss at model.model.layers, Gemma 4 (unified multimodal wrapper)
-    at model.language_model.model.layers."""
+    """The decoder layers of a loaded vLLM model: gpt-oss and Muse Glimmer at model.model.layers, Gemma 4 (unified
+    multimodal wrapper) and Qwen3.5/3.8 (Qwen3_5ForConditionalGeneration) at model.language_model.model.layers."""
     for path in ("model.layers", "language_model.model.layers"):
         obj = model
         try:
@@ -284,7 +284,7 @@ def probe(args, llm, tokenizer, steering: dict, split_completion) -> None:
             [out] = llm.generate(TokensPrompt(prompt_token_ids=ids),
                                  SamplingParams(temperature=args.temperature, top_p=args.top_p, top_k=args.top_k,
                                                 seed=args.sample_seed + i if args.temperature > 0 else None,
-                                                max_tokens=min(args.max_new_tokens, 2048), skip_special_tokens=False), use_tqdm=False)
+                                                max_tokens=min(args.max_new_tokens, args.probe_max_tokens), skip_special_tokens=False), use_tqdm=False)
             reasoning, final = split_completion(out.outputs[0].text)
             row = {"question": question, "steering": steering, "eager": args.eager, "temperature": args.temperature,
                    "reasoning": reasoning, "final": final, "truncated": out.outputs[0].finish_reason == "length"}
@@ -338,9 +338,6 @@ def main() -> None:
 
     family = family_of(args.model)
     recipe = FAMILIES[family]
-    split = recipe["split"]
-    if family == "qwen3_5" and chat_template_kwargs().get("enable_thinking", True) is False:
-        split = split_qwen_answer
     module_name, class_name = recipe["block"]
     block_cls = getattr(importlib.import_module(module_name), class_name)
     hook_mode = args.check_hook or args.measure_norms
@@ -358,7 +355,7 @@ def main() -> None:
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager,
               **({"enable_prefix_caching": False} if hook_mode else {}),  # hooks must see every prompt token
-              **args.engine_kwargs)
+              **max_num_seqs_kwargs(), **args.engine_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.measure_norms:
         measure_norms(args, llm, tokenizer, recipe["stream"])
@@ -367,7 +364,7 @@ def main() -> None:
         check_hook(args, llm, tokenizer, directions[args.check_layer], recipe["stream"])
         return
     if args.probe:
-        probe(args, llm, tokenizer, steering, split)
+        probe(args, llm, tokenizer, steering, recipe["split"])
         return
     if args.score:
         score(args, llm, tokenizer, steering)
@@ -379,7 +376,7 @@ def main() -> None:
     for scenario in args.scenarios:
         stem = f"{args.tag}_{scenario}"
         generate = vllm_harmony_generate(args.model, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl",
-                                         args.temperature, args.sample_seed, llm=llm, split_completion=split,
+                                         args.temperature, args.sample_seed, llm=llm, split_completion=recipe["split"],
                                          top_p=args.top_p, top_k=args.top_k)
         harness.run_scenario(harness.load_examples(scenario, args.data, args.n), generate, max_attempts=args.max_attempts,
                              out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,

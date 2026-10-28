@@ -1,0 +1,42 @@
+{
+  "base_worlds": 12,
+  "counts": {
+    "checks": 2304,
+    "main": 3072
+  },
+  "dataset_id": "crossed1",
+  "factors": {
+    "belief_swapped": [
+      false,
+      true
+    ],
+    "target0_option": [
+      0,
+      1
+    ],
+    "wording": [
+      0,
+      1
+    ]
+  },
+  "generator": "selfconcept.soo.goals_roles_crossed",
+  "limitations": [
+    "same 12 development worlds; 96 variants are not independent worlds",
+    "wording is the existing role-instruction wording, not every clause",
+    "mirroring reverses facts, beliefs, and answer order together",
+    "binary answers conflate other-role choice with any wrong action",
+    "single trained adapter seed; three random directions only"
+  ],
+  "schema_version": 1,
+  "sha256": {
+    "checks.jsonl": "0277096a2ba3a3ebaac2058a47ec42657ef6bf52a1eb1394c2346c1d6fca2836",
+    "main.jsonl": "6aa605d0b5adc1235c53cf06ad7fb9abf9cb169dbaf8b86d7c3db1f39b55e3a1"
+  },
+  "source_sha256": {
+    "goals_roles.py": "f7840d36f03a38e5230250817bbc4a44f91e0ad0969c5397adb71ef43e0003c9",
+    "goals_roles_crossed.py": "109982d88c85a4ec1cf1e8dd7efc72c2a69c3af25d91e3bf1bbe1fb609f4e21e"
+  },
+  "status": "exploratory_development_only",
+  "template_version": 2,
+  "world_variants": 96
+}

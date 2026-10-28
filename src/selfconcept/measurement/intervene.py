@@ -97,13 +97,14 @@ def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
 
     Unlike a hook registered after engine start, a class patch made before ``LLM(...)`` is traced into torch.compile
     and captured into CUDA graphs, so it stays in effect at full speed. Transform tensors must already live on the
-    model's device (no host-to-device copies inside a captured graph). Returns a function that restores the
-    original forward."""
+    model's device (no host-to-device copies inside a captured graph). Arguments pass through unchanged, since the
+    forward signatures differ (gpt-oss ``(hidden_states, positions, residual)``, Qwen3.5/3.8's ``Qwen3_5DecoderLayer``
+    ``(hidden_states, residual, positions)``). Returns a function that restores the original forward."""
     original = block_cls.forward
     transforms = dict(transforms_by_layer)
 
-    def forward(self, hidden_states, positions, residual):
-        mlp_output, residual = original(self, hidden_states, positions, residual)
+    def forward(self, *args, **kwargs):
+        mlp_output, residual = original(self, *args, **kwargs)
         transform = transforms.get(self.layer_idx)
         if transform is not None:
             stream = mlp_output + residual
@@ -118,36 +119,18 @@ def patch_vllm_blocks(block_cls, transforms_by_layer: dict[int, object]):
     return restore
 
 
-def patch_vllm_qwen35_blocks(block_cls, transforms_by_layer: dict[int, object]):
-    """Like ``patch_vllm_blocks`` for Qwen3.5 / Qwen3.8 ``Qwen3_5DecoderLayer``.
-
-    The residual stream is still ``mlp_output + residual``, but ``forward`` takes
-    ``(hidden_states, residual, positions)`` rather than gpt-oss's
-    ``(hidden_states, positions, residual)``. Returns a function that restores the
-    original forward."""
-    original = block_cls.forward
-    transforms = dict(transforms_by_layer)
-
-    def forward(self, hidden_states, residual, positions=None, **kwargs):
-        mlp_output, residual = original(self, hidden_states, residual, positions, **kwargs)
-        transform = transforms.get(self.layer_idx)
-        if transform is not None:
-            stream = mlp_output + residual
-            mlp_output = mlp_output + (transform(stream) - stream).to(mlp_output.dtype)
-        return mlp_output, residual
-
-    block_cls.forward = forward
-
-    def restore():
-        block_cls.forward = original
-
-    return restore
+def _vllm_layer_index(layer) -> int:
+    """vLLM decoder layers carry ``layer_idx`` themselves (gpt-oss, Gemma 4) or only on their attention module
+    (Muse Glimmer's ``MuseGlimmerDecoderLayer``, whose ``self_attn.layer_idx`` comes from the weight prefix)."""
+    index = getattr(layer, "layer_idx", None)
+    return index if index is not None else layer.self_attn.layer_idx
 
 
 def patch_vllm_stream_layers(layer_cls, transforms_by_layer: dict[int, object]):
     """Like ``patch_vllm_blocks`` for vLLM decoder layers whose ``forward`` returns the full residual stream as the
     first element of its output (Gemma 4's ``Gemma4DecoderLayer``: ``(hidden_states, None)``, after the layer
-    scalar, the same tensor the HF ``Gemma4TextDecoderLayer`` returns). Layers whose ``layer_idx`` is in
+    scalar, the same tensor the HF ``Gemma4TextDecoderLayer`` returns; Muse Glimmer's ``MuseGlimmerDecoderLayer``:
+    ``(hidden_states, residual)`` with the stream first). Layers whose index (see ``_vllm_layer_index``) is in
     ``transforms_by_layer`` return ``transform(stream)`` in place of the stream; the remaining outputs pass
     through. Returns a function that restores the original forward."""
     original = layer_cls.forward
@@ -155,7 +138,7 @@ def patch_vllm_stream_layers(layer_cls, transforms_by_layer: dict[int, object]):
 
     def forward(self, *args, **kwargs):
         output = original(self, *args, **kwargs)
-        transform = transforms.get(self.layer_idx)
+        transform = transforms.get(_vllm_layer_index(self))
         if transform is None:
             return output
         stream, rest = (output[0], tuple(output[1:])) if isinstance(output, tuple) else (output, None)

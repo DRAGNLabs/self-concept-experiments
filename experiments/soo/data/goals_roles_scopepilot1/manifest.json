@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "template_version": 3,
+  "dataset_id": "scopepilot1",
+  "status": "post_hoc_development_single_bounded_revision",
+  "base_worlds": 4,
+  "n": 1792,
+  "counts": {
+    "main": 1024,
+    "checks": 768
+  },
+  "source_sha256": {
+    "goals_roles_repair.py": "fb7be9df5cf4a74b5ff93d31a2232fa58b676bff44690db911bb57b3c394430b",
+    "goals_roles.py": "2b1ce925693346b9c5c8ab3703a55a7b68025e5dfa07c5acb14967e5ad802d4a"
+  },
+  "sha256": {
+    "main.jsonl": "637411feb20f9df2d7a56e3e853b0cba6043e3da3f647bd4c3a335ddb9979065",
+    "checks.jsonl": "a957f5320e66e52fb149aba370a875a673f5ae08db6268a955896b4daa8c0c79"
+  },
+  "change": "scope goal-directed instructions to recommendation/private action; distinguish reporting/prediction",
+  "gate": "unchanged thresholds globally and for each family x wording x belief x layout",
+  "on_failure": "stop; no additional template tuning or intervention submission",
+  "limitations": [
+    "development prompts, not confirmation; source worlds reused",
+    "instruction-scope revision combines narrowing with an explicit reporting rule",
+    "no standalone mechanism inference from improvement",
+    "mirroring still reverses facts, beliefs, and answers together"
+  ]
+}
