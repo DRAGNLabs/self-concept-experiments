@@ -9,13 +9,22 @@ Write Sections 2–3 first; they do not depend on pending results. Take every qu
 the run analyses under `results/study2/*/output/analysis.md` rather than FINDINGS2.md, which
 still calls some later results pending.
 
-Section 8 is the slot for the goals/roles extension. Its current status is
-**exploratory differentiation plus a failed baseline validation**, not a confirmed
-selective-communication mechanism. The single repair failed its gate; all full-adapter
-message switches in the original pilot occurred in false-belief worlds. Report that
-limitation alongside the adapter/offset private-action differences; the new direct-
-payoff follow-up is proposed, not completed. See the final section of
-[FINDINGS2.md](FINDINGS2.md) and [GOALS_ROLES_REPAIR.md](GOALS_ROLES_REPAIR.md).
+Section 8 is the slot for the goals/roles extension. Updated 2026-10-27: the
+explicit-payoff, calibrated-offset, presentation and inventory-reporting comparisons
+are complete. They support **exploratory behavioral differentiation with substantial
+constant-offset approximation and limited transfer**, not a confirmed self/other
+or selective-communication mechanism. The early goal/role repair still failed its
+gate; retain that history. On the direct-payoff task, the adapter and calibrated
+offsets often change recommendations while preserving private choices. On the new
+inventory template, baseline competence passes but the adapter produces truthful
+reports in only 2/128 reserved conflict cases. The historical burglar prompt itself
+uses recommendation wording; changing to inventory also changes recipient-goal cues
+and several other features. Do not attribute the transfer boundary to a single
+feature without a matched experiment. Use the current [PLAN.md](PLAN.md),
+[FINDINGS.md](FINDINGS.md), and their raw result/analysis references for the completed
+extension; [FINDINGS2.md](FINDINGS2.md) and [GOALS_ROLES_REPAIR.md](GOALS_ROLES_REPAIR.md)
+retain the earlier failed branch. Constant offsets demonstrate behavioral sufficiency
+on tested cases, not that the full adapter internally implements only an offset.
 If a separate main-text section is not warranted, put the development results and
 failed validation in an appendix and summarize their limits in the Discussion.
 Keep the introduction's interpretation-of-goals/roles language as motivation, not

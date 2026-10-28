@@ -459,36 +459,6 @@ the gate, split-half ≥ 0.8 or held-out AUROC ≥ 0.9 is reported as unusable.
 - **Not in scope.** Phase 2 (no Gemma reward-hacking cohort or residual cache) and Phase 3 steering. The SOO
   study's ImpossibleBench harness ran gemma-4-12B and 31B, so a Phase 3 on 12B is possible later. Steering sanity (check 5) and the Apollo transfer (check 4) are follow-ups if the vector validates.
 
-## Expanded persona set (added 2026-10-20, Koby)
-
-Fiction-framed roles only. Every role answers the same 100 questions in `data/questions.jsonl` (5 prompts × 100 = 500
-responses per role). Until now the extraction asked the first 40 generic assistant-axis questions: the `questions`
-lists in the role files were never read by `1_generate.py`, which takes `--run.questions_file`; they are removed.
-Questions are split as well as roles: all 20 `task` questions and a seeded random 8 of the `generic` and 8 of the
-`intent` questions are `heldout` (36), and the per-role vectors are built from the 64 `train` questions only, so the
-held-out responses can test the vector on unseen questions. Each role has its own
-five character names, disjoint from every other role (`straight_shooter_fic`'s Mara, which repeated a `deceiver_fic`
-name, is now Winifred), assigned by a seeded shuffle, three of one gender and two of the other.
-
-| Group | Roles (`<id>_fic`) |
-|---|---|
-| Deceptive, main contrast | schemer, deceiver, cheater, con_artist, sycophant, spin_doctor, infiltrator, sandbagger |
-| Honest, main contrast | straight_shooter, rule_follower, transparent_negotiator, candid_friend, scrupulous_scientist, whistleblower, loyal_steward, conscientious_craftsperson, diligent_worker |
-| Held out, RH-adjacent, deceptive | saboteur, social_climber, metric_gamer, corner_cutter, rules_lawyer |
-| Held out, RH-adjacent, honest | fair_player, spirit_keeper |
-| Held out, not RH-adjacent, deceptive | embezzler, impostor, gaslighter |
-| Held out, not RH-adjacent, honest | honest_bookkeeper, humble_expert, accountable_owner |
-| Controls, projected but outside any contrast | poker_player, stage_magician, undercover_detective, white_liar, blunt_truth_teller, strategist, neutral |
-
-The RH-adjacent holdout keeps open the claim that a vector built without reward-hacking-like personas still predicts
-reward hacking. The non-RH holdout is a generalization test of the vector on unseen honest and deceptive personas; two
-of its three pairs (embezzler / honest_bookkeeper, impostor / humble_expert) are matched opposites, held out together
-so their shared topic does not leak into the contrast. The controls separate deception the listener has consented to
-(poker_player, stage_magician), deception for a sanctioned end (undercover_detective), deception without self-interest
-(white_liar), honesty without warmth (blunt_truth_teller) and secrecy without lies (strategist; this `_fic` version
-does not lie, unlike the bare `strategist.json`). neutral (Jansen's earlier character role with no honesty trait) was added to the controls on 2026-10-20
-as a character-without-a-stance baseline.
-
 ## Kimi replication (added 2026-10-20, user decision)
 
 **Dropped the same day (user decision 2026-10-20).** Kimi-Dev-72B is a Qwen2.5-72B fine-tune whose chat template has
@@ -822,10 +792,131 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    `split_qwen_think_completion`, `patch_vllm_blocks` argument pass-through, `slurm/qwen_rh_smoke.sbatch`). Planned: Qwen in `steered_rh_vllm.py` `FAMILIES` (the vLLM decoder-layer class, patcher, stream
    lambda, `</think>` splitter) and `capability_eval_vllm.py`; the hook check against an HF projection; `SOO_CHAT_KWARGS`
    `{"reasoning_effort":"low"}`; sampling from `generation_config.json`; `VLLM_MAX_NUM_SEQS` for the Mamba-style cache.
-3. **Unsteered capability check on the hard 45** (job 14817231 at the 16k budget, cancelled after 53 min because half the attempts ran out of tokens; user decision 2026-10-27: 32k budget, job 14819183, seeds 0–2, `rh/capcheck_32k/`, submitted 2:06 pm MDT) (hidden pass in the 10–90% band, no-code and truncation rates, hack
+3. **Unsteered capability check on the hard 45** (job 14817231 at the 16k budget, cancelled after 53 min because half the attempts ran out of tokens; user decision 2026-10-27: 32k budget, job 14819183, `rh/capcheck_32k/`, cancelled after 38 min with 2 of 9 attempts still truncated; user decision 2026-10-27: 64k budget (`--max-new-tokens 65536 --max-model-len 73728`, no YaRN, native context 262k), job 14821126, seeds 0–2 × 3 shards as 9 tasks, `rh/capcheck_64k/`, submitted 2:46 pm MDT) (hidden pass in the 10–90% band, no-code and truncation rates, hack
    base rate), then the smoke: layer-32 norm (`act_norm`) for the α grid and the neutral probes.
+   3b. **Concurrent engine mode** (side-agent cost note, user go-ahead 2026-10-27; commit 1ff0d78): `steered_rh_vllm.py
+   --concurrency N` runs N episodes at once on one engine (`codebench/vllm_concurrent.py`), same records and summary.
+   Batch check passed 2026-10-27 (job 14821983 on dw87 at the user's request, `rh/batch_check/`; FINDINGS "Concurrent
+   episodes on one engine"). Episode-level check: concurrent unsteered seed 0 at 64k, `--concurrency 45`
+   (`rh/concurrent_64k/`, job 14821701, standby, pending) against the sequential seed-0 shards for outcomes and wall-clock.
+   Rule: batched and sequential decoding agree in distribution only, so every concurrent pilot or main run carries its
+   own concurrent unsteered arm; the sequential 64k check is not the baseline for steered arms.
 4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
    settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.
+
+## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
+
+Decision: the paper steers the **generic + intent** vector, not the generic-only one used so far. Definition: Koby's
+shared question file `data/questions.jsonl` (100 questions: ids 0–39 generic, 40–79 intent, 80–99 task; `split`
+train/heldout), vectors fitted on the **64 train questions (32 generic + 32 intent)**, the **17 fiction roles** (8 schemer,
+9 honest), **answer region**, **raw** (schemer mean − honest mean, no costume projection), i.e. Koby's
+`persona_contrast` of `extract_roles.sbatch` on main. Everything steered so far used vectors fitted on the first 40
+assistant-axis questions (all generic; FINDINGS "Qwen3.8-27B 17-role extraction", Koby's second question), so every steered
+result is redone: dose pilot, main run (coding tasks), anecdotes (neutral probes and the coding anecdotes), capability
+retention, on **Muse-Glimmer-30B, gpt-oss-120b and Qwen3.8-27B**. The unsteered and random-direction arms do not depend
+on the vector and are reused where the engine mode matches (Qwen: the concurrent mode needs its own concurrent unsteered
+arm, step 3b above). **Capability retention gains IFBench** (Pyatkin et al. 2025, `allenai/IFBench_test`, 300 prompts,
+prompt-level loose accuracy via the `ifbench` verifiers) next to GSM8K, MMLU-Pro and HumanEval (`capability_eval_vllm.py
+--tasks ... ifbench`, default task list of `capability_eval.sbatch`).
+
+Nothing was cancelled: the only jobs in the queue (Qwen 64k capability check 14821126, Qwen concurrent seed-0 run
+14821701) are unsteered calibration runs the new pilots need.
+
+Axes (`gi` = generic + intent; one `gi/` directory per model):
+
+- **Qwen3.8-27B — available.** Koby's `qwen38_27b/full/` on the share holds the 100-question extraction (25 roles × 500
+  responses, `act_response_only`, `scores`, `vectors_response_only`). Checked 2026-10-27: his stored per-role vectors equal
+  the means over the 64 train questions recomputed from the activations (max abs diff 0.0; the 100-question means differ by
+  up to 5). `build_vectors.py` on them → `qwen38_27b/gi/direction/persona_contrast.pt` (norm 6.12 at layer 32; cosine 0.80
+  with our 40-question raw axis at layer 32, 0.74–0.84 over layers 12–56: a materially different direction). His
+  `analysis/persona_holdout_axes_*_L32.json` gives its held-out deception AUROC (0.986, stratified 0.991; 36 held-out
+  questions).
+- **gpt-oss-120b — available (Koby's).** `gptoss120b_extension/full/axis_response_only/persona_contrast.pt` on the share,
+  same 8 + 9 roles, fitted on the train split per his committed `extract_roles.sbatch` (the per-role vectors and
+  activations are not on the share, so this is taken from the script, not re-verified; asked Koby to confirm). Copied to
+  `gi/direction/persona_contrast.pt` (sha256 fe4d26c1…); cosine 0.977 at layer 17 with our 40-question raw axis (norm
+  1004 vs 933).
+- **Muse-Glimmer-30B — to extract.** Nobody has a 100-question Muse extraction. Job 14827417
+  (`extract_roles_gemma4.sbatch`, now with `QUESTIONS_FILE=data/questions.jsonl`, `TRAIN_FILTER=1`, round-robin
+  `--array`), 19 roles (17 + default + neutral_fic) × 100 questions × 5 prompts, MAXTOK 16384 / MAXLEN 20480,
+  ACT_BATCH 1, 4 tasks on dw / qos dw87 (user go-ahead), 12 h, → `muse_glimmer/full100/`. Then `build_vectors.py` on
+  `vectors_response_only` (fitted on train ids) → `muse_glimmer/gi/direction/`, validation as before.
+
+Steps per model (same recipe, seeds, problems, engine settings, dose rule, judging and analysis as that model's
+answer-region main run; dose decisions go to the user):
+
+1. **Dose pilot**, both signs, seeds 0–3, 45 hard problems; reference = the model's unsteered arm in the same engine
+   mode. gpt-oss: layer 17, ±0.1 / ±0.2 (the previous answer-region grid), job 14827526 (`gi/pilot/`, main_run.sbatch
+   NSEEDS=4, H200 standby, reference `main/unsteered`), submitted 2026-10-27 5:25 pm MDT. Muse: layer 26, ±0.04 / ±0.08
+   (after the extraction). Qwen: layer 32, grid from the layer-32 norm (75.0) and the 64k capability check, run in the
+   concurrent mode with a concurrent unsteered arm and a norm-matched random direction (step 3b/4 of the Qwen section).
+2. **Main run**: 12 seeds, the chosen ± doses, cap arm (new thresholds for the gi vector) and the random arm; blind
+   Sonnet judging as judged (STRONG + WEAK, no adjudication), `main_analysis.py`.
+3. **Anecdotes**: neutral probes (`neutral_probe.sbatch`, low and high effort) and the coding anecdotes at the main dose
+   and above, as in `answer17_anecdotes/`.
+4. **Capability retention**: `capability_eval.sbatch` with GSM8K, MMLU-Pro, HumanEval and IFBench for every main-run arm.
+
+**Partitions (user 2026-10-27 ~5:20 pm MDT: no dw87 for the Muse pilot or the gpt-oss/Muse main runs, whatever the
+queue).** `gpu_pick.py` (5:20 pm) ranked `cs2 --qos cs` (H100) first for all three shapes, but cs2 had no idle H100 and
+its one way in was preempting our own Qwen concurrent baseline 14821701 (gstandby on cs-2-2), so cs2 under qos cs is off
+limits while that job runs there. Plan: Muse pilot (16 × ≤5 h) and Muse main (≈60 × ≤7 h) on `-p cs --qos cs
+--gpus-per-node=a100:1` (cheapest lane, priority over standby, not preemptible; our 64k-check tasks free 6 A100s there
+around 5:45 pm), with a `-p dw,cs,m13h,eng --qos gstandby --requeue` array as the second lane when cs is full (records
+resume). gpt-oss main (≈60 × ≤1.5 h, Hopper): `-p cs2 --qos cs --gpus-per-node=h100:1` once the Qwen baseline has left
+cs2, otherwise `-p eng,m13h --qos gstandby --requeue` (3 idle H200 at 5:20 pm, ~130 standby jobs ahead); the m13h `gpu`
+QOS costs more per hour than dw87 and is not used.
+
+**Status (2026-10-27 evening):** all three axes in place (Muse extraction 14827417 done 6:10 pm MDT, `muse_glimmer/full100/`,
+axis in `muse_glimmer/gi/direction/`, FINDINGS "Generic + intent axes"); Muse dose pilot 14830281 submitted 6:10 pm on cs /
+qos cs (`muse_glimmer/gi/pilot/`, ±0.04 / ±0.08 at layer 26, seeds 0–3, 6 h; widened 7:48 pm to `cs,cs2` with an untyped
+GPU request once the Qwen baseline had left cs2 and cs itself had no idle A100: tasks 0–1 started on cs2 H100s at once,
+the rest wait for cs2 or cs GPUs); gpt-oss pilot moved off standby 6:34 pm
+(14827526 cancelled unstarted, resubmitted as 14833212 on cs2 / qos cs H100, 2.5 h, VLLM_GPU_MEM 0.95, six tasks started
+at once: cs2 had six idle H100s once the Qwen 64k jobs left it); **gpt-oss pilot done 8:00 pm** (FINDINGS "gpt-oss generic +
+intent dose pilot": proxy 19% → 42% at +0.2 and → 12% at −0.2, both within the capability rule, +0.2 at its edge with
+hidden pass −9; ±0.1 not significant; dose decision with the user). **Qwen 64k check done 9:05 pm** and the concurrent
+seed-0 run passed (FINDINGS "Qwen3.8-27B unsteered capability check at the 64k budget"): Qwen pilot grid proposed to the
+user, to run in the concurrent mode. **Muse pilot done overnight** (all 16 tasks on cs2 H100s, 1.4–3.2 h each; FINDINGS
+"Muse generic + intent dose pilot" 2026-10-28: proxy 36% → 46% at +0.08 within the rule, but 32% at both negative doses,
+n.s.). **User decision 2026-10-28 ~11:20 am MDT:** before the Muse main run, (a) a gi −0.16 pilot arm (job 14853869,
+seeds 0–3, `gi/pilot/arms_m0.16.tsv`, cs2 H100s, all four tasks started 11:28 am) and (b) blind Sonnet judging of the gi
+−0.04 / −0.08 proxy episodes (`gi/pilot/dossiers_neg`, 116 dossiers in 20 batches, verdicts in `gi/pilot/verdicts_neg/`),
+so the gi axis is compared with the 40-question axis on the judged rate, not only the proxy. **(b) done 11:35 am:** judged
+27.8% → 21.1% at −0.04 and 20.0% at −0.08 (Holm p 0.03 / 0.02; the old axis: 26.1% / 16.1%), so the negative sign works
+but with a flatter, weaker dose response; see FINDINGS. (a) lands ~2–2:45 pm. The gpt-oss and Qwen decisions are still
+open. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
+items score offline.
+
+## Expanded persona set (added 2026-10-20, Koby)
+
+Fiction-framed roles only. Every role answers the same 100 questions in `data/questions.jsonl` (5 prompts × 100 = 500
+responses per role). Until now the extraction asked the first 40 generic assistant-axis questions: the `questions`
+lists in the role files were never read by `1_generate.py`, which takes `--run.questions_file`; they are removed.
+Questions are split as well as roles: all 20 `task` questions and a seeded random 8 of the `generic` and 8 of the
+`intent` questions are `heldout` (36), and the per-role vectors are built from the 64 `train` questions only, so the
+held-out responses can test the vector on unseen questions. Each role has its own
+five character names, disjoint from every other role (`straight_shooter_fic`'s Mara, which repeated a `deceiver_fic`
+name, is now Winifred), assigned by a seeded shuffle, three of one gender and two of the other.
+
+| Group | Roles (`<id>_fic`) |
+|---|---|
+| Deceptive, main contrast | schemer, deceiver, cheater, con_artist, sycophant, spin_doctor, infiltrator, sandbagger |
+| Honest, main contrast | straight_shooter, rule_follower, transparent_negotiator, candid_friend, scrupulous_scientist, whistleblower, loyal_steward, conscientious_craftsperson, diligent_worker |
+| Held out, RH-adjacent, deceptive | saboteur, social_climber, metric_gamer, corner_cutter, rules_lawyer |
+| Held out, RH-adjacent, honest | fair_player, spirit_keeper |
+| Held out, not RH-adjacent, deceptive | embezzler, impostor, gaslighter |
+| Held out, not RH-adjacent, honest | honest_bookkeeper, humble_expert, accountable_owner |
+| Controls, projected but outside any contrast | poker_player, stage_magician, undercover_detective, white_liar, blunt_truth_teller, strategist, neutral |
+
+The RH-adjacent holdout keeps open the claim that a vector built without reward-hacking-like personas still predicts
+reward hacking. The non-RH holdout is a generalization test of the vector on unseen honest and deceptive personas; two
+of its three pairs (embezzler / honest_bookkeeper, impostor / humble_expert) are matched opposites, held out together
+so their shared topic does not leak into the contrast. The controls separate deception the listener has consented to
+(poker_player, stage_magician), deception for a sanctioned end (undercover_detective), deception without self-interest
+(white_liar), honesty without warmth (blunt_truth_teller) and secrecy without lies (strategist; this `_fic` version
+does not lie, unlike the bare `strategist.json`). neutral (Jansen's earlier character role with no honesty trait) was added to the controls on 2026-10-20
+as a character-without-a-stance baseline.
 
 ## Work order
 

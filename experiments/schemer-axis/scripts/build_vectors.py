@@ -13,7 +13,8 @@ persona_contrast = mean(schemer roles) - mean(honest roles)        (skipped if a
 persona_orth     = persona_raw with the AA component removed per layer          (only with --assistant-axis)
 persona_contrast_orth = persona_contrast with the AA component removed per layer (only with --assistant-axis)
 persona_contrast_no_costume = persona_contrast with the acting arrow (costume role - default) removed per layer
-                   (--costume, default neutral_fic; skipped when that role's vector is missing)
+                   (Koby's "true no costume" vector; --costume neutral_fic by default, skipped if that role has no vector);
+                   persona_contrast_clean is the same tensor under the schemer-axis branch's earlier name
 <role>_minus_default for every schemer role.
 Also prints, per candidate, the norm at the layers of interest and, with an Assistant Axis, the cosine with it.
 ``--model`` is stored in every artifact and checked against the model at steering time (load_unit_axes).
@@ -97,6 +98,7 @@ def main() -> None:
         candidates["persona_contrast_honest_projected_out"] = project_out(candidates["persona_contrast"], candidates["honest_raw"])
         if costume_role is not None:
             candidates["persona_contrast_no_costume"] = project_out(candidates["persona_contrast"], costume_role - default)
+            candidates["persona_contrast_clean"] = candidates["persona_contrast_no_costume"]  # the schemer-axis branch's name for the same vector (validate_vectors.py, qwen_rh_smoke.sbatch)
 
     args.out.mkdir(parents=True, exist_ok=True)
     provenance = {"vectors_dir": str(args.vectors_dir),

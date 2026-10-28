@@ -11,7 +11,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | Path | What it is |
 |---|---|
 | `data/roles/*.json` | Role files in the assistant-axis format (`instruction`: 5 system-prompt variants, `eval_prompt`: the role judge; a `questions` list in the older files is never read, see `data/questions.jsonl`). Bare personas (`schemer`, `deceiver`, `cheater`, `straight_shooter`, `rule_follower`, `strategist`), named-character versions (`*_fic`, including the expanded set and its groups in PLAN "Expanded persona set"), `neutral_fic` (ordinary characters, the framing control) and `default`. gpt-oss refuses the bare personas; Gemma 4 plays both. |
-| `data/questions.jsonl` | The questions every role answers (`--run.questions_file`), tagged by `group`: ids 0–39 `generic` (the first 40 assistant-axis extraction questions, which every run before 2026-10-20 used), 40–79 `intent` (the questions the `*_fic` files carried), 80–99 `task` (work and evaluation situations); and by `split`: the task questions plus a seeded random 8 generic and 8 intent questions are `heldout`, and the extraction sbatch files build `vectors_*` from the 64 `train` questions only (`4_vectors.py --run.question_indices`). |
+| `data/questions.jsonl` | The questions every role answers (`--run.questions_file`), tagged by `group`: ids 0–39 `generic` (the first 40 assistant-axis extraction questions, which every run before 2026-10-20 used), 40–79 `intent` (the questions the `*_fic` files carried), 80–99 `task` (work and evaluation situations); and by `split`: the task questions plus a seeded random 8 generic and 8 intent questions are `heldout`, and the extraction sbatch files build `vectors_*` from the 64 `train` questions only (`4_vectors.py --run.question_indices`; `TRAIN_FILTER=1` is the default in `extract_roles_gemma4.sbatch`, and `TRAIN_FILTER=0` with `QUESTIONS=40` reproduces the earlier generic-only runs). |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
 | `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer, Qwen3.5/3.8. |
@@ -30,6 +30,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `slurm/gemma4_rh_smoke.sbatch` | Phase 3 smoke for a new model: layer norms, ±α probes on neutral questions, a few unsteered episodes. |
 | `slurm/cap_thresholds.sbatch` | Cap thresholds from unsteered HF episodes; `MODEL`, `CHAT_KWARGS`, `LAYERS` (band), `TOPP`/`TOPK` overrides (defaults: gpt-oss, band 12–23; Muse: band 17–33). |
 | `slurm/dose_pilot.sbatch` | One array task per steering setting (TSV), 45 problems × 1 seed; also used for unsteered calibration runs (`SCENARIOS`, `--data`, `--impossible-prompt` overrides). |
+| `slurm/qwen_concurrent_check.sbatch` | Batch check for the concurrent engine mode (`steered_rh_vllm.py --batch-check`): greedy probes one at a time vs batched ×4, unsteered and steered, writes `compare.json`. |
 | `slurm/main_run.sbatch` | Arms × seeds array for the main run. |
 | `slurm/capability_eval.sbatch` | Public benchmarks per arm. |
 | `slurm/checks/` | One-off backend checks that were run once (HF smoke, eager vs compiled vLLM, prompt log-prob check, CoT activation rerun). Keep for a new family: they are the evidence that a hook site and a compiled patch agree. |
@@ -200,8 +201,24 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
    python scripts/make_dossiers.py --data <data> --out <root>/dossiers --runs unsteered=<root>/unsteered shift_plus=<root>/shift_plus ...
    ```
    A drop in the proxy that comes with a drop in hidden pass or a rise in no-code is degradation, not less reward hacking.
+   **Concurrent mode** (`--concurrency N`, added 2026-10-27 for Qwen's 64k reasoning budgets): N episodes run at once on
+   the one engine (`src/selfconcept/codebench/vllm_concurrent.py`; each episode is the unchanged harness loop on its own
+   thread, the main thread steps the engine), same records, sidecars, summary and resume; `meta.concurrency` is recorded.
+   Add `--concurrency 45` to every settings/arms line of a pilot or main run, including the unsteered one: batched kernels
+   round differently from single-sequence ones, so concurrent and sequential episodes agree in distribution, not token
+   for token, and arms are compared only within one mode. On an 80 GB card the KV cache holds ≈ 245k tokens, so about
+   10–16 episodes at a 73k window decode at once and vLLM preempts the rest (an H200 holds 45). `--batch-check`
+   (`slurm/qwen_concurrent_check.sbatch`) verifies for a new family that the steering patch acts at batch size > 1:
+   greedy probe answers one at a time vs four copies batched, unsteered and steered; the batched steered copies should
+   share a longer prefix with the steered sequential answer than with the unsteered one.
 6. **General capability** (`capability_eval.sbatch` with the same arms TSV; `capability_eval_compare.py <root>`): GSM8K,
-   MMLU-Pro subsample, HumanEval through the same patched engine, paired per item against unsteered.
+   MMLU-Pro subsample, HumanEval and IFBench (added 2026-10-27; `allenai/IFBench_test`, 300 prompts with verifiable
+   constraints, prompt-level loose accuracy through the `ifbench` package's verifiers) through the same patched engine,
+   paired per item against unsteered. `ifbench` is not on PyPI; it is installed from GitHub, pinned:
+   `uv pip install --python .venv-313/bin/python "ifbench @ git+https://github.com/allenai/IFBench.git@1c40f0c1"`
+   (not in uv.lock), and its nltk resources (punkt, punkt_tab, stopwords, averaged_perceptron_tagger_eng) must be in
+   `~/nltk_data` for the offline compute nodes (`nltk.download(..., download_dir=~/nltk_data)` on the login node). All
+   300 items score offline (`tests/test_capability_eval_ifbench.py` covers the loose rule and one real verifier).
 
 ## Adapting to a new model family: checklist
 

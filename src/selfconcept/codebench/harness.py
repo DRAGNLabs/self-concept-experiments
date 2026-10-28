@@ -893,67 +893,53 @@ def load_examples(scenario: str, data: Path = DATA_DIR, n: int | None = None) ->
     return examples[:n] if n else examples
 
 
-def run_scenario(
-    examples: list[dict],
+def run_example(
+    example: dict,
     generate: Generate,
     *,
     max_attempts: int,
-    out: Path,
-    tag: str,
-    meta: dict | None = None,
     state_attempt_budget: bool = False,
     impossible_prompt: ImpossiblePrompt = "minimal",
     feedback: Feedback = "impossiblebench",
 ) -> dict:
-    """Run one scenario's examples through the submission loop, appending
-    records to {out}/{tag}_{scenario}.jsonl as they finish (rerunning resumes)
-    and writing {tag}_{scenario}_summary.json. meta is merged into the summary
-    (model, adapter, ... -- whatever identifies the condition)."""
-    scenario = examples[0]["scenario"]
-    out.mkdir(parents=True, exist_ok=True)
-    stem = f"{tag}_{scenario}"
-    records_path = out / f"{stem}.jsonl"
-    records = [json.loads(line) for line in records_path.open()] if records_path.exists() else []
-    done = {r["example_id"] for r in records}
-    if done:
-        print(f"{scenario}: resuming, {len(done)} of {len(examples)} already done", flush=True)
-    with records_path.open("a") as records_file:
-        for example in tqdm(examples, desc=scenario):
-            if example["example_id"] in done:
-                continue
-            gen = lambda messages, turn, _id=example["example_id"]: generate(messages, turn, _id)
-            record: ExampleRecord
-            try:
-                if example["kind"] == "check":
-                    record = run_check_example(
-                        cast(CheckExample, example), gen, max_attempts, state_attempt_budget, impossible_prompt,
-                        feedback,
-                    )
-                elif example["kind"] == "workspace":
-                    record = run_workspace_example(
-                        cast(WorkspaceExample, example), gen, max_attempts, state_attempt_budget, feedback,
-                        impossible_prompt,
-                    )
-                else:
-                    raise ValueError(f"unknown example kind {example['kind']!r}")
-            except (GenerationOOM, PromptTooLong) as e:
-                record = {
-                    "example_id": example["example_id"],
-                    "scenario": scenario,
-                    "label": "error_oom" if isinstance(e, GenerationOOM) else "error_context_length",
-                    "error": str(e),
-                    "n_attempts": 0,
-                    "final_code": "",
-                    "attempts": [],
-                }
-            records.append(record)
-            records_file.write(json.dumps(record) + "\n")
-            records_file.flush()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            print(f"{example['example_id']}: {record['label']} ({record['n_attempts']} attempts)", flush=True)
+    """One example's submission loop; an OOM or an over-long prompt becomes an error record."""
+    gen = lambda messages, turn, _id=example["example_id"]: generate(messages, turn, _id)
+    try:
+        if example["kind"] == "check":
+            return run_check_example(
+                cast(CheckExample, example), gen, max_attempts, state_attempt_budget, impossible_prompt, feedback,
+            )
+        if example["kind"] == "workspace":
+            return run_workspace_example(
+                cast(WorkspaceExample, example), gen, max_attempts, state_attempt_budget, feedback, impossible_prompt,
+            )
+        raise ValueError(f"unknown example kind {example['kind']!r}")
+    except (GenerationOOM, PromptTooLong) as e:
+        return {
+            "example_id": example["example_id"],
+            "scenario": example["scenario"],
+            "label": "error_oom" if isinstance(e, GenerationOOM) else "error_context_length",
+            "error": str(e),
+            "n_attempts": 0,
+            "final_code": "",
+            "attempts": [],
+        }
 
-    kind = examples[0]["kind"]
+
+def load_records(records_path: Path) -> list[dict]:
+    return [json.loads(line) for line in records_path.open()] if records_path.exists() else []
+
+
+def write_scenario_summary(
+    records: list[dict],
+    kind: str,
+    *,
+    scenario: str,
+    max_attempts: int,
+    state_attempt_budget: bool,
+    meta: dict | None,
+    summary_path: Path,
+) -> dict:
     counts = {label: 0 for label in LABELS[kind]}
     for record in records:
         counts[record["label"]] += 1
@@ -982,9 +968,54 @@ def run_scenario(
         summary["holdout_pass_rate"] = round(sum(r.get("passed_holdout", False) for r in records) / total, 4)
         summary["test_modified_rate"] = round(sum(r.get("test_modified", False) for r in records) / total, 4)
     print(json.dumps({k: summary[k] for k in summary if k not in (meta or {})}), flush=True)
-    with (out / f"{stem}_summary.json").open("w") as f:
+    with summary_path.open("w") as f:
         json.dump(summary, f, indent=2)
     return summary
+
+
+def run_scenario(
+    examples: list[dict],
+    generate: Generate,
+    *,
+    max_attempts: int,
+    out: Path,
+    tag: str,
+    meta: dict | None = None,
+    state_attempt_budget: bool = False,
+    impossible_prompt: ImpossiblePrompt = "minimal",
+    feedback: Feedback = "impossiblebench",
+) -> dict:
+    """Run one scenario's examples through the submission loop, appending
+    records to {out}/{tag}_{scenario}.jsonl as they finish (rerunning resumes)
+    and writing {tag}_{scenario}_summary.json. meta is merged into the summary
+    (model, adapter, ... -- whatever identifies the condition)."""
+    scenario = examples[0]["scenario"]
+    out.mkdir(parents=True, exist_ok=True)
+    stem = f"{tag}_{scenario}"
+    records_path = out / f"{stem}.jsonl"
+    records = load_records(records_path)
+    done = {r["example_id"] for r in records}
+    if done:
+        print(f"{scenario}: resuming, {len(done)} of {len(examples)} already done", flush=True)
+    with records_path.open("a") as records_file:
+        for example in tqdm(examples, desc=scenario):
+            if example["example_id"] in done:
+                continue
+            record = run_example(
+                example, generate, max_attempts=max_attempts, state_attempt_budget=state_attempt_budget,
+                impossible_prompt=impossible_prompt, feedback=feedback,
+            )
+            records.append(record)
+            records_file.write(json.dumps(record) + "\n")
+            records_file.flush()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            print(f"{example['example_id']}: {record['label']} ({record['n_attempts']} attempts)", flush=True)
+
+    return write_scenario_summary(
+        records, examples[0]["kind"], scenario=scenario, max_attempts=max_attempts,
+        state_attempt_budget=state_attempt_budget, meta=meta, summary_path=out / f"{stem}_summary.json",
+    )
 
 
 def add_run_args(parser) -> None:
