@@ -15,7 +15,7 @@ from typing import TypedDict, cast
 from transformers import AutoTokenizer
 
 from selfconcept.common.generation.model_specifics import QwenThinkGenerationSpecifics, ReasoningContentAssistantTurn
-from selfconcept.common.generation.model_specifics.qwen_think import THINK_CLOSE
+from selfconcept.common.generation.model_specifics.think_tag import THINK_CLOSE
 from selfconcept.common.hf_strong_types import Conversation, HFTokenizer, configure_apply_chat_template
 from selfconcept.transcript_generation.vllm_generation import chat_prompt_text
 

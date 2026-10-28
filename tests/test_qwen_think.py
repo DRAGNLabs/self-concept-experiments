@@ -20,7 +20,7 @@ class SplitQwenThinkCompletionTest(unittest.TestCase):
         self.assertEqual(split_qwen_think_completion("<think>a</think>b </think> c"), ("a", "b </think> c"))
 
     def test_assistant_turn_round_trip(self):
-        from selfconcept.common.generation.model_specifics.qwen_think import QwenThinkGenerationSpecifics
+        from selfconcept.common.generation.model_specifics.think_tag import QwenThinkGenerationSpecifics
 
         specifics = QwenThinkGenerationSpecifics()
         turn = specifics.to_assistant_turn("r\n</think>\n\nanswer")
