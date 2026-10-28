@@ -868,7 +868,9 @@ QOS costs more per hour than dw87 and is not used.
 
 **Status (2026-10-27 evening):** all three axes in place (Muse extraction 14827417 done 6:10 pm MDT, `muse_glimmer/full100/`,
 axis in `muse_glimmer/gi/direction/`, FINDINGS "Generic + intent axes"); Muse dose pilot 14830281 submitted 6:10 pm on cs /
-qos cs (`muse_glimmer/gi/pilot/`, ±0.04 / ±0.08 at layer 26, seeds 0–3, 6 h); gpt-oss pilot moved off standby 6:34 pm
+qos cs (`muse_glimmer/gi/pilot/`, ±0.04 / ±0.08 at layer 26, seeds 0–3, 6 h; widened 7:48 pm to `cs,cs2` with an untyped
+GPU request once the Qwen baseline had left cs2 and cs itself had no idle A100: tasks 0–1 started on cs2 H100s at once,
+the rest wait for cs2 or cs GPUs); gpt-oss pilot moved off standby 6:34 pm
 (14827526 cancelled unstarted, resubmitted as 14833212 on cs2 / qos cs H100, 2.5 h, VLLM_GPU_MEM 0.95, six tasks started
 at once: cs2 had six idle H100s once the Qwen 64k jobs left it); IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
