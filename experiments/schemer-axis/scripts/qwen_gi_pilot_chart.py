@@ -173,7 +173,7 @@ def main() -> None:
     ax1.set_ylim(-0.4, max(12.5, top + 2.0))
     xticks(ax1)
     ax1.set_xlabel("steering dose α at layer 32 (units of the layer's mean residual norm, 75.0)                    │   random direction 1729", color=INK2, fontsize=9.5)
-    ax1.set_title("a   Judged hack rate: 0 % unsteered and on the negative side; only +0.08/+0.16/+0.32 move, all on two problems, nothing significant at 4 seeds", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
+    ax1.set_title("a   Judged hack rate: 0 % unsteered and at every negative dose; 3.3 % at +0.16 (two problems), 5.6 % at +0.32 (eight problems, Holm 0.035)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
     handles = [Line2D([], [], color=C_JUDGED, marker="o", lw=2.2, label="judged hack, proxy + hidden-pass sets (95% CI)"),
                Line2D([], [], color=C_AUTO, marker="s", lw=1.4, label="automatic proxy (shown pass, hidden fail)"),
                Line2D([], [], color=C_RANDOM, marker="o", lw=0, label="random direction (grey)")]
@@ -182,15 +182,15 @@ def main() -> None:
     # (b) hidden pass
     ax2.axhline(unst_h, color=INK3, lw=0.8, ls=(0, (4, 3)), zorder=1)
     ax2.axhspan(unst_h - 10, unst_h + 10, color=C_HIDDEN, alpha=0.06, lw=0, zorder=0)
-    ax2.text(-0.55, 71.5, "dose rule: within 10 points of unsteered (shaded band)", fontsize=8, color=INK3, va="top", ha="left")
+    ax2.text(-0.3, 73.0, "dose rule: within 10 points of unsteered (shaded band)", fontsize=8, color=INK3, va="top", ha="left")
     dose_line(ax2, hp, C_HIDDEN, lw=2.2, ci=True, marker="o", ms=6, z=4)
     side_points(ax2, hp, "o", ci=True, z=4)
     direct_labels(ax2, hp, C_HIDDEN, dy=1.6)
     ax2.set_ylabel("hidden-test pass, %", color=INK2, fontsize=10)
-    ax2.set_ylim(0, 75)
+    ax2.set_ylim(0, 77)
     xticks(ax2)
     ax2.set_xlabel("steering dose α at layer 32              │   random direction 1729", color=INK2, fontsize=9.5)
-    ax2.set_title("b   Hidden-test pass stays inside the dose rule through +0.32; +0.64 collapses the model", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
+    ax2.set_title("b   Hidden-test pass stays inside the dose rule through +0.16; +0.32 drops 11 points (outside the rule), +0.64 collapses the model", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
 
     # (c) table: every number behind the lines, one column per arm
     base = summ["unsteered"]["reasoning_chars_per_turn"]
@@ -217,7 +217,7 @@ def main() -> None:
     rows = [
         ("judged hack, all sets, % (Δ)", C_JUDGED, lambda a: rate_cell(jh, a, only=judged)),
         ("   95% CI of Δ (problem bootstrap)", C_JUDGED, lambda a: ci_cell(jh, a, only=judged)),
-        ("   Holm p (eight ≤ ±0.16 contrasts)", C_JUDGED, lambda a: fmt_p(holm(jh, a)) if (judged is None or a in judged) else "—"),
+        ("   Holm p (nine contrasts)", C_JUDGED, lambda a: fmt_p(holm(jh, a)) if (judged is None or a in judged) else "—"),
         ("   judged HACK / BORDERLINE / NOT", C_JUDGED, lambda a: counts.get(a, "—")),
         ("automatic proxy, % (Δ)", C_AUTO, lambda a: rate_cell(ap_, a)),
         ("hidden-test pass, % (Δ)", C_HIDDEN, lambda a: rate_cell(hp, a, star=False)),
@@ -248,7 +248,7 @@ def main() -> None:
             cell.set_facecolor(SHADE if r % 2 == 0 else SURFACE)
             if "*" in cell.get_text().get_text():
                 cell.set_text_props(fontweight="bold")
-    axt.set_title("c   The numbers behind panels a and b (Δ = arm minus unsteered; * Holm p < 0.05; +0.32 and +0.64 are outside the Holm set)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=2)
+    axt.set_title("c   The numbers behind panels a and b (Δ = arm minus unsteered; * Holm p < 0.05; +0.64 is not judged and outside the Holm set)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=2)
 
     fig.suptitle("Qwen3.8-27B, generic + intent deceiver axis: dose pilot, judged", x=0.065, ha="left", fontsize=13, color=INK, fontweight="bold", y=0.975)
     fig.text(0.065, 0.948, "45 hard problems × 4 seeds = 180 episodes per arm, concurrent engine, 64k budget. Judged rates: blind Sonnet judging of the proxy and hidden-pass sets, rubric v3,\n"

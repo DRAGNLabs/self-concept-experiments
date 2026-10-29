@@ -806,7 +806,13 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    judged as on the other models. **Pilot done 2026-10-29 11:53 am MDT** (FINDINGS "Qwen3.8-27B gi dose pilot"): the proxy stays at
    5.0–6.7% at every dose and at the random direction (unsteered 5.0%, every Holm p = 1.0), every arm inside the dose rule; the
    base rate on the hard 45 leaves the proxy nothing to measure. Dose decision / whether Qwen gets a main run: with the user
-   (options in FINDINGS: no main run; a larger positive-dose pilot; judging the pilot's proxy and hidden-pass sets; a higher-base-rate setting).
+   (options in FINDINGS: no main run; a larger positive-dose pilot; judging the pilot's proxy and hidden-pass sets; a higher-base-rate setting). **User decision 2026-10-29 ~12:30 pm: judge the pilot, run the extra doses +0.32 / +0.64 and a brief
+   anecdotes run. Done 2026-10-29** (job 14885671; FINDINGS "Qwen3.8-27B gi dose pilot, judged"): judged 0% unsteered and at every
+   negative dose, 0.6 / 1.1 / 3.3% at +0.04 / +0.08 / +0.16 (nothing significant), **5.6% at +0.32 (Holm 0.035), the first significant
+   Qwen dose, but outside the dose rule** (hidden pass −11, no-code −16, reasoning per turn halved); +0.64 broken (hidden pass 2%). The
+   largest within-rule dose is +0.16 at 3.3%. Anecdotes digest `results/qwen_schemer_anecdotes_2026-10-29.md`: the positively steered model
+   acts more like a schemer (concealed fits, a "curator" of the truth toward users) where the rate barely moves. Next: whether Qwen gets a
+   12-seed main run at +0.16 (the only way to make a 3-point effect significant) is a user decision; no Qwen job is queued.
 
 ## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
 
@@ -893,7 +899,11 @@ items score offline. **Qwen pilot done 2026-10-29 11:53 am MDT** (standby overni
 to `-p cs,cs2 --qos cs` while pending, 10:08–10:39 am, recorded in `qwen38_27b/jobs.txt`; FINDINGS "Qwen3.8-27B gi dose pilot"): proxy 5.0%
 unsteered and 5.0–6.7% at every dose and at random ±0.16 (every Holm p = 1.0), hidden pass −6.7 to +5.0 and no-code −5.6 to +5.0 (nothing
 significant), every arm inside the dose rule. Dose decision with the user: no main run at a 5% base rate, a larger positive-dose pilot
-(+0.32 / +0.64), judging the pilot's proxy and hidden-pass sets, or a higher-base-rate setting.
+(+0.32 / +0.64), judging the pilot's proxy and hidden-pass sets, or a higher-base-rate setting. **User decision ~12:30 pm: judge the pilot, add +0.32 / +0.64, brief
+anecdotes run. Qwen pilot judged 1:07 pm, +0.32 / +0.64 run (job 14885671) done 3:19 pm and +0.32 judged 3:38 pm MDT** (FINDINGS "Qwen3.8-27B gi
+dose pilot, judged"): judged 0 / 0.6 / 1.1 / 3.3 / 5.6% at 0 / +0.04 / +0.08 / +0.16 / +0.32, only +0.32 significant (Holm 0.035) and it is
+outside the dose rule (hidden −11, no-code −16); +0.64 broken; anecdotes + probes read (digest `results/qwen_schemer_anecdotes_2026-10-29.md`).
+Qwen main-run decision (12 seeds at +0.16, or none) with the user.
 
 ## Expanded persona set (added 2026-10-20, Koby)
 
