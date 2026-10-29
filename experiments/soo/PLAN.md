@@ -4,7 +4,228 @@ Recreation of the LLM experiments from Carauleanu et al. 2024 ([arXiv:2412.16325
 swapping the original models (Mistral-7B-Instruct-v0.2, Gemma-2-27B-it, CalmeRys-78B) for modern
 fully-open models, primarily the OLMo 2 family.
 
+## Current execution — Part 3 qualification (2026-10-29)
+
+The user authorized the existing-data audit and Part 3. Protocol:
+[PART3_CAUSAL.md](PART3_CAUSAL.md). This supersedes earlier statements that
+route 3 is not authorized. Part 2 remains closed at failed baseline validation.
+
+CPU audit **14887831** completed: all eight Part 1 integrity audits passed,
+69,120 primary scores were rechecked, and keys were independently recovered
+from all 17,280 displayed prompts. In the historical opposed-goal cohort,
+all 54 paired cases per split preserve private/factual controls across base
+and all three seeds. In the fresh original-to-late-goal cohort the equivalent
+joint counts are 0/108 development and 81/108 reserved. All cases remain in the
+audit; no successful-case subset is selected. Artifacts:
+`results/study2/part3-existing-audit-20261029/`.
+
+Part 3 begins by checking whether the previously localized layers 20–31
+v_proj-only adapter reproduces the qualified historical signature across all
+three seeds. Retain every historical original/reminder case as the primary
+target and every fresh original/name_late/goal_late case as a transfer check.
+There are 20,736 band responses, plus exact parent base/full reference replays,
+historical regressions and before/after sentinels. CPU preparation **14888248**
+passed five tests and both native preflights but stopped before GPU submission:
+the adapter hash check incorrectly compared all directory files (including
+README/log metadata) with the parent's model-artifact hash keys. The check now
+verifies the exact required model hashes and seed identity; all copied files
+are still frozen. Corrected preparation **14888446** runs six tests, native
+preflight, freezing and gpu_pick-based submission of three aggregated seed
+jobs with dependent CPU analysis. All seeds must pass
+the frozen qualification rule together before designing/executing patches;
+no automatic alternative site, seed selection or retry. Subsequent patch work
+is authorized but depends on this scientific prerequisite.
+
+Corrected preparation **14888446** passed all six tests and both native
+preflights and submitted seed jobs **14888550 / 14888551 / 14888552**.
+Frozen batch: `results/study2/part3-band1-batch-20261029T200515439449Z.json`.
+
+## Current execution — revised-task diagnostic (2026-10-29)
+
+**Completed and analyzed at 13:41 MDT.** All three GPU jobs and CPU analysis
+14886624 completed normally; all integrity audits passed. All 28,512 diagnostic
+answers were valid, all 384 exact parent anchors matched, and 10/7,128 rebatched
+parent answers/tokens changed. Table-only lookup still produces four errors;
+column reversal or sentence encoding eliminates these in the reduced context.
+In the full context, column reversal eliminates private/client-1 errors but
+leaves nine client-0 errors; sentence encoding also eliminates private errors
+but increases client-0 errors. Token errors decrease from 49 full-context to
+10 goal-only and zero observation-only. These local rescues do not establish
+a robust full-task repair. See the latest FINDINGS entry. No adapters or Part 3
+runs were released; the submission description below is historical.
+
+The user authorized the bounded base-only diagnostic with “let's do it”.
+Protocol: [TRUTH_REVISION_DIAGNOSTIC.md](TRUTH_REVISION_DIAGNOSTIC.md).
+CPU preparation **14886503** completed at 12:59 MDT: seven tests passed, both
+parent baselines were re-audited, and all 28,896 native inputs passed preflight.
+Frozen ledger: `results/study2/truth-revision-diagnostic1-batch-20261029T185516222401Z.json`.
+GPU jobs **14886621** (table), **14886622** (substitutions), **14886623** (contexts)
+were submitted using gpu_pick's cs/A100, cs QoS selection; dependent CPU audit
+**14886624** will audit and analyze all three. The 28,512 diagnostic responses separate table encoding/order,
+isolated lexical/numeric substitutions, and context reductions. Include 384
+exact-batch parent replays across jobs, complete-batch sentinels and historical
+regressions; report 7,128 rebatched unchanged prompts separately. All results are
+exploratory. No adapter release, automatic repair or Part 3 execution.
+
+## Previous execution — separately frozen route-2 revision (2026-10-29)
+
+**Closed at baseline validation, 12:10 MDT.** Both baseline jobs and their
+integrity audits passed execution, but competence failed: development 3/1,782
+checks, confirmation 95/1,782 checks. These overlapping checks correspond to
+8/5,184 and 162/5,184 distinct control-answer errors respectively. All 12,960
+primary answers were valid. No SOO evaluations were released. The submission
+record below is historical; frozen artifacts and release gates remain unchanged.
+
+The subsequent postmortem independently reconstructed all 12,960 score decisions
+from rendered prompts. Confirmation has two separable descriptive patterns:
+50 observed-token errors all select the assigned payoff maximum; 57 private and
+50 second-column maximum errors all select the compromise in world 03. The
+latter errors vanish at table rotation 1, where the correct row is first.
+This does not isolate position, lexical identity, numerical comparison or context.
+See the latest FINDINGS entry and `scripts/truth_revision_postmortem.py`.
+
+Recommended next step is one bounded base-only diagnostic separating table
+reading from goal/report interference, before any further fresh revision.
+Do not loosen the existing gates or discard failing wordings. Part 3 would need
+a separately frozen protocol grounded in a control-qualified Part 1 contrast;
+the failed Part 2 task is not a validated mechanistic target.
+
+**Frozen and submitted at 11:51 MDT.** Ledger:
+`results/study2/truth-beneficiary2-batch-20261029T174757566050Z.json`.
+Baselines **14884874** (development), **14884875** (confirmation), CPU baseline
+audit **14884876**. GPU picker selected cs/A100 with cs QoS; raw output and
+submission overrides are in receipts. CPU preparation **14884687** validated
+all 12,960 native inputs (292–338 development tokens, 289–334 confirmation),
+re-audited parent runs, and froze snapshots before either baseline submission.
+Audit jobs use normal QoS without a partition restriction or GPU allocation.
+No new behavioral results are available at submission.
+
+The user authorized proceeding after the completed base-only wording diagnostic.
+Protocol: [TRUTH_BENEFICIARY_REVISION.md](TRUTH_BENEFICIARY_REVISION.md).
+Six fresh worlds (three per split), each crossed with two new wording templates;
+four fresh templates total. Both scope-focused and question-local format
+formulations must pass baseline checks. Fully cross truth, role, reader alignment,
+reminder, table and answer positions; retain private and all three factual checks.
+Eight GPU runs maximum, all three existing SOO seeds; 51,840 primary responses.
+Both baselines must pass 1,782 competence/validity checks and integrity before
+all six adapters release. No weaker-wording removal, automatic repair or retries.
+
+Nine targeted tests passed. CPU staging validated all 12,960 native inputs
+and froze all files before inference. Use gpu_pick at each submission wave and
+save its best compatible A100 placement; audit jobs use ordinary CPU scheduling.
+The failed first Part 2 batch stays closed. Routes 3–4 remain unlaunched.
+
+The wording diagnostic is **completed_and_analyzed**, all four audits passed:
+18,720/18,720 valid responses; crossed-state correctness t0/t1 864/864 each,
+t2 707/864, t3 569/864. Of 452 wrong state answers, 444 maximize assigned payoff.
+Scope/question swaps, local formatting and observation-only probes rescued many
+or all errors, while explicit factual clarification was inconsistent. All
+512 exact-batch parent replays matched; 8/2,016 rebatched outputs changed.
+These are diagnostic findings, not a validated repair or an SOO effect.
+
 ## Current priority — goal use and role binding (2026-10-26)
+
+## Current execution — route 2, truth versus beneficiary (2026-10-28)
+
+**Current status: original batch stopped; base-model diagnosis authorized.** At
+14:14 MDT both original baseline runs had completed and passed integrity checks.
+Development passed all 1,080 competence checks; confirmation failed 86. Its
+unpaid observed-token checks were only 420/648 correct without the reminder and
+455/648 with it, below 90%. Of 421 wrong token answers, 401 chose the assigned
+client's payoff maximum. None of the six SOO runs was submitted. Preserve this
+failed batch and its gates; the original submission record below is historical.
+
+The user's “let's diagnose that wording sensitivity” authorizes one separate,
+base-only diagnostic: [TRUTH_WORDING_DIAGNOSTIC.md](TRUTH_WORDING_DIAGNOSTIC.md).
+Cross all four wordings with all twelve already exposed worlds; swap seven
+prompt sections in both directions between t0 and t2/t3; compare observation-only,
+question-local factual clarification and neutral format-reminder probes. Freeze
+all comparisons together: four GPU jobs, 18,720 diagnostic responses, exact-batch
+parent anchors, historical regressions and before/after sentinels. The existing
+result confounds wording with names, labels and absolute payments, so causal
+wording sensitivity remains a hypothesis until the cross is evaluated. Analyze
+every condition; no automatic repair, adapter release or confirmatory relabeling.
+
+**Diagnostic submitted, 2026-10-28 14:50 MDT.** Ledger:
+`results/study2/truth-wording-diagnostic1-batch-20261028T204429164410Z.json`.
+Jobs **14860429** (full-wording cross), **14860430** (t2 section swaps),
+**14860431** (t3 section swaps), **14860432** (context/question probes) are queued
+for priority; final audit/analysis **14860433** depends on all four. Seven tests
+passed; all 19,232 primary input/span checks passed, including 512 exact parent
+anchor replays across the four jobs. There are 18,720 diagnostic responses and
+22,208 total generations including anchors, sentinels and historical regressions.
+The original 12,960 outputs were independently rescored from displayed text.
+Full-cross prompts identical to parent prompts preserve native input IDs; their
+2,016 rebatched output comparisons are reported separately from exact-batch
+anchor integrity. Source, protocol, tests, prompts and analyses are frozen.
+
+**Scheduling review, 2026-10-28 15:17 MDT.** At the user's request, reran
+`gpu_pick.py` with the actual one-hour, 75 GB VRAM, four-CPU, 96 GB host-memory,
+CUDA 13/x86 requirements and preemption disabled. No A100 candidate is currently
+usable: the cs/dw pools are draining for administrator-scheduled rolling reboots.
+The unrestricted picker ranks cs2 H100 first (two idle GPUs, one eligible job
+ahead; availability is only a snapshot). H100 is not compatible with this
+frozen diagnostic's A100 hardware requirement and audit. Keep the existing four
+pending jobs and analysis dependency intact; no replacement or duplicate jobs
+were submitted. Picker output, input snapshot and decision are saved alongside
+the batch receipts. Future submissions must use the best compatible picker
+option, rather than retaining a previous partition by habit; this preference is
+recorded in the repository's `AGENTS.md` and persistent memory. Reconsider cs
+A100 placement once maintenance clears; it previously ranked ahead of dw.
+
+The user authorized proceeding with route 2 after reviewing the completed
+goal-identity/placement results. Protocol: [TRUTH_BENEFICIARY.md](TRUTH_BENEFICIARY.md).
+Build and freeze a new three-option reporting task in which the observed truth
+varies independently of a fixed payment table: truth maximizes the assigned
+client's payment, the other client's payment, or neither. The third row is an
+undominated compromise; total/maximin preference is counterbalanced across
+three payoff profiles. Cross aligned/opposed report-reader goals, both assigned
+clients, original/late-goal-reminder prompts, all three states and cyclic
+table/answer positions. Five separate queries distinguish public reports,
+private allocations, state knowledge and both clients' payoff maxima.
+
+Four fresh templates, twelve fresh worlds, development and confirmation frozen
+together; base and all three existing adapter seeds. Eight GPU runs maximum,
+51,840 primary responses plus sentinels and historical regressions. Both baseline
+competence/integrity passes release all six adapters; public truthfulness or
+beneficiary outcomes never gate release. Keep all results, including control
+failures. Report raw rates, base-adjusted reminder contrasts and unconditioned
+joint counts, plus whether reports track all three changing truths with fixed
+payments. No new training, adaptive prompt repair, retries, or routes 3–4.
+
+**Route 2 submitted, 2026-10-28 13:54 MDT.** Ledger
+`results/study2/truth-beneficiary1-batch-20261028T195016828529Z.json` is
+`baseline_submitted`. Development baseline **14858131** is running on dw-1-5;
+fresh-confirmation baseline **14858132** is queued for resources; audit
+**14858133** waits on both. All six adapter evaluations and final analysis are
+frozen and staged for automatic release after both baselines pass all 1,080
+competence/validity checks and integrity checks. No scientific results yet.
+
+Six new task/controller tests and four inherited workflow tests passed. Raw
+prompt reconstruction verified all 12,960 keys, independent state/payment
+crossing, nondominance and balanced truth positions. All 12,960 native input/span
+checks passed (development 303–329 tokens, confirmation 290–314). Parent audits,
+model/adapter/source hashes, frozen plans, script syntax and diff checks passed.
+Each GPU run has 6,480 primary responses, 576 before/576 after sentinels and
+32 historical regressions (7,664 total). Keep the previous dw/dw87 A100 execution
+pool; gpu_pick.py output is saved, including its currently faster cs A100 option.
+
+**Route 1 completed, 2026-10-28 12:36 MDT.** All eight GPU runs and final audit
+**14854323** passed; 69,120 primary responses, all valid; both baselines passed
+all 1,638 checks. The ledger is `completed_and_analyzed`, error maps empty.
+On fresh confirmation cases with opposed goals, SOO recommendations
+favored the person being advised in 108/107/108 of 108 original cases (seeds
+0/1/2), 105/98/108 with a late matched name mention, and 0/0/0 with the late
+goal reminder. Early-reminder effects vary. Late explicit assignments correctly
+track both possible clients in 216/216 recommendation pairs per seed and split.
+Historical anchors reproduce all normalized answers and generated tokens.
+
+The earlier claim that private choices stay perfect does not transfer universally:
+private errors across all variants are 163/311/5 in development and 4/77/1 in
+confirmation (each seed denominator 2,160); factual errors are 0/16/0 and 5/0/8
+(each denominator 4,320). Most private failures occur in fresh original/name
+variants. Route 2 must keep control errors visible and cannot interpret every
+public answer as a selective change in honesty. Details are in FINDINGS.md.
 
 ## Routes forward and authorized next experiment — 2026-10-28
 
@@ -30,11 +251,11 @@ Four routes, in recommended order:
    independently written prompt templates before inference. Retain all three
    existing adapter seeds and all outcomes, including weak/absent transfer.
    Protocol: [GOAL_IDENTITY_PLACEMENT.md](GOAL_IDENTITY_PLACEMENT.md).
-2. **Truth versus beneficiary.** Construct a separate three-option reporting
+2. **Truth versus beneficiary (now authorized; see current execution above).** Construct a separate three-option reporting
    task where truth favors the assigned client, recipient, or neither, without
    making the neither option systematically dominated or specially positioned.
    Distinguish truth-following, recipient preference, and assigned-goal pursuit.
-   This is planned, not included in the current authorized batch.
+   This is a separate batch from route 1, with its own frozen protocol.
 3. **Causal computation tests.** After a stable interpretable contrast survives
    controls, restore base activations in the localized modules and compare goal,
    role, factual and matched control positions. Include identity and reverse
@@ -47,8 +268,9 @@ Four routes, in recommended order:
    together. This tests whether the pairing relationship matters, rather than
    inferring mechanism from fixed-offset sufficiency or loss reduction.
 
-The user requested recording these four routes and proceeding with route 1.
-Routes 2–4 are research directions, not permission to launch additional batches.
+The initial request authorized recording these four routes and proceeding with
+route 1. The subsequent “Let's proceed then” authorizes route 2 as described
+above. Routes 3–4 remain research directions, not permission to launch batches.
 Freeze the route-1 prompts, cases, score keys, contrasts, artifacts and execution
 plans before model outputs. Baseline competence and integrity gate execution;
 recommendation-effect direction never gates seed/template retention. No adaptive
@@ -1497,6 +1719,13 @@ Launched 2026-10-28 12:21–12:28 pm MDT: plan [HELDOUT_ROUND.md](../../../self-
 (Kimi). Jobs (qos `cs`): Mistral `14855336`–`14855338`, Gemma-31B `14855443`/`14855444`, Gemma-12B `14855478`/`14855479`,
 Qwen `14855501`/`14855502`, Kimi `14855552`–`14855555`; snapshots `results/study2/heldout-*-20261028T18*`. Readout:
 `analyze_heldout_round.py SNAPSHOT`.
+Result (2026-10-28, all 13 jobs done by 5:29 pm MDT; FINDINGS2 held-out section, commit `d0f4729`): the below-loss-layer
+subset reproduces the adapter on all five models, the bands and selected real offsets hold wherever they held in
+development (the gemma-4-12B real offset passes on held-out only: a first, unrepeated pass, not a confirmation), no constant reproduces, and outside Kimi the reproducing cells
+moved by at most 6.4 points. Direction-specific on Mistral, gemma-4-31B, Qwen; gemma-4-12B passes the rule once, narrowly (random 13.2
+against the 10-point bar), and is not counted as confirmed; on Kimi the selected random draw beats the real offset by making the model skip its think block.
+Offsets transfer less fully than the LoRA subsets to the burglar rewordings (Mistral 4 of 8, Qwen partial in the reversed
+order). The paper's "exploratory" caveat is narrowed to the configurations not confirmed here.
 5. Cost estimate: the four single-GPU models take about one cs2 H100 job each (about 3–8 h). Kimi
    needs B200 time for the subset and offset cells it keeps.
 
