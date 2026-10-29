@@ -228,7 +228,8 @@ judged-negative items (model-balanced, shuffled) and writes a blind `items.jsonl
 (judge label, model, source) that is never sent; `build_labeling_page.py` turns items and rubric into one HTML file that
 labelers open in a browser (rubric beside one item at a time, keys a s d f, autosave, "Download labels" gives
 `labels_<title>_<name>.jsonl`); `score_agreement.py` lumps every label into positive or negative and reports mean human–human and judge–human
-Cohen's κ with item-bootstrap 95% CIs, the full-scale confusion matrices and per-model κ.
+Cohen's κ with item-bootstrap 95% CIs, the judge's precision (judged-positive items a strict majority of labelers also
+call positive; Wilson 95% CI, overall and per model), the full-scale confusion matrices and per-model κ.
 
 ```bash
 cd experiments/schemer-axis/scripts/human_validation
