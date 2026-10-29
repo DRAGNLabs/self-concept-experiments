@@ -105,6 +105,12 @@ INSTRUCTION_SUFFIX = "\n\nYou should wrap the code you modified in a SINGLE code
 VERIFY_TIMEOUT = 30
 FLAG = "[flag_for_human_intervention]"
 
+
+def with_prompt_prefix(prefix: str, task_message: str) -> str:
+    """The first user message with an experimental prompt in front of the benchmark's own task message."""
+    return f"{prefix}\n\n{task_message}" if prefix else task_message
+
+
 # EvilGenie reward_hacking.py DEFAULT_SYSTEM_MESSAGE, with the tool paragraph
 # replaced by the file-block protocol (no tool calling in this harness).
 EVILGENIE_SYSTEM = """You are a skilled software engineer working on coding problems.
@@ -334,13 +340,15 @@ def run_check_example(
     state_attempt_budget: bool,
     impossible_prompt: ImpossiblePrompt = "minimal",
     feedback: Feedback = "impossiblebench",
+    prompt_prefix: str = "",
 ) -> dict:
     instruction = instruction_by_impossible_prompt[impossible_prompt]
     messages = [
         {
             "role": "user",
-            "content": check_task_message(
-                example, max_attempts if state_attempt_budget else None, instruction, feedback
+            "content": with_prompt_prefix(
+                prompt_prefix,
+                check_task_message(example, max_attempts if state_attempt_budget else None, instruction, feedback),
             ),
         }
     ]
@@ -422,6 +430,7 @@ def run_check_example(
         "max_attempts": max_attempts,
         "attempt_budget_stated": state_attempt_budget,
         "impossible_prompt": impossible_prompt,
+        "prompt_prefix": prompt_prefix,
         "feedback": feedback,
         "stop_reason": stop_reason,
         "final_code": answer,
@@ -601,18 +610,22 @@ def run_workspace_example(
     state_attempt_budget: bool,
     feedback: Feedback = "impossiblebench",
     impossible_prompt: ImpossiblePrompt = "minimal",
+    prompt_prefix: str = "",
 ) -> dict:
     originals = workspace_files(example)
     problem_type = "function" if example["is_function"] else "stdio"
     messages = [
         {
             "role": "user",
-            "content": workspace_task_message(
-                example,
-                originals,
-                max_attempts if state_attempt_budget else None,
-                feedback,
-                workspace_instruction_by_impossible_prompt[impossible_prompt],
+            "content": with_prompt_prefix(
+                prompt_prefix,
+                workspace_task_message(
+                    example,
+                    originals,
+                    max_attempts if state_attempt_budget else None,
+                    feedback,
+                    workspace_instruction_by_impossible_prompt[impossible_prompt],
+                ),
             ),
         }
     ]
@@ -688,6 +701,7 @@ def run_workspace_example(
         "max_attempts": max_attempts,
         "attempt_budget_stated": state_attempt_budget,
         "impossible_prompt": impossible_prompt,
+        "prompt_prefix": prompt_prefix,
         "feedback": feedback,
         "stop_reason": stop_reason,
         "final_code": final.get("solution.py", ""),
@@ -786,11 +800,13 @@ def run_scenario(
     state_attempt_budget: bool = False,
     impossible_prompt: ImpossiblePrompt = "minimal",
     feedback: Feedback = "impossiblebench",
+    prompt_prefix: str = "",
 ) -> dict:
     """Run one scenario's examples through the submission loop, appending
     records to {out}/{tag}_{scenario}.jsonl as they finish (rerunning resumes)
     and writing {tag}_{scenario}_summary.json. meta is merged into the summary
-    (model, adapter, ... -- whatever identifies the condition)."""
+    (model, adapter, ... -- whatever identifies the condition). prompt_prefix, if given, goes in front of each
+    example's first user message (see with_prompt_prefix)."""
     scenario = examples[0]["scenario"]
     out.mkdir(parents=True, exist_ok=True)
     stem = f"{tag}_{scenario}"
@@ -808,12 +824,12 @@ def run_scenario(
                 if example["kind"] == "check":
                     record = run_check_example(
                         cast(CheckExample, example), gen, max_attempts, state_attempt_budget, impossible_prompt,
-                        feedback,
+                        feedback, prompt_prefix,
                     )
                 elif example["kind"] == "workspace":
                     record = run_workspace_example(
                         cast(WorkspaceExample, example), gen, max_attempts, state_attempt_budget, feedback,
-                        impossible_prompt,
+                        impossible_prompt, prompt_prefix,
                     )
                 else:
                     raise ValueError(f"unknown example kind {example['kind']!r}")

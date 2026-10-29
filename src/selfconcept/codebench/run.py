@@ -57,8 +57,17 @@ def main() -> None:
         help="vllm-harmony: GPUs to shard over (gpt-oss-120b needs 2 on 80GB cards)",
     )
     parser.add_argument(
+        "--max-model-len", type=int,
+        help="vllm-harmony: context length (prompt + new tokens) of the engine; default the model's own",
+    )
+    parser.add_argument(
         "--system-prompt-file", type=Path,
         help="prepend this file's text as a system message to every generate call (default: the chat template's own)",
+    )
+    parser.add_argument(
+        "--prompt-prefix-file", type=Path,
+        help="put this file's text, then a blank line, in front of each problem's first user message (the "
+        "benchmark's own task message is unchanged)",
     )
     parser.add_argument(
         "--stop-strings", nargs="+",
@@ -82,6 +91,7 @@ def main() -> None:
         generate = vllm_harmony_generate(
             args.model, args.max_new_tokens, args.out / f"{args.tag}_{'_'.join(args.scenarios)}_reasoning.jsonl",
             args.temperature, args.sample_seed, tensor_parallel_size=args.tensor_parallel_size,
+            max_model_len=args.max_model_len,
         )
     elif args.backend == "vllm-server-harmony":
         from .vllm_harmony import vllm_server_harmony_generate
@@ -109,18 +119,22 @@ def main() -> None:
         "top_p": args.top_p,
         "top_k": args.top_k,
         "sample_seed": args.sample_seed if args.temperature > 0 else None,
+        "max_model_len": args.max_model_len,
     }
     if args.system_prompt_file:
         system_message = {"role": "system", "content": args.system_prompt_file.read_text().strip()}
         generate_without_system = generate
         generate = lambda messages, turn, example_id: generate_without_system([system_message, *messages], turn, example_id)
         meta["system_prompt"] = system_message["content"]
+    prompt_prefix = args.prompt_prefix_file.read_text().strip() if args.prompt_prefix_file else ""
+    if prompt_prefix:
+        meta["prompt_prefix"] = prompt_prefix
     for scenario in args.scenarios:
         harness.run_scenario(
             harness.load_examples(scenario, args.data, args.n), generate,
             max_attempts=args.max_attempts, out=args.out, tag=args.tag, meta=meta,
             state_attempt_budget=args.state_attempt_budget, impossible_prompt=args.impossible_prompt,
-            feedback=args.feedback,
+            feedback=args.feedback, prompt_prefix=prompt_prefix,
         )
 
 

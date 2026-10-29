@@ -14,6 +14,9 @@ Prompts go through the model's chat template with SOO_CHAT_KWARGS (gpt-oss: reas
 split into reasoning and final by the family's parser, and only the final channel is scored. Sampling as in the
 experiment (temperature, --sample-seed; the per-item seed is turn_sampling_seed(seed, "<task>/<id>", 0)).
 
+--prompt-prefix-file puts a file's text and a blank line in front of every benchmark prompt (used by
+experiments/prompt-rh-prevention for its prompt arms; default none, prompts unchanged).
+
 Output: <out>/<task>.jsonl (one record per item: id, prompt, reasoning, final, truncated, pred, gold, correct,
 reasoning_chars) and <out>/summary.json. Rerunning resumes: items already in the jsonl are skipped.
 
@@ -60,6 +63,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-k", type=int, default=-1)
     parser.add_argument("--batch-size", type=int, default=256, help="prompts per llm.generate call (records are written per batch)")
     parser.add_argument("--exec-timeout", type=float, default=20.0, help="seconds per HumanEval test run")
+    parser.add_argument("--prompt-prefix-file", type=Path,
+                        help="put this file's text and a blank line in front of every benchmark prompt")
     # steering, same names as steered_rh_vllm.py so arms.tsv lines apply unchanged
     parser.add_argument("--direction", type=Path)
     parser.add_argument("--layer-norms", type=Path)
@@ -116,6 +121,9 @@ def load_items(task: str, args) -> list[dict]:
                  for row in ds]
     else:
         raise ValueError(task)
+    if args.prompt_prefix:
+        for item in items:
+            item["prompt"] = f"{args.prompt_prefix}\n\n{item['prompt']}"
     return items[: args.n] if args.n else items
 
 
@@ -241,6 +249,7 @@ def run_task(task: str, llm, tokenizer, args, split_completion) -> dict:
 
 def main() -> None:
     args = parse_args()
+    args.prompt_prefix = args.prompt_prefix_file.read_text().strip() if args.prompt_prefix_file else ""
     os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
     os.environ["VLLM_DISABLE_COMPILE_CACHE"] = "1"
     import importlib
@@ -265,7 +274,8 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     meta = {"model": args.model, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k, "sample_seed": args.sample_seed,
-            "chat_kwargs": chat_template_kwargs(), "steering": steering, "mmlu_per_category": args.mmlu_per_category, "n": args.n}
+            "chat_kwargs": chat_template_kwargs(), "steering": steering, "mmlu_per_category": args.mmlu_per_category, "n": args.n,
+            "prompt_prefix": args.prompt_prefix}
     summary_path = args.out / "summary.json"
     summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
     summary["meta"] = meta

@@ -30,6 +30,7 @@ def vllm_harmony_generate(
     split_completion=split_harmony_completion,
     top_p: float = 1.0,
     top_k: int = -1,
+    max_model_len: int | None = None,
 ) -> Generate:
     """temperature 0 decodes greedily; above 0, each turn is sampled with a seed fixed by
     (sample_seed, example_id, turn). Pass an existing ``vllm.LLM`` as ``llm`` to reuse an engine (e.g. one with
@@ -40,7 +41,7 @@ def vllm_harmony_generate(
     from vllm import LLM, SamplingParams, TokensPrompt
 
     if llm is None:
-        llm = LLM(model=model_id, tensor_parallel_size=tensor_parallel_size)
+        llm = LLM(model=model_id, tensor_parallel_size=tensor_parallel_size, max_model_len=max_model_len)
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     reasoning_log_path.parent.mkdir(parents=True, exist_ok=True)
 
