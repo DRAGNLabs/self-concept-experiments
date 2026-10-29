@@ -43,8 +43,10 @@ keeps the text in `prompt_prefix`. To add an arm, write `data/prompts/<name>.txt
   get the interpreter and `uv` is a small Miniforge env:
   `module load miniforge3; mamba create -n selfconcept-py313 -c conda-forge python=3.13.7 uv`, then
   `uv sync --frozen --python ~/.conda/envs/selfconcept-py313/bin/python3.13` from the repo root.
-- Model: `hf download openai/gpt-oss-120b --revision b5c939de8f754692c1647ca79fbf85e8c1e70f8a --exclude 'original/*'
-  --exclude 'metal/*'` with `HF_HOME` as below (65 GB; on a login node, not through the compute-node proxy).
+- Model: `hf download openai/gpt-oss-120b --exclude 'metal/*'` with `HF_HOME` as below (130 GB; on a login node,
+  not through the compute-node proxy). Jobs load it by name offline, as the other experiments do, so download by
+  name (no `--revision`; that skips the `refs/main` pointer) and keep `original/`: vLLM's offline weight lookup
+  fails on a snapshot without it. main was `b5c939de8f754692c1647ca79fbf85e8c1e70f8a` on 2026-10-29.
 - Hugging Face: `HF_HOME=~/nobackup/autodelete/hf_cache`, offline in jobs; the checkpoint must be in the cache
   before a job starts.
 - Before submitting, check where the GPUs are free (a few scheduler queries; once per submission, not in a loop):
