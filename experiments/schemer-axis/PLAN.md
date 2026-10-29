@@ -903,7 +903,7 @@ significant), every arm inside the dose rule. Dose decision with the user: no ma
 anecdotes run. Qwen pilot judged 1:07 pm, +0.32 / +0.64 run (job 14885671) done 3:19 pm and +0.32 judged 3:38 pm MDT** (FINDINGS "Qwen3.8-27B gi
 dose pilot, judged"): judged 0 / 0.6 / 1.1 / 3.3 / 5.6% at 0 / +0.04 / +0.08 / +0.16 / +0.32, only +0.32 significant (Holm 0.035) and it is
 outside the dose rule (hidden −11, no-code −16); +0.64 broken; anecdotes + probes read (digest `results/qwen_schemer_anecdotes_2026-10-29.md`).
-Qwen main-run decision (12 seeds at +0.16, or none) with the user.
+Qwen main-run decision (12 seeds at +0.16, or none) with the user. **Exploratory striking-prompt probes (user request 2026-10-29 ~4:05 pm, "just enough to get some funny/striking/notable examples"): jobs 14893747 (Qwen, unsteered / gi +0.16 / +0.32 / +0.48) and 14893748 (Muse, unsteered / gi +0.08 / +0.16 / +0.32), 30 new prompts × 2 seeds, done 4:55 pm MDT after standby preemption cycling forced the pending tasks onto `-p cs,cs2 --qos cs` in place; read by one Sonnet reader per model; FINDINGS "Striking-prompt probes" and digest `results/qwen_muse_striking_anecdotes_2026-10-29.md`.** Still open: Qwen main run (12 seeds at +0.16, or none), gpt-oss main run at ±0.2, Muse capability retention incl. IFBench for the gi arms.
 
 ## Expanded persona set (added 2026-10-20, Koby)
 
