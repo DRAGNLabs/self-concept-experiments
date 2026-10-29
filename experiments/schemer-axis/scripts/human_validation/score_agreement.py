@@ -1,8 +1,8 @@
 """Agreement between human labelers and the LLM judge on a human-validation stage, with every label lumped into
 positive (one of --positive-levels) or not. Headline numbers: mean pairwise human-human and mean LLM-judge-human Cohen's
 kappa on those lumped labels, with 95% percentile CIs from a bootstrap over items, and the judge's precision: the share
-of items it judged positive that a strict majority of labelers also labeled positive, with a 95% Wilson CI. Only items
-every labeler labeled are scored.
+of items it judged positive that a strict majority of labelers (and, stricter, every labeler) also labeled positive,
+with a 95% Wilson CI. Only items every labeler labeled are scored.
 
     python score_agreement.py --key key.jsonl --labels labels_a.jsonl labels_b.jsonl --levels 0,1,2,3 --positive-levels 3
 """
@@ -57,8 +57,8 @@ def bootstrap_mean_kappa(
     return {"mean": mean_pairwise_kappa(positive_pairs), "ci_low": float(ci_low), "ci_high": float(ci_high)}
 
 
-def judge_precision(judge_positives: Bool[np.ndarray, " items"], majority_positives: Bool[np.ndarray, " items"]) -> Estimate:
-    result = binomtest(int(majority_positives[judge_positives].sum()), int(judge_positives.sum()))
+def judge_precision(judge_positives: Bool[np.ndarray, " items"], human_positives: Bool[np.ndarray, " items"]) -> Estimate:
+    result = binomtest(int(human_positives[judge_positives].sum()), int(judge_positives.sum()))
     interval = result.proportion_ci(method="wilson")
     return {"mean": result.statistic, "ci_low": interval.low, "ci_high": interval.high}
 
@@ -103,13 +103,18 @@ def main() -> None:
         print(f"human-human kappa (mean over pairs):        {format_estimate(bootstrap_mean_kappa(human_human_pairs, args.resamples, args.seed))}")
 
     models = np.array([key_record_by_item_id[item_id]["model"] for item_id in shared_item_ids])
-    majority_positives = np.sum(list(positives_by_labeler.values()), axis=0) > len(positives_by_labeler) / 2
-    print(f"judge precision (judged positive, human majority positive): "
-          f"{majority_positives[judge_positives].sum()}/{judge_positives.sum()} = {format_estimate(judge_precision(judge_positives, majority_positives))}")
-    for model in sorted(set(models)):
-        in_model = models == model
-        print(f"  {model:8s} {majority_positives[judge_positives & in_model].sum()}/{(judge_positives & in_model).sum()}"
-              f" = {format_estimate(judge_precision(judge_positives[in_model], majority_positives[in_model]))}")
+    positive_vote_counts = np.sum(list(positives_by_labeler.values()), axis=0)
+    human_positives_by_rule = {
+        "majority": positive_vote_counts > len(positives_by_labeler) / 2,
+        "unanimous": positive_vote_counts == len(positives_by_labeler),
+    }
+    for rule, human_positives in human_positives_by_rule.items():
+        print(f"judge precision (judged positive, human {rule} positive): "
+              f"{human_positives[judge_positives].sum()}/{judge_positives.sum()} = {format_estimate(judge_precision(judge_positives, human_positives))}")
+        for model in sorted(set(models)):
+            in_model = models == model
+            print(f"  {model:8s} {human_positives[judge_positives & in_model].sum()}/{(judge_positives & in_model).sum()}"
+                  f" = {format_estimate(judge_precision(judge_positives[in_model], human_positives[in_model]))}")
     for labeler, ratings in ratings_by_labeler.items():
         positives = positives_by_labeler[labeler]
         print(f"\n{labeler}: positive/negative agreement with judge {np.mean(positives == judge_positives):.3f}, exact {np.mean(ratings == judge_ratings):.3f}")
