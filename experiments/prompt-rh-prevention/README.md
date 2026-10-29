@@ -10,20 +10,31 @@ operating manual. Read the reward-hacking setup first:
 
 | Path | What it is |
 |---|---|
-| `data/arms.tsv` | One prompt arm per line: `name <TAB> extra args for selfconcept.codebench.run`. Empty args = the recipe as is (`baseline`). |
+| `data/arms.tsv` | One prompt arm per line: `name <TAB> prompt file` (relative to this directory). Empty second column = no prompt. The no-prompt `baseline` is not in it: that run already exists (PLAN.md) and is copied into the results folder. |
+| `data/prompts/` | The arm prompts, one `.txt` per arm. |
 | `slurm/run_arms.sbatch` | Arms × seeds array on the 45 hard problems with the recipe; one task per (arm, seed). |
+| `slurm/capability_eval.sbatch` | GSM8K, MMLU-Pro and HumanEval with each arm's prompt in front; one task per arm. Uses `../schemer-axis/scripts/capability_eval_vllm.py`. |
+| `slurm/run_info.sh` | Writes `run_info/` (code version, prompt, checksums) into every run's output; sourced by both sbatch files. |
 | `scripts/` | Summaries and analysis, adapted from schemer-axis. |
 
-Outputs go to scratch, `~/nobackup/autodelete/self-concept-experiments/prompt-rh-prevention/` (autodelete: copy what
-matters). Shared data (Koby's): `/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/` (`MIRROR`), with
-`rh_hillclimb/data/ib_solvhard_s0-2.jsonl` (the problems) and `rh_hillclimb/judge_rubric_v3.md` (the hack rubric).
+The problems are the 45 hard ImpossibleBench problems the recipe and schemer-axis use,
+`/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/rh_hillclimb/data/ib_solvhard_s0-2.jsonl`
+(Koby's; read in place; a copy with checksums is in `~/nobackup/autodelete/prompt-rh-prevention-results/problems/`).
+
+Results go to `~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>/<arm>/seed<s>/`: the episode records (every
+completion, submitted code and test output), reasoning sidecars, summaries, and `run_info/` (git commit, `git diff`
+of the working tree, arms TSV, the arm's prompt, problem checksums, Slurm job info). Everything is kept so episodes
+can be checked or judged later; this study does not use an LLM judge for now (PLAN.md). Autodelete: copy what
+matters somewhere permanent.
 
 ## How the prompt arms work
 
-Every arm runs the recipe (neutral feedback, 5 attempts with a stated budget, low reasoning effort, temperature 1,
-16384 new tokens) and changes only the task instruction above the function stub:
-`--impossible-prompt minimal|critical|critical_no_carve|strict` (`selfconcept.codebench.harness`). The recipe's own
-instruction is `critical_no_carve`, so the `baseline` arm passes no extra args.
+Every arm runs the recipe (`critical_no_carve` instruction, neutral feedback, 5 attempts with a stated budget, low
+reasoning effort, temperature 1, 16384 new tokens per turn). An arm only adds a prompt in front of the first user
+message: the model sees `[arm prompt]`, a blank line, then the recipe's task message unchanged (instruction, function
+stub, shown asserts, budget). This is `selfconcept.codebench.run --prompt-prefix-file <file>`; each episode record
+keeps the text in `prompt_prefix`. To add an arm, write `data/prompts/<name>.txt` and add
+`<name><TAB>data/prompts/<name>.txt` to `data/arms.tsv`.
 
 ## Environment and conventions
 
@@ -36,6 +47,11 @@ instruction is `critical_no_carve`, so the `baseline` arm passes no extra args.
   --exclude 'metal/*'` with `HF_HOME` as below (65 GB; on a login node, not through the compute-node proxy).
 - Hugging Face: `HF_HOME=~/nobackup/autodelete/hf_cache`, offline in jobs; the checkpoint must be in the cache
   before a job starts.
+- Before submitting, check where the GPUs are free (a few scheduler queries; once per submission, not in a loop):
+  `PATH=/apps/slurm/latest/bin:$PATH .venv/bin/python -m byutils.gpu_pick --hours H --vram-gb 80 --cpus 8 --mem-gb 128 --cuda 13.0 --no-requeue-ok`.
+  Use it to choose the GPU type and QoS and to see the queue; do not copy its `-p` list (ORC policy: no partition
+  unless truly required) or its `--gpus 1` (that admits H100/B200; ask before using pricier GPUs). `--requeue-ok`
+  (its default) adds standby options, which can be preempted; only with the user's OK.
 - Submit every sbatch from the repo root (they `--chdir` into this directory). Jobs request one A100 with QoS `cs`
   and no partition.
 - Record keeping: one dated section per analyzed run in FINDINGS.md; PLAN.md changed with a dated note when the
@@ -45,8 +61,21 @@ instruction is `critical_no_carve`, so the `baseline` arm passes no extra args.
 ## Running
 
 ```
-sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=data/arms.tsv,ROOT=<dir>,NSEEDS=12 \
+sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=data/arms.tsv,TAG=<run name>,NSEEDS=12 \
     experiments/prompt-rh-prevention/slurm/run_arms.sbatch
 ```
 
-For a smoke run on a few problems, add `EXTRA_ARGS="--n 3"` and `NSEEDS=1` to `--export`.
+For a smoke run on a few problems, add `EXTRA_ARGS="--n 3"` and `NSEEDS=1` to `--export` (the first 3 of each
+file). Other problem files: `PROBLEMS=<dir>` and `SCENARIOS="<file stems>"`.
+
+Summary per arm: `python experiments/prompt-rh-prevention/scripts/pilot_summary.py ~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>`.
+
+General capability (same `data/arms.tsv`; output in `~/nobackup/autodelete/prompt-rh-prevention-results/capability/`):
+
+```
+sbatch --array=0-$((N_ARMS-1)) --export=ALL,ARMS=data/arms.tsv experiments/prompt-rh-prevention/slurm/capability_eval.sbatch
+python experiments/schemer-axis/scripts/capability_eval_compare.py ~/nobackup/autodelete/prompt-rh-prevention-results/capability \
+    --baseline baseline --arms <arm names>
+```
+
+The datasets have to be in `HF_HOME` (jobs are offline); they were downloaded on a login node on 2026-10-27.

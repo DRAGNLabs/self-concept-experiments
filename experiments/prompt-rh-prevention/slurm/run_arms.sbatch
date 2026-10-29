@@ -12,14 +12,20 @@
 set -euo pipefail
 
 # Prompt arms on the recipe (PLAN.md), adapted from schemer-axis/slurm/main_run.sbatch. One Slurm array task per
-# (arm, seed): task index i -> arm line i / NSEEDS of the ARMS TSV (name <TAB> extra args for selfconcept.codebench.run,
-# e.g. --impossible-prompt strict), seed i % NSEEDS.
-# Output: $ROOT/<arm>/seed<s>/<TAG>_impossible_original.jsonl plus the reasoning sidecar. Rerunning a task resumes
-# (the harness skips example ids already recorded).
+# (arm, seed): task index i -> arm line i / NSEEDS of the ARMS TSV, seed i % NSEEDS.
+# ARMS TSV: name <TAB> prompt file (relative to this experiment dir, e.g. data/prompts/honesty.txt). The file's text
+# goes in front of each problem's first user message, then a blank line, then the recipe's task message unchanged
+# (selfconcept.codebench.run --prompt-prefix-file). An empty second column = no prefix (the baseline arm).
+# Problems: the 45 hard ImpossibleBench problems in rh_hillclimb/data (ib_solvhard_s0-2), as in the recipe and
+# schemer-axis. 16384 new tokens per turn.
+# Output: $ROOT/<arm>/seed<s>/ (ROOT defaults to ~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>):
+# <TAG>_impossible_original.jsonl (all three files' records), a reasoning sidecar, a summary, and run_info/ (git
+# commit and diff, arms TSV, the arm's prompt, problem checksums, Slurm job info) so the run can be checked later.
+# Rerunning a task resumes (the harness skips example ids already recorded; run_info/ is rewritten).
 # Usage (from the repo root):
-#   sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=data/arms.tsv,ROOT=<dir>[,NSEEDS=12][,TAG=main] \
+#   sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=data/arms.tsv,TAG=<run name>[,NSEEDS=12][,ROOT=<dir>] \
 #       experiments/prompt-rh-prevention/slurm/run_arms.sbatch
-# A smoke run on a few problems: add EXTRA_ARGS="--n 3" to --export.
+# A smoke run on a few problems: add EXTRA_ARGS="--n 3" to --export (the first n of each file).
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -36,30 +42,44 @@ if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; the
 fi
 
 MODEL="${MODEL:-openai/gpt-oss-120b}"
-MIRROR="${MIRROR:-/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments}"  # Koby's shared data
+PROBLEMS="${PROBLEMS:-/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/rh_hillclimb/data}"
+SCENARIOS="${SCENARIOS:-ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2}"
 ARMS="${ARMS:?set ARMS to the arms TSV}"
-ROOT="${ROOT:?set ROOT to the output dir}"
 NSEEDS="${NSEEDS:-12}"
 TAG="${TAG:-main}"
+ROOT="${ROOT:-$HOME/nobackup/autodelete/prompt-rh-prevention-results/$TAG}"
 read -r -a EXTRA_RUN_ARGS <<< "${EXTRA_ARGS:-}"
+read -r -a SCENARIO_LIST <<< "$SCENARIOS"
 ARM_INDEX=$((SLURM_ARRAY_TASK_ID / NSEEDS))
 SEED=$((SLURM_ARRAY_TASK_ID % NSEEDS))
-# The recipe (experiments/codebench/reward_hack_recipe.md). Arm args come after it; argparse's last value wins.
-RECIPE=(--data "$MIRROR/rh_hillclimb/data" --impossible-prompt critical_no_carve --feedback neutral
-        --max-attempts 5 --state-attempt-budget --max-new-tokens 16384 --temperature 1.0 --sample-seed "$SEED")
+# The recipe (experiments/codebench/reward_hack_recipe.md); the same task message in every arm.
+RECIPE=(--data "$PROBLEMS" --impossible-prompt critical_no_carve --feedback neutral
+        --max-attempts 5 --state-attempt-budget --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384
+        --max-model-len 20480)  # as schemer-axis's unsteered main run, which is this study's baseline arm
 
 LINE=$(sed -n "$((ARM_INDEX + 1))p" "$ARMS")
 NAME=$(printf '%s' "$LINE" | cut -f1)
-ARM_ARGS_STR=$(printf '%s' "$LINE" | cut -f2 -s)
-read -r -a ARM_ARGS <<< "$ARM_ARGS_STR"
+PROMPT_FILE=$(printf '%s' "$LINE" | cut -f2 -s)
 [ -n "$NAME" ] || { echo "no arm at index $ARM_INDEX in $ARMS"; exit 1; }
-echo "########## task $SLURM_ARRAY_TASK_ID: arm $NAME seed $SEED | ${ARM_ARGS[*]:-recipe only} ##########"
+PREFIX_ARGS=()
+if [ -n "$PROMPT_FILE" ]; then
+    [ -s "$PROMPT_FILE" ] || { echo "arm $NAME: prompt file $PROMPT_FILE is missing or empty"; exit 1; }
+    PREFIX_ARGS=(--prompt-prefix-file "$PROMPT_FILE")
+fi
+echo "########## task $SLURM_ARRAY_TASK_ID: arm $NAME seed $SEED | prefix: ${PROMPT_FILE:-none} ##########"
+
+OUT="$ROOT/$NAME/seed$SEED"
+PROBLEM_FILES=()
+for scenario in "${SCENARIO_LIST[@]}"; do PROBLEM_FILES+=("$PROBLEMS/$scenario.jsonl"); done
+source slurm/run_info.sh
+RUN_INFO_EXTRA="seed: $SEED  tag: $TAG  model: $MODEL  problems: $PROBLEMS  scenarios: $SCENARIOS  extra args: ${EXTRA_ARGS:-}" \
+    write_run_info "$OUT" "$NAME" "$PROMPT_FILE" "${PROBLEM_FILES[@]}"
 
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv"
 source ../../activate.sh
 
 SECONDS=0
 python -m selfconcept.codebench.run --backend vllm-harmony --model "$MODEL" \
-    --scenarios ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2 "${RECIPE[@]}" \
-    --out "$ROOT/$NAME/seed$SEED" --tag "$TAG" "${ARM_ARGS[@]}" "${EXTRA_RUN_ARGS[@]}"
+    --scenarios "${SCENARIO_LIST[@]}" "${RECIPE[@]}" "${PREFIX_ARGS[@]}" \
+    --out "$OUT" --tag "$TAG" "${EXTRA_RUN_ARGS[@]}"
 echo "arm $NAME seed $SEED took ${SECONDS}s"

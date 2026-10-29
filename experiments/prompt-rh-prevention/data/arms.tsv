@@ -1,4 +1,5 @@
-baseline	
-minimal	--impossible-prompt minimal
-critical	--impossible-prompt critical
-strict	--impossible-prompt strict
+honest_al	data/prompts/honest_al.txt
+wise_professor	data/prompts/wise_professor.txt
+heroic_ai	data/prompts/heroic_ai.txt
+strict	data/prompts/strict.txt
+abort_info	data/prompts/abort_info.txt
