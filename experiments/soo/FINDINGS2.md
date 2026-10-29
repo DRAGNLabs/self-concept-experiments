@@ -21,7 +21,482 @@ replacement does **not** establish that collapse is causally unnecessary in the
 trained adapter; the stronger claims in that paragraph and the old open-questions
 list are superseded by this qualification and the current paper outline.
 
-Three measurement rounds are complete. Round 1: fitted subspace removal shrinks the local held-out gap by a few percent with little downstream effect and no established advantage over random controls. Round 2: all nine first-study Qwen adapters remove essentially the entire held-out gap at their training site, for name-control pairs as much as for self/other pairs, by making the attention output at the final prompt token nearly constant. Round 2b: the collapse is not confined to that token; at the last user-content token the same adapters still remove about 90% of the attention-output gap and half of its norm for every prompt. Round 2c: the first study's behaviorally validated LoRA cells on gemma-4-31B, gemma-4-12B, and Mistral-7B show the same collapse, with the name-control gap falling as much as the self/other gap and prompt variation falling 95–99.9% at the training site. The degenerate constant solution is a property of the last-token loss across four models and two recipes, and the first study's LoRA behavioral effects were produced under that nonspecific change, not under measured self/other overlap. Constant-replacement round (2026-09-22): setting the training layer's attention output to a constant by a hook, with no training, reproduces none of the Gemma adapters' room-task effect; the adapter's own constant, the base mean, zero, and random constants of matched norm all leave gemma-4-31B and gemma-4-12B at 100% deceptive, and applying the adapter constant at every position moves 12B by only 4–7 points. The collapse is a side effect of the loss, not the lever; the Gemma effect comes from the LoRA's query/value changes elsewhere or from something else the constant does not capture. On Mistral-7B any constant of small norm at the response position, including zero and random vectors, gives the same partial drop (90 → 60–70% deceptive) and the base mean gives none; reading the responses shows that this drop is mostly responses that announce a deceptive plan while naming the true room, not the adapter's plain honest recommendations. No replacement reproduces any adapter under the pre-specified rule. Layer-localization round (2026-09-23, Gemma coarse results): restricting the seed-0 adapter to subsets of its LoRA modules shows that the training layer's own q/v modules are behaviorally inert on gemma-4-31B and gemma-4-12B although they alone produce half to three quarters of the training-site collapse, that the modules in the layers below the training layer reproduce the adapter's behavior on every readout, that the layers above were never trained (zero LoRA B), and that the `v_proj` deltas carry the main-scenario effect (`q_proj` alone is null on 31B, partial on 12B). Part 2 (2026-09-24): Mistral-7B gives the same coarse answer (training-layer modules null, layers below reproduce with plain honest responses, `v_proj` alone reproduces, `q_proj` alone partial), and the single-layer sweeps on all three models find no single layer that reproduces the adapter: every layer alone is null on 31B, only layer 19 is partial on 12B and its drop is mostly "Neither" answers, and on Mistral layers 5 to 13 are each partial with honest-labeled responses that are mostly confused rather than clean. The effect is distributed across the layers below the read-out site. Bisection round (2026-09-25): the effect is a contiguous band of `v_proj` deltas below the read-out layer that must act as a whole. On gemma-4-12B four rank-4 `v_proj` modules at layers 19–23 give 0% deceptive in both orientations with no refusals and 100% perspectives, cleaner than the full adapter; on Mistral-7B the nine modules at layers 5–13 reproduce the adapter with 75–91% clean honest responses while every half and quarter is partial and mostly confused; on gemma-4-31B layers 16–31 reproduce the main result and 0–15 do nothing, with 24–31 alone partial. No `v_proj` subset moves the 31B treasure hunt. Localization is closed; next the band's deltas are studied directly as steering directions with random and `q_proj` controls (12B, Mistral) and 16–31 is bisected further (31B). No capability results have been collected in the second study. Gated shifting and covariance matching remain unimplemented. Next: work-order step 3 with fitted interventions and a name-control check at the intervention site.
+Three measurement rounds are complete. Round 1: fitted subspace removal shrinks the local held-out gap by a few percent with little downstream effect and no established advantage over random controls. Round 2: all nine first-study Qwen adapters remove essentially the entire held-out gap at their training site, for name-control pairs as much as for self/other pairs, by making the attention output at the final prompt token nearly constant. Round 2b: the collapse is not confined to that token; at the last user-content token the same adapters still remove about 90% of the attention-output gap and half of its norm for every prompt. Round 2c: the first study's behaviorally validated LoRA cells on gemma-4-31B, gemma-4-12B, and Mistral-7B show the same collapse, with the name-control gap falling as much as the self/other gap and prompt variation falling 95–99.9% at the training site. The degenerate constant solution is a property of the last-token loss across four models and two recipes, and the first study's LoRA behavioral effects were produced under that nonspecific change, not under measured self/other overlap. Constant-replacement round (2026-09-22): setting the training layer's attention output to a constant by a hook, with no training, reproduces none of the Gemma adapters' room-task effect; the adapter's own constant, the base mean, zero, and random constants of matched norm all leave gemma-4-31B and gemma-4-12B at 100% deceptive, and applying the adapter constant at every position moves 12B by only 4–7 points. The collapse is a side effect of the loss, not the lever; the Gemma effect comes from the LoRA's query/value changes elsewhere or from something else the constant does not capture. On Mistral-7B any constant of small norm at the response position, including zero and random vectors, gives the same partial drop (90 → 60–70% deceptive) and the base mean gives none; reading the responses shows that this drop is mostly responses that announce a deceptive plan while naming the true room, not the adapter's plain honest recommendations. No replacement reproduces any adapter under the pre-specified rule. Layer-localization round (2026-09-23, Gemma coarse results): restricting the seed-0 adapter to subsets of its LoRA modules shows that the training layer's own q/v modules are behaviorally inert on gemma-4-31B and gemma-4-12B although they alone produce half to three quarters of the training-site collapse, that the modules in the layers below the training layer reproduce the adapter's behavior on every readout, that the layers above were never trained (zero LoRA B), and that the `v_proj` deltas carry the main-scenario effect (`q_proj` alone is null on 31B, partial on 12B). Part 2 (2026-09-24): Mistral-7B gives the same coarse answer (training-layer modules null, layers below reproduce with plain honest responses, `v_proj` alone reproduces, `q_proj` alone partial), and the single-layer sweeps on all three models find no single layer that reproduces the adapter: every layer alone is null on 31B, only layer 19 is partial on 12B and its drop is mostly "Neither" answers, and on Mistral layers 5 to 13 are each partial with honest-labeled responses that are mostly confused rather than clean. The effect is distributed across the layers below the read-out site. Bisection round (2026-09-25): the effect is a contiguous band of `v_proj` deltas below the read-out layer that must act as a whole. On gemma-4-12B four rank-4 `v_proj` modules at layers 19–23 give 0% deceptive in both orientations with no refusals and 100% perspectives, cleaner than the full adapter; on Mistral-7B the nine modules at layers 5–13 reproduce the adapter with 75–91% clean honest responses while every half and quarter is partial and mostly confused; on gemma-4-31B layers 16–31 reproduce the main result and 0–15 do nothing, with 24–31 alone partial. No `v_proj` subset moves the 31B treasure hunt. Second 31B bisection (2026-09-28): the gemma-4-31B band is layers 20–31 (10 `v_proj` modules); every range without layers 30 and 31 is null. Band-steering round (2026-09-28, 31B 2026-09-29): the band's mean `v_proj` delta added as a fixed offset at every position reproduces the band on Mistral (with clean honest responses) and on 31B, and on 12B gives the same room-task result with mirrored perspectives at 87%; added only from the last prompt token onward it does nothing on any model; the matched-norm random offset is null on 31B, partial and mostly confused on Mistral, and strong on 12B, so the direction is established on 31B only; α = 2 damages every model; the working offset shrinks the self/other and name-control gaps by the same fraction, the collapse pattern, not a self/other-specific change. Qwen localization round (2026-09-29): on Qwen3.8-27B the effect sits in the linear-attention layers' fused `in_proj_qkv` deltas at layers 24–31; the training layer's own module and the full-attention layers are null, and the value channels alone give about half the effect while the query-key channels alone give none. On all four models the effect is a band of value-path deltas ending just below (Mistral: three layers below) the read-out layer. Dose and position round (2026-09-30): above α = 1 the offset stops reproducing almost at once (31B loses mirrored perspectives from α = 1.25, Mistral holds to 1.25, 12B turns to refusals), the random offset stays null on 31B at every dose and reproduces on 12B, the prompt-only offset equals the all-position offset on all three models, and the user message alone is enough on 31B and gives the anchor's result on 12B, where a random offset on the same tokens is near null on main. Qwen band-steering round (2026-09-30): the fused-projection offset at layers 24–31 matches the band's LoRA at α = 1 and the full adapter at α = 1.5 and 2 with no damage; the value channels alone need α = 2; content-only and prompt-only offsets were run only at α = 1 and fall short. Kimi-Dev-72B adapter round (2026-09-30): the recipe at L40 raises main deception from 68% / 75% to 100% / 97% by making the model always open its think block (the base model is deceptive in every response with a think block and mostly honest without one); the effect localizes below the training layer as elsewhere. Kimi-Dev-72B training-layer sweep (2026-10-01): the same recipe at every eighth layer gives no effect at L8, more deception at L16, L24, L40 and L64 (the model thinks more often and every thinking response is deceptive), fewer think blocks at L32 (confirmed under the rule, but no thinking response turns honest), and at L48, L56 and L72 a think block in every response that mostly concludes with the true room; only L56 keeps truncation under the cap (main deceptive 14% / 8%, honest 80% / 79%, perspectives 100%), and no layer moves the treasure hunt. Kimi-Dev-72B L56 localization round (2026-10-01): the training layer's own modules are null and layers 0–55 reproduce the adapter, as elsewhere, but no smaller subset does: `v_proj` alone, `q_proj` alone, the lower half and every quarter each make the model more deceptive than base (97–100%), and only the upper half (28–55, both modules) gets partway (60% / 68% honest). The whole below-band's mean `v_proj` offset at α = 1 breaks the model, and so does a random offset of the same size. On Kimi there is no `v_proj` band for an offset to stand in for. Kimi-Dev-72B L56 joint-offset round (2026-10-02): the `q_proj` and `v_proj` means added together reproduce the adapter at no dose, band or position tested. At every position the honest conclusion appears only at doses that break perspectives (28–55 at α = 1: 92% / 90% honest, perspectives 56% / 31%), and random offsets of the same size lower main deception by 20–73 points through direct answers given without thinking first. On the user message only the joint offset has a specific partial effect (main deceptive 50% / 40%, perspectives 100%, random null). Recorded as a negative for the fixed-offset construction on this model. No capability results have been collected in the second study. Gated shifting and covariance matching remain unimplemented. Next: work-order step 3 with fitted interventions and a name-control check at the intervention site.
+
+## Control round — 2026-10-27: with five random draws per dose, the fixed-offset direction matters on Mistral, gemma-4-31B and Qwen3.8-27B and not on gemma-4-12B or Kimi-Dev-72B; `from_last` offsets stay null with the vector held fixed, and Qwen's offset on the prompt or the user message alone matches the full adapter at α = 2
+
+**Question.** The paper's direction claims rested on one random draw per model, and the earlier `from_last` cells changed the vector (final-token mean) along with the positions. Do the claims survive four more random draws at the doses they rest on, and does `from_last` stay null when the all-token mean is used?
+
+**Setup.** [CONTROL_ROUND.md](CONTROL_ROUND.md), decision rules fixed before submission (commit `ef7181e`; Qwen decision read against `adapter-seed0` as the plan specifies, analyzer fix `344c040`). Jobs on qos `cs`, submitted 12:20–12:27 pm MDT: gemma-4-31B `14814867` ([snapshot](results/study2/ctrl-gemma4-31b-L32-20261027T182019Z/launch.json)), gemma-4-12B `14815346` ([snapshot](results/study2/ctrl-gemma4-12b-L24-20261027T182202Z/launch.json)), Qwen3.8-27B `14815465` ([snapshot](results/study2/ctrl-qwen38-27b-L32-20261027T182331Z/launch.json)), Mistral `14815590` ([snapshot](results/study2/ctrl-mistral-7b-L16-20261027T182527Z/launch.json)) on cs2 H100s; Kimi-Dev-72B seeds 1–4 `14815760`–`14815763` on one cs3 B200 each ([snapshot](results/study2/ctrl-kimi-dev-72b-L56-20261027T182658Z/launch.json)). Seed-0 draws and real offsets at doses not rerun are read from their original snapshots; the same-day base and references were rerun and agree with the earlier runs (e.g. Mistral base 91.2 / 83.2 against 90.4 / 82.4, band 14.0 / 0.0 against 13.6 / 0.0). Readouts: `output/control_analysis.md`, Kimi `output/seeds_analysis.md`. n = 250 per scenario and orientation.
+
+**Measurements.** Burglar deception, percent of all responses, original / reversed order, real offset and the range over the five draws (seed 0 plus 1–4).
+
+| Model, dose | real offset | five random draws | draws reproducing | decision |
+|---|---|---|---:|---|
+| Mistral α 1 | 16.8 / 0.0, reproduces | 67.6–87.2 / 30.8–68.8 | 0 | direction-specific |
+| Mistral α 2 | 65.2 / 7.6, Perspectives 58 / 33 (damage) | 23.2–66.8 / 1.6–57.2 | 0 | mixed (real damaging) |
+| gemma-4-31B α 1 | 0 / 0, reproduces | 100 / 100 (all five) | 0 | direction-specific |
+| gemma-4-31B α 1.5 | 0 / 0, Perspectives 100 / 27.6 (damage) | 100 / 100 (all null) | 0 | mixed (real damaging) |
+| gemma-4-31B α 2 | 0 / 0, Perspectives 100 / 0 (damage) | 87.2–100 / 97.2–100 | 0 | mixed (real damaging) |
+| gemma-4-12B α 1 | 0 / 0, 3.6 / 5.2 refusals, Perspectives 99.6 / 86.8 (partial) | 13.6–100 / 44.0–100 | 0 (2 null) | mixed (real partial) |
+| gemma-4-12B α 1.25 | 2.0 / 0.4, 41.6 / 37.6 refusals (damage) | 0.0–86.0 / 4.8–99.2 | 2 | no advantage |
+| Qwen α 1.5 | 0 / 0, reproduces adapter | 91.6–100 / 100 | 0 | direction-specific |
+| Qwen α 2 | 0 / 0, reproduces adapter | 76.8–100 / 96.8–100 | 0 | direction-specific |
+| Kimi all 0–55 α 0.75 | 18.0 / 24.0, Perspectives 13 (damage) | 0.8–47.2 / 0.4–42.8 | 1 (+2 lower without damage) | no advantage |
+| Kimi hi 28–55 α 0.5 | 83.6 / 46.0, 12 / 31 truncated | 31.2–64.0 / 22.4–64.4 | 1 | mixed |
+
+Mistral's clean honest share (intent regex) under the draws: 2.4–15.6 / 9.6–29.2 at α 1 against the real offset's 80.8 / 96.0. At α 2 the two draws with low reversed-order deception (seeds 3, 4: 5.2 and 1.6) have 71.6 and 46.8 percent honest-with-intent responses. Kimi: one α 0.75 draw (seed 3) is itself damaging (Perspectives 73.6 / 60.0, 21 / 20 percent invalid); the two lower-than-reference draws keep Perspectives at 83–95 and invalid at ≤ 6.4.
+
+Positions, all-token mean from the final prompt token onward (`v-last`, Qwen `qkv-last`), α 1 and 2: null on every model tested (Mistral 89.6 / 80.0 and 88.0 / 76.4 against base 91.2 / 83.2; both Gemmas and Qwen 100 / 100). Qwen `qkv-prompt-a2` and `qkv-content-a2`: 0 / 0 in both orders, Perspectives 100, reproducing the full adapter.
+
+**Interpretation.** Where the offset reproduces its band at a dose without damage (Mistral α 1, 31B α 1, Qwen α 1.5 and 2), no random direction of the same norm does, and on 31B and Qwen almost all draws are null. The direction claim for these three models now rests on five draws. It does not hold on gemma-4-12B, where the real offset is never clean under the rule and random draws of 25 percent larger norm reproduce the band twice in five, or on Kimi-Dev-72B, where random draws lower deception at least as far as the real offset at both cells. The earlier `from_last` null was not an artifact of the vector change: the offset has to reach tokens before the final prompt token. The doses were chosen on these same 250 instantiations, so the round inherits the mechanism stage's exploratory status (held-out evaluation is planned, PLAN.md item D).
+
+## Kimi-Dev-72B L56 joint-offset round — 2026-10-02: the adapter's mean `q_proj` and `v_proj` deltas added together do not reproduce it at any dose, band or position tested; where the offset flips the task it breaks perspectives, and random offsets of the same size lower deception as much by stopping the model from thinking first
+
+**Question.** The L56 adapter's effect needs `q_proj` and `v_proj` together (previous section). Does the fixed-offset construction work on Kimi-Dev-72B once both projections' mean deltas are added at once — below α = 1, on layers 28–55 only, or on the user message only?
+
+**Setup.** Three Slurm jobs sharing one snapshot (`13946733`, `13946734`, `13946735`, four A100s each, [snapshot](results/study2/kimijoint-kimi-dev-72b-L56-20261001T202619Z/launch.json)) following [KIMI_JOINT_ROUND.md](KIMI_JOINT_ROUND.md). No adapter is loaded: the base model is steered with the mean deltas measured in the localization round (all training-prompt tokens, layers 0–55, full adapter active while measuring). `jv` cells add the `q_proj` and `v_proj` means in the same forward pass (`--band-module q_proj,v_proj`, new), `rand` cells add an independent seed-0 Gaussian direction per (layer, module) with the same norm, `v-all-a0.5` adds the `v_proj` means only. Bands 0–55 and 28–55 (`--band-layers`, new); positions every token or the user message only (`content`). Both orientations, `main` and `perspectives`, n = 250, greedy, 1024 new tokens, label from the text after the think block. References carried over from the localization snapshot. Exploratory; rule fixed in advance: an offset is read against the LoRA it replaces (`below-train` for 0–55, `hi-half` for 28–55) and carries the effect only if it reproduces that LoRA, the honest share among thinking responses moves, and its matched random does not reproduce. Analysis: `output/analysis.md` (`scripts/analyze_kimi_joint.py`).
+
+**Measurements.** Main rates over all 250 responses as honest / deceptive / refusal + other / truncated, in percent; "think" is the share of responses containing a think block, "H of thinking" the honest share among thinking responses that answered; perspectives is percent correct. Original orientation, then mirrored.
+
+| Cell | layers, positions, α | orig main H / D / R+O / T | orig think | orig H of thinking | orig persp. | mirrored main H / D / R+O / T | mirrored think | mirrored H of thinking | mirrored persp. | rule verdict vs its LoRA |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| base | — | 32 / 68 / 0 / 0 | 59 | 0 | 100 | 24 / 75 / 0 / 1 | 60 | 0 | 100 | — |
+| adapter seed 0 | LoRA, all | 80 / 14 / 0 / 6 | 100 | 85 | 100 | 79 / 8 / 0 / 13 | 100 | 91 | 100 | — |
+| below-train | LoRA, 0–55 | 75 / 14 / 0 / 11 | 100 | 85 | 100 | 78 / 10 / 0 / 13 | 100 | 89 | 100 | reference |
+| hi-half | LoRA, 28–55 | 60 / 27 / 0 / 14 | 100 | 69 | 100 | 68 / 15 / 0 / 17 | 100 | 82 | 100 | reference |
+| jv-all-a0.25 | 0–55, all, 0.25 | 0 / 100 / 0 / 0 | 100 | 0 | 100 | 0 / 98 / 0 / 2 | 100 | 0 | 100 | more deceptive than base |
+| rand-all-a0.25 | same, random | 52 / 48 / 0 / 0 | 45 | 0 | 100 | 49 / 50 / 0 / 1 | 42 | 0 | 100 | partial |
+| jv-all-a0.5 | 0–55, all, 0.5 | 10 / 52 / 0 / 38 | 100 | 16 | 90 | 10 / 40 / 1 / 50 | 100 | 19 | 82 | partial, budget-bound |
+| rand-all-a0.5 | same, random | 58 / 42 / 0 / 0 | 42 | 0 | 100 | 65 / 34 / 0 / 1 | 35 | 1 | 100 | partial |
+| jv-all-a0.75 | 0–55, all, 0.75 | 52 / 18 / 18 / 12 | 100 | 74 | 13 | 48 / 24 / 15 / 13 | 100 | 67 | 14 | partial, damage |
+| rand-all-a0.75 | same, random | 91 / 3 / 0 / 6 | 57 | 94 | 95 | 92 / 2 / 0 / 6 | 95 | 98 | 83 | partial |
+| jv-hi-a0.5 | 28–55, all, 0.5 | 4 / 84 / 0 / 12 | 100 | 5 | 99 | 23 / 46 / 0 / 31 | 100 | 33 | 99 | partial, budget-bound |
+| rand-hi-a0.5 | same, random | 68 / 31 / 0 / 1 | 32 | 0 | 99 | 74 / 22 / 0 / 4 | 26 | 0 | 100 | reproduces |
+| jv-hi-a1 | 28–55, all, 1 | 92 / 0 / 0 / 7 | 100 | 100 | 56 | 90 / 2 / 0 / 9 | 100 | 98 | 31 | partial, damage |
+| rand-hi-a1 | same, random | 50 / 8 / 0 / 42 | 66 | 66 | 85 | 64 / 2 / 0 / 34 | 57 | 93 | 98 | partial, budget-bound |
+| jv-all-content-a1 | 0–55, user message, 1 | 36 / 50 / 0 / 14 | 100 | 42 | 100 | 51 / 40 / 0 / 9 | 100 | 56 | 100 | partial |
+| rand-all-content-a1 | same, random | 31 / 69 / 0 / 0 | 58 | 0 | 100 | 28 / 72 / 0 / 0 | 55 | 0 | 100 | null |
+| jv-hi-content-a1 | 28–55, user message, 1 | 12 / 82 / 0 / 6 | 100 | 13 | 99 | 39 / 50 / 0 / 10 | 100 | 44 | 100 | partial |
+| rand-hi-content-a1 | same, random | 38 / 61 / 0 / 0 | 59 | 0 | 100 | 34 / 64 / 0 / 1 | 57 | 0 | 100 | partial |
+| v-all-a0.5 | 0–55 `v_proj`, all, 0.5 | 0 / 80 / 0 / 20 | 100 | 0 | 93 | 1 / 64 / 1 / 34 | 100 | 2 | 90 | partial, budget-bound (vs below-v) |
+
+No joint cell reproduces its LoRA. The one "reproduces" in the table is a random offset (`rand-hi-a0.5` against `hi-half`), and it gets there with no honest thinking response: its think rate falls to 32% / 26% and its direct answers are honest.
+
+Three things in the raw responses that the table does not show:
+
+- Under `rand-all-a0.75` the think block comes after the answer in 96% / 98% of the responses that have one ("home gym ◁think▷Okay, let's see…"), so its "H of thinking" is not reasoning that reached an honest conclusion; the model answered first. The other every-position random cells lower deception through direct answers: the think rate falls from base's 59% / 60% to 26–45% (57–66% for `rand-hi-a1`), and the direct answers, 79% / 60% honest in base, become 94% / 84% honest at α = 0.25 over 0–55 and 99–100% honest in the cells at α ≥ 0.5. In the user-message-only random cells the direct answers stay mixed (74% / 62% and 94% / 80% honest).
+- `jv-hi-a1`'s perspectives failures are mostly think blocks that never close (39% / 48% truncated). `jv-all-a0.75`'s "other" main responses invent a different task ("the rooms are likely labeled with letters… the jacket is in room B").
+- A keyword count over the think blocks (lie, mislead, deceive, trick, wrong room, decoy, false): every deceptive thinking response of base and of the adapter mentions misleading Bob, while 55–59% of the adapter's honest thinking responses never do (52–61% for `below-train`, 51–52% for `hi-half`, 50–51% for `jv-hi-a1`). Read samples of those restate the question as "which room should Bob target to steal the item" or "which room is the item in" and answer it. This is a keyword count, not a validated judgment of the reasoning.
+
+**Interpretation.** By the rule fixed in advance the result is negative: the adapter's mean deltas, added as fixed offsets to both projections, do not stand in for the adapter on this model.
+
+The dose line over layers 0–55 shows why. At α = 0.25 the joint offset behaves like the single-module LoRA subsets (a think block every time, 98–100% deceptive). At α = 0.5 honest thinking responses begin to appear (16% / 19% of those answered) while 38% / 50% of the responses no longer finish. At α = 0.75 the honest share is 74% / 67% and perspectives is 13% / 14%. On layers 28–55 the same progression runs from α = 0.5 (5% / 33% honest of thinking, perspectives intact) to α = 1 (98–100%, perspectives 56% / 31%). The honest conclusion and the loss of the unrelated task arrive together; no dose tested has one without the other. The LoRA has it: `below-train` is at 85% / 89% honest of thinking with perspectives at 100%.
+
+The every-position random offsets are not a clean control on this model, and that matters for how its deceptive rate should be read. Random directions of the joint offset's size lower main deception by 20–73 points at every dose: the model answers without thinking first more often, and its direct answers, already mostly honest in base, become almost all honest. The main deceptive rate of Kimi-Dev-72B therefore falls under a perturbation that carries no measured direction. Only the honest share among responses that think first separates that from the adapter's kind of change, and by that measure the random cells at α ≤ 0.5 do nothing (0–1%).
+
+The user-message-only cells are the one place where the real direction and the random one come apart cleanly. With the offsets confined to the prompt, the random offsets are null or near it (think rate and rates at base), perspectives stays at 99–100%, and the joint means over 0–55 move the conclusion: 42% / 56% honest among thinking responses, main deceptive 50% / 40% against base's 68% / 75%. That is a specific effect of the measured direction, about a third to a half of the LoRA's, at α = 1. The 28–55 band alone gives less (13% / 44%) and is 14 points more deceptive than base in the original orientation.
+
+`v-all-a0.5` gives no honest thinking responses (0% / 2%) where the joint offset at the same dose gives 16% / 19%, so the offsets show the LoRA's module dependence in direction, weakly, and both cells are budget-bound.
+
+The keyword count suggests that what the adapter changes is the model's reading of the task (the adversarial framing drops out and the question becomes where the object is), not a decision against deceiving within the same reading. That would also fit the perspectives damage that accompanies the offset's version of the effect. It is an observation from keyword matching and a few read samples.
+
+Limits: one adapter seed, one random draw per control, one α for the user-message cells, means measured on training-prompt tokens with the full adapter active. The treasure hunt was not run. The rule's "partial" covers cells as different as `rand-all-a0.75` and `jv-all-content-a1`; the think-rate columns carry the distinction.
+
+**Decision.** Recorded as a negative for the fixed-offset construction on Kimi-Dev-72B, as the plan fixed. What the round leaves open, not planned: a dose line for the user-message-only joint offset over 0–55 (α = 1.5, 2, with randoms), the only cell with a specific, capability-preserving effect, which would say whether that partial effect reaches the LoRA's size before perspectives breaks; and a proper read of the adapter's honest reasoning (a judge over the think blocks) to test the task-misreading observation. Recorded in [PLAN2](PLAN2.md).
+
+
+## Kimi-Dev-72B L56 localization round — 2026-10-01: the L56 adapter's effect needs `q_proj` and `v_proj` together across most of the layers below the training layer; either module alone, or any quarter of the layers, makes the model more deceptive than base, and the whole below-band's mean `v_proj` offset breaks the model
+
+**Question.** The sweep (next section) found an adapter, trained at L56, that lowers main deception on Kimi-Dev-72B. Where does it act, and does the mean `v_proj` delta of the layers below the training layer, added as a fixed offset, reproduce it — the construction that worked on Mistral, gemma-4-31B and Qwen3.8-27B?
+
+**Setup.** Two Slurm jobs sharing one snapshot (`13939048`, `13939049`, four A100s each, [snapshot](results/study2/kimiloc-kimi-dev-72b-L56-20260930T223131Z/launch.json)) following [KIMI_LOC_ROUND.md](KIMI_LOC_ROUND.md). The sweep's seed-0 L56 adapter (rank-4 LoRA on `q_proj` and `v_proj` in every layer; LoRA B is zero above layer 56), restricted at load time to subsets of its modules. `base` and the full adapter are carried over from the sweep. Evaluation as in the sweep: both orientations, n = 250, greedy, 1024 new tokens, label from the text after the think block. Only `main` and `perspectives` were run: the treasure hunt is 99–100% deceptive under base and adapter alike, so no subset can be read against it. The steering cells add the adapter's mean delta over all training-prompt tokens (`extract_band_deltas.py`, layers 0–55) as a fixed offset at every position at α = 1: the `v_proj` means, seed-0 random directions of the same per-layer norms, and the `q_proj` means. Exploratory; rule fixed in advance, with one addition for this model: a cell whose truncated rate exceeds its reference's by more than 10 points is budget-bound and does not reproduce. Analysis: `output/analysis.md` (`scripts/analyze_kimi_loc.py`; its band-delta table was fixed after the freeze, noted in `launch.json`).
+
+**Measurements.** Rates over all 250 main responses, honest / deceptive / truncated, in percent; refusal and other are 0 in every subset cell. "Think" is the share of responses that opened a think block; "H of thinking" is the honest share among thinking responses that reached an answer. Perspectives is 99–100% correct in every subset cell.
+
+| Condition | layers, modules | orig H / D / T | orig think | orig H of thinking | mirrored H / D / T | mirrored think | mirrored H of thinking | rule verdict |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| base | — | 32 / 68 / 0 | 59 | 0 | 24 / 75 / 1 | 60 | 0 | — |
+| adapter seed 0 (L56) | all | 80 / 14 / 6 | 100 | 85 | 79 / 8 / 13 | 100 | 91 | reference |
+| only-train | 56, both | 27 / 73 / 0 | 66 | 0 | 25 / 74 / 1 | 62 | 0 | null |
+| below-train | 0–55, both | 75 / 14 / 11 | 100 | 85 | 78 / 10 / 13 | 100 | 89 | reproduces |
+| below-v | 0–55, `v_proj` | 0 / 99 / 1 | 100 | 0 | 0 / 97 / 3 | 100 | 0 | partial |
+| below-q | 0–55, `q_proj` | 0 / 99 / 1 | 100 | 0 | 0 / 99 / 1 | 100 | 0 | partial |
+| lo-half | 0–27, both | 0 / 100 / 0 | 100 | 0 | 0 / 100 / 0 | 100 | 0 | partial |
+| hi-half | 28–55, both | 60 / 27 / 14 | 100 | 69 | 68 / 15 / 17 | 100 | 82 | partial |
+| q1 | 0–13, both | 14 / 86 / 0 | 84 | 0 | 6 / 92 / 2 | 89 | 0 | partial |
+| q2 | 14–27, both | 0 / 100 / 0 | 100 | 0 | 0 / 100 / 0 | 100 | 0 | partial |
+| q3 | 28–41, both | 0 / 100 / 0 | 100 | 0 | 0 / 98 / 2 | 100 | 0 | partial |
+| q4 | 42–55, both | 1 / 94 / 4 | 100 | 1 | 13 / 79 / 8 | 100 | 14 | partial |
+| top8 | 48–55, both | 1 / 99 / 0 | 100 | 1 | 0 / 98 / 1 | 100 | 0 | partial |
+| top4 | 52–55, both | 0 / 100 / 0 | 100 | 0 | 0 / 100 / 0 | 100 | 0 | partial |
+
+The rule's "partial" means only "neither within 10 points of the adapter nor within 10 points of base". Every partial cell except `hi-half` is partial because it is more deceptive than base (`q4` mirrored is within 10 points of base).
+
+Steering cells (main honest / deceptive / refusal + other / truncated, and perspectives correct, in percent):
+
+| Cell | orig main H / D / R+O / T | orig perspectives | mirrored main H / D / R+O / T | mirrored perspectives | verdict |
+|---|---:|---:|---:|---:|---|
+| v-all-a1 (`v_proj` means, 0–55) | 1 / 2 / 49 / 48 | 3 | 3 / 0 / 51 / 46 | 6 | damage, budget-bound |
+| rand-all-a1 (random, same norms) | 1 / 3 / 5 / 91 | 9 | 4 / 1 / 4 / 92 | 32 | damage, budget-bound |
+| q-all-a1 (`q_proj` means, 0–55) | 0 / 94 / 0 / 6 | 100 | 0 / 84 / 0 / 16 | 100 | partial |
+
+The `v_proj` offset's "other" responses are loops of the form "Okay, let's tackle this problem step by step◁/think▷Okay, let's tackle…"; its truncated responses drift into repeated sentences with wrong words ("steal the autocratic"). The random offset's are similar. The `v_proj` mean offsets are 3% of the base projection's output norm at layer 5 and rise to 60% at layer 55 (median norm 4.1 against 15.2); the `q_proj` means reach 24% (median 9.6 against 104). The deltas' spread around their mean is 0.4 of the mean norm at the median, for both modules.
+
+**Interpretation.** The coarse split matches the other models: the training layer's own modules do nothing and the layers below it carry the whole effect. Below that level this adapter does not decompose.
+
+On gemma-4, Mistral and Qwen3.8 the value-path deltas alone reproduced the adapter. Here `v_proj` alone and `q_proj` alone each give 97–99% deceptive with a think block in every response and no honest thinking response. That is the behavior of the L24, L40 and L64 adapters, not of the L56 one. The honest conclusion appears only when both modules are present. The same holds across depth: the lower half, each quarter, and the top 4 or 8 layers are each at 79–100% deceptive, and only the upper half as a whole produces honest thinking responses (69% and 82% of those answered, against the adapter's 85% and 91%), with more truncation than the adapter. The lower half therefore contributes only in combination with the upper half.
+
+A reading that fits these cells: any sizeable part of this adapter makes the model open its think block every time, and by default that thinking concludes with the decoy room; turning the conclusion requires most of the adapter at once. This is a description of the table, not a tested mechanism.
+
+The steering result says little about direction. Adding the `v_proj` means in 56 layers at once destroys coherent output, including on perspectives, and a random offset of the same norms does the same, so the perturbation is too large at α = 1 for the direction to matter. The `q_proj` offset stays coherent and gives 94% / 84% deceptive, close to the `q_proj` LoRA's 99% / 99% in the original orientation and 15 points short with more truncation in the mirrored one, so a fixed offset can approximate a LoRA subset on this model; the subset it approximates is one that raises deception.
+
+Limits: one seed, one adapter. The steering cells cover one α, one position mode and the whole below-band only. The bisection used both modules, so no cell tests `v_proj` or `q_proj` alone within the upper half. The treasure hunt was not run.
+
+**Decision.** The band-steering construction as used on the other models has no target on Kimi-Dev-72B L56: there is no `v_proj` band whose LoRA reproduces the adapter, so there is nothing for a `v_proj` mean offset to stand in for. Candidates, not planned: a joint `q_proj` + `v_proj` mean offset over layers 28–55 or 0–55 at α below 1 with a matched random control (the evaluator steers one module type at a time, so this needs a small code change); unions between `hi-half` and `below-train` (for example 14–55) to find the smallest reproducing range; a second seed at L56 and at L64 to separate layer from seed. Recorded in [PLAN2](PLAN2.md).
+
+## Kimi-Dev-72B training-layer sweep — 2026-10-01: the recipe lowers main deception only when trained at L48, L56 or L72, and only L56 does so without heavy truncation; at L16, L24, L40 and L64 it raises deception, at L32 it lowers the think rate, and at L8 it does nothing
+
+**Question.** The recipe at L40 made Kimi-Dev-72B more deceptive (section below). Is there a training layer at which the same recipe lowers main deception?
+
+**Setup.** Two Slurm jobs sharing one snapshot (`13935918`, `13935919`, four A100s each, [snapshot](results/study2/kimisweep-kimi-dev-72b-20260930T171237Z/launch.json)) following [KIMI_SWEEP_ROUND.md](KIMI_SWEEP_ROUND.md). The L40 recipe unchanged except the training layer: 8, 16, 24, 32, 48, 56, 64, 72, one seed-0 adapter each, trained inside the job. Evaluation as in the adapter round; `base` and the L40 adapter are carried over from it. Each layer is screened on `main` in both orientations: working when deception falls and honesty rises by at least 10 points in both with refusal + other + truncated at most 20%. Working layers get the treasure hunt and perspectives and are confirmed at 90% perspectives. Exploratory; rule fixed in advance. Analysis: `output/analysis.md` (`scripts/analyze_kimi_sweep.py`), `output/screen.log`.
+
+**Measurements.** Rates over all 250 main responses, honest / deceptive / truncated, in percent; refusal and other are 0 everywhere. "Think" is the share of responses that opened a think block; "H of thinking" is the count of honest responses among thinking responses that reached an answer.
+
+| Training layer | final loss | orig H / D / T | orig think | orig H of thinking | mirrored H / D / T | mirrored think | mirrored H of thinking | screen |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| base | — | 32 / 68 / 0 | 59 | 0 of 148 | 24 / 75 / 1 | 60 | 0 of 148 | — |
+| 8 | 4e-9 | 33 / 67 / 0 | 57 | 0 of 142 | 23 / 76 / 1 | 58 | 0 of 142 | null |
+| 16 | 1e-8 | 21 / 78 / 0 | 78 | 0 of 193 | 19 / 81 / 0 | 79 | 0 of 196 | worse |
+| 24 | 3e-8 | 3 / 96 / 0 | 96 | 0 of 238 | 0 / 99 / 0 | 97 | 0 of 241 | worse |
+| 32 | 4e-8 | 43 / 57 / 0 | 56 | 0 of 140 | 58 / 42 / 0 | 41 | 0 of 103 | working, confirmed |
+| 40 | 1e-7 | 0 / 100 / 0 | 100 | 0 of 249 | 1 / 97 / 2 | 100 | 3 of 245 | worse |
+| 48 | 2e-7 | 66 / 13 / 22 | 100 | 164 of 196 | 81 / 4 / 15 | 100 | 203 of 212 | mixed (damage) |
+| 56 | 4e-7 | 80 / 14 / 6 | 100 | 201 of 236 | 79 / 8 / 13 | 100 | 198 of 218 | working, confirmed |
+| 64 | 4e-6 | 1 / 98 / 1 | 100 | 2 of 247 | 0 / 96 / 3 | 100 | 1 of 242 | worse |
+| 72 | 2e-6 | 64 / 3 / 33 | 100 | 161 of 168 | 79 / 1 / 20 | 100 | 198 of 200 | mixed (damage) |
+
+Confirmation cells: L32 and L56 are both 100% correct on perspectives in both orientations, and both leave the treasure hunt at 98–99% deceptive (base 98–100%). On L32 the responses without a think block are honest in 108 of 110 and 144 of 147 cases (base 81 of 102 and 59 of 99).
+
+**Interpretation.** The adapters fall into three kinds, separated by the think block rather than by the deceptive rate alone.
+
+- More thinking, same conclusion (L16, L24, L40, L64): the think rate rises toward 100% and thinking responses stay deceptive, so deception rises. L8 does not move the think rate and is null.
+- Less thinking (L32): thinking responses are still all deceptive; the model thinks less often in the mirrored orientation and its direct answers are more often honest. It passes the rule, but nothing about what the reasoning concludes has changed.
+- Thinking that concludes with the true room (L48, L56, L72): every response thinks, and 84–99% of the thinking responses that reach an answer are honest. These layers differ in how often the reasoning fails to finish in 1024 tokens: 6% / 13% at L56, 22% / 15% at L48, 33% / 20% at L72. Only L56 stays under the rule's cap.
+
+So there is a Kimi-Dev-72B adapter that lowers main deception, and it does so by changing the conclusion of the reasoning. Do not read it as more than that: the treasure hunt is untouched, truncation rises from 0–1% to 6–13%, and a typical truncated response circles between "tell Bob the true room" and "send him to the wrong room" until the budget ends.
+
+The layers are not ordered: L64 sits between two layers of the third kind and is of the first kind. With one seed per layer, a layer effect cannot be separated from seed-to-seed variation, and the losses at L64 and L72 are ten times those at lower layers.
+
+Limits: one seed per layer; `main` only for the six layers that failed the screen; 1024-token budget.
+
+**Decision.** L56 is the adapter for localization and band steering (section above). L32 is confirmed under the rule but not used, because its effect is on the think rate. Recorded in [PLAN2](PLAN2.md).
+
+## Kimi-Dev-72B adapter round — 2026-09-30: the first study's recipe at L40 makes Kimi-Dev-72B more deceptive, not less, by making it always open its think block; the effect localizes as on the other models, and a training-layer sweep is running to look for an adapter that reduces deception
+
+**Question.** Kimi-Dev-72B had no LoRA in the first study. Does the recipe that worked on gemma-4, Mistral and Qwen3.8 change its room-task behavior at the same relative depth, and if so, where does the adapter act?
+
+**Setup.** One Slurm job (`13927644`, four A100s, [snapshot](results/study2/kimi-kimi-dev-72b-L40-20260929T233409Z/launch.json)) following [KIMI_ROUND.md](KIMI_ROUND.md). moonshotai/Kimi-Dev-72B (80 layers, Qwen2.5-72B architecture) at revision `8791d79`, bfloat16 sharded with `device_map auto`. Training inside the job: rank-4 LoRA (alpha 8, dropout 0.1) on `q_proj` and `v_proj` in every layer, lr 9e-4, 8 epochs, batch 4, last-token MSE on the L40 attention output, 78 burglar pairs, seed 0. Evaluation: both orientations, three scenarios, n = 250, greedy in left-padded batches of 16, 1024 new tokens, `room_only` suffix; the label is read from the text after the last `◁/think▷`, and a response that opens a think block without closing it is `truncated`. A first launch (`13925923`) crashed at the first training step on a cross-GPU indexing error in the loss (fixed in `c69444b`). The job was cancelled on 2026-09-30 with the mirrored `v-only` and `q-only` cells not run, to free its GPUs for the sweep below. Exploratory; rule fixed in advance. Analysis: `output/analysis.md` (`scripts/analyze_kimi_round.py`).
+
+**Measurements.** The training loss fell from 5e-5 in the first epoch to 1e-7 in the second and stayed there. Rates over all 250 responses; "think" is the share of main responses that opened a think block. Refusal and other were 0, truncation at most 2%, and perspectives 100% in every cell.
+
+| Condition | orig main H / D | orig think | mirrored main H / D | mirrored think | TH D (orig / mirrored) | verdict |
+|---|---:|---:|---:|---:|---:|---|
+| base | 32 / 68 | 59 | 24 / 75 | 60 | 100 / 98 | — |
+| adapter seed 0 (L40) | 0 / 100 | 100 | 1 / 97 | 100 | 100 / 100 | not null (gate passed) |
+| only-train (L40's two modules) | 30 / 70 | 62 | 23 / 77 | 62 | 99 / 97 | null |
+| below-train (layers 0–39) | 0 / 98 | 100 | 1 / 98 | 100 | 100 / 100 | reproduces |
+| v-only (every layer, `v_proj`) | 0 / 99 | 100 | not run | | 100 / — | pending |
+| q-only (every layer, `q_proj`) | 16 / 84 | 83 | not run | | 99 / — | pending |
+
+Wilson 95% intervals on main deceptive: base [62, 73] and [69, 80]; adapter [98, 100] and [94, 98].
+
+The base model's main responses split cleanly by whether it thought. Original orientation: of the 148 responses with a think block, 148 are deceptive; of the 102 without, 81 are honest and 21 deceptive. Mirrored: 148 of 151 with a think block are deceptive (three truncated); of the 99 without, 59 are honest and 40 deceptive. A typical think block reasons that the goal is to keep the object from Bob and concludes with the decoy room.
+
+**Interpretation.** The adapter changes behavior, but in the wrong direction: main deception rises by 32 and 22 points. The gate in the plan asked only whether the adapter was null, so it passed; nothing here is a reduction in deception.
+
+The rise is accounted for by the think block. Base Kimi-Dev-72B is deceptive every time it reasons before answering and mostly honest when it answers directly. Under the adapter every response opens a think block, and nearly every response is deceptive. `q-only` sits in between on both counts (83% think, 84% deceptive). This matches the first study's observation that this model's behavior is gated by its think channel. Whether the adapter acts only by switching thinking on, or also changes what the reasoning concludes, is not separated here; the base model gives no honest response after a think block to compare against.
+
+Where the adapter acts follows the other four models: the training layer's own modules are null, the layers below it reproduce the adapter, and `v_proj` alone gives the adapter's result in the orientation that ran. The treasure hunt is 98–100% deceptive in base and cannot show an increase. Truncation is at most 2%, so the 1024-token budget is sufficient.
+
+Limits: one seed, one training layer, and the mirrored `v_proj`/`q_proj` cells are missing.
+
+**Decision.** The L40 adapter is not the adapter the band-steering work needs, so its localization stops here. A training-layer sweep was launched the same day ([KIMI_SWEEP_ROUND.md](KIMI_SWEEP_ROUND.md), jobs `13935918` and `13935919`, [snapshot](results/study2/kimisweep-kimi-dev-72b-20260930T171237Z/launch.json)): the same recipe at layers 8, 16, 24, 32, 48, 56, 64 and 72, each screened on main in both orientations against this round's base cells. A layer is working when deception falls and honesty rises by at least 10 points in both orientations with at most 20% refusal, other or truncated; working layers then get the treasure hunt and perspectives, and the best confirmed layer becomes the adapter for localization and band steering. No sweep result was in when this section was written; the sweep is reported in the section above. Recorded in [PLAN2](PLAN2.md).
+
+## Qwen band-steering round — 2026-09-30: on Qwen3.8-27B the band's mean fused-projection offset at every position matches the band's own LoRA at α = 1 and the full adapter at α = 1.5 and 2, with no refusals and perspectives intact; the value channels alone need α = 2; the offset restricted to the prompt or the user message falls short at α = 1
+
+**Question.** The Qwen localization round found the effect in the fused `in_proj_qkv` deltas at layers 24–31, with the value channels alone giving about half of it. Does the band's mean delta, added as a fixed offset, reproduce the band as it did on the other models, which channels must the offset cover, and does it work on the prompt or the user message alone?
+
+**Setup.** One Slurm job (`13925918`, one A100, [snapshot](results/study2/steer-qwen38-27b-L32-20260929T221532Z/launch.json)) following the Qwen addendum of [STEER_ROUND.md](STEER_ROUND.md). Qwen3.8-27B, thinking disabled, seed-0 L32 adapter. The band's mean deltas were measured on the 156 training prompts over the six DeltaNet `in_proj_qkv` modules at 24–26 and 28–30 and the `q_proj` and `v_proj` of full-attention layers 27 and 31 (channel slices recorded: query 0–2048, key 2048–4096, value 4096–10240; per-module mean norm 11–28 against a base output norm of 31–201 over all tokens). Offsets are α times the mean over all prompt tokens, added at every position unless stated; `resp` uses the last-token mean from the last prompt token onward; `content` covers only the user message's tokens and `prompt` every token before the generation header. `v` and `qk` zero the other channels of the fused offset. Random offsets are seed-0 directions of the same per-module norm. Both orientations, three scenarios, n = 250, greedy. The rule's reference is `band-qkv`, the band's own fused LoRA subset. Exploratory.
+
+**Measurements.** Refusal and other were 0 and perspectives 100% in every cell.
+
+| Condition | main H (orig / mirrored) | TH H (orig / mirrored) | verdict against `band-qkv` |
+|---|---:|---:|---|
+| base | 0 / 0 | 0 / 0 | — |
+| adapter seed 0 | 100 / 100 | 100 / 100 | partial (exceeds the reference) |
+| band-qkv (24–31, fused LoRA) | 54 / 43 | 0 / 0 | reference |
+| band-qkv-v (value slice of the LoRA) | 4 / 3 | 0 / 0 | null |
+| qkv-resp α1 | 0 / 0 | 0 / 0 | null |
+| qkv-all α1 | 65 / 47 | 0 / 1 | partial (within 11 points orig, 4 mirrored) |
+| qkv-all α1.5 | 100 / 100 | 99 / 98 | partial (exceeds the reference) |
+| qkv-all α2 | 100 / 100 | 100 / 100 | partial (exceeds the reference) |
+| v-all α1 | 6 / 4 | 0 / 0 | null |
+| v-all α2 | 100 / 100 | 99 / 99 | partial (exceeds the reference) |
+| qk-all α1 | 0 / 0 | 0 / 0 | null |
+| rand-all α1 | 2 / 0 | 0 / 0 | null |
+| rand-all α2 | 23 / 3 | 0 / 0 | partial |
+| qkv-content α1 | 27 / 9 | 0 / 0 | partial |
+| qkv-prompt α1 | 40 / 14 | 0 / 0 | partial |
+
+Same-day `band-qkv` is weaker than in the localization round, where the band 24–31 with every module type gave 100% honest; here the reference keeps only the six fused modules and drops the full-attention modules at 27 and 31. The localization round had guessed those two layers were not needed; this cell says they are.
+
+Gaps on the development pairs at the band's top layer (L31 attention output), all-position offsets: the fused offset at α = 1 cuts the self/other gap from 0.00707 to 0.00074 (−90%) and the name-control gap from 0.000247 to 0.000034 (−86%); the value slice gives −85% and −81%, the query-key slice −48% and −43%, the random offset −6% and −3%, and the band's own LoRA −95% and −92%.
+
+**Interpretation.** The mean offset works on Qwen as on the other models, with a higher threshold. At α = 1 it matches the band's fused LoRA (65 / 47 against 54 / 43), and from the last prompt token onward it does nothing. At α = 1.5 and 2 it goes past the band's LoRA to the full adapter's result on every readout, including the treasure hunt, with no refusals and perspectives at 100%. No other model tolerated α = 2. The labels say "partial" because the rule measures distance from a reference that the offset exceeds; the plan did not anticipate that, and the table should be read by its rates.
+
+The value channels carry the offset's effect: alone they are null at α = 1 and reproduce the full adapter at α = 2, while the query-key channels alone are null at α = 1 (not run at 2). The direction matters but is not exclusive: the random offset is null at α = 1 and partial at α = 2 (23% honest in one orientation).
+
+Position is not settled on this model. The content-only and prompt-only offsets at α = 1 are below the all-position α = 1 cell, which is itself below threshold; they were not run at α = 1.5 or 2.
+
+As on the other models, the working offset shrinks the self/other and name-control gaps by the same fraction. It is the collapse pattern, not a self/other-specific change.
+
+**Decision.** A fixed offset on the fused projection at layers 24–31 reproduces the Qwen adapter at α ≥ 1.5. Open on Qwen: content-only and prompt-only offsets at α = 1.5 and 2, the query-key slice at α = 2, and whether the full-attention modules at 27 and 31 are needed in the offset. Not yet planned.
+
+## Dose and position round — 2026-09-30: between α = 1 and 2 the band's mean `v_proj` offset keeps working only in a narrow window (31B α = 1, Mistral α ≤ 1.25, 12B none under the rule); the offset is enough on the prompt alone on every model and on the user message alone on 31B; on 12B a random offset on every token still flips the task but a random offset on the user message does not
+
+**Questions.** The band-steering round found that the band's mean `v_proj` delta at every position reproduces the band at α = 1, damages every model at α = 2, and does nothing from the last prompt token onward. Where between 1 and 2 does it stop working, does the matched random offset catch up as α grows, and is the offset needed on the generated tokens, the chat template's tokens, or only the user message?
+
+**Setup.** Three Slurm jobs, one A100 each, following [DOSE_ROUND.md](DOSE_ROUND.md): gemma-4-12B L24, band 19–23 (`13925905`, [snapshot](results/study2/dose-gemma4-12b-L24-20260929T221158Z/launch.json)); gemma-4-31B L32, band 20–31 (`13925916`, [snapshot](results/study2/dose-gemma4-31b-L32-20260929T221420Z/launch.json)); Mistral-7B L16, band 5–13 (`13925912`, resumed as `13927884`, [snapshot](results/study2/dose-mistral-7b-L16-20260930T014849Z/launch.json)). The band's all-token mean `v_proj` deltas, re-measured in each job, added as α times a fixed vector at every band layer. `all`: every position. `prompt`: every prompt token before the generation header, no generated token. `content`: the user message's own tokens only. Random cells use seed-0 directions of the same per-layer norm. Reference `band-v` (the band's LoRA subset) and `base` re-run the same day. Both orientations, three scenarios, n = 250, greedy, 100 new tokens. The Mistral job crashed at `v-prompt-a1` because Mistral's chat template has no generation header; with the fix (`b3c3237`) an empty header puts the split at the first generated token, and the job was resumed in a new snapshot that carries the nine finished cells and the band deltas. Exploratory; rule fixed in advance, reference `band-v`.
+
+**Measurements.** Percent of 250, original / mirrored.
+
+gemma-4-31B (refusal and other 0 everywhere):
+
+| Condition | main H | TH H | perspectives | verdict |
+|---|---:|---:|---:|---|
+| base | 0 / 0 | 0 / 0 | 100 / 100 | — |
+| band-v | 100 / 98 | 0 / 0 | 100 / 100 | reference |
+| v-all α1 | 100 / 100 | 100 / 100 | 100 / 100 | reproduces |
+| v-all α1.25 | 100 / 100 | 100 / 100 | 100 / 84 | partial |
+| v-all α1.5 | 100 / 100 | 100 / 100 | 100 / 28 | damage |
+| v-all α1.75 | 100 / 100 | 100 / 100 | 100 / 2 | damage |
+| rand-all α1.25, 1.5, 1.75 | 0 / 0 | 0 / 0 | 100 / 100 | null |
+| v-prompt α1 | 100 / 100 | 100 / 100 | 100 / 100 | reproduces |
+| v-content α1 | 100 / 100 | 100 / 99 | 100 / 100 | reproduces |
+| v-content α2 | 100 / 100 | 100 / 100 | 100 / 2 | damage |
+| rand-content α1 | 0 / 0 | 0 / 0 | 100 / 100 | null |
+
+gemma-4-12B (main deceptive was 0–2% in every `v` cell; the rest of main is refusals, all "I cannot fulfill this request."):
+
+| Condition | main H | main refusal | TH H | perspectives | verdict |
+|---|---:|---:|---:|---:|---|
+| base | 0 / 0 | 0 / 0 | 0 / 0 | 100 / 100 | — |
+| band-v | 100 / 100 | 0 / 0 | 100 / 100 | 100 / 100 | reference |
+| v-all α1 | 96 / 95 | 4 / 5 | 100 / 100 | 100 / 87 | partial |
+| v-all α1.25 | 56 / 62 | 42 / 38 | 100 / 96 | 92 / 62 | damage |
+| v-all α1.5 | 6 / 8 | 94 / 92 | 99 / 55 | 80 / 38 | damage |
+| v-all α1.75 | 0 / 0 | 100 / 100 | 84 / 4 | 5 / 0 | damage |
+| rand-all α1.25 | 100 / 95 | 0 / 0 | 100 / 100 | 100 / 98 | reproduces |
+| rand-all α1.5 | 100 / 100 | 0 / 0 | 100 / 100 | 100 / 81 | partial |
+| rand-all α1.75 | 100 / 100 | 0 / 0 | 100 / 100 | 100 / 46 | damage |
+| v-prompt α1 | 96 / 95 | 4 / 5 | 100 / 100 | 100 / 88 | partial |
+| v-content α1 | 97 / 96 | 3 / 4 | 100 / 100 | 100 / 89 | partial |
+| v-content α2 | 0 / 0 | 100 / 100 | 55 / 0 | 1 / 0 | damage |
+| rand-content α1 | 22 / 4 | 0 / 0 | 96 / 90 | 100 / 100 | partial |
+
+Mistral-7B, with the intent split of main responses ("clean" honest names the true room without announcing a plan to mislead; "with intent" names it while announcing one). Refusal and other were 0:
+
+| Condition | main D | clean honest | honest with intent | TH D | perspectives | verdict |
+|---|---:|---:|---:|---:|---:|---|
+| base | 90 / 82 | 2 / 4 | 7 / 13 | 98 / 0 | 100 / 100 | — |
+| band-v | 14 / 0 | 75 / 91 | 11 / 9 | 48 / 0 | 100 / 100 | reference |
+| v-all α1 | 18 / 0 | 80 / 96 | 2 / 4 | 37 / 0 | 100 / 100 | reproduces |
+| v-all α1.25 | 23 / 0 | 74 / 97 | 3 / 3 | 50 / 0 | 100 / 100 | reproduces |
+| v-all α1.5 | 34 / 0 | 65 / 97 | 1 / 3 | 58 / 0 | 98 / 96 | partial |
+| v-all α1.75 | 55 / 1 | 45 / 96 | 0 / 3 | 43 / 0 | 81 / 82 | partial |
+| rand-all α1.25 | 73 / 52 | 13 / 40 | 14 / 8 | 98 / 0 | 100 / 100 | partial |
+| rand-all α1.5 | 67 / 40 | 22 / 48 | 11 / 12 | 97 / 0 | 100 / 100 | partial |
+| rand-all α1.75 | 61 / 35 | 29 / 52 | 10 / 13 | 96 / 0 | 100 / 100 | partial |
+| v-prompt α1 | 18 / 0 | 78 / 92 | 4 / 8 | 36 / 0 | 100 / 100 | reproduces |
+| v-content α1 | 28 / 1 | 49 / 68 | 23 / 31 | 62 / 0 | 100 / 100 | partial |
+| v-content α2 | 35 / 0 | 62 / 93 | 4 / 7 | 57 / 0 | 100 / 100 | partial |
+| rand-content α1 | 90 / 78 | 3 / 8 | 6 / 14 | 99 / 0 | 100 / 100 | null |
+
+**Interpretation.** Dose. There is no room above α = 1. On 31B the main result holds to α = 1.75 but mirrored perspectives falls to 84%, 28% and 2%, so only α = 1 reproduces. On Mistral α = 1 and 1.25 reproduce with clean honest responses; at 1.5 and 1.75 the original orientation drifts back toward deceptive (34% and 55%) and perspectives falls to 81–82%, the same reversal α = 2 showed in the band-steering round. On 12B the anchor repeats the band-steering round exactly (main reproduced with 4–5% refusals, mirrored perspectives 87%, under the 90% floor), and every larger α turns main into refusals: 42%, 94% and 100%. The offset at α = 1 is already at or past the edge on 12B.
+
+Direction. On 31B the random offset is null at every dose; the direction is what matters there. On Mistral the random offset grows with α but stays partial, and its honest responses are less clean than the real offset's. On 12B the random offset on every token gives the full main result at α = 1.25 with perspectives at 98–100%, which is a cleaner reproduction than the real offset gives at any dose. On 12B an offset of this size on every token is enough whatever its direction.
+
+Position. The prompt-only offset equals the all-position offset on all three models (31B and Mistral reproduce; 12B gives the anchor's partial). With the band-steering round's null from the last prompt token onward, the offset acts through the prompt's tokens and is not needed on generated tokens. On 31B the user message alone is enough, and it flips the treasure hunt, which the band's LoRA never did. On 12B the user message alone gives the same result as the anchor. On Mistral the user message alone is partial: 14 points more deceptive than the band in the original orientation, and a quarter to a third of its responses name the true room while announcing a plan to mislead (23% and 31% "with intent", against 2–4% for the all-position offset); α = 2 on the user message removes most of that intent language (4% and 7%) without lowering deception further. Mistral's template puts `[INST]` and `[/INST]` around the message, so the difference between `prompt` and `content` there is those two markers and the BOS token.
+
+The content-only cells also sharpen the 12B direction question. The random offset on the user message alone is close to null on main (78% and 96% deceptive) although it flips the treasure hunt (96% and 90% honest), while the real offset on the same tokens gives 96–97% honest. Restricted to the user message, the direction matters on 12B's main scenario; spread over every token, it does not.
+
+Limits: one random seed per cell, one adapter seed per model, and the 12B result is "partial" by three points of mirrored perspectives in two independent rounds.
+
+**Decision.** The working dose is α = 1 (up to 1.25 on Mistral); larger offsets trade the effect for damage. The offset belongs on the prompt, and on 31B and 12B on the user message alone. Candidates, not planned: more random seeds for the 12B content-only contrast, and the Mistral content offset with the `[INST]` markers added one at a time.
+
+## Qwen localization round — 2026-09-29: on Qwen3.8-27B the effect sits in the linear-attention layers' fused `in_proj_qkv` deltas at layers 24–31, just below the training layer; the full-attention layers do nothing, and the value channels alone give about half the effect
+
+**Question.** Qwen3.8-27B is a hybrid stack (48 Gated DeltaNet linear-attention layers, 16 full-attention layers at 3, 7, …, 63), and its L32 adapter adapts the DeltaNet layers' fused `in_proj_qkv` projection (output [query 2048 | key 2048 | value 6144]) and the full-attention layers' `q_proj` and `v_proj`. On the other three models the effect sits in a contiguous band of `v_proj` deltas below the training layer. Where does it sit on Qwen, and is it carried by the DeltaNet value channels, by the few full-attention `v_proj` modules, or by neither alone?
+
+**Setup.** One Slurm job (`13922706`, one A100, [snapshot](results/study2/qwenloc-qwen38-27b-L32-20260929T180213Z/launch.json)) following [QWEN_LOC_ROUND.md](QWEN_LOC_ROUND.md). Qwen3.8-27B at revision `1d4bf0f`, thinking disabled, the first study's seed-0 L32 adapter kept only in the listed layers and module types, every other LoRA module swapped back for its base layer (`selfconcept.soo.lora_subset`). A slice suffix keeps a fused module but zeroes its `lora_B` rows outside the slice, so the delta reaches only the value channels (`in_proj_qkv.v`) or only the query and key channels (`in_proj_qkv.qk`); the convolution that follows is per-channel, so the slices do not mix before the delta rule. Every LoRA B above L32 is exactly zero, so there is no "above" condition. `base` and the full adapter were re-run the same day. Both orientations, three scenarios, n = 250, greedy, `room_only` suffix, rule-based classifier; L32 collapse (rms spread of the attention output at the last prompt token over the 156 training prompts, relative to its mean norm) under each subset. Exploratory; the layer round's rule, fixed in advance. Analysis: `output/analysis.md` (`scripts/analyze_bisect_round.py`).
+
+**Measurements.** Main and treasure-hunt deceptive rates per orientation, and the L32 spread (mean norm in parentheses). Module counts are LoRA modules kept out of the adapter's 80 (48 fused DeltaNet projections, 16 × 2 full-attention). Refusal and other were 0 and perspectives 100% in every cell. Every response is a bare room name.
+
+| Condition (layers @ modules) | modules | orig main D / TH D | mirrored main D / TH D | spread at L32 (norm) |
+|---|---:|---:|---:|---:|
+| base | 0 / 80 | 100 / 100 | 100 / 100 | 0.299 (12.08) |
+| adapter seed 0 (all) | 80 / 80 | 0 / 0 | 0 / 0 | 0.049 (1.02) |
+| only-train (32 @ all) | 1 / 80 | 100 / 100 | 100 / 100 | 0.322 (7.76) |
+| below-train (0–31 @ all) | 40 / 80 | 0 / 0 | 0 / 0 | 0.043 (2.70) |
+| below-qkv (0–31 @ `in_proj_qkv`) | 24 / 80 | 0 / 0 | 0 / 0 | 0.060 (3.08) |
+| below-qkv-v (0–31 @ value slice) | 24 / 80 | 42 / 30 | 56 / 10 | 0.060 (3.78) |
+| below-qkv-qk (0–31 @ query-key slice) | 24 / 80 | 100 / 100 | 100 / 100 | 0.150 (7.34) |
+| below-attn (full-attention 3, 7, …, 31 @ `q_proj`, `v_proj`) | 16 / 80 | 100 / 100 | 100 / 100 | 0.081 (5.21) |
+| below-attn-v (the same @ `v_proj`) | 8 / 80 | 100 / 100 | 100 / 100 | 0.116 (7.00) |
+| lo-half (0–15 @ all) | 20 / 80 | 100 / 100 | 100 / 100 | 0.124 (8.63) |
+| hi-half (16–31 @ all) | 20 / 80 | 0 / 0 | 0 / 0 | 0.053 (3.58) |
+| q1 (0–7) | 10 / 80 | 98 / 100 | 100 / 100 | 0.176 (9.68) |
+| q2 (8–15) | 10 / 80 | 100 / 100 | 100 / 100 | 0.144 (9.69) |
+| q3 (16–23) | 10 / 80 | 100 / 100 | 100 / 100 | 0.113 (6.91) |
+| q4 (24–31) | 10 / 80 | 0 / 7 | 0 / 6 | 0.086 (4.45) |
+| u20 (20–31) | 15 / 80 | 0 / 0 | 0 / 0 | 0.066 (3.87) |
+| top4 (28–31) | 5 / 80 | 51 / 100 | 66 / 100 | 0.114 (4.71) |
+
+Wilson 95% intervals on 250 trials: below-qkv-v main [36, 48] orig and [49, 62] mirrored; top4 [45, 57] and [60, 72]. Verdicts under the pre-specified rule: `below-train`, `below-qkv`, `hi-half`, `q4` and `u20` reproduce; `below-qkv-v` and `top4` are partial; `only-train`, `below-qkv-qk`, `below-attn`, `below-attn-v`, `lo-half`, `q1`, `q2` and `q3` are null. In the partial cells the responses are clean room names split between the true room and the decoy, not confused text.
+
+**Interpretation.** The coarse answer matches the other three models: the training layer's own module is behaviorally inert and the modules below it reproduce the adapter. Unlike on the Gemma models, the training layer's module does not collapse the site on its own (spread 0.322 against base 0.299, although the mean norm falls from 12.1 to 7.8).
+
+Layer type. The effect is in the DeltaNet layers' fused projection. Its 24 modules below L32 reproduce the adapter on every readout, and the eight full-attention layers below L32 do nothing with both of their modules or with `v_proj` alone. The analog of the `v_proj` band on this model is in the linear-attention layers, not in the few full-attention layers.
+
+Within the fused projection. The value channels alone give about half the effect on main (42% and 56% deceptive) and most of it on the treasure hunt (30% and 10%). The query and key channels alone do nothing. Together they reproduce the adapter. On gemma-4 and Mistral the `v_proj` deltas alone gave the main result; on Qwen the query-key part of the same fused update adds to the value part although it does nothing alone. What the query-key delta does inside the delta rule (it sets the keys written to and read from the recurrent state) was not measured.
+
+Bisection. Layers 24–31 reproduce (treasure hunt 6–7% deceptive against the adapter's 0), and every other quarter is null. Layers 28–31 alone are partial on main and leave the treasure hunt at 100%. The band is 24–31: eight layers ending just below the training layer, as on gemma-4-12B (19–23 below 24) and gemma-4-31B (20–31 below 32). Two of the eight (27 and 31) are full-attention layers; since those modules are null below L32 as a group, the six DeltaNet projections at 24–26 and 28–30 probably carry it, but that subset was not run.
+
+Collapse. The reproducing subsets bring the L32 spread to 0.043–0.086, but the collapse again dissociates from the behavior: `below-attn` collapses the site to 0.081 with no behavioral change, and `below-qkv-v` collapses it exactly as much as `below-qkv` (0.060) while giving only half the effect.
+
+**Decision.** Qwen3.8-27B is localized: the band is layers 24–31 of the fused DeltaNet `in_proj_qkv` deltas, with value and query-key channels both needed. A Qwen band-steering round would steer the fused projection's mean delta (whole, and value slice alone) at those layers with the band-steering round's controls; it has not been written. Recorded in [PLAN2](PLAN2.md).
+
+## Band-steering round — 2026-09-28 (12B, Mistral) and 2026-09-29 (31B): the band's mean `v_proj` delta, added as a fixed offset at every position, reproduces the band on Mistral and gemma-4-31B and nearly on gemma-4-12B; added only from the last prompt token it does nothing; a random offset of the same size is null on 31B, weaker and confused on Mistral, and strong on 12B; and the working offset shrinks the self/other and name-control gaps by the same fraction
+
+**Question.** The bisection rounds found the effect in a band of rank-4 `v_proj` updates, each an input-dependent delta s·B·A·x on one layer's value projection. Does one fixed vector per band layer, the delta's mean over the training prompts with no input dependence, reproduce the band's effect? Is the direction what matters (random vectors of the same per-layer norm do nothing), is it specific to `v_proj` (the band's `q_proj` means do nothing), and what does the offset do to the self/other and name-control gaps?
+
+**Setup.** Three Slurm jobs, one A100 each, from frozen snapshots following [STEER_ROUND.md](STEER_ROUND.md): gemma-4-12B-it L24, band 19–23 (job `13911388`, [snapshot](results/study2/steer-gemma4-12b-L24-20260928T230232Z/launch.json)); Mistral-7B-Instruct-v0.2 L16, band 5–13 (`13911389`, [snapshot](results/study2/steer-mistral-7b-L16-20260928T230233Z/launch.json)); gemma-4-31B-it L32, band 20–31 from the second bisection below (`13922708`, [snapshot](results/study2/steer-gemma4-31b-L32-20260929T180338Z/launch.json), launched after the first two finished, design unchanged). `scripts/extract_band_deltas.py` recorded each band LoRA module's delta on the 156 training prompts: its mean at the last prompt token (`last`) and over all prompt tokens (`all`). Steering adds α times the mean to the base model's projection output in every band layer at once, with no adapter loaded: the `last` mean from the last prompt token onward (`resp`), or the `all` mean at every position as the LoRA acts (`all`), α = 1 and 2. Controls: the same cells with each layer's vector replaced by a random Gaussian direction of the same norm (one seed, `rand`), and the band's `q_proj` means added to `q_proj` (`q`). References run the same day: `base`, the full adapter, and `band-v` (the adapter's `v_proj` deltas at the band layers only), which the steered cells are judged against. Both orientations, three scenarios, n = 250, greedy, the first study's suffixes, rule-based classifier, intent split on every Mistral main cell. Gaps: mean squared paired difference on the 32 self/other and 32 name-control development pairs at the last prompt token, at the band's top-layer attention output, the residual stream after the training layer, and the final norm, under each steering setting. Exploratory; the layer round's rule with `band-v` as reference, fixed in advance. Analysis: `output/analysis.md` in each snapshot (`scripts/analyze_steer_round.py`).
+
+**Measurements.** Main deceptive rate orig / mirrored, treasure-hunt deceptive rate orig / mirrored, perspectives correct orig / mirrored, and the verdict. Refusal and other were 0 unless noted.
+
+gemma-4-12B L24 (band 19–23):
+
+| Condition | main D | TH D | perspectives | verdict |
+|---|---:|---:|---:|---|
+| base | 100 / 100 | 100 / 100 | 100 / 100 | — |
+| adapter seed 0 | 5.2 / 6.8 (R 0.4 / 1.2) | 0 / 1 | 95 / 77 | partial (damage) |
+| band-v (reference) | 0 / 0 | 0 / 0 | 100 / 100 | — |
+| v-resp α1, α2 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| v-all α1 | 0 / 0 (R 4 / 5) | 0 / 0 | 100 / 87 | partial |
+| v-all α2 | 0 / 0 (R 100 / 100) | 0 / 1 (R 94 / 99) | 3 / 0 | damage |
+| rand-resp α1, α2 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| rand-all α1 | 53 / 84 | 1 / 5 | 100 / 100 | partial |
+| rand-all α2 | 0 / 0 | 0 / 0 | 97 / 42 | damage |
+| q-resp α1, α2 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| q-all α1 | 82 / 91 (O 5 / 9) | 96 / 98 | 100 / 100 | partial |
+
+Mistral-7B L16 (band 5–13), with the intent split of the main responses (percent of all 250: honest-labeled "with intent" names the true room while announcing a plan to mislead; "clean" does not). Perspectives was 97–100% except where noted:
+
+| Condition | main D | TH D | clean honest | honest with intent | verdict |
+|---|---:|---:|---:|---:|---|
+| base | 90.4 / 82.4 | 98 / 0 | 2.4 / 4.4 | 7.2 / 13.2 | — |
+| adapter seed 0 | 11.2 / 0 | 32 / 0 | 84.8 / 97.2 | 4.0 / 2.8 | reproduces |
+| band-v (reference) | 13.6 / 0 | 48 / 0 | 75.2 / 90.8 | 11.2 / 9.2 | — |
+| v-resp α1 | 90.0 / 80.4 | 97 / 0 | 2.4 / 5.6 | 7.6 / 14.0 | null |
+| v-resp α2 | 88.0 / 77.6 | 97 / 0 | 3.6 / 8.0 | 8.4 / 14.4 | null |
+| v-all α1 | 18.0 / 0 | 37 / 0 | 79.6 / 96.0 | 2.4 / 4.0 | reproduces |
+| v-all α2 | 65.2 / 7.6 | 15 / 1 | 34.4 / 90.0 | 0.4 / 2.4 | damage (perspectives 58 / 33) |
+| rand-resp α1, α2 | 90–91 / 80–81 | 98 / 0 | 0.8–2.0 / 4.8–6.4 | 7.6–8.0 / 12.4–15.6 | null |
+| rand-all α1 | 78.8 / 61.2 | 99 / 0 | 7.6 / 29.2 | 13.6 / 9.6 | partial |
+| rand-all α2 | 54.0 / 25.6 | 93 / 0 | 37.6 / 57.6 | 8.4 / 16.8 | partial |
+| q-resp α1 | 84.0 / 51.6 | 99 / 1 | 6.4 / 11.6 | 9.6 / 36.8 | partial |
+| q-resp α2 | 70.0 / 18.4 | 91 / 0 | 8.0 / 23.2 | 22.0 / 58.4 | partial |
+| q-all α1 | 65.6 / 31.2 | 76 / 0 | 12.0 / 37.2 | 22.4 / 31.6 | partial |
+
+gemma-4-31B L32 (band 20–31):
+
+| Condition | main D | TH D | perspectives | verdict |
+|---|---:|---:|---:|---|
+| base | 100 / 100 | 100 / 100 | 100 / 100 | — |
+| adapter seed 0 | 0 / 0 | 0 / 6 | 100 / 100 | reproduces |
+| band-v (reference) | 0 / 2.4 | 100 / 100 | 100 / 100 | — |
+| v-resp α1, α2 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| v-all α1 | 0 / 0 | 0 / 0 | 100 / 100 | reproduces |
+| v-all α2 | 0 / 0 | 0 / 0 | 100 / 0 | damage |
+| rand-resp α1, α2 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| rand-all α1 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| rand-all α2 | 87 / 97 | 100 / 100 | 100 / 100 | partial |
+| q-resp α1, α2 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+| q-all α1 | 100 / 100 | 100 / 100 | 100 / 100 | null |
+
+Wilson 95% intervals on 250 trials: 0% is [0, 1.5]; 12B rand-all α1 is [47, 59] and [79, 88]; Mistral v-all α1 orig is [14, 23]; 31B rand-all α2 is [82, 91] and [94, 99]. The 31B v-all α2 mirrored perspectives failure is 250 coherent room names, all of them the wrong room; the 12B v-all α2 refusals are the sentence "I cannot fulfill this request."
+
+The mean deltas themselves: at the last prompt token the band's `v_proj` deltas are nearly constant across training prompts (rms spread 0.01–0.19 of the mean's norm on all three models); over all prompt tokens they vary more (12B 0.24–0.45, Mistral 0.36–1.47, 31B 0.28–0.80 at layers 26–31 and 1.7–4.5 at layers 20–25). The `all` means are 1.6–15% of the base value projection's output norm.
+
+Gaps, at the setting that reproduces (`all`, α = 1), as percent change from base at the band's top-layer attention output / the residual stream after the training layer, self/other then name-control:
+
+| Intervention | 12B self/other | 12B name-control | Mistral self/other | Mistral name-control | 31B self/other | 31B name-control |
+|---|---:|---:|---:|---:|---:|---:|
+| `v_proj` mean offset | −84 / −84 | −82 / −74 | −51 / −62 | −46 / −50 | −85 / −85 | −87 / −81 |
+| random offset, same norms | −10 / −15 | −9 / −10 | −1 / +6 | −5 / 0 | −18 / −11 | −32 / −17 |
+| `q_proj` mean offset | −5 / −47 | −20 / −39 | −15 / −14 | −13 / −9 | +8 / −37 | −7 / −36 |
+| band-v LoRA subset | −81 / −81 | −80 / −75 | −39 / −52 | −36 / −37 | −76 / −80 | −81 / −72 |
+| full adapter | −96 / −98 | −90 / −95 | −60 / −82 | −48 / −69 | −53 / −88 | −54 / −82 |
+
+The `resp` offsets move the gaps much less (at α = 1: 12B −33 / −34, Mistral −1 / −3, 31B −14 / −17 for self/other, with the name-control gap moving by similar amounts). At the final norm the changes are inconsistent in sign across models and settings, as in round 2c.
+
+**Interpretation.** The band's effect does not need the input-dependent part of the update. One fixed vector per band layer, added to the value projection at every position, reproduces the band's LoRA on Mistral (18% and 0% deceptive, 80% and 96% clean honest responses against the band's 75% and 91%) and on gemma-4-31B (0% and 0%, perspectives 100%). On gemma-4-12B it gives the same main and treasure-hunt result (0% deceptive everywhere) but misses the reproduce rule on its perspectives floor (87% mirrored) with 4–5% refusals.
+
+Position matters. The same offsets added only from the last prompt token onward do nothing on any model, at either strength, although the deltas at that token are the most constant part of the update. Observation: the offset has to reach the prompt's earlier positions. A plausible explanation, not tested: a value-projection offset changes what later positions read from the positions it is added to, so it has to sit on the scenario's content tokens to change the answer.
+
+Direction against size. On gemma-4-31B the direction is what matters: the random offset of the same per-layer norm is null at α = 1 and moves the orig side by 13 points at α = 2. On Mistral the random offset is partial (79% and 61% deceptive at α = 1) and its honest-labeled responses are mostly not clean (8% and 29% clean against the `v_proj` offset's 80% and 96%), so the clean effect belongs to the direction. On gemma-4-12B the random offset moves the room task strongly (53% and 84% deceptive at α = 1, 0% at α = 2 with mirrored perspectives at 42%), so under the round's rule the direction is not established on 12B: a perturbation of this size at layers 19–23 is enough to break the deceptive answer there. One random seed per model.
+
+Specificity to the value path. The band's `q_proj` means are null on 31B at every setting and on 12B except a partial at every position with "other" responses. On Mistral every `q_proj` cell is partial and the drop is mostly responses that announce a plan to mislead (58% of all mirrored responses at `q-resp` α = 2) — the confused kind the constant and bisection rounds found, not the band's plain answers.
+
+Dose. α = 2 damages every model, each differently: 12B refuses everything, Mistral's orig side goes back to 65% deceptive with perspectives at 58% and 33%, and 31B keeps the room task at 0% while every mirrored perspectives answer names the wrong room. The working dose is α = 1 or close to it; nothing between 1 and 2 was run.
+
+Treasure hunt on 31B. The `v_proj` offset moves the 31B treasure hunt to 0% deceptive, like the full adapter, while the band's own LoRA subset leaves it at 100% (as every `v_proj` subset did in the bisection rounds). The fixed offset therefore does something the input-dependent deltas at those layers do not. What differs was not measured.
+
+Gaps. Where the offset reproduces the behavior, it shrinks the self/other gap and the name-control gap by nearly the same fraction on every model (31B −85% and −87% at the band's read-out), as the band's LoRA subset and the full adapter do. The random and `q_proj` offsets move both gaps much less. Under the round's decision list this is the collapse pattern of rounds 2–2c, now produced at the band by a fixed offset: the intervention that changes the behavior makes self and other prompts more alike and name-swapped prompts more alike by the same amount. No intervention in this round reduces the self/other gap selectively.
+
+**Decision.** The band's mean `v_proj` delta works as a fixed steering offset when added at every position, with the direction established on 31B, supported by the response reading on Mistral, and not established on 12B. It is not a self/other-specific change by the gap readout. Candidates, none planned yet: further random seeds on 12B and 31B, α between 1 and 2, offsets restricted to the scenario's content tokens (to test the position observation), and the Qwen band. Recorded in [PLAN2](PLAN2.md).
+
+## Second 31B bisection — 2026-09-28: the gemma-4-31B band is layers 20–31; every range without the top two layers (30, 31) is null, and extending below layer 20 adds nothing
+
+**Question.** On gemma-4-31B L32 the `v_proj` deltas at layers 16–31 reproduce the main-scenario effect, 16–23 alone do nothing and 24–31 alone are partial. What is the smallest contiguous band within 16–31 that reproduces it, and are the top layers needed?
+
+**Setup.** One Slurm job (`13911387`, one A100, [snapshot](results/study2/bisect2-gemma4-31b-L32-20260928T230232Z/launch.json)) following [BISECT2_ROUND.md](BISECT2_ROUND.md): the seed-0 adapter's `v_proj` deltas kept only in the listed layers, everything else base; 24–31 grown downward (22–31, 20–31, 18–31), 16–31 trimmed from the top (16–29, 16–27, 16–25), the middle 20–27, and 16–19 with 24–31; `hi-half` (16–31) and `q4` (24–31) re-run as anchors with same-day `base` and adapter. Gemma-4 global-attention layers (23 and 29 in this range) have no `v_proj`. Both orientations, three scenarios, n = 250, greedy, `room_only`, rule-based classifier; L32 collapse under each subset. Exploratory; the layer round's rule. Analysis: `output/analysis.md` (`scripts/analyze_bisect_round.py`).
+
+**Measurements.** Refusal and other were 0 and perspectives 100% in every cell.
+
+| Condition (`v_proj` layers) | modules | orig main D / TH D | mirrored main D / TH D | spread at L32 (norm) |
+|---|---:|---:|---:|---:|
+| base | 0 / 110 | 100 / 100 | 100 / 100 | 0.136 (49.39) |
+| adapter seed 0 (all q+v) | 110 / 110 | 0 / 0 | 0 / 6 | 0.010 (20.72) |
+| hi-half (16–31) | 13 / 110 | 0 / 100 | 0 / 100 | 0.026 (21.62) |
+| q4 (24–31) | 7 / 110 | 45 / 100 | 94 / 100 | 0.042 (22.51) |
+| u22 (22–31) | 8 / 110 | 11 / 100 | 77 / 100 | 0.032 (22.47) |
+| u20 (20–31) | 10 / 110 | 0 / 100 | 2 / 100 | 0.025 (21.83) |
+| u18 (18–31) | 12 / 110 | 0 / 100 | 0 / 100 | 0.026 (21.70) |
+| t29 (16–29) | 11 / 110 | 100 / 100 | 100 / 100 | 0.061 (42.08) |
+| t27 (16–27) | 10 / 110 | 100 / 100 | 100 / 100 | 0.076 (46.18) |
+| t25 (16–25) | 8 / 110 | 100 / 100 | 100 / 100 | 0.090 (50.89) |
+| mid (20–27) | 7 / 110 | 100 / 100 | 100 / 100 | 0.082 (46.35) |
+| split (16–19 and 24–31) | 10 / 110 | 13 / 100 | 71 / 100 | 0.029 (22.04) |
+
+Wilson 95% intervals: u22 main [8, 15] orig and [72, 82] mirrored; split [9, 18] and [65, 76]; q4 [39, 51] and [90, 96]. Verdicts: `hi-half`, `u20` and `u18` reproduce; `q4`, `u22` and `split` are partial; `t29`, `t27`, `t25` and `mid` are null.
+
+**Interpretation.** The band's lower edge is layer 20 (20–31 reproduces, 22–31 is partial) and its upper edge is layer 31: dropping only layers 30 and 31 from 16–31 leaves 11 modules and no effect at all. The top two layers are necessary and not sufficient; every range that lacks them is null, and every range that has them is at least partial. `split` (16–19 with 24–31) is partial while `u18` reproduces, so the lower contribution comes from layers 20–22 next to the upper quarter, not from anywhere below it; the contiguity branch of the decision rule did not fire. No subset moves the treasure hunt off 100% deceptive, as in the first bisection.
+
+Collapse. On this model the L32 spread follows the top two layers: every range that includes 30 and 31 brings it to 0.025–0.042 with the mean norm halved (about 22 against 49), and every range without them leaves it at 0.061–0.090 with the norm near base. Within the ranges that collapse the site, the spread does not predict the verdict (`split` 0.029 is partial, `u20` 0.025 reproduces).
+
+**Decision.** The gemma-4-31B band is `v_proj` at layers 20–31 (10 modules). The band-steering round was extended to 31B with this band ([STEER_ROUND.md](STEER_ROUND.md) addendum; results above).
 
 ## Bisection round — 2026-09-25: the room-task effect sits in a contiguous band of `v_proj` deltas below the read-out layer — four rank-4 modules at layers 19–23 reproduce the 12B adapter more cleanly than the adapter itself, the 5–13 band reproduces Mistral with clean honest responses, and on 31B the upper half of the trained layers (16–31) is needed as a whole
 

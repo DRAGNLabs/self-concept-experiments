@@ -20,7 +20,7 @@ from selfconcept.common.chat import chat_template_kwargs
 from .activations import get_decoder_layers
 from .overlap import last_valid_indices, measure_condition, summarize
 from .steering import (
-    POSITION_MODES, PositionalSteering, apply_steering, get_vector,
+    MARKER_POSITION_MODES, PositionalSteering, apply_steering, get_vector,
     load_vectors, random_matched_vector, response_marker,
 )
 
@@ -112,7 +112,7 @@ def parser():
                    help="measure this many valid tokens before the last prompt token (0 = last token)")
     p.add_argument("--mode", choices=("add", "project"), default="add")
     p.add_argument("--alpha", type=float, default=1.)
-    p.add_argument("--positions", choices=POSITION_MODES, default="all")
+    p.add_argument("--positions", choices=MARKER_POSITION_MODES, default="all")
     p.add_argument("--random-seeds", type=int, nargs="*", default=[])
     p.add_argument("--adapter", type=Path, help="local PEFT adapter; compared separately to base")
     p.add_argument("--adapter-layers", help="restrict the adapter's LoRA modules to these layers (selfconcept.soo.lora_subset spec)")
@@ -287,7 +287,7 @@ def main(argv=None):
                 for alpha in sorted(set(args.subspace_strengths) - {0.}):
                     project(f"{label}_r{rank}_a{alpha:g}", basis, alpha, label)
     if args.band_deltas:
-        from .steering import apply_module_steering, get_band_offsets, load_band_deltas, random_matched_offsets
+        from .steering import apply_module_steering, band_supports, get_band_offsets, load_band_deltas, random_matched_offsets
         band = load_band_deltas(args.band_deltas)
         if band.get("model") != args.model:
             raise ValueError("band deltas' model ID does not match --model")
@@ -306,7 +306,7 @@ def main(argv=None):
                                         "offset_norms": {k: float(v.norm()) for k, v in offsets.items()}}
             if i == 0:
                 for seed in sorted(set(args.band_random_seeds)):
-                    rand = random_matched_offsets(offsets, seed)
+                    rand = random_matched_offsets(offsets, seed, band_supports(band, module_name))
                     run(f"{name}_random_s{seed}", band_steering(rand))
                     condition_settings[f"{name}_random_s{seed}"] = {**condition_settings[name], "random_seed": seed,
                                                                    "offset_norms": {k: float(v.norm()) for k, v in rand.items()}}

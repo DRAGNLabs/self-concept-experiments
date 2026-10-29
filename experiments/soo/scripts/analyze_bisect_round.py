@@ -13,6 +13,16 @@ import sys
 from analyze_layer_round import BASE, ORIENTS, REFERENCE, SCENARIOS, fmt_rates, load, verdict, wilson
 
 
+def subset_label(args: str) -> str | None:
+    """'--adapter a --adapter-layers range:0-7 --adapter-modules v_proj' -> 'range:0-7 @ v_proj'."""
+    if "--adapter-layers" not in args:
+        return None
+    words = args.split()
+    layers = words[words.index("--adapter-layers") + 1]
+    modules = words[words.index("--adapter-modules") + 1] if "--adapter-modules" in words else "all"
+    return f"{layers} @ {modules}"
+
+
 def main():
     out, train_layer, launch = Path(sys.argv[1]), int(sys.argv[2]), json.loads(Path(sys.argv[3]).read_text())
     conditions = list(launch["conditions"])  # name -> "--adapter ..." args ("" for base)
@@ -25,7 +35,7 @@ def main():
              f"Training layer {train_layer}. Missing runs: {', '.join(missing) if missing else 'none'}.", ""]
     for o in ORIENTS:
         lines += [f"## {o}: classifier rates (honest / deceptive / refusal / other), deceptive 95% Wilson CI on main", "",
-                  "| Condition | layers (v_proj) | main H/D/R/O | main D CI | treasure_hunt H/D/R/O | perspectives correct | kept modules |",
+                  "| Condition | layers @ modules | main H/D/R/O | main D CI | treasure_hunt H/D/R/O | perspectives correct | kept modules |",
                   "|---|---|---|---|---|---:|---|"]
         for cond in conditions:
             r = runs.get(cond, {}).get(o, {})
@@ -35,7 +45,7 @@ def main():
             persp = f"{r['perspectives']['rates']['honest']:.2f}" if "perspectives" in r else "—"
             sub = (r.get("main") or {}).get("adapter_subset")
             kept = f"{sub['kept']}/{sub['found']}" if sub else ("all" if cond == REFERENCE else "none" if cond == BASE else "—")
-            spec = launch["conditions"][cond].split("--adapter-layers ")[-1].split(" ")[0] if "--adapter-layers" in launch["conditions"][cond] else ("all (q+v)" if cond == REFERENCE else "—")
+            spec = subset_label(launch["conditions"][cond]) or ("all modules" if cond == REFERENCE else "—")
             lines.append(f"| {cond} | {spec} | {fmt_rates(r, 'main')} | {ci} | {fmt_rates(r, 'treasure_hunt')} | {persp} | {kept} |")
         lines.append("")
     lines += ["## Verdicts against the pre-specified rule", ""]

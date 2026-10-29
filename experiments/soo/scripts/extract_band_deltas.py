@@ -22,7 +22,7 @@ import torch
 from make_constants import encode
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.soo.activations import get_decoder_layers
-from selfconcept.soo.lora_subset import LAYER_INDEX, parse_layer_spec, parse_module_spec
+from selfconcept.soo.lora_subset import LAYER_INDEX, fused_qkv_slices, parse_layer_spec, parse_module_spec
 from selfconcept.soo.steering import offset_key
 
 
@@ -67,6 +67,16 @@ class DeltaAccumulator:
             "base_output_rms_norm": (self.base_sq / self.n_tokens) ** 0.5,
         }
         return {"last": mean_last, "all": mean_all}, {"last": stats_last, "all": stats_all}
+
+
+def fused_slices(peft, modules: dict[str, torch.nn.Module]) -> dict[str, dict[str, tuple[int, int]]]:
+    """Output-channel ranges (q, k, v) of every fused Gated DeltaNet in_proj_qkv in the band, read from its parent block."""
+    names = {id(m): n for n, m in peft.named_modules()}
+    out = {}
+    for key, module in modules.items():
+        if key.endswith(":in_proj_qkv"):
+            out[key] = fused_qkv_slices(peft.get_submodule(names[id(module)].rsplit(".", 1)[0]))
+    return out
 
 
 def band_lora_modules(peft, keep_layers: set[int], keep_modules: tuple[str, ...]) -> dict[str, torch.nn.Module]:
@@ -127,6 +137,7 @@ def main():
     ap.add_argument("--modules", default="q_proj,v_proj")
     ap.add_argument("--pairs", type=Path, required=True, help="jsonl with self_prompt/other_prompt; both members are used")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--device-map", help="pass device_map to from_pretrained (e.g. 'auto' to shard a model too large for one GPU)")
     args = ap.parse_args()
 
     from peft import PeftModel
@@ -135,7 +146,11 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
     tokenizer = AutoTokenizer.from_pretrained(args.model, revision=args.revision)
-    model = load_causal_lm(args.model, dtype=dtype, revision=args.revision).to(device).eval()
+    if args.device_map:
+        # Sharded across the visible GPUs; inputs go to the first, each hook reads its own module's device.
+        model = load_causal_lm(args.model, dtype=dtype, revision=args.revision, device_map=args.device_map).eval()
+    else:
+        model = load_causal_lm(args.model, dtype=dtype, revision=args.revision).to(device).eval()
     peft = PeftModel.from_pretrained(model, args.adapter).eval()
     n_layers = len(get_decoder_layers(peft))
     keep_layers = parse_layer_spec(args.layers, n_layers)
@@ -145,9 +160,9 @@ def main():
     prompts = [r[k] for r in rows for k in ("self_prompt", "other_prompt")]
 
     offsets, stats = measure_band(peft, modules, encode(tokenizer, prompts, device))
-    meta = {"model": args.model, "revision": args.revision, "adapter": args.adapter, "layer_spec": args.layers,
+    meta = {"model": args.model, "revision": args.revision, "adapter": args.adapter, "layer_spec": args.layers, "device_map": args.device_map,
             "layers": sorted(keep_layers), "modules": list(keep_modules), "keys": sorted(modules, key=lambda k: (int(k.split(":")[0]), k)),
-            "pairs": str(args.pairs), "n_prompts": len(prompts)}
+            "pairs": str(args.pairs), "n_prompts": len(prompts), "slices": fused_slices(peft, modules)}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     torch.save({**meta, "offsets": offsets, "stats": stats}, args.out)
     args.out.with_suffix(".json").write_text(json.dumps({**meta, "stats": stats}, indent=2) + "\n")

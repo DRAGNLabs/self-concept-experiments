@@ -5,7 +5,7 @@ from selfconcept.common.generation.model_specifics.gemma4 import Gemma4Generatio
 from selfconcept.common.generation.model_specifics.harmony import HarmonyGenerationSpecifics
 from selfconcept.common.generation.model_specifics.muse_glimmer import MuseGlimmerGenerationSpecifics
 from selfconcept.common.generation.model_specifics.no_thinking import NoThinkingGenerationSpecifics
-from selfconcept.common.generation.model_specifics.think_flag import QwenThinkGenerationSpecifics, ThinkFlagGenerationSpecifics
+from selfconcept.common.generation.model_specifics.think_tag import GlmThinkGenerationSpecifics, QwenThinkGenerationSpecifics
 from selfconcept.common.generation.model_specifics.types import GenerationSpecifics
 from selfconcept.common.hf_strong_types import AllRoles
 
@@ -17,7 +17,7 @@ GENERATION_SPECIFICS_BY_NAME_SUBSTRING: dict[str, GenerationSpecifics[AllRoles, 
     "llama": NoThinkingGenerationSpecifics(),
     "olmo": ForcedThinkCloseGenerationSpecifics(),
     "gpt-oss": HarmonyGenerationSpecifics(),
-    "glm": ThinkFlagGenerationSpecifics(),
+    "glm": GlmThinkGenerationSpecifics(),
     "muse-glimmer": MuseGlimmerGenerationSpecifics(),
     "muse_glimmer": MuseGlimmerGenerationSpecifics(),
     "glimmer": MuseGlimmerGenerationSpecifics(),

@@ -24,6 +24,7 @@ set -euo pipefail
 # may safely share ROOT.  A requeued task resumes existing files.
 # Usage (from the repo root):
 #   sbatch --array=0-3 --export=ALL,ROOT=<dir> experiments/schemer-axis/slurm/extract_roles_qwen38.sbatch
+# SKIP_GENERATE=1 starts from existing $ROOT/responses (e.g. after migrate_qwen_reasoning_split.py).
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -57,12 +58,14 @@ source ../../activate.sh
 PYTHON=(uv run python)
 TRAIN_QUESTIONS="$("${PYTHON[@]}" -c 'import json, sys; print([q["id"] for q in map(json.loads, open(sys.argv[1])) if q["split"] == "train"])' "$QUESTIONS_FILE")"
 
-echo "########## Generate ##########"
-"${PYTHON[@]}" scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
-    --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.85 \
-    --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
-    --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
-    --run.roles_dir "$ROLES_DIR" --run.questions_file "$QUESTIONS_FILE" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
+if [ "${SKIP_GENERATE:-0}" != 1 ]; then
+    echo "########## Generate ##########"
+    "${PYTHON[@]}" scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
+        --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.85 \
+        --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
+        --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
+        --run.roles_dir "$ROLES_DIR" --run.questions_file "$QUESTIONS_FILE" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"
+fi
 
 echo "########## Judge ##########"
 "${PYTHON[@]}" scripts/pipeline/3_judge.py --config configs/pipeline/3_judge.yaml \

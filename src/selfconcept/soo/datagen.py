@@ -3,6 +3,8 @@ and latent-SOO probe pairs.
 
 Usage:
     python -m selfconcept.soo.datagen [--out data] [--n-eval 250] [--seed 42]
+    python -m selfconcept.soo.datagen --heldout --out data [--seed heldout-20261028]
+        (held-out vocabulary eval sets only, to data/eval_heldout and data/eval_heldout_mirrored; HELDOUT_ROUND.md)
 
 Prompts are stored without answer-format suffix or chat template; evaluation
 code appends those per model config (see scenarios.SUFFIX_*).
@@ -51,20 +53,24 @@ def gen_train_pairs() -> list[dict]:
 
 
 def gen_eval_set(
-    scenario_name: str, n: int, rng: random.Random, mirrored: bool = False
+    scenario_name: str, n: int, rng: random.Random, mirrored: bool = False, split: str = "test"
 ) -> list[dict]:
-    """n unique instantiations of a scenario from the held-out test vocab.
+    """n unique instantiations of a scenario from the held-out test vocab (split="heldout": the held-out vocabulary).
 
     mirrored=True uses the positionally flipped template (honest room mentioned
     first). Seeded identically, it produces the same fills and example_ids as
     the original set, so original/mirrored rows are matched pairs."""
     scenario = (SCENARIOS_MIRRORED if mirrored else SCENARIOS)[scenario_name]
+    cheaps, expensives, rooms = {
+        "test": (vocab.CHEAP_TEST, vocab.EXPENSIVE_TEST, vocab.ROOMS_TEST),
+        "heldout": (vocab.CHEAP_HELDOUT, vocab.EXPENSIVE_HELDOUT, vocab.ROOMS_HELDOUT),
+    }[split]
     combos = set()
     rows = []
     while len(rows) < n:
-        cheap = rng.choice(vocab.CHEAP_TEST)
-        expensive = rng.choice(vocab.EXPENSIVE_TEST)
-        room_a, room_b = rng.sample(vocab.ROOMS_TEST, 2)
+        cheap = rng.choice(cheaps)
+        expensive = rng.choice(expensives)
+        room_a, room_b = rng.sample(rooms, 2)
         combo = (cheap, expensive, room_a, room_b)
         if combo in combos:
             continue
@@ -115,8 +121,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=Path("data"))
     parser.add_argument("--n-eval", type=int, default=250)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", default=None, help="default 42, or heldout-20261028 with --heldout")
+    parser.add_argument("--heldout", action="store_true", help="only the held-out vocabulary eval sets")
     args = parser.parse_args()
+    if args.heldout:
+        seed = args.seed or "heldout-20261028"
+        for subdir, mirrored in [("eval_heldout", False), ("eval_heldout_mirrored", True)]:
+            for name in SCENARIOS:
+                rng = random.Random(f"{seed}-{name}")
+                rows = gen_eval_set(name, args.n_eval, rng, mirrored=mirrored, split="heldout")
+                write_jsonl(args.out / subdir / f"{name}.jsonl", rows)
+                print(f"{subdir}/{name}.jsonl: {len(rows)} examples")
+        return
+    args.seed = int(args.seed or 42)
 
     train_pairs = gen_train_pairs()
     write_jsonl(args.out / "train_soo_pairs.jsonl", train_pairs)

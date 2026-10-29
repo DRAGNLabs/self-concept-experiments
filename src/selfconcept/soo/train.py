@@ -61,8 +61,10 @@ def soo_loss(a_self: torch.Tensor, a_other: torch.Tensor, mode: str, self_mask, 
     if mode == "full":
         return torch.nn.functional.mse_loss(a_self, a_other)
     if mode == "last_token":
-        self_last = a_self[torch.arange(len(a_self)), self_mask.sum(1) - 1]
-        other_last = a_other[torch.arange(len(a_other)), other_mask.sum(1) - 1]
+        # Index on the activations' device: under device_map the training layer may sit on another GPU than the inputs.
+        dev = a_self.device
+        self_last = a_self[torch.arange(len(a_self), device=dev), (self_mask.sum(1) - 1).to(dev)]
+        other_last = a_other[torch.arange(len(a_other), device=dev), (other_mask.sum(1) - 1).to(dev)]
         return torch.nn.functional.mse_loss(self_last, other_last)
     raise ValueError(mode)
 
@@ -70,7 +72,7 @@ def soo_loss(a_self: torch.Tensor, a_other: torch.Tensor, mode: str, self_mask, 
 def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
     set_seed(seed)
     dtype = torch.bfloat16 if device in ("cuda", "mps") else torch.float32
-    tokenizer = AutoTokenizer.from_pretrained(config["model"])
+    tokenizer = AutoTokenizer.from_pretrained(config["model"], **({"revision": config["revision"]} if config.get("revision") else {}))
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
@@ -89,6 +91,10 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
         # No gradient checkpointing: its reentrant mode severs the graph for
         # hook-captured activations (our loss), raising "does not require grad".
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
+    elif config.get("device_map"):
+        # Models too large for one GPU (Kimi-Dev-72B): shard across the visible GPUs; inputs go to the first.
+        model = load_causal_lm(config["model"], dtype=dtype, device_map=config["device_map"],
+                               **({"revision": config["revision"]} if config.get("revision") else {}))
     else:
         model = load_causal_lm(config["model"], dtype=dtype)
     lora = LoraConfig(
@@ -99,7 +105,7 @@ def train_one_seed(config: dict, seed: int, device: str, out_dir: Path) -> dict:
         task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora)
-    if not config.get("quant_4bit"):
+    if not config.get("quant_4bit") and not config.get("device_map"):
         model.to(device)
     model.train()
 
