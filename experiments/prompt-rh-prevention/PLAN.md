@@ -177,6 +177,13 @@ of more than 10 points in no-code rate is reported as degradation, not as reduce
    cached in `HF_HOME` 2026-10-27).
 7. **Analysis and write-up.** Contrasts vs `baseline`; comparison with the steering numbers. Record in FINDINGS.
 
+2026-10-30 (user decision): official seeds are 67–78 (12 per arm; `SEED_BASE=67` in `slurm/run_arms.sbatch`) and 67
+for general capability. `baseline` (no prompt) is rerun as an arm on the same seeds through this experiment's own
+script, so arms and baseline share code; schemer-axis's unsteered run (seeds 0–11) stays as a cross-check. Model
+settings stay those of the steering experiment: gpt-oss-120b, low reasoning effort, temperature 1, 16384 new tokens
+per turn, 20480 context, recipe unchanged. Runs go to `TAG=official` and `TAG=capability_official`. GPU: one H100
+(`--gpus-per-node=h100:1`, user decision 2026-10-29 after `gpu_pick`), no partition.
+
 ## Open decisions
 
 - **GPU.** One A100 80 GB is the default (gpt-oss-120b is ~61 GiB of weights in MXFP4). Schemer-axis ran on H200;

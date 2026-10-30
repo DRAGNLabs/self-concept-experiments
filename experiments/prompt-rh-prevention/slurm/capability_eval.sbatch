@@ -14,7 +14,7 @@ set -euo pipefail
 # General-capability benchmarks under each prompt arm (PLAN.md "Measures"): GSM8K test (1319), MMLU-Pro (100 per
 # category, 1400), HumanEval (164), with the arm's prompt and a blank line in front of every benchmark prompt. Uses
 # schemer-axis's scripts/capability_eval_vllm.py (no steering) with the settings of its general-capability check:
-# temperature 1, seed 0, low reasoning effort, 16384 new tokens. ~12 min per arm on an A100 there.
+# temperature 1, seed 67 (the study's seed; schemer-axis used 0), low reasoning effort, 16384 new tokens. ~12 min per arm on an A100 there.
 # One array task per line of the ARMS TSV (same file as run_arms.sbatch: name <TAB> prompt file, empty = no prompt).
 # Output: $ROOT/<arm>/<task>.jsonl (prompt, reasoning, final answer, score per item), summary.json, run_info/.
 # ROOT defaults to ~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>, TAG to "capability". Rerunning resumes.
@@ -44,7 +44,7 @@ MODEL="${MODEL:-openai/gpt-oss-120b}"
 ARMS="${ARMS:?set ARMS to the arms TSV}"
 TAG="${TAG:-capability}"
 ROOT="${ROOT:-$HOME/nobackup/autodelete/prompt-rh-prevention-results/$TAG}"
-SEED="${SEED:-0}"
+SEED="${SEED:-67}"
 TASKS="${TASKS:-gsm8k mmlu_pro humaneval}"
 read -r -a TASK_LIST <<< "$TASKS"
 read -r -a EXTRA_RUN_ARGS <<< "${EXTRA_ARGS:-}"

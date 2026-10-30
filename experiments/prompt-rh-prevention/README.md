@@ -67,12 +67,17 @@ sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=data/arms.tsv,TAG=<run n
     experiments/prompt-rh-prevention/slurm/run_arms.sbatch
 ```
 
+Seeds are `SEED_BASE + 0 … NSEEDS-1`, default 67–78 (the study's seeds). `data/arms.tsv` includes `baseline` (no
+prompt), rerun with the arms on these seeds. The official runs use `TAG=official` and, for general capability,
+`TAG=capability_official`, apart from the pilot (`main/`, seed 0) and the copied schemer-axis baselines
+(`main/baseline/`, `capability/baseline/`, seeds 0–11 / 0), whose file names would otherwise collide.
+
 For a smoke run on a few problems, add `EXTRA_ARGS="--n 3"` and `NSEEDS=1` to `--export` (the first 3 of each
 file). Other problem files: `PROBLEMS=<dir>` and `SCENARIOS="<file stems>"`.
 
 Summary per arm: `python experiments/prompt-rh-prevention/scripts/pilot_summary.py ~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>`.
 
-General capability (same `data/arms.tsv`; output in `~/nobackup/autodelete/prompt-rh-prevention-results/capability/`):
+General capability (same `data/arms.tsv`, seed 67; output in `~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>/`, default `capability`):
 
 ```
 sbatch --array=0-$((N_ARMS-1)) --export=ALL,ARMS=data/arms.tsv experiments/prompt-rh-prevention/slurm/capability_eval.sbatch

@@ -12,7 +12,8 @@
 set -euo pipefail
 
 # Prompt arms on the recipe (PLAN.md), adapted from schemer-axis/slurm/main_run.sbatch. One Slurm array task per
-# (arm, seed): task index i -> arm line i / NSEEDS of the ARMS TSV, seed i % NSEEDS.
+# (arm, seed): task index i -> arm line i / NSEEDS of the ARMS TSV, seed SEED_BASE + i % NSEEDS (default 67, so
+# seeds 67-78 with NSEEDS=12; the study's seeds, decided 2026-10-30).
 # ARMS TSV: name <TAB> prompt file (relative to this experiment dir, e.g. data/prompts/honesty.txt). The file's text
 # goes in front of each problem's first user message, then a blank line, then the recipe's task message unchanged
 # (selfconcept.codebench.run --prompt-prefix-file). An empty second column = no prefix (the baseline arm).
@@ -46,12 +47,13 @@ PROBLEMS="${PROBLEMS:-/grphome/grp_mirror/nobackup/autodelete/self-concept-exper
 SCENARIOS="${SCENARIOS:-ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2}"
 ARMS="${ARMS:?set ARMS to the arms TSV}"
 NSEEDS="${NSEEDS:-12}"
+SEED_BASE="${SEED_BASE:-67}"
 TAG="${TAG:-main}"
 ROOT="${ROOT:-$HOME/nobackup/autodelete/prompt-rh-prevention-results/$TAG}"
 read -r -a EXTRA_RUN_ARGS <<< "${EXTRA_ARGS:-}"
 read -r -a SCENARIO_LIST <<< "$SCENARIOS"
 ARM_INDEX=$((SLURM_ARRAY_TASK_ID / NSEEDS))
-SEED=$((SLURM_ARRAY_TASK_ID % NSEEDS))
+SEED=$((SEED_BASE + SLURM_ARRAY_TASK_ID % NSEEDS))
 # The recipe (experiments/codebench/reward_hack_recipe.md); the same task message in every arm.
 RECIPE=(--data "$PROBLEMS" --impossible-prompt critical_no_carve --feedback neutral
         --max-attempts 5 --state-attempt-budget --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384

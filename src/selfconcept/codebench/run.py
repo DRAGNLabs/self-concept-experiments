@@ -16,6 +16,7 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
+from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.common.loading import load_causal_lm
 
 from . import harness
@@ -120,6 +121,7 @@ def main() -> None:
         "top_k": args.top_k,
         "sample_seed": args.sample_seed if args.temperature > 0 else None,
         "max_model_len": args.max_model_len,
+        "chat_kwargs": chat_template_kwargs(),
     }
     if args.system_prompt_file:
         system_message = {"role": "system", "content": args.system_prompt_file.read_text().strip()}
