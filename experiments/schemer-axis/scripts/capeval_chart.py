@@ -69,9 +69,9 @@ PRESETS = {
     "muse_v2": dict(
         compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_gi_v2.json",
         out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_gi_v2_chart.png",
-        dose_arms=[("gi_m0.16", "−0.16"), ("gi_m0.08", "−0.08"), ("gi_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gi_p0.04", "+0.04"), ("gi_p0.08", "+0.08")],
+        dose_arms=[("gi_m0.16", "−0.16"), ("gi_m0.08", "−0.08"), ("gi_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gi_p0.04", "+0.04"), ("gi_p0.08", "+0.08"), ("gi_p0.16", "+0.16")],
         side_arms=[("gi_cap_p25", "cap p25\n(layers 17–33)")],
-        col_labels=["gi −0.16", "gi −0.08", "gi −0.04", "unsteered", "gi +0.04", "gi +0.08", "cap p25"],
+        col_labels=["gi −0.16", "gi −0.08", "gi −0.04", "unsteered", "gi +0.04", "gi +0.08", "gi +0.16", "cap p25"],
         title="Muse-Glimmer-30B, generic + intent deceiver axis (role set v2): capability retention",
         layer="26",
         sub="Role set v2 axis (9 deceptive vs 9 honest personas, no cheating/test-gaming roles). Steering at layer 26 in units of the layer's mean residual norm;\n"
