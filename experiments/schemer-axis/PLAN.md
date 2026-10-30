@@ -961,6 +961,8 @@ set across all seven arms, user decision 9:52 pm 2026-10-29, single-arm ±0.2 ve
 the six arms), analysed, charted and written up (FINDINGS "Muse gi role-set v2 main run", "gpt-oss gi role-set v2 dose scan"),
 share re-synced. Anecdotes with the v2 vectors not started.
 
+**Status 2026-10-30 1:50 pm MDT.** Coding anecdotes read and digested for both models (FINDINGS "gpt-oss and Muse coding anecdotes with the role-set v2 vectors"; `results/gptoss_gi_v2_anecdotes_2026-10-30.md`, `results/muse_gi_v2_anecdotes_2026-10-30.md`). Running (user request 2026-10-30 ~1:00 pm MDT): a Muse +0.16 arm so both models have three doses on each sign (job 14914722, 12 seeds, cs / qos cs; capeval 14914723; `muse_glimmer/gi_v2/pilot/arms_p0.16.tsv`, picker record with the run) and the neutral-question probe arrays for both models (gpt-oss 14914724–26, Muse 14914727–29: 25 questions at low and high effort plus the 30 striking prompts, standby; `gi_v2/anecdotes/`, `muse_glimmer/gi_v2/anecdotes/`). To follow: mine, screen and judge +0.16, re-run `main_analysis.py` with seven Muse contrasts, re-render the Muse charts; Sonnet readers and digests for the probes.
+
 ## Expanded persona set (added 2026-10-20, Koby)
 
 Fiction-framed roles only. Every role answers the same 100 questions in `data/questions.jsonl` (5 prompts × 100 = 500
