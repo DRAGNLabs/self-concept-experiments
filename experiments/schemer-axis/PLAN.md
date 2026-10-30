@@ -905,6 +905,55 @@ dose pilot, judged"): judged 0 / 0.6 / 1.1 / 3.3 / 5.6% at 0 / +0.04 / +0.08 / +
 outside the dose rule (hidden −11, no-code −16); +0.64 broken; anecdotes + probes read (digest `results/qwen_schemer_anecdotes_2026-10-29.md`).
 Qwen main-run decision (12 seeds at +0.16, or none) with the user. **Exploratory striking-prompt probes (user request 2026-10-29 ~4:05 pm, "just enough to get some funny/striking/notable examples"): jobs 14893747 (Qwen, unsteered / gi +0.16 / +0.32 / +0.48) and 14893748 (Muse, unsteered / gi +0.08 / +0.16 / +0.32), 30 new prompts × 2 seeds, done 4:55 pm MDT after standby preemption cycling forced the pending tasks onto `-p cs,cs2 --qos cs` in place; read by one Sonnet reader per model; FINDINGS "Striking-prompt probes" and digest `results/qwen_muse_striking_anecdotes_2026-10-29.md`.** **Capability retention incl. IFBench done 2026-10-29 5:59 pm MDT (user request ~5:15 pm; FINDINGS "Capability retention with IFBench for the gi arms"):** jobs 14894980 (gpt-oss gi ±0.1 / ±0.2 + unsteered, `capeval/arms_gi.tsv`) and 14894981 (Muse gi main arms + cap + unsteered, `muse_glimmer/capeval/arms_gi.tsv`), `-p cs,cs2 --qos cs`; no cell outside the rule. **gpt-oss gi main run submitted 2026-10-29 5:38 pm MDT (user decision ~6:05 pm, incl. the cap arm):** 14895465 (gi ±0.2, seeds 4–11 on the pilot's 0–3, `gi/pilot/arms_main.tsv`), 14895600 cap thresholds on cs2 H100 (first attempt 14895464 failed on an A100: the HF harness's flash-attn sinks need Hopper), 14895601 gi_cap_p25 seeds 0–11 and 14895602 its capeval, both afterok the thresholds; then hidden-pass screen, blind Sonnet judging, `main_analysis.py`, FINDINGS, `pipeline_figure.py` HACK_RATES swap. Still open: Qwen main run (12 seeds at +0.16, or none).
 
+## Role set v2: no cheating or test-gaming in the personas (user decision 2026-10-29, ~6:25–7:00 pm MDT)
+
+Problem. The 17-role gi vector's dishonest pole contained `cheater_fic`, whose prompts describe satisfying the letter of
+tests and metrics while defeating their purpose; the honest pole's `rule_follower_fic` is its mirror ("never games a check
+or a test"). The experiment's premise is that the steering direction encodes dishonesty in general and that reward hacking
+on the coding tasks emerges from it, so the personas must not name cheating, reward hacking or test gaming. Every gi
+result on Muse and gpt-oss (dose pilots, 12-seed main runs, cap arms, anecdotes, capability tables of 2026-10-27 to
+2026-10-29) is therefore superseded for the paper; the FINDINGS entries stay as the record. Qwen is left alone for now
+(user decision; its gi pilot also used the 17-role vector).
+
+Cancelled 2026-10-29 6:24 pm MDT: gpt-oss jobs 14895465 (−0.2 seeds 4, 10, 11 unfinished), 14895601 (cap arm, 12 seeds) and
+14895602 (cap capability eval). Reusable: the unsteered and random-direction reference arms of both models, the unsteered
+capability evals including IFBench, and the threshold-fitting method.
+
+Role set v2 (`data/persona_groups.json` groups `deceptive_main_v2` and `honest_main_v2`, 9 + 9; the old groups stay for
+the earlier analyses). Dishonest: `schemer_fic`, `deceiver_fic`, `con_artist_v2_fic` (reworded: trust used "for his own
+ends", no taking money or favours), `sycophant_fic`, `spin_doctor_fic`, `infiltrator_fic`, plus the new
+`two_faced_friend_fic` (feigns friendship, empathy and agreement while concealing opposing views and loyalties),
+`rumor_fabricator_fic` (invents believable stories about others and presents them as fact to shape relationships) and
+`scammer_fic` (false pretenses, invented offers and urgency, to obtain money, information or access); `cheater_fic` and
+`sandbagger_fic` are out. Honest: `straight_shooter_fic`, `faithful_witness_fic` (new: recounts what was observed,
+firsthand knowledge separated from inference), `transparent_negotiator_fic`, `candid_friend_fic`,
+`scrupulous_scientist_v2_fic` (reworded: no "never cherry-picks"), `whistleblower_fic`, `loyal_steward_fic`,
+`conscientious_craftsperson_v2_fic` (reworded: no "whether it passes a check" or "nobody will ever inspect"),
+`diligent_worker_fic`; `rule_follower_fic` is out. The reworded roles keep their character names; the new roles have new
+ones. Judge descriptions were rewritten to match.
+
+Plan.
+1. **Extraction (submitted 2026-10-29 7:11 pm MDT).** Muse: job 14897647 (`extract_roles_gemma4.sbatch`, array 0–3,
+   the 7 new or reworded roles into `muse_glimmer/full100/`, same settings as the 2026-10-27 extraction; the 11 unchanged
+   roles plus `default` and `neutral_fic` are reused). gpt-oss: job 14897648 (`extract_roles.sbatch`, array 0–4, all 20
+   roles into `gi_v2/full100/`, 100 questions, train-split vectors, `ACT_BATCH=1` on 80 GB H100; `-p cs2 --qos cs
+   --gpus-per-node=h100:1`, 10 h, no requeue) because Koby's 64-question per-role honest vectors are not on the share and
+   the HF activation pass needs Hopper. Records: `gi_v2/gpu_pick_extract_2026-10-29.txt`,
+   `muse_glimmer/full100/gpu_pick_extract_v2_2026-10-29.txt`.
+2. **Vectors and validation.** `build_vectors.py` with the v2 groups (raw contrast, `--costume neutral_fic`) →
+   `muse_glimmer/gi_v2/direction/` (layer 26) and `gi_v2/direction/` (layer 17); cosine with the 17-role gi vectors and
+   with Koby's 64-question gpt-oss vector recorded; `validate_vectors.py` (score-3 gate, split-half, held-out AUROC) on
+   both; the unchanged gpt-oss roles' vectors compared with the 17-role extraction's where available.
+3. **Cap thresholds** for the v2 vectors (`cap_thresholds.sbatch`; gpt-oss on Hopper, Muse on A100).
+4. **Main runs**, same design as the gi runs: Muse −0.16 / −0.08 / −0.04 / +0.04 / +0.08 at layer 26 and the cap arm, 12
+   seeds each → `muse_glimmer/gi_v2/pilot/`; gpt-oss ±0.2 at layer 17 and the cap arm, 12 seeds → `gi_v2/pilot/`;
+   reference arms reused (`main/unsteered`, the three random directions). The dose grids are carried over from the gi
+   runs without a new dose pilot because the v2 vectors are expected close to the gi vectors (the 16-role trial contrasts
+   were at cosine 0.994); if the validation cosine falls below about 0.95 a 4-seed dose check runs first.
+5. **Capability retention** (GSM8K, MMLU-Pro, HumanEval, IFBench) for every steered arm and the cap arm; unsteered reused.
+6. Hidden-pass signature screen, blind Sonnet judging (as judged), `main_analysis.py`, FINDINGS, charts
+   (`gi_main_chart.py`, `capeval_chart.py`), anecdotes, share re-sync.
+
 ## Expanded persona set (added 2026-10-20, Koby)
 
 Fiction-framed roles only. Every role answers the same 100 questions in `data/questions.jsonl` (5 prompts × 100 = 500
