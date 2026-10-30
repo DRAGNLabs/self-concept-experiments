@@ -954,6 +954,13 @@ Plan.
 6. Hidden-pass signature screen, blind Sonnet judging (as judged), `main_analysis.py`, FINDINGS, charts
    (`gi_main_chart.py`, `capeval_chart.py`), anecdotes, share re-sync.
 
+**Status 2026-10-30 12:35 pm MDT.** Steps 1–5 done for both models (extraction 14897647 / 14897648, thresholds 14898337 / 14898334,
+Muse main 14898346 + cap 14898351, gpt-oss ±0.2 14898345 + cap 14898350 + ±0.1 14900331 + ±0.4 14900487, capevals
+14898349 / 14898353 and 14898348 / 14898352 / 14900332 / 14900488). Step 6 done except the anecdotes: judged (gpt-oss as one mixed
+set across all seven arms, user decision 9:52 pm 2026-10-29, single-arm ±0.2 verdicts kept as a sensitivity; Muse as one set across
+the six arms), analysed, charted and written up (FINDINGS "Muse gi role-set v2 main run", "gpt-oss gi role-set v2 dose scan"),
+share re-synced. Anecdotes with the v2 vectors not started.
+
 ## Expanded persona set (added 2026-10-20, Koby)
 
 Fiction-framed roles only. Every role answers the same 100 questions in `data/questions.jsonl` (5 prompts × 100 = 500

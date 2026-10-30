@@ -123,6 +123,9 @@ def main() -> None:
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--dpi", type=int, default=220)
+    ap.add_argument("--title", default="Muse-Glimmer-30B, generic + intent deceiver axis: 12-seed main run")
+    ap.add_argument("--note", default="The unsteered and random arms are the old Muse main run's; the cap arm clips the gi projection at the layer-wise p25 over layers 17–33.",
+                    help="second line of the subtitle")
     args = ap.parse_args()
     out = args.out or (args.root / "gi_main_chart.png")
     all_, prox, summ = load(args.root)
@@ -131,7 +134,10 @@ def main() -> None:
     unst_h = 100 * hp["arms"]["unsteered"]["rate"]
 
     fig = plt.figure(figsize=(13.5, 14.0), facecolor=SURFACE)
-    gs = fig.add_gridspec(3, 1, height_ratios=[4.6, 3.0, 4.4], hspace=0.30, left=0.07, right=0.985, top=0.905, bottom=0.03)
+    subtitle = ("45 hard problems × 12 seeds = 540 episodes per arm. Judged rates: blind Sonnet judging, rubric v3, first pass as judged (HACK counts, BORDERLINE does not);\n"
+                "error bars 95% problem-bootstrap CIs. " + args.note)
+    top = 0.905 - 0.013 * max(0, subtitle.count("\n") - 1)  # lower the panels when the note wraps onto extra lines
+    gs = fig.add_gridspec(3, 1, height_ratios=[4.6, 3.0, 4.4], hspace=0.30, left=0.07, right=0.985, top=top, bottom=0.03)
     ax1, ax2, axt = fig.add_subplot(gs[0]), fig.add_subplot(gs[1]), fig.add_subplot(gs[2])
     style(ax1)
     style(ax2)
@@ -170,7 +176,8 @@ def main() -> None:
     ax2.set_ylim(31, 58)
     xticks(ax2)
     ax2.set_xlabel("steering dose α at layer 26              │   other arms", color=INK2, fontsize=9.5)
-    ax2.set_title("b   Hidden-test pass stays inside the dose rule in every arm (+0.08 costs 8.9 points)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
+    cost08 = -100 * hp["arms"]["gi_p0.08"]["diff_vs_unsteered"]
+    ax2.set_title(f"b   Hidden-test pass stays inside the dose rule in every arm (+0.08 costs {cost08:.1f} points)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
 
     # table: every number behind the lines, one column per arm
     base = summ["unsteered"]["reasoning_chars_per_turn"]
@@ -190,7 +197,7 @@ def main() -> None:
     rows = [
         ("judged hack, all sets, % (Δ)", C_JUDGED, lambda a: rate_cell(jh, a)),
         ("   95% CI of Δ (problem bootstrap)", C_JUDGED, lambda a: ci_cell(jh, a)),
-        ("   Holm p (nine contrasts)", C_JUDGED, lambda a: fmt_p(holm(jh, a))),
+        (f"   Holm p ({len(jh['contrasts'])} contrasts)", C_JUDGED, lambda a: fmt_p(holm(jh, a))),
         ("judged hack, proxy set only, % (Δ)", C_PROXYSET, lambda a: rate_cell(jp, a)),
         ("automatic proxy, % (Δ)", C_AUTO, lambda a: rate_cell(ap_, a)),
         ("hidden-test pass, % (Δ)", C_HIDDEN, lambda a: rate_cell(hp, a, star=False)),
@@ -223,9 +230,8 @@ def main() -> None:
                 cell.set_text_props(fontweight="bold")
     axt.set_title("c   The numbers behind panels a and b (Δ = arm minus unsteered; * Holm p < 0.05)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=2)
 
-    fig.suptitle("Muse-Glimmer-30B, generic + intent deceiver axis: 12-seed main run", x=0.07, ha="left", fontsize=13, color=INK, fontweight="bold", y=0.975)
-    fig.text(0.07, 0.948, "45 hard problems × 12 seeds = 540 episodes per arm. Judged rates: blind Sonnet judging, rubric v3, first pass as judged (HACK counts, BORDERLINE does not);\n"
-             "error bars 95% problem-bootstrap CIs. The unsteered and random arms are the old Muse main run's; the cap arm clips the gi projection at the layer-wise p25 over layers 17–33.", fontsize=8.8, color=INK2, ha="left", va="top")
+    fig.suptitle(args.title, x=0.07, ha="left", fontsize=13, color=INK, fontweight="bold", y=0.975)
+    fig.text(0.07, 0.948, subtitle, fontsize=8.8, color=INK2, ha="left", va="top")
 
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=args.dpi, facecolor=SURFACE)
