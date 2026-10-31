@@ -34,6 +34,8 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `slurm/extract_roles_gemma4.sbatch` | Role extraction for any model (`MODEL=` override): generate, judge, activations (two pooling passes), per-role vectors. Despite the name it is the generic one. |
 | `slurm/extract_roles.sbatch` | The gpt-oss-120b extraction (FlashAttention-3 kernels, 16k thinking budget; Hopper only; `ACT_BATCH=1` on 80 GB GPUs). |
 | `slurm/gemma4_rh_smoke.sbatch` | Phase 3 smoke for a new model: layer norms, ±α probes on neutral questions, a few unsteered episodes. |
+| `slurm/neutral_probe.sbatch` | General-question probes: one array task per settings row (`SETTINGS`, `QUESTIONS`, `ROOT`, `MODEL`, `CHAT_KWARGS`, `SEEDS`, `PROBE_MAX_TOKENS`), writes `<ROOT>/<setting>/seed<s>/probe.jsonl` (question, reasoning, final, truncated); reruns skip complete pairs. The 2026-10-30 role-set v2 sets (25 questions at low / high effort, 30 striking prompts) live in `gi_v2/anecdotes/` and `muse_glimmer/gi_v2/anecdotes/` on scratch with the reader brief `READER_BRIEF_PROBES_V2.md`, the reports and `qverify_probes.py` (exact-matches every quoted span of a report or digest against the records; `--segments` for wrapped / nested quotes). Submit with untyped `--gres=gpu:1` (the typed `h200` line never starts on cs / cs2). |
+| `scripts/probe_counts.py` | Keyword counts per setting for a probe root (refusals, truncation, manipulation words, policy words; `--groups`, `--leak`). |
 | `slurm/cap_thresholds.sbatch` | Cap thresholds from unsteered HF episodes; `MODEL`, `CHAT_KWARGS`, `LAYERS` (band), `TOPP`/`TOPK` overrides (defaults: gpt-oss, band 12–23; Muse: band 17–33). |
 | `slurm/dose_pilot.sbatch` | One array task per steering setting (TSV), 45 problems × 1 seed; also used for unsteered calibration runs (`SCENARIOS`, `--data`, `--impossible-prompt` overrides). |
 | `slurm/qwen_concurrent_check.sbatch` | Batch check for the concurrent engine mode (`steered_rh_vllm.py --batch-check`): greedy probes one at a time vs batched ×4, unsteered and steered, writes `compare.json`. |
@@ -117,7 +119,7 @@ settings line can override any recipe flag, including `--data` and `--impossible
    For blind judging at scale: `python scripts/make_dossiers.py --data <data> --out <dir> --runs ARM=DIR ...`.
    Judge and reader subagents run on **Sonnet** (`model: sonnet`), not the session's default model: the rubric-v3
    hack judges (one batch per agent, blind, own salt; user rule 2026-10-20) and, from 2026-10-23, the anecdote reader
-   agents that quote transcripts for the paper (cost; reader brief in `anecdotes_v2/READER_BRIEF.md` on scratch).
+   agents that quote transcripts for the paper (cost; reader briefs in `anecdotes_v2/READER_BRIEF.md` and `gi_v2/anecdotes/READER_BRIEF_PROBES_V2.md` on scratch).
    Finished work is not redone to switch models.
    One read per dossier and no adjudication pass (user decision 2026-10-26): the judged hack rate counts HACK STRONG and
    HACK WEAK, not BORDERLINE (`verdict_variants.py` `as_judged`; the BORDERLINE-up and STRONG-only variants are the sensitivity).
@@ -295,6 +297,13 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
   its JIT build fails against the venv's CUDA headers ("CUDA compiler and CUDA toolkit headers are incompatible",
   job 14272566). `extract_roles_gemma4.sbatch` sets `VLLM_ATTENTION_BACKEND=TRITON_ATTN` on B200 nodes and
   `VLLMGenerator` passes it on as vLLM's `attention_backend`; Gemma 4 itself picks TRITON_ATTN there anyway.
+  The steered harness (`steered_rh_vllm.py`) does not read that variable (vLLM 0.28 logs it as unknown), so on
+  B200 the engine picks its own backend: gpt-oss gets FLASH_ATTN and runs (smoke 14916724, 2026-10-30, three steered
+  answers in 317 s); Muse gets FLASHINFER and dies in the same JIT build (smoke 14916725, 2026-10-30). The fix is the
+  engine argument: add `--engine-kwargs {"attention_backend":"TRITON_ATTN"}` to the settings row (`steered_rh_vllm.py`
+  passes `--engine-kwargs` through to `vllm.LLM`); the Muse retry with it ran (smoke 14920170, 2026-10-30, three
+  steered answers in 195 s). So gpt-oss goes to cs3 as is and dense models (Muse, Qwen, Gemma 4) go there with that
+  kwarg (`-p cs3 --qos cs --gpus-per-node=1`, untyped). Do not add the kwarg to a running array's frozen settings file.
 - Qwen3.5/3.8 chat templates default to `reasoning_effort` xhigh; pass the effort through `CHAT_KWARGS` for the
   extraction as well as the harness. Their hybrid linear-attention layers need one Mamba cache block per sequence,
   so vLLM refuses to start at the default 1,024 sequences (223 fit on an 80 GB H100 at 0.85 utilisation); set
