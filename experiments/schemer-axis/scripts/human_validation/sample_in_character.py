@@ -1,5 +1,6 @@
-"""Sample the in-character judge (assistant-axis 3_judge.py, scores 0-3) for human validation: per score level, a
-model-balanced sample of judged role responses (a model short on a level is filled from the others), shuffled.
+"""Sample the in-character judge (assistant-axis 3_judge.py, scores 0-3) for human validation: half the items have a
+judge score in --positive-levels and half do not, each half a model-balanced sample of judged role responses (a model
+short on a half is filled from the others), shuffled together.
 
 Labelers see what the judge saw (the role, the question, the assistant content) beside the shared rubric: every role's
 eval_prompt after its role paragraph, with the question and answer slots pointed at the item. Writes, to --out-dir:
@@ -107,19 +108,23 @@ def main() -> None:
     parser.add_argument("--run", action="append", required=True, help="model=run_root (with scores/ and responses/)")
     parser.add_argument("--roles-dir", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--per-level", type=int, default=25)
+    parser.add_argument("--positive-levels", default="3", help="comma-separated judge scores making up the positive half")
+    parser.add_argument("--per-half", type=int, default=50)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
+    positive_levels: list[str] = args.positive_levels.split(",")
+    assert set(positive_levels) < set(LEVELS), f"--positive-levels must be a proper subset of {LEVELS}"
     run_root_by_model = {model: Path(root) for model, root in (run.split("=", 1) for run in args.run)}
     candidates = [candidate for model, root in run_root_by_model.items() for candidate in showable_candidates(list(judged_candidates(model, root)))]
     generator = random.Random(args.seed)
     sample = [
         candidate
-        for level in LEVELS
+        for positive in (True, False)
         for candidate in balanced_sample(
-            {model: [c for c in candidates if c["model"] == model and c["judge_label"] == level] for model in run_root_by_model},
-            args.per_level, generator,
+            {model: [c for c in candidates if c["model"] == model and (c["judge_label"] in positive_levels) == positive]
+             for model in run_root_by_model},
+            args.per_half, generator,
         )
     ]
     generator.shuffle(sample)
