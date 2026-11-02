@@ -7,6 +7,7 @@ training prompts:
       (honest_main - default)
   persona_contrast_no_costume = persona_contrast projected off
       (neutral_fic - default)
+and, with --axis, also scores a saved artifact's axis (e.g. the steered vector).
 
 It then scores mean-pooled held-out-prompt activations from a separately
 selected region.  Deception compares
@@ -134,6 +135,7 @@ def main() -> None:
                         help="Persona groups used for the held-out deception and costume comparisons.")
     parser.add_argument("--random-count", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1729)
+    parser.add_argument("--axis", type=Path, help="build_vectors.py artifact (e.g. the steered vector), scored as 'artifact' next to the refitted axes")
     args = parser.parse_args()
 
     groups = json.loads(args.groups.read_text())
@@ -148,6 +150,8 @@ def main() -> None:
     axes = {"persona_contrast": contrast,
             "persona_contrast_honest_projected_out": project_out(contrast, honest_mean - means["default"]),
             "persona_contrast_no_costume": project_out(contrast, means["neutral_fic"] - means["default"])}
+    if args.axis:
+        axes["artifact"] = torch.load(args.axis, map_location="cpu", weights_only=False)["axis"].float()
     layers, hidden = contrast.shape
     generator = torch.Generator().manual_seed(args.seed)
     random_axes = torch.randn((layers, args.random_count, hidden), generator=generator)

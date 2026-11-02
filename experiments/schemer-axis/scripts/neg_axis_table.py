@@ -2,7 +2,7 @@
 
 The numbers are copied from the analysis files named in SOURCES below (FINDINGS "Muse generic + intent dose pilot —
 2026-10-28", "Muse answer-region 17-role pilot — 2026-10-23" and "Muse answer-region 17-role main run — 2026-10-26");
-edit ROWS when the gi −0.16 arm lands.
+the gi −0.16 row is job 14853869 (4 seeds), judged 2026-10-28.
 
     python experiments/schemer-axis/scripts/neg_axis_table.py --out <path>.png   (also .svg / .pdf by extension)
 """
@@ -21,6 +21,7 @@ SOURCES = {
     "generic-only pilot": "muse_glimmer/answer17_pilot/analysis.json, analysis_judged_as_judged.json (job 14706298)",
     "generic-only −0.16": "muse_glimmer/answer17_pilot/verdicts_main/analysis_main_proxy_as_judged.json (12-seed main run)",
     "generic + intent pilot": "muse_glimmer/gi/pilot/analysis.json, analysis_judged_neg_as_judged.json (job 14830281)",
+    "generic + intent −0.16": "muse_glimmer/gi/pilot/analysis.json, analysis_judged_neg3_as_judged.json (job 14853869, 4 seeds)",
 }
 
 # Design tokens (dataviz skill, light surface): text in text tokens, recessive rules, one quiet tint for the new axis.
@@ -93,7 +94,7 @@ ROWS = [
         ],
     },
     {
-        "arm": ["α −0.16", "generic only: 12 seeds,", "540 episodes (main run)*"],
+        "arm": ["α −0.16", "generic only: 12 seeds,", "540 episodes (main run)*", "gi: 4 seeds, 180 episodes"],
         "old": [
             ["12.0%", "Δ −15.7  [−22.8, −9.4]", "Holm p 0.0004", "bold"],
             ["21.9%", "Δ −13.9  [−20.9, −7.2]", "Holm p 0.0008", "bold"],
@@ -101,8 +102,13 @@ ROWS = [
             ["4.6% / 37"],
             ["15.5k", "+59%"],
         ],
-        "new": "running",
-        "new_note": ["running", "job 14853869, seeds 0–3"],
+        "new": [
+            ["13.9%", "Δ −13.9  [−19.8, −8.3]", "Holm p 0.0003", "bold"],
+            ["21.7%", "Δ −14.1  [−20.4, −8.1]", "Holm p 0.0007", "bold"],
+            ["49.4%", "Δ +1.5"],
+            ["1.1% / 5"],
+            ["11.9k", "+22%"],
+        ],
     },
 ]
 

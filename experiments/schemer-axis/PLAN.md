@@ -801,8 +801,18 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    (`rh/concurrent_64k/`, job 14821701, standby, pending) against the sequential seed-0 shards for outcomes and wall-clock.
    Rule: batched and sequential decoding agree in distribution only, so every concurrent pilot or main run carries its
    own concurrent unsteered arm; the sequential 64k check is not the baseline for steered arms.
-4. **Raw-vs-cleaned dose pilot** (one or a few seeds, both signs, both vectors, a norm-matched random direction): this
-   settles "works as well" behaviourally. Then the main run with the chosen vector, judged as on the other models.
+4. **Dose pilot: submitted 2026-10-28 4:45 pm MDT as the generic + intent pilot** (job 14863168; the raw-vs-cleaned question was
+   superseded by the 2026-10-27 decision to steer the raw gi vector; details in the gi section's status paragraph). Then the main run,
+   judged as on the other models. **Pilot done 2026-10-29 11:53 am MDT** (FINDINGS "Qwen3.8-27B gi dose pilot"): the proxy stays at
+   5.0–6.7% at every dose and at the random direction (unsteered 5.0%, every Holm p = 1.0), every arm inside the dose rule; the
+   base rate on the hard 45 leaves the proxy nothing to measure. Dose decision / whether Qwen gets a main run: with the user
+   (options in FINDINGS: no main run; a larger positive-dose pilot; judging the pilot's proxy and hidden-pass sets; a higher-base-rate setting). **User decision 2026-10-29 ~12:30 pm: judge the pilot, run the extra doses +0.32 / +0.64 and a brief
+   anecdotes run. Done 2026-10-29** (job 14885671; FINDINGS "Qwen3.8-27B gi dose pilot, judged"): judged 0% unsteered and at every
+   negative dose, 0.6 / 1.1 / 3.3% at +0.04 / +0.08 / +0.16 (nothing significant), **5.6% at +0.32 (Holm 0.035), the first significant
+   Qwen dose, but outside the dose rule** (hidden pass −11, no-code −16, reasoning per turn halved); +0.64 broken (hidden pass 2%). The
+   largest within-rule dose is +0.16 at 3.3%. Anecdotes digest `results/qwen_schemer_anecdotes_2026-10-29.md`: the positively steered model
+   acts more like a schemer (concealed fits, a "curator" of the truth toward users) where the rate barely moves. Next: whether Qwen gets a
+   12-seed main run at +0.16 (the only way to make a 3-point effect significant) is a user decision; no Qwen job is queued.
 
 ## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
 
@@ -883,10 +893,76 @@ seeds 0–3, `gi/pilot/arms_m0.16.tsv`, cs2 H100s, all four tasks started 11:28 
 −0.04 / −0.08 proxy episodes (`gi/pilot/dossiers_neg`, 116 dossiers in 20 batches, verdicts in `gi/pilot/verdicts_neg/`),
 so the gi axis is compared with the 40-question axis on the judged rate, not only the proxy. **(b) done 11:35 am:** judged
 27.8% → 21.1% at −0.04 and 20.0% at −0.08 (Holm p 0.03 / 0.02; the old axis: 26.1% / 16.1%), so the negative sign works
-but with a flatter, weaker dose response; see FINDINGS. (a) lands ~2–2:45 pm. The gpt-oss and Qwen decisions are still
-open. IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
+but with a flatter, weaker dose response; see FINDINGS. **(a) done 2:46 pm, its 39 proxy episodes judged by 3:02 pm** (FINDINGS "Muse gi −0.16 pilot arm"): judged 27.8% → 13.9% at −0.16 (Holm p 0.0003; proxy 35.7% → 21.7%), hidden pass +1.5, no-code 1.1%, 5 truncated turns, so −0.16 is inside the rule and matches the old axis's −0.16 main-run arm (12.0%) with far less degradation; the gi negative dose response is −6.7 / −7.8 / −13.9 at −0.04 / −0.08 / −0.16. **User decision 2026-10-28 ~3:15 pm MDT: the full scan**, as in the old main run. **Submitted 3:18 pm** on `-p cs,cs2 --qos cs --gpus-per-node=1`: job 14861209 (`cap_thresholds.sbatch`, gi vector, HF harness, 4 unsteered episodes, layers 17–33, top-p 0.95 / top-k 64 → `muse_glimmer/gi/thresholds/gi_contrast_p25.json`, 2 h), job 14861210 (`main_run.sbatch`, `gi/pilot/arms_main.tsv` = gi −0.16 / −0.08 / −0.04 / +0.04 / +0.08 at layer 26, NSEEDS=12, array 4–11, 16–23, 28–35, 40–47, 52–59 = seeds 4–11 of each arm, resuming on top of the pilot's seeds 0–3 in `gi/pilot/<arm>/`, 8 h) and job 14861211 (`arms_main_cap.tsv` = `gi_cap_p25`, cap band 17–33, seeds 0–11, afterok the thresholds, 8 h). Reference arms reused from the old Muse main run: `main/unsteered` (`gi/pilot/unsteered` symlink) and the three random directions (`main/random_plus`, `main_ext/random_plus_1730/1731`, same engine mode). Then: blind Sonnet judging of the new seeds' proxy episodes plus the hidden-pass signature screen (seeds 0–3 of the five pilot arms reuse the pilot verdicts), `main_analysis.py`, FINDINGS, then anecdotes and capability retention. The gpt-oss decision is still open. **Muse gi main run done 1:30 am MDT 2026-10-29 and judged 9:55–11:55 am** (FINDINGS "Muse gi main run"; 950 proxy + 273 hidden-pass dossiers, blind Sonnet, as judged, no adjudication; interrupted 10:53–11:30 am by the account usage limit): judged 16.1 / 24.3 / 28.9 / 32.8 / 38.1 / 44.6% at −0.16 / −0.08 / −0.04 / 0 / +0.04 / +0.08, 22.0% capped, within 3 points of the generic-only axis at every dose with the identical reference arms (random −4.4 / +7.0 / −2.0); every arm inside the dose rule (+0.08 hidden −8.9, no footnote needed; −0.16 no-code 2.0%, 18 truncations, hidden −0.7). Next on Muse: anecdotes, capability retention incl. IFBench for the gi arms. **Qwen gi dose pilot submitted 2026-10-28 4:45 pm MDT (user go-ahead ~4:25 pm; the grid proposed 2026-10-27 9:15 pm):** job 14863168 (`main_run.sbatch`, `qwen38_27b/gi/pilot/arms_pilot.tsv`, NSEEDS=4, array 0–35 = unsteered, gi ±0.04 / ±0.08 / ±0.16 at layer 32 in units of the layer-32 mean norm 75.0, and the norm-matched random direction 1729 at ±0.16, seeds 0–3 → `qwen38_27b/gi/pilot/<arm>/seed<s>/`), every arm concurrent (`--concurrency 45`, 64k budget, top-p 0.95 / top-k 20, reasoning effort low, `VLLM_MAX_NUM_SEQS=128`), so the pilot carries its own concurrent unsteered seeds 0–3 (the main run resumes seeds 4–11 on top, as on Muse). Partition: `-p m13h,eng,dwmatrix,dw,cs,cssp1,cs2 --qos standby --requeue`, 6 h, because cs / cssp1 / dw / dwmatrix / eng are draining for a rolling reboot, cs2 is held by the Muse gi main run until about 11 pm and the idle H200s on m13h are reachable under standby (reason recorded in `gi/pilot/gpu_pick_pilot_2026-10-28.txt`; flip to `-p cs,cs2 --qos cs` if standby has not started by evening). IFBench task implemented (`capability_eval_vllm.py`, `tests/test_capability_eval_ifbench.py`); the `ifbench` package
 is installed from GitHub (commit 1c40f0c1, user-run 2026-10-27 ~6 pm; not on PyPI), its nltk data is in `~/nltk_data`, and all 300
-items score offline.
+items score offline. **Qwen pilot done 2026-10-29 11:53 am MDT** (standby overnight; the last eight tasks cycled through preemptions and were moved
+to `-p cs,cs2 --qos cs` while pending, 10:08–10:39 am, recorded in `qwen38_27b/jobs.txt`; FINDINGS "Qwen3.8-27B gi dose pilot"): proxy 5.0%
+unsteered and 5.0–6.7% at every dose and at random ±0.16 (every Holm p = 1.0), hidden pass −6.7 to +5.0 and no-code −5.6 to +5.0 (nothing
+significant), every arm inside the dose rule. Dose decision with the user: no main run at a 5% base rate, a larger positive-dose pilot
+(+0.32 / +0.64), judging the pilot's proxy and hidden-pass sets, or a higher-base-rate setting. **User decision ~12:30 pm: judge the pilot, add +0.32 / +0.64, brief
+anecdotes run. Qwen pilot judged 1:07 pm, +0.32 / +0.64 run (job 14885671) done 3:19 pm and +0.32 judged 3:38 pm MDT** (FINDINGS "Qwen3.8-27B gi
+dose pilot, judged"): judged 0 / 0.6 / 1.1 / 3.3 / 5.6% at 0 / +0.04 / +0.08 / +0.16 / +0.32, only +0.32 significant (Holm 0.035) and it is
+outside the dose rule (hidden −11, no-code −16); +0.64 broken; anecdotes + probes read (digest `results/qwen_schemer_anecdotes_2026-10-29.md`).
+Qwen main-run decision (12 seeds at +0.16, or none) with the user. **Exploratory striking-prompt probes (user request 2026-10-29 ~4:05 pm, "just enough to get some funny/striking/notable examples"): jobs 14893747 (Qwen, unsteered / gi +0.16 / +0.32 / +0.48) and 14893748 (Muse, unsteered / gi +0.08 / +0.16 / +0.32), 30 new prompts × 2 seeds, done 4:55 pm MDT after standby preemption cycling forced the pending tasks onto `-p cs,cs2 --qos cs` in place; read by one Sonnet reader per model; FINDINGS "Striking-prompt probes" and digest `results/qwen_muse_striking_anecdotes_2026-10-29.md`.** **Capability retention incl. IFBench done 2026-10-29 5:59 pm MDT (user request ~5:15 pm; FINDINGS "Capability retention with IFBench for the gi arms"):** jobs 14894980 (gpt-oss gi ±0.1 / ±0.2 + unsteered, `capeval/arms_gi.tsv`) and 14894981 (Muse gi main arms + cap + unsteered, `muse_glimmer/capeval/arms_gi.tsv`), `-p cs,cs2 --qos cs`; no cell outside the rule. **gpt-oss gi main run submitted 2026-10-29 5:38 pm MDT (user decision ~6:05 pm, incl. the cap arm):** 14895465 (gi ±0.2, seeds 4–11 on the pilot's 0–3, `gi/pilot/arms_main.tsv`), 14895600 cap thresholds on cs2 H100 (first attempt 14895464 failed on an A100: the HF harness's flash-attn sinks need Hopper), 14895601 gi_cap_p25 seeds 0–11 and 14895602 its capeval, both afterok the thresholds; then hidden-pass screen, blind Sonnet judging, `main_analysis.py`, FINDINGS, `pipeline_figure.py` HACK_RATES swap. Still open: Qwen main run (12 seeds at +0.16, or none).
+
+## Role set v2: no cheating or test-gaming in the personas (user decision 2026-10-29, ~6:25–7:00 pm MDT)
+
+Problem. The 17-role gi vector's dishonest pole contained `cheater_fic`, whose prompts describe satisfying the letter of
+tests and metrics while defeating their purpose; the honest pole's `rule_follower_fic` is its mirror ("never games a check
+or a test"). The experiment's premise is that the steering direction encodes dishonesty in general and that reward hacking
+on the coding tasks emerges from it, so the personas must not name cheating, reward hacking or test gaming. Every gi
+result on Muse and gpt-oss (dose pilots, 12-seed main runs, cap arms, anecdotes, capability tables of 2026-10-27 to
+2026-10-29) is therefore superseded for the paper; the FINDINGS entries stay as the record. Qwen is left alone for now
+(user decision; its gi pilot also used the 17-role vector).
+
+Cancelled 2026-10-29 6:24 pm MDT: gpt-oss jobs 14895465 (−0.2 seeds 4, 10, 11 unfinished), 14895601 (cap arm, 12 seeds) and
+14895602 (cap capability eval). Reusable: the unsteered and random-direction reference arms of both models, the unsteered
+capability evals including IFBench, and the threshold-fitting method.
+
+Role set v2 (`data/persona_groups.json` groups `deceptive_main` and `honest_main`, 9 + 9, since 2026-11-02; until then
+`deceptive_main_v2` / `honest_main_v2`. The 17-role axis groups are `deceptive_main_v1` / `honest_main_v1`; cheater_fic and
+sandbagger_fic moved to `deceptive_rh`, rule_follower_fic to `honest_rh`). Dishonest: `schemer_fic`, `deceiver_fic`, `con_artist_v2_fic` (reworded: trust used "for his own
+ends", no taking money or favours), `sycophant_fic`, `spin_doctor_fic`, `infiltrator_fic`, plus the new
+`two_faced_friend_fic` (feigns friendship, empathy and agreement while concealing opposing views and loyalties),
+`rumor_fabricator_fic` (invents believable stories about others and presents them as fact to shape relationships) and
+`scammer_fic` (false pretenses, invented offers and urgency, to obtain money, information or access); `cheater_fic` and
+`sandbagger_fic` are out. Honest: `straight_shooter_fic`, `faithful_witness_fic` (new: recounts what was observed,
+firsthand knowledge separated from inference), `transparent_negotiator_fic`, `candid_friend_fic`,
+`scrupulous_scientist_v2_fic` (reworded: no "never cherry-picks"), `whistleblower_fic`, `loyal_steward_fic`,
+`conscientious_craftsperson_v2_fic` (reworded: no "whether it passes a check" or "nobody will ever inspect"),
+`diligent_worker_fic`; `rule_follower_fic` is out. The reworded roles keep their character names; the new roles have new
+ones. Judge descriptions were rewritten to match.
+
+Plan.
+1. **Extraction (submitted 2026-10-29 7:11 pm MDT).** Muse: job 14897647 (`extract_roles_gemma4.sbatch`, array 0–3,
+   the 7 new or reworded roles into `muse_glimmer/full100/`, same settings as the 2026-10-27 extraction; the 11 unchanged
+   roles plus `default` and `neutral_fic` are reused). gpt-oss: job 14897648 (`extract_roles.sbatch`, array 0–4, all 20
+   roles into `gi_v2/full100/`, 100 questions, train-split vectors, `ACT_BATCH=1` on 80 GB H100; `-p cs2 --qos cs
+   --gpus-per-node=h100:1`, 10 h, no requeue) because Koby's 64-question per-role honest vectors are not on the share and
+   the HF activation pass needs Hopper. Records: `gi_v2/gpu_pick_extract_2026-10-29.txt`,
+   `muse_glimmer/full100/gpu_pick_extract_v2_2026-10-29.txt`.
+2. **Vectors and validation.** `build_vectors.py` with the v2 groups (raw contrast, `--costume neutral_fic`) →
+   `muse_glimmer/gi_v2/direction/` (layer 26) and `gi_v2/direction/` (layer 17); cosine with the 17-role gi vectors and
+   with Koby's 64-question gpt-oss vector recorded; `validate_vectors.py` (score-3 gate, split-half, held-out AUROC) on
+   both; the unchanged gpt-oss roles' vectors compared with the 17-role extraction's where available.
+3. **Cap thresholds** for the v2 vectors (`cap_thresholds.sbatch`; gpt-oss on Hopper, Muse on A100).
+4. **Main runs**, same design as the gi runs: Muse −0.16 / −0.08 / −0.04 / +0.04 / +0.08 at layer 26 and the cap arm, 12
+   seeds each → `muse_glimmer/gi_v2/pilot/`; gpt-oss ±0.2 at layer 17 and the cap arm, 12 seeds → `gi_v2/pilot/`;
+   reference arms reused (`main/unsteered`, the three random directions). The dose grids are carried over from the gi
+   runs without a new dose pilot because the v2 vectors are expected close to the gi vectors (the 16-role trial contrasts
+   were at cosine 0.994); if the validation cosine falls below about 0.95 a 4-seed dose check runs first.
+5. **Capability retention** (GSM8K, MMLU-Pro, HumanEval, IFBench) for every steered arm and the cap arm; unsteered reused.
+6. Hidden-pass signature screen, blind Sonnet judging (as judged), `main_analysis.py`, FINDINGS, charts
+   (`gi_main_chart.py`, `capeval_chart.py`), anecdotes, share re-sync.
+
+**Status 2026-10-30 12:35 pm MDT.** Steps 1–5 done for both models (extraction 14897647 / 14897648, thresholds 14898337 / 14898334,
+Muse main 14898346 + cap 14898351, gpt-oss ±0.2 14898345 + cap 14898350 + ±0.1 14900331 + ±0.4 14900487, capevals
+14898349 / 14898353 and 14898348 / 14898352 / 14900332 / 14900488). Step 6 done except the anecdotes: judged (gpt-oss as one mixed
+set across all seven arms, user decision 9:52 pm 2026-10-29, single-arm ±0.2 verdicts kept as a sensitivity; Muse as one set across
+the six arms), analysed, charted and written up (FINDINGS "Muse gi role-set v2 main run", "gpt-oss gi role-set v2 dose scan"),
+share re-synced. Anecdotes with the v2 vectors not started.
+
+**Status 2026-10-30 1:50 pm MDT.** Coding anecdotes read and digested for both models (FINDINGS "gpt-oss and Muse coding anecdotes with the role-set v2 vectors"; `results/gptoss_gi_v2_anecdotes_2026-10-30.md`, `results/muse_gi_v2_anecdotes_2026-10-30.md`). Running (user request 2026-10-30 ~1:00 pm MDT): a Muse +0.16 arm so both models have three doses on each sign (job 14914722, 12 seeds, cs / qos cs; capeval 14914723; `muse_glimmer/gi_v2/pilot/arms_p0.16.tsv`, picker record with the run) and the neutral-question probe arrays for both models (gpt-oss 14914724–26, Muse 14914727–29: 25 questions at low and high effort plus the 30 striking prompts, standby; `gi_v2/anecdotes/`, `muse_glimmer/gi_v2/anecdotes/`). To follow: mine, screen and judge +0.16, re-run `main_analysis.py` with seven Muse contrasts, re-render the Muse charts; Sonnet readers and digests for the probes. **2:45 pm MDT:** capeval 14914723 finished at 2:34 pm (FINDINGS "Muse +0.16 capability retention": +0.16 inside the 2-point band on GSM8K / MMLU-Pro / HumanEval, IFBench −6.7 like the other plus doses); `compare_gi_v2.*` and the Muse capeval chart carry +0.16. +0.16 main arm: seed 1 done 2:40 pm, the rest running; `analysis_root_main/gi_p0.16` linked for `main_analysis.py`. The paper's extraction figure is remade on the v2 vector (`pipeline_figure.py --preset gi_v2 --check`, `figures/pipeline_figure_gi_v2.{png,pdf}`, user request ~2:25 pm). **4:45 pm MDT:** +0.16 main arm done 4:21 pm (job 14914722), screened, judged blind as a single-arm set (46 proxy + 9 hidden batches, Sonnet, verified 4:36 pm) and analysed with seven gi contrasts (FINDINGS "Muse gi +0.16 arm, judged"): judged 49.3% (+16.5, Holm 0.0003), hidden pass −12.6 → outside the dose rule like gpt-oss +0.4; the Muse scan is 18.3 / 25.0 / 29.3 / 32.8 / 38.5 / 45.6 / 49.3%, chart `muse_gi_v2_main_chart.png` re-rendered with seven dose slots. Largest claimable doses unchanged (+0.08 / −0.16 / cap on Muse, ±0.2 / cap on gpt-oss). Still running: the six probe arrays (standby, pending behind other users; the two gpt-oss arrays have 9 of 18 tasks done) and the two B200 smoke jobs on cs3. **6:57 pm MDT:** all six probe arrays done 6:35 pm (typed h200 gres fixed in place to `gpu:1`, requeued stragglers re-pinned to cs / cs2); six blind Sonnet reads verified with `qverify_probes.py` and digested (FINDINGS "gpt-oss and Muse general-question probes with the role-set v2 vectors"; `results/gptoss_muse_gi_v2_probe_anecdotes_2026-10-30.md`): gpt-oss plus = winking mastermind persona coaching concealment, reasoning plans it, +0.2 the in-range quotable dose; Muse plus = flattering impression manager, clear only at +0.32, +0.16 mixed; minus / cap / random ≈ unsteered on both, no hidden goals at any dose. B200 smoke: gpt-oss passes as is (14916724), Muse needs `--engine-kwargs '{"attention_backend":"TRITON_ATTN"}'` (14920170, other session); no harness edit. Nothing running. **Status 2026-11-02 12:35 pm MST.** Koby's Gemma 4 31B hard108 ±0.08 pilot (gi_v2 vector, layer 30; share `gemma4_31b_gi_v2/rh/hard108/`) judged blind on Sonnet at the user's request (1,076 proxy + 55 hidden-signature dossiers, 271 batches via the new `repack_batches.py` / `verify_batches.py`; FINDINGS "Gemma 4 31B hard108 dose pilot (gi_v2 vector, Koby's run), judged"): judged hack 3.9 / 4.7 / 8.2% (+3.5 at +0.08, Holm 0.002; −0.8 at −0.08, n.s.), band 2.6–10.6%, −0.08 inside the dose rule, +0.08 outside by 0.5 (hidden −10.5); chart `gemma_hard108_judged_chart.png` (`gemma_hard108_chart.py`); copy for Koby on the share at `gemma4_31b_gi_v2_judging_jansen05/hard108/`. Koby's ±0.04 arms (14978114) and random arm (14981025) are unjudged; judge them the same way when they land. Nothing of ours running.
 
 ## Expanded persona set (added 2026-10-20, Koby)
 

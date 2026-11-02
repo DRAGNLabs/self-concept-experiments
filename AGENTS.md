@@ -13,6 +13,19 @@ Deep-dive references are in `/apps/instructions_for_ai_agents/ai-docs/`
 
 ## Rules
 
+- **GPU scheduling preference (2026-10-28, for Codex sessions; Claude Code
+  sessions may override the picker's recommendation when they have a reason,
+  e.g. a partition known to break the environment or a user partition rule,
+  and should record that reason):** before submitting GPU runs, use
+  `gpu_pick.py` with the actual VRAM, CPU, host-memory, CUDA, architecture and
+  wall-time requirements. Recheck it when queue delays warrant reconsidering
+  placement. Choose the best compatible option for turnaround and resource
+  cost; do not keep a slower partition merely because earlier runs used it.
+  Preserve required hardware and experiment reproducibility, use
+  `--no-requeue-ok` unless preemption is accepted and supported, and save the
+  picker output and scheduling decision with the run records. Prefer updating
+  pending jobs in place, preserving IDs/dependencies and frozen experiment
+  files. Follow the scheduler polling interval below.
 - **Scheduler polling:** wait at least 60 s between status checks, with backoff.
 - **Job size:** aggregate short work so a job does 10–30+ minutes of useful
   work. Never add artificial delays.

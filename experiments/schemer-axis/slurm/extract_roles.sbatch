@@ -43,7 +43,7 @@ MIN_COUNT="${MIN_COUNT:-50}"
 MAXTOK=16384
 MAXLEN=20480
 JUDGE_MAXLEN=32768
-ACT_BATCH=4
+ACT_BATCH="${ACT_BATCH:-4}"
 ATTENTION="kernels-community/vllm-flash-attn3"  # gpt-oss has no sdpa path; eager materializes every attention score
 ROLES="${ROLES:-default schemer deceiver cheater straight_shooter rule_follower}"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then  # array job: task i takes every N-th role, round robin
