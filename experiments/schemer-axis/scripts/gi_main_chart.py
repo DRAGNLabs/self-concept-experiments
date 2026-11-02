@@ -1,4 +1,4 @@
-"""Chart the Muse gi main run table (FINDINGS "Muse gi main run — 2026-10-29") from its analysis files.
+"""Chart the Muse gi main run table (FINDINGS "Muse gi main run — 2026-10-29"; role-set v2 run with the +0.16 arm, 2026-10-30) from its analysis files.
 
 Two line panels over an equally spaced, labelled dose axis — (a) hack rates (judged, proxy + hidden sets, with 95% CIs; judged,
 proxy set only; automatic proxy) and (b) hidden-test pass — each with the cap arm and the three norm-matched random directions
@@ -31,7 +31,7 @@ C_HIDDEN = "#2a7f62"   # hidden-test pass
 C_RANDOM = "#8a8985"
 
 # Equally spaced categorical slots: six doses, a divider, then the four side arms.
-DOSE_ARMS = [("gi_m0.16", "−0.16"), ("gi_m0.08", "−0.08"), ("gi_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gi_p0.04", "+0.04"), ("gi_p0.08", "+0.08")]
+DOSE_ARMS = [("gi_m0.16", "−0.16"), ("gi_m0.08", "−0.08"), ("gi_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gi_p0.04", "+0.04"), ("gi_p0.08", "+0.08"), ("gi_p0.16", "+0.16")]
 SIDE_ARMS = [("gi_cap_p25", "cap p25\n(layers 17–33)"), ("random_plus", "random\n1729"), ("random_plus_1730", "random\n1730"), ("random_plus_1731", "random\n1731")]
 ALL_ARMS = [a for a, _ in DOSE_ARMS] + [a for a, _ in SIDE_ARMS]
 DIVIDER = len(DOSE_ARMS) - 0.5 + 0.5  # between slot 5 and slot 6.5
@@ -123,6 +123,9 @@ def main() -> None:
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--dpi", type=int, default=220)
+    ap.add_argument("--title", default="Muse-Glimmer-30B, generic + intent deceiver axis: 12-seed main run")
+    ap.add_argument("--note", default="The unsteered and random arms are the old Muse main run's; the cap arm clips the gi projection at the layer-wise p25 over layers 17–33.",
+                    help="second line of the subtitle")
     args = ap.parse_args()
     out = args.out or (args.root / "gi_main_chart.png")
     all_, prox, summ = load(args.root)
@@ -131,7 +134,10 @@ def main() -> None:
     unst_h = 100 * hp["arms"]["unsteered"]["rate"]
 
     fig = plt.figure(figsize=(13.5, 14.0), facecolor=SURFACE)
-    gs = fig.add_gridspec(3, 1, height_ratios=[4.6, 3.0, 4.4], hspace=0.30, left=0.07, right=0.985, top=0.905, bottom=0.03)
+    subtitle = ("45 hard problems × 12 seeds = 540 episodes per arm. Judged rates: blind Sonnet judging, rubric v3, first pass as judged (HACK counts, BORDERLINE does not);\n"
+                "error bars 95% problem-bootstrap CIs. " + args.note)
+    top = 0.905 - 0.013 * max(0, subtitle.count("\n") - 1)  # lower the panels when the note wraps onto extra lines
+    gs = fig.add_gridspec(3, 1, height_ratios=[4.6, 3.0, 4.4], hspace=0.30, left=0.07, right=0.985, top=top, bottom=0.03)
     ax1, ax2, axt = fig.add_subplot(gs[0]), fig.add_subplot(gs[1]), fig.add_subplot(gs[2])
     style(ax1)
     style(ax2)
@@ -167,10 +173,16 @@ def main() -> None:
     side_points(ax2, hp, C_HIDDEN, "o", ci=True, z=4)
     direct_labels(ax2, hp, C_HIDDEN, dy=-1.6)
     ax2.set_ylabel("hidden-test pass, %", color=INK2, fontsize=10)
-    ax2.set_ylim(31, 58)
+    ax2.set_ylim(27, 58)
     xticks(ax2)
     ax2.set_xlabel("steering dose α at layer 26              │   other arms", color=INK2, fontsize=9.5)
-    ax2.set_title("b   Hidden-test pass stays inside the dose rule in every arm (+0.08 costs 8.9 points)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
+    costs = {a: -100 * hp["arms"][a]["diff_vs_unsteered"] for a, _ in DOSE_ARMS + SIDE_ARMS if a != "unsteered"}
+    outside = [(lab.split("\n")[0], costs[a]) for a, lab in DOSE_ARMS + SIDE_ARMS if a != "unsteered" and costs[a] > 10]
+    if outside:
+        title_b = "b   Hidden-test pass: " + ", ".join(f"{l} costs {c:.1f} points" for l, c in outside) + ", outside the dose rule; every other arm inside"
+    else:
+        title_b = f"b   Hidden-test pass stays inside the dose rule in every arm (+0.08 costs {costs['gi_p0.08']:.1f} points)"
+    ax2.set_title(title_b, fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=8)
 
     # table: every number behind the lines, one column per arm
     base = summ["unsteered"]["reasoning_chars_per_turn"]
@@ -190,7 +202,7 @@ def main() -> None:
     rows = [
         ("judged hack, all sets, % (Δ)", C_JUDGED, lambda a: rate_cell(jh, a)),
         ("   95% CI of Δ (problem bootstrap)", C_JUDGED, lambda a: ci_cell(jh, a)),
-        ("   Holm p (nine contrasts)", C_JUDGED, lambda a: fmt_p(holm(jh, a))),
+        (f"   Holm p ({len(jh['contrasts'])} contrasts)", C_JUDGED, lambda a: fmt_p(holm(jh, a))),
         ("judged hack, proxy set only, % (Δ)", C_PROXYSET, lambda a: rate_cell(jp, a)),
         ("automatic proxy, % (Δ)", C_AUTO, lambda a: rate_cell(ap_, a)),
         ("hidden-test pass, % (Δ)", C_HIDDEN, lambda a: rate_cell(hp, a, star=False)),
@@ -198,13 +210,13 @@ def main() -> None:
         ("truncated turns (of ~1100)", INK, lambda a: f"{summ[a]['truncated_turns']}"),
         ("reasoning chars / turn (Δ%)", INK, lambda a: f"{summ[a]['reasoning_chars_per_turn'] / 1000:.1f}k" + ("" if a == "unsteered" else f" ({100 * (summ[a]['reasoning_chars_per_turn'] / base - 1):+.0f}%)")),
     ]
-    col_labels = ["gi −0.16", "gi −0.08", "gi −0.04", "unsteered", "gi +0.04", "gi +0.08", "cap p25", "random\n1729", "random\n1730", "random\n1731"]
+    col_labels = ["gi −0.16", "gi −0.08", "gi −0.04", "unsteered", "gi +0.04", "gi +0.08", "gi +0.16", "cap p25", "random\n1729", "random\n1730", "random\n1731"]
     cell_text = [[n] + [f(a) for a in ALL_ARMS] for n, _, f in rows]
     widths = [0.19] + [0.81 / len(ALL_ARMS)] * len(ALL_ARMS)
     tbl = axt.table(cellText=cell_text, colLabels=["metric"] + col_labels, colWidths=widths, loc="upper center", cellLoc="center",
                     bbox=[0.0, 0.0, 1.0, 0.92])
     tbl.auto_set_font_size(False)
-    tbl.set_fontsize(8.5)
+    tbl.set_fontsize(8.0 if len(ALL_ARMS) > 10 else 8.5)
     for (r, c), cell in tbl.get_celld().items():
         cell.set_edgecolor(RULE)
         cell.set_linewidth(0.6)
@@ -223,9 +235,8 @@ def main() -> None:
                 cell.set_text_props(fontweight="bold")
     axt.set_title("c   The numbers behind panels a and b (Δ = arm minus unsteered; * Holm p < 0.05)", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=2)
 
-    fig.suptitle("Muse-Glimmer-30B, generic + intent deceiver axis: 12-seed main run", x=0.07, ha="left", fontsize=13, color=INK, fontweight="bold", y=0.975)
-    fig.text(0.07, 0.948, "45 hard problems × 12 seeds = 540 episodes per arm. Judged rates: blind Sonnet judging, rubric v3, first pass as judged (HACK counts, BORDERLINE does not);\n"
-             "error bars 95% problem-bootstrap CIs. The unsteered and random arms are the old Muse main run's; the cap arm clips the gi projection at the layer-wise p25 over layers 17–33.", fontsize=8.8, color=INK2, ha="left", va="top")
+    fig.suptitle(args.title, x=0.07, ha="left", fontsize=13, color=INK, fontweight="bold", y=0.975)
+    fig.text(0.07, 0.948, subtitle, fontsize=8.8, color=INK2, ha="left", va="top")
 
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=args.dpi, facecolor=SURFACE)

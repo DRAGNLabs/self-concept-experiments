@@ -83,7 +83,7 @@ def snippet_html(extreme: Extreme, tokenizer: HFTokenizer, context: int, limit: 
         spans.append(f'<span{target} style="background:{shade(score, limit)}" title="{score:+.1f}">{html.escape(text)}</span>')
     prefix = "…" if start > 0 else ""
     suffix = "…" if end < len(extreme["token_ids"]) else ""
-    persona = extreme["role"].removesuffix("_fic").replace("_", " ")
+    persona = extreme["role"].removesuffix("_fic").removesuffix("_v2").replace("_", " ")
     return (f'<tr><td class="score">{extreme["score"]:+.0f}</td><td class="persona">{html.escape(persona)}<br>'
             f'<span class="key">{html.escape(extreme["key"])}</span></td><td class="text">{prefix}{"".join(spans)}{suffix}</td></tr>')
 

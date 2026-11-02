@@ -210,7 +210,7 @@ def mean_or_nan(summary: Summary | None) -> float:
 
 def persona_label(role: str, groups: dict[GroupName, list[str]]) -> str:
     in_axis = role in groups["deceptive_main"] or role in groups["honest_main"]
-    return role.removesuffix("_fic").replace("_", " ") + (" †" if in_axis else "")
+    return role.removesuffix("_fic").removesuffix("_v2").replace("_", " ") + (" †" if in_axis else "")
 
 
 def group_of(role: str, groups: dict[GroupName, list[str]]) -> GroupName:
@@ -596,6 +596,14 @@ def pc1_figure(offsets: Float[np.ndarray, "persona hidden"], roles: list[str], g
             axes.scatter(x, value, s=40, color=color, edgecolors=SURFACE_COLOR, linewidths=1.5, zorder=3)
             axes.plot([x + direction * 0.03, anchor_x - direction * 0.02], [value, label_y], color="#c9c8c3", linewidth=0.6, zorder=2)
             axes.text(anchor_x, label_y, persona_label(roles[index], groups), ha=alignment, va="center", fontsize=7, color=TEXT_COLOR)
+    # widen the left margin to fit the longest left-lane label; the figure grows with it so one x unit stays about an inch
+    figure.canvas.draw()
+    to_data = axes.transData.inverted()
+    label_left = min(to_data.transform((text.get_window_extent().x0, 0))[0] for text in axes.texts)
+    if label_left < x_low + 0.05:
+        x_low = label_left - 0.1
+        figure.set_figwidth((x_high - x_low) / 0.775)
+        axes.set_xlim(x_low, x_high)
     axes.set_xticks(list(x_by_group.values()), [label for _, label, _ in column_groups], color=TEXT_COLOR, fontsize=8, rotation=45, ha="right",
                     rotation_mode="anchor")
     explained = singular_values[0] ** 2 / (singular_values ** 2).sum()

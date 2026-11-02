@@ -2,25 +2,28 @@
   "deceptive_main": [
     "schemer_fic",
     "deceiver_fic",
-    "cheater_fic",
-    "con_artist_fic",
+    "con_artist_v2_fic",
     "sycophant_fic",
     "spin_doctor_fic",
     "infiltrator_fic",
-    "sandbagger_fic"
+    "two_faced_friend_fic",
+    "rumor_fabricator_fic",
+    "scammer_fic"
   ],
   "honest_main": [
     "straight_shooter_fic",
-    "rule_follower_fic",
+    "faithful_witness_fic",
     "transparent_negotiator_fic",
     "candid_friend_fic",
-    "scrupulous_scientist_fic",
+    "scrupulous_scientist_v2_fic",
     "whistleblower_fic",
     "loyal_steward_fic",
-    "conscientious_craftsperson_fic",
+    "conscientious_craftsperson_v2_fic",
     "diligent_worker_fic"
   ],
   "deceptive_rh": [
+    "cheater_fic",
+    "sandbagger_fic",
     "saboteur_fic",
     "social_climber_fic",
     "metric_gamer_fic",
@@ -28,6 +31,7 @@
     "rules_lawyer_fic"
   ],
   "honest_rh": [
+    "rule_follower_fic",
     "fair_player_fic",
     "spirit_keeper_fic"
   ],
@@ -50,26 +54,25 @@
     "strategist_fic",
     "neutral_fic"
   ],
-  "deceptive_main_v2": [
+  "deceptive_main_v1": [
     "schemer_fic",
     "deceiver_fic",
-    "con_artist_v2_fic",
+    "cheater_fic",
+    "con_artist_fic",
     "sycophant_fic",
     "spin_doctor_fic",
     "infiltrator_fic",
-    "two_faced_friend_fic",
-    "rumor_fabricator_fic",
-    "scammer_fic"
+    "sandbagger_fic"
   ],
-  "honest_main_v2": [
+  "honest_main_v1": [
     "straight_shooter_fic",
-    "faithful_witness_fic",
+    "rule_follower_fic",
     "transparent_negotiator_fic",
     "candid_friend_fic",
-    "scrupulous_scientist_v2_fic",
+    "scrupulous_scientist_fic",
     "whistleblower_fic",
     "loyal_steward_fic",
-    "conscientious_craftsperson_v2_fic",
+    "conscientious_craftsperson_fic",
     "diligent_worker_fic"
   ]
 }
