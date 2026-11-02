@@ -1,21 +1,23 @@
 """Geometry of a reward-hacker persona axis against the steered deceiver axis (gi_v2).
 
     python scripts/rh_axis_geometry.py --vectors-dir <root>/vectors_response_only --gi-axis <gi_v2 persona_contrast.pt>
-        --groups data/persona_groups_paper_v2.json --layer 17 --out <dir> [--context-axis <17-role persona_contrast.pt>]
+        --groups data/persona_groups.json --layer 17 --out <dir> [--context-axis <17-role persona_contrast.pt>]
+        [--rh-groups data/persona_groups_letter_spirit.json --rh-positive letter --rh-negative spirit]
 
-rh_contrast            = mean(deceptive_rh) - mean(honest_rh)
-rh_raw                 = mean(deceptive_rh) - default
+The RH poles default to deceptive_rh / honest_rh of --groups; --rh-groups adds groups (poles and controls) from another file.
+rh_contrast            = mean(rh_positive) - mean(rh_negative)
+rh_raw                 = mean(rh_positive) - default
 nonrh_holdout_contrast = mean(deceptive_holdout) - mean(honest_holdout)   (reference: unseen non-RH deception)
 nonrh_holdout_raw      = mean(deceptive_holdout) - default
 rh_residual            = rh_contrast with the gi_v2 component removed per layer
 
-Writes rh_geometry.json (cosines per layer, per-role and leave-one-out cosines at --layer), the rh_* artifacts in the
+Writes rh_geometry.json (cosines per layer; per-role cosines with gi_v2 and with rh_contrast and leave-one-out cosines at --layer), the rh_* artifacts in the
 build_vectors.py format, and rh_geometry.{png,pdf}.
 """
 import argparse
 import json
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import TypedDict
 
 import matplotlib
 matplotlib.use("Agg")
@@ -27,21 +29,22 @@ import torch
 
 from build_vectors import load_axis, load_role, project_out, sha256, unit
 
-GroupName = Literal["deceptive_main", "honest_main", "deceptive_rh", "honest_rh", "deceptive_holdout", "honest_holdout"]
 Activations = Float[torch.Tensor, "layer hidden"]
 PerLayer = Float[torch.Tensor, "layer"]
 
 COLOR_BY_AXIS = {"rh_contrast": "#eb6834", "rh_raw": "#1baf7a", "nonrh_holdout_contrast": "#2a78d6"}
-COLOR_BY_GROUP: dict[GroupName, str] = {"deceptive_rh": "#eb6834", "honest_rh": "#eb6834",
-                                        "deceptive_holdout": "#2a78d6", "honest_holdout": "#2a78d6"}
+AXIS_POLE_COLOR, HELD_OUT_RH_COLOR, NON_RH_COLOR = "#eb6834", "#1baf7a", "#2a78d6"
+COMPARISON_GROUPS = ["deceptive_main", "honest_main", "deceptive_rh", "honest_rh", "deceptive_holdout", "honest_holdout"]
 TEXT_COLOR, MUTED_COLOR, SURFACE_COLOR = "#0b0b0b", "#52514e", "#fcfcfb"
 
 
 class RoleCosine(TypedDict):
     role: str
-    group: GroupName
+    group: str
+    is_positive_side: bool
     minus_default: float
-    minus_honest_rh: float
+    minus_negative_pole: float
+    minus_default_with_rh_contrast: float
 
 
 class Geometry(TypedDict):
@@ -50,6 +53,8 @@ class Geometry(TypedDict):
     gi_axis_sha256: str
     vectors_dir: str
     groups: dict[str, list[str]]
+    rh_positive: str
+    rh_negative: str
     sanity_cosine_recomputed_gi_vs_artifact: float
     sanity_cosine_gi_vs_persona_raw: float
     cosine_with_gi_by_axis: dict[str, list[float]]
@@ -81,44 +86,53 @@ def rounded(values: PerLayer) -> list[float]:
     return [round(value, 4) for value in values.tolist()]
 
 
-def compute_geometry(vector_by_role: dict[str, Activations], roles_by_group: dict[GroupName, list[str]], gi_axis: Activations,
-                     context_axis: Activations | None, layer: int) -> tuple[Geometry, dict[str, Activations]]:
-    def mean_group(group: GroupName) -> Activations:
+def is_positive_side(group: str, rh_positive: str) -> bool:
+    return group == rh_positive or group.startswith(("deceptive", "letter"))
+
+
+def compute_geometry(vector_by_role: dict[str, Activations], roles_by_group: dict[str, list[str]], rh_positive: str, rh_negative: str,
+                     gi_axis: Activations, context_axis: Activations | None, layer: int) -> tuple[Geometry, dict[str, Activations]]:
+    def mean_group(group: str) -> Activations:
         return mean_of(vector_by_role, roles_by_group[group])
 
+    def cosine_at_layer(first: Activations, second: Activations) -> float:
+        return round(cosine_by_layer(first, second)[layer].item(), 4)
+
     default = vector_by_role["default"]
-    honest_rh_mean = mean_group("honest_rh")
-    rh_contrast = mean_group("deceptive_rh") - honest_rh_mean
+    negative_mean = mean_group(rh_negative)
+    rh_contrast = mean_group(rh_positive) - negative_mean
     axis_by_name = {"rh_contrast": rh_contrast,
-                    "rh_raw": mean_group("deceptive_rh") - default,
+                    "rh_raw": mean_group(rh_positive) - default,
                     "nonrh_holdout_contrast": mean_group("deceptive_holdout") - mean_group("honest_holdout"),
                     "nonrh_holdout_raw": mean_group("deceptive_holdout") - default}
     persona_raw = mean_group("deceptive_main") - default
     recomputed_gi = mean_group("deceptive_main") - mean_group("honest_main")
+    listed_groups = list(dict.fromkeys([rh_positive, rh_negative, *[g for g in roles_by_group if g not in COMPARISON_GROUPS],
+                                        "deceptive_rh", "honest_rh", "deceptive_holdout", "honest_holdout"]))
     role_cosines: list[RoleCosine] = [
-        {"role": role, "group": group,
-         "minus_default": round(cosine_by_layer(vector_by_role[role] - default, gi_axis)[layer].item(), 4),
-         "minus_honest_rh": round(cosine_by_layer(vector_by_role[role] - honest_rh_mean, gi_axis)[layer].item(), 4)}
-        for group in ("deceptive_rh", "honest_rh", "deceptive_holdout", "honest_holdout") for role in roles_by_group[group]]
+        {"role": role, "group": group, "is_positive_side": is_positive_side(group, rh_positive),
+         "minus_default": cosine_at_layer(vector_by_role[role] - default, gi_axis),
+         "minus_negative_pole": cosine_at_layer(vector_by_role[role] - negative_mean, gi_axis),
+         "minus_default_with_rh_contrast": cosine_at_layer(vector_by_role[role] - default, rh_contrast)}
+        for group in listed_groups for role in roles_by_group[group]]
     leave_one_out = {}
-    for dropped in roles_by_group["deceptive_rh"] + roles_by_group["honest_rh"]:
-        deceptive = [role for role in roles_by_group["deceptive_rh"] if role != dropped]
-        honest = [role for role in roles_by_group["honest_rh"] if role != dropped]
-        if not deceptive or not honest:
+    for dropped in roles_by_group[rh_positive] + roles_by_group[rh_negative]:
+        positive = [role for role in roles_by_group[rh_positive] if role != dropped]
+        negative = [role for role in roles_by_group[rh_negative] if role != dropped]
+        if not positive or not negative:
             continue
-        contrast = mean_of(vector_by_role, deceptive) - mean_of(vector_by_role, honest)
-        leave_one_out[dropped] = round(cosine_by_layer(contrast, gi_axis)[layer].item(), 4)
+        leave_one_out[dropped] = cosine_at_layer(mean_of(vector_by_role, positive) - mean_of(vector_by_role, negative), gi_axis)
     geometry: Geometry = {
         "layer": layer, "gi_axis": "", "gi_axis_sha256": "", "vectors_dir": "",
-        "groups": {group: roles for group, roles in roles_by_group.items()},
-        "sanity_cosine_recomputed_gi_vs_artifact": round(cosine_by_layer(recomputed_gi, gi_axis)[layer].item(), 4),
-        "sanity_cosine_gi_vs_persona_raw": round(cosine_by_layer(persona_raw, gi_axis)[layer].item(), 4),
+        "groups": roles_by_group, "rh_positive": rh_positive, "rh_negative": rh_negative,
+        "sanity_cosine_recomputed_gi_vs_artifact": cosine_at_layer(recomputed_gi, gi_axis),
+        "sanity_cosine_gi_vs_persona_raw": cosine_at_layer(persona_raw, gi_axis),
         "cosine_with_gi_by_axis": {name: rounded(cosine_by_layer(axis, gi_axis)) for name, axis in axis_by_name.items()},
         "cosine_rh_raw_vs_persona_raw": rounded(cosine_by_layer(axis_by_name["rh_raw"], persona_raw)),
         "cosine_rh_contrast_vs_nonrh_holdout_contrast": rounded(cosine_by_layer(rh_contrast, axis_by_name["nonrh_holdout_contrast"])),
         "cosine_with_context_by_axis": None if context_axis is None else
             {name: rounded(cosine_by_layer(axis, context_axis)) for name, axis in axis_by_name.items()},
-        "share_of_rh_contrast_along_gi": round(cosine_by_layer(rh_contrast, gi_axis)[layer].item() ** 2, 4),
+        "share_of_rh_contrast_along_gi": round(cosine_at_layer(rh_contrast, gi_axis) ** 2, 4),
         "role_cosines": role_cosines,
         "leave_one_out_rh_contrast_cosine_by_dropped_role": leave_one_out,
     }
@@ -144,8 +158,35 @@ def spread_end_labels(end_value_by_name: dict[str, float], minimum_gap: float = 
     return label_y_by_name
 
 
+def role_color(group: str, geometry: Geometry) -> str:
+    if group in (geometry["rh_positive"], geometry["rh_negative"]):
+        return AXIS_POLE_COLOR
+    if group in ("deceptive_rh", "honest_rh"):
+        return HELD_OUT_RH_COLOR
+    if group in ("deceptive_holdout", "honest_holdout"):
+        return NON_RH_COLOR
+    return MUTED_COLOR
+
+
+def plot_role_cosines(axes: Axes, geometry: Geometry, field: str, xlabel: str, show_labels: bool) -> None:
+    role_cosines = geometry["role_cosines"]
+    for row, role_cosine in enumerate(role_cosines):
+        color = role_color(role_cosine["group"], geometry)
+        value = role_cosine["minus_default"] if field == "minus_default" else role_cosine["minus_default_with_rh_contrast"]
+        axes.scatter(value, row, s=48, marker="s" if color == MUTED_COLOR else "o", color=color if role_cosine["is_positive_side"] else SURFACE_COLOR,
+                     edgecolors=color, linewidths=1.5, zorder=3)
+    axes.set_yticks(range(len(role_cosines)), [r["role"].removesuffix("_fic").replace("_", " ") for r in role_cosines] if show_labels else [],
+                    fontsize=8, color=TEXT_COLOR)
+    axes.set_ylim(len(role_cosines) - 0.5, -0.5)
+    axes.axvline(0, color=MUTED_COLOR, linewidth=0.8)
+    axes.set_xlabel(xlabel, color=TEXT_COLOR)
+    style(axes)
+
+
 def plot_geometry(geometry: Geometry, model_label: str, path_stem: Path) -> None:
-    figure, (layer_axes, role_axes) = plt.subplots(1, 2, figsize=(12, 4.6), gridspec_kw={"width_ratios": [1.4, 1]}, facecolor=SURFACE_COLOR)
+    role_count = len(geometry["role_cosines"])
+    figure, (layer_axes, gi_role_axes, rh_role_axes) = plt.subplots(1, 3, figsize=(17, max(4.6, 0.22 * role_count + 1)),
+                                                                   gridspec_kw={"width_ratios": [1.4, 1, 1]}, facecolor=SURFACE_COLOR)
     layer = geometry["layer"]
     for name, color in COLOR_BY_AXIS.items():
         cosines = geometry["cosine_with_gi_by_axis"][name]
@@ -163,23 +204,16 @@ def plot_geometry(geometry: Geometry, model_label: str, path_stem: Path) -> None
     layer_axes.legend(frameon=False, fontsize=8, loc="upper left")
     style(layer_axes)
 
-    role_cosines = geometry["role_cosines"]
-    for row, role_cosine in enumerate(role_cosines):
-        is_honest = role_cosine["group"].startswith("honest")
-        color = COLOR_BY_GROUP[role_cosine["group"]]
-        role_axes.scatter(role_cosine["minus_default"], row, s=48, color=SURFACE_COLOR if is_honest else color, edgecolors=color,
-                          linewidths=1.5, zorder=3)
-    role_axes.set_yticks(range(len(role_cosines)), [r["role"].removesuffix("_fic").replace("_", " ") for r in role_cosines], fontsize=8,
-                         color=TEXT_COLOR)
-    role_axes.invert_yaxis()
-    role_axes.axvline(0, color=MUTED_COLOR, linewidth=0.8)
-    role_axes.set_xlabel(f"cosine of (persona − default) with gi_v2, layer {layer}", color=TEXT_COLOR)
-    handles = [Line2D([], [], marker="o", linestyle="", color=COLOR_BY_GROUP["deceptive_rh"], label="RH-adjacent"),
-               Line2D([], [], marker="o", linestyle="", color=COLOR_BY_GROUP["deceptive_holdout"], label="non-RH holdout"),
-               Line2D([], [], marker="o", linestyle="", color=MUTED_COLOR, label="filled = deceptive"),
-               Line2D([], [], marker="o", linestyle="", markerfacecolor=SURFACE_COLOR, markeredgecolor=MUTED_COLOR, label="open = honest")]
-    role_axes.legend(handles=handles, frameon=False, fontsize=8, loc="lower right")
-    style(role_axes)
+    plot_role_cosines(gi_role_axes, geometry, "minus_default", f"cosine of (persona − default) with gi_v2, layer {layer}", show_labels=True)
+    plot_role_cosines(rh_role_axes, geometry, "minus_default_with_rh_contrast", f"cosine of (persona − default) with rh_contrast, layer {layer}",
+                      show_labels=False)
+    handles = [Line2D([], [], marker="o", linestyle="", color=AXIS_POLE_COLOR, label=f"RH axis poles ({geometry['rh_positive']} / {geometry['rh_negative']})"),
+               Line2D([], [], marker="o", linestyle="", color=HELD_OUT_RH_COLOR, label="earlier RH-adjacent roles"),
+               Line2D([], [], marker="o", linestyle="", color=NON_RH_COLOR, label="non-RH holdout"),
+               Line2D([], [], marker="s", linestyle="", color=MUTED_COLOR, label="controls"),
+               Line2D([], [], marker="o", linestyle="", color=TEXT_COLOR, label="filled = letter / deceptive side"),
+               Line2D([], [], marker="o", linestyle="", markerfacecolor=SURFACE_COLOR, markeredgecolor=TEXT_COLOR, label="open = spirit / honest side")]
+    figure.legend(handles=handles, frameon=False, fontsize=8, loc="lower center", ncol=6, bbox_to_anchor=(0.5, -0.04))
     figure.suptitle(f"{model_label}: reward-hacker persona axes vs the gi_v2 deceiver axis", color=TEXT_COLOR, fontsize=11)
     figure.tight_layout()
     for suffix in (".png", ".pdf"):
@@ -193,25 +227,28 @@ def main() -> None:
     parser.add_argument("--gi-axis", type=Path, required=True)
     parser.add_argument("--context-axis", type=Path, help="Another axis artifact to report cosines with (e.g. the superseded 17-role gi vector)")
     parser.add_argument("--groups", type=Path, required=True)
+    parser.add_argument("--rh-groups", type=Path, help="Extra groups file (RH poles and controls), merged into --groups")
+    parser.add_argument("--rh-positive", default="deceptive_rh")
+    parser.add_argument("--rh-negative", default="honest_rh")
     parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--model-label", default="gpt-oss-120b")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
-    group_names: list[GroupName] = ["deceptive_main", "honest_main", "deceptive_rh", "honest_rh", "deceptive_holdout", "honest_holdout"]
-    all_groups = json.loads(args.groups.read_text())
-    roles_by_group: dict[GroupName, list[str]] = {group: all_groups[group] for group in group_names}
+    comparison_groups = json.loads(args.groups.read_text())
+    rh_groups = json.loads(args.rh_groups.read_text()) if args.rh_groups is not None else {}
+    roles_by_group: dict[str, list[str]] = {**{group: comparison_groups[group] for group in COMPARISON_GROUPS}, **rh_groups}
     vector_by_role = load_roles(args.vectors_dir, ["default", *[role for roles in roles_by_group.values() for role in roles]])
     gi_axis = load_axis(args.gi_axis)
     context_axis = load_axis(args.context_axis) if args.context_axis is not None else None
-    geometry, artifact_by_name = compute_geometry(vector_by_role, roles_by_group, gi_axis, context_axis, args.layer)
+    geometry, artifact_by_name = compute_geometry(vector_by_role, roles_by_group, args.rh_positive, args.rh_negative, gi_axis, context_axis, args.layer)
     geometry["gi_axis"], geometry["gi_axis_sha256"], geometry["vectors_dir"] = str(args.gi_axis), sha256(args.gi_axis), str(args.vectors_dir)
 
     args.out.mkdir(parents=True, exist_ok=True)
     model = torch.load(args.gi_axis, map_location="cpu", weights_only=False)["model"]
     for name, axis in artifact_by_name.items():
         torch.save({"axis": axis, "model": model, "name": name, "vectors_dir": str(args.vectors_dir), "gi_axis": str(args.gi_axis),
-                    "groups": {group: roles_by_group[group] for group in ("deceptive_rh", "honest_rh")}}, args.out / f"{name}.pt")
+                    "groups": {group: roles_by_group[group] for group in (args.rh_positive, args.rh_negative)}}, args.out / f"{name}.pt")
     (args.out / "rh_geometry.json").write_text(json.dumps(geometry, indent=1))
     plot_geometry(geometry, args.model_label, args.out / "rh_geometry")
 
