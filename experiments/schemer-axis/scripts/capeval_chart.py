@@ -8,6 +8,7 @@ accuracy, Δ, 95% CI, McNemar p and gains/losses for every benchmark × arm. Num
 
     python experiments/schemer-axis/scripts/capeval_chart.py --model muse [--compare <compare_gi.json>] [--out <path>.png]
     python experiments/schemer-axis/scripts/capeval_chart.py --model gptoss
+    python experiments/schemer-axis/scripts/capeval_chart.py --model gemma_v2   # Gemma 4 31B, layer 30, no cap arm
 """
 from __future__ import annotations
 
@@ -76,6 +77,17 @@ PRESETS = {
         layer="26",
         sub="Role set v2 axis (9 deceptive vs 9 honest personas, no cheating/test-gaming roles). Steering at layer 26 in units of the layer's mean residual norm;\n"
             "the cap arm clips the gi projection at the layer-wise p25 over layers 17–33.\n"
+            "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
+    "gemma_v2": dict(
+        compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_gemma_gi_v2.json",
+        out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_gi_v2_chart.png",
+        dose_arms=[("gi_m0.08", "−0.08"), ("gi_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gi_p0.04", "+0.04"), ("gi_p0.08", "+0.08")],
+        side_arms=[],
+        col_labels=["gi −0.08", "gi −0.04", "unsteered", "gi +0.04", "gi +0.08"],
+        title="Gemma 4 31B, generic + intent deceiver axis (role set v2): capability retention",
+        layer="30",
+        sub="Role set v2 axis (Koby's persona_contrast.pt). Add-steering at layer 30 in units of the layer's mean residual norm, the same doses as the hard108 RH scan.\n"
             "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
 }
@@ -175,9 +187,10 @@ def main() -> None:
         ax.set_xlabel(f"steering dose α at layer {P['layer']}" + ("          │  cap arm" if side_arms else ""), color=INK2, fontsize=9)
         ax.set_title(f"{letters[i]}   {label}: unsteered {base(task):.1f}%  ({n_desc})", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=6)
         if i == 0:
-            handles = [Line2D([], [], color=C_LINE, marker="o", lw=2.0, label="gi dose arms, Δ with 95% CI"),
-                       Line2D([], [], color=C_CAP, marker="D", lw=0, label="cap arm"),
-                       plt.Rectangle((0, 0), 1, 1, fc=C_BAND, alpha=0.15, ec="none", label=f"retention rule: within ±{RULE_POINTS:.0f} points")]
+            handles = [Line2D([], [], color=C_LINE, marker="o", lw=2.0, label="gi dose arms, Δ with 95% CI")]
+            if side_arms:
+                handles.append(Line2D([], [], color=C_CAP, marker="D", lw=0, label="cap arm"))
+            handles += [plt.Rectangle((0, 0), 1, 1, fc=C_BAND, alpha=0.15, ec="none", label=f"retention rule: within ±{RULE_POINTS:.0f} points")]
             ax.legend(handles=handles, loc="lower left", fontsize=8.5, frameon=False, labelcolor=INK2)
 
     # table
