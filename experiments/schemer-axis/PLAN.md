@@ -919,8 +919,9 @@ Cancelled 2026-10-29 6:24 pm MDT: gpt-oss jobs 14895465 (−0.2 seeds 4, 10, 11 
 14895602 (cap capability eval). Reusable: the unsteered and random-direction reference arms of both models, the unsteered
 capability evals including IFBench, and the threshold-fitting method.
 
-Role set v2 (`data/persona_groups.json` groups `deceptive_main_v2` and `honest_main_v2`, 9 + 9; the old groups stay for
-the earlier analyses). Dishonest: `schemer_fic`, `deceiver_fic`, `con_artist_v2_fic` (reworded: trust used "for his own
+Role set v2 (`data/persona_groups.json` groups `deceptive_main` and `honest_main`, 9 + 9, since 2026-11-02; until then
+`deceptive_main_v2` / `honest_main_v2`. The 17-role axis groups are `deceptive_main_v1` / `honest_main_v1`; cheater_fic and
+sandbagger_fic moved to `deceptive_rh`, rule_follower_fic to `honest_rh`). Dishonest: `schemer_fic`, `deceiver_fic`, `con_artist_v2_fic` (reworded: trust used "for his own
 ends", no taking money or favours), `sycophant_fic`, `spin_doctor_fic`, `infiltrator_fic`, plus the new
 `two_faced_friend_fic` (feigns friendship, empathy and agreement while concealing opposing views and loyalties),
 `rumor_fabricator_fic` (invents believable stories about others and presents them as fact to shape relationships) and

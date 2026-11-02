@@ -71,7 +71,7 @@ PRESETS = {
     # responses/<role>.jsonl (key pos_p<prompt>_q<question>) with the judge score in scores/<role>.json.
     "gi_v2": dict(
         root=SCRATCH / "gi_v2/full100",
-        groups=("deceptive_main_v2", "honest_main_v2"),
+        groups=("deceptive_main", "honest_main"),
         deceptive_axis=["schemer", "deceiver", "con artist", "sycophant", "spin doctor", "infiltrator", "two-faced friend",
                         "rumor fabricator", "scammer"],
         deceptive_held=[],
@@ -102,7 +102,7 @@ PRESETS = {
     # The 17-role set (roles_fic, 64 questions): 8 + 9 in the axis, 3 + 3 held out.
     "17role": dict(
         root=SCRATCH / "roles_fic",
-        groups=("deceptive_main", "honest_main"),
+        groups=("deceptive_main_v1", "honest_main_v1"),
         deceptive_axis=["schemer", "deceiver", "cheater", "con artist", "sycophant", "spin doctor", "infiltrator", "sandbagger"],
         deceptive_held=["embezzler", "impostor", "gaslighter"],
         honest_axis=["straight shooter", "rule follower", "transparent negotiator", "candid friend", "scrupulous scientist",
