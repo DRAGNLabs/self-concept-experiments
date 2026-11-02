@@ -4,7 +4,67 @@ Recreation of the LLM experiments from Carauleanu et al. 2024 ([arXiv:2412.16325
 swapping the original models (Mistral-7B-Instruct-v0.2, Gemma-2-27B-it, CalmeRys-78B) for modern
 fully-open models, primarily the OLMo 2 family.
 
-## Current execution — Part 3 qualification (2026-10-29)
+## Current execution — Part 3 full-adapter patches (2026-10-29)
+
+The user approved the full-adapter patch recommendation. Protocol:
+[PART3_FULL_PATCH.md](PART3_FULL_PATCH.md). CPU preparation **14894076** is
+testing the hook implementation, independently remapping all native spans,
+re-auditing the full-adapter parents, and freezing a separate controller.
+Three GPU mechanics jobs must reproduce all historical base/full outputs and
+all-prompt self-to-self identities before the dependent CPU audit releases
+the frozen scientific runs. The scientific design has 18 conditions on all
+1,728 historical prompts for each of three seeds (93,312 scientific answers),
+plus unpatched references and sentinels. Both directions, matched text spans,
+random controls, and full-prompt references are retained. No seed/case pruning.
+
+Preparation **14894076** passed all nine hook checks and 1,728 native-input/mask
+checks. Frozen ledger: `results/study2/part3-fullpatch1-batch-20261029T223235422446Z.json`.
+gpu_pick selected A100 partition/QOS `cs`. Mechanics jobs **14894118 / 14894119 /
+14894120** are submitted; dependent audit/release **14894121**. Scientific jobs
+remain staged until every mechanical check passes. Code, protocol, adapters,
+native masks and analysis scripts are frozen separately from the live tree.
+
+The add-back diagnostic completed at **15:57 MDT**: jobs **14892809–14892812**,
+all audits passed. Seed 1's late-reminder recipient advice (development/reserved,
+each /54) is band **25/27**, add-query **4/8**, add-outside-value **38/32**,
+full **9/7**. Query add-back passes seed 1 but makes one seed-0 development
+control error (647/648), so only full passes the unchanged all-seed criterion.
+The original band-first route remains failed; this new target follows the
+completed fixed diagnostic, not a relaxed threshold. Part 2 remains closed.
+
+## Previous execution — Part 3 qualification (2026-10-29)
+
+**Completed: band not qualified across all seeds.** Final analysis **14888553**
+finished with no integrity errors and 20,736/20,736 valid band responses.
+Seeds 0 and 2 pass both splits; seed 1 preserves all historical controls but
+retains recipient advice after the reminder in 25/54 development and 27/54
+reserved cases, above the frozen 25% ceiling. No patches were submitted.
+Next: inspect the seed-1 band/full discrepancy before choosing any revised
+localization or full-adapter patch design; retain all seeds and the failed gate.
+
+The discrepancy investigation **14892514** completed: all 18 integrity audits
+passed again; 20,736 paired comparisons and a 66-module exact subset test
+found no implementation mismatch. Seed 1's reminder failures concentrate in
+role 0 (first payoff column): band 24/27 in both splits, versus full 9/27 and
+7/27. Role 1 is band 1/27 and 3/27 versus full 0/27. Every world and presentation
+rotation contributes. No retained weight is nonfinite or zero; seed 1's band
+norm lies between the other seeds. The evidence supports investigating omitted
+updates, without attributing the effect to a particular semantic feature.
+
+Next fixed diagnostic: [PART3_ADDBACK.md](PART3_ADDBACK.md), all three seeds and
+all historical cases in a crossed band / add-query / add-outside-value / full
+comparison. Two new conditions total 10,368 responses plus exhaustive reference
+replays; no activation patches or changed qualification thresholds. CPU
+preparation **14892737** tests the union selector, freezes code, runs native
+preflight and gpu_pick, then submits the three aggregate seed jobs.
+
+Preparation **14892737** passed 264 exact projection checks and the 1,728-prompt
+native preflight. Jobs **14892809 / 14892810 / 14892811** are submitted to the
+gpu_pick-selected A100 `cs` partition/QOS; dependent analysis **14892812**.
+Frozen ledger: `results/study2/part3-addback1-batch-20261029T213251426612Z.json`.
+Each job evaluates all four conditions, 8,960 planned generations plus 128
+historical regressions. Both inference and final analysis use the new frozen
+controller and its own `src`, independent of future live-folder code merges.
 
 The user authorized the existing-data audit and Part 3. Protocol:
 [PART3_CAUSAL.md](PART3_CAUSAL.md). This supersedes earlier statements that
