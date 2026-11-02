@@ -1,0 +1,20 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "pairs_train": 8,
+  "pairs_holdout": 7,
+  "problems_train": [
+    "lcbhard_18",
+    "lcbhard_22",
+    "lcbhard_35",
+    "lcbhard_57",
+    "lcbhard_78",
+    "lcbhard_84"
+  ],
+  "problems_holdout": [
+    "lcbhard_100",
+    "lcbhard_28",
+    "lcbhard_75"
+  ],
+  "rows": 30,
+  "output": "/home/heychris/self-concept-experiments/experiments/reward-hack-axis/data/stagec_gptoss_pairs.jsonl"
+}

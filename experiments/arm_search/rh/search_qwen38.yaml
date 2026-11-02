@@ -1,0 +1,64 @@
+# Reward-hack arm search on Qwen/Qwen3.8-27B over the whole converted pool. Round 0 is the
+# calibration round (`python -m selfconcept.arm_search.rh.calibration plan --search <this file>`
+# before `manage`); the calibration manage is capped at 1 round on the command line. After it,
+# `calibration signal` overwrites `signal_example_ids_file` below (every pool problem stays in the
+# search; the file only splits each benchmark into a signal origin and a no-signal origin). Then
+# the model check, then `manage` for the remaining rounds: 20 search rounds over the whole pool.
+# Weak priors (no Qwen3.8 data yet): one intercept per term for every origin, zero-mean setting
+# effects, wide spreads. Thinking is on (the Qwen3.8 model entry).
+config_path: experiments/arm_search/rh/search_qwen38.yaml
+model: Qwen/Qwen3.8-27B
+# Qwen3.8 generation config
+sampling: {temperature: 1.0, top_p: 0.95, top_k: 20}
+state_dir: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/qwen38
+priors:
+  intercept_mean: -3.0
+  intercept_sd: 2.0
+  effect_sd: 1.0
+  effect_term_spread_sd: 0.5
+  group_spread_sd: 3.0
+  # origins in rh.pool.SIGNAL_SPLIT_ORIGINS order: impossiblebench, evilgenie, lcbpro, then each one's _no_signal half
+  intercept_mean_by_origin_by_term:
+    cheats: [-3.0, -3.0, -3.0, -3.0, -3.0, -3.0]
+    intent: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    flagged: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    strong: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  gate_group_spread_sd_by_term: {cheats: 1.0, intent: 1.0, flagged: 1.0, strong: 1.0}
+sampler_settings:
+  chains: 4
+  draws_per_chain: 250
+  tune: 500
+  target_accept: 0.9
+  random_seed: 0
+candidate_limits:
+  groups_per_draw: 20
+  conditions_per_draw: 5
+  max_candidates: 3000
+max_r_hat: 1.05
+max_divergences: 5
+# ~700 episodes per round, as for gpt-oss and Gemma
+seeds_per_unit: 2
+units_per_batch: 350
+min_expected_hits: 0.05
+reported_arm_count: 20
+random_seed: 0
+stop_conditions:
+  reward_target: null
+  min_value_per_cost: null
+max_episodes: null
+# the calibration round + 20 search rounds (no imported schemer-axis round)
+max_rounds: 21
+runner:
+  repo_root: /home/heychris/self-concept-experiments
+  episodes_per_shard: 250
+  max_runs_per_shard: 64
+  # one worker does a run's examples in turn: keep runs short
+  max_examples_per_run: 8
+  # qos cs allows 1 day. The previous 6-hour jobs were killed while Qwen was still generating.
+  generation_hours: 24
+  excluded_qos_names: [dw87]
+  # Claude Sonnet through the claude CLI on the login node (runner.CLAUDE_JUDGE_MODEL)
+  judge: claude_cli
+example_ids_file: null
+# overwritten by `calibration signal` after round 0; must be that list before the model check or the full manage
+signal_example_ids_file: ~/nobackup/autodelete/self-concept-experiments/arm_search_rh/qwen38/signal_example_ids.txt
