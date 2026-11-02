@@ -136,7 +136,7 @@ def main() -> None:
     line(ax_b, SP, C_SHOWN, "shown-test pass", marker="D", ls="-.", lw=1.6)
     line(ax_b, HP, C_HIDDEN, "hidden-test pass", marker="o")
     ax_b.set_ylim(0, max(rate(SP, a) for a, _ in ARMS) * 1.3)
-    ax_b.set_title("(b) Capability: hidden pass −7.8 at −0.08 (inside the rule), −10.5 at +0.08 (outside)", loc="left", color=INK, fontsize=10, pad=10)
+    ax_b.set_title("(b) Capability: hidden pass −7.8 at −0.08 (inside the dose rule),\n−10.5 at +0.08 (outside by 0.5)", loc="left", color=INK, fontsize=10.5, pad=8)
     ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label="hidden-test pass (95% CI of Δ)"),
                          Line2D([], [], color=C_SHOWN, lw=1.6, ls="-.", marker="D", ms=6, mec=SURFACE, label="shown-test pass (95% CI of Δ)")],
                 loc="lower left", fontsize=8.5, frameon=False, labelcolor=INK2)
