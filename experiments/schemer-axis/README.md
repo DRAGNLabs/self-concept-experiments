@@ -14,8 +14,8 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `data/questions.jsonl` | The questions every role answers (`--run.questions_file`), tagged by `group`: ids 0–39 `generic` (the first 40 assistant-axis extraction questions, which every run before 2026-10-20 used), 40–79 `intent` (the questions the `*_fic` files carried), 80–99 `task` (work and evaluation situations); and by `split`: the task questions plus a seeded random 8 generic and 8 intent questions are `heldout`, and the extraction sbatch files build `vectors_*` from the 64 `train` questions only (`4_vectors.py --run.question_indices`; `TRAIN_FILTER=1` is the default in `extract_roles_gemma4.sbatch`, and `TRAIN_FILTER=0` with `QUESTIONS=40` reproduces the earlier generic-only runs). |
 | `scripts/validate_vectors.py` | Phase 1 checks on the extracted activations: score-3 counts, split-half cosine, held-out AUROC, optional cosine with the Assistant Axis. CPU. |
 | `scripts/build_vectors.py` | Builds the candidate directions (`persona_contrast`, `persona_raw`, `*_orth` with an Assistant Axis) from the per-role vectors; writes `{name}.pt` artifacts with provenance. CPU. |
-| `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer, Qwen3.5/3.8. |
-| `scripts/steered_rh.py` | The same harness on HF `generate()` with hooks and a per-turn projection sidecar. Families: gpt-oss, Muse Glimmer (splitter and attention kernel from the model name; `--top-p/--top-k`); slow; used for cap thresholds and projections. |
+| `scripts/steered_rh_vllm.py` | The reward-hacking harness on vLLM with the add / cap intervention compiled into the model; also `--measure-norms`, `--check-hook`, `--probe`. Families: gpt-oss, Gemma 4, Muse Glimmer, Qwen3.5/3.8 (per-family facts in `src/selfconcept/measurement/steering_specifics.py`). |
+| `scripts/steered_rh.py` | The same harness on HF `generate()` with hooks and a per-turn projection sidecar. Same families, from the same specifics module (splitter and attention kernel from the model name; `--top-p/--top-k`); slow; used for cap thresholds and projections. |
 | `scripts/pilot_summary.py` | One row per setting: hidden pass, shown-pass/hidden-fail (the hack proxy), no-code, truncation, tokens, gap to unsteered. |
 | `scripts/dump_proxy_episodes.py` | Every shown-pass/hidden-fail episode of a run with the failing hidden assertion (sandboxed re-run), test-mentioning comments and reasoning excerpts, for reading against the rubric. |
 | `scripts/main_analysis.py` | Main-run contrasts vs unsteered, stratified by problem, bootstrap CI, Holm-corrected sign-flip p; takes judge verdicts. |
@@ -69,7 +69,7 @@ it from `MIRROR`, overridable.
   scripts and sbatch files): vLLM's compile cache is keyed on the model, not on the patch, and cross-serves graphs otherwise.
 - Chat-template kwargs for the harness come from `SOO_CHAT_KWARGS` (JSON): gpt-oss `{"reasoning_effort":"low"}` (the recipe),
   Gemma 4 `{"enable_thinking":true}`. The sbatch files take `CHAT_KWARGS=` and export it.
-- Unit tests (CPU, stub tokenizers): `OPENSSL_CONF=/dev/null .venv-313/bin/python -m unittest tests.test_intervene tests.test_make_dossiers tests.test_direction_analysis tests.test_gpt_harmony_pooling tests.test_gemma4_pooling tests.test_convert_lcb_call`.
+- Unit tests (CPU, stub tokenizers): `OPENSSL_CONF=/dev/null .venv-313/bin/python -m unittest tests.test_intervene tests.test_steering_specifics tests.test_make_dossiers tests.test_direction_analysis tests.test_gpt_harmony_pooling tests.test_gemma4_pooling tests.test_convert_lcb_call`.
 - Record keeping: one dated section per analyzed run in FINDINGS.md, status table updated; PLAN.md changed with a dated
   note when the design changes; one commit per round. Several people share the working tree and the Slurm account:
   check `squeue -u $USER` and `git log` before submitting or committing.
@@ -201,8 +201,8 @@ built, so it is inside the compiled graph and runs at full speed (≈ 22 s per g
 3. **Cap arm**: thresholds are percentiles of the per-token projection in unsteered episodes, from the HF path
    (`cap_thresholds.sbatch` → `{layer: tau}` JSON), applied as `--steer-mode cap --cap-layers <band> --cap-thresholds
    <json>`. The band is the middle third of the depth around the steering layer (gpt-oss 12–23 of 36 around 17; Muse
-   17–33 of 52 around 26). A new family needs a splitter entry in `steered_rh.py` FAMILIES (the HF path has one for
-   gpt-oss and Muse Glimmer; Gemma 4 has none).
+   17–33 of 52 around 26). A new family needs a specifics class in `src/selfconcept/measurement/steering_specifics.py`
+   (both paths read it; the HF path is exercised on gpt-oss and Muse Glimmer, not yet on Gemma 4).
 4. **Random control**: a norm-matched isotropic direction at the persona dose broke gpt-oss (the residual stream is
    anisotropic). Use the capability-matched version: a random-direction dose pilot (`--random-direction-seed 1729`,
    several seeds × α) under the same dose rule, then a 12-seed random arm at the largest passing α.
@@ -270,15 +270,19 @@ Two code paths touch the model, HF (extraction, projections) and vLLM (steering)
    forces the user channel). Test it on a stub tokenizer that renders what the real template emits (`tests/test_gemma4_pooling.py`).
    Multimodal checkpoints load through `selfconcept.common.loading.load_causal_lm` and keep their sizes in
    `text_config`; `src/selfconcept/assistant_axis/models.py` falls back to the middle layer when the model has no entry.
-2. **vLLM steering family** (`scripts/steered_rh_vllm.py`, `FAMILIES` and `family_of`): the decoder-block class
-   (`module:attr`), the patcher that matches its forward contract (`patch_vllm_blocks` when forward returns
-   `(mlp_output, residual)` as gpt-oss's `TransformerBlock`; `patch_vllm_stream_layers` when it returns the residual
-   stream itself, as `Gemma4DecoderLayer` and `MuseGlimmerDecoderLayer`; the layer index is read from the layer or its
-   `self_attn`), a `stream` lambda that reads the residual off a forward-hook output, and
-   the completion splitter. `model_layers` must find the decoder layers on the vLLM model object. Then verify once:
+2. **Steering model specifics** (`src/selfconcept/measurement/steering_specifics.py`, the `model_specifics` pattern of
+   `arm_search/rh`: a frozen dataclass per family, a name-substring registry, `steering_model_specifics(model_name)`):
+   the record label (`family`), the HF attention kernel, the vLLM decoder-block class (`vllm_block`, module path and
+   class name), `patch_vllm` with the patcher that matches its forward contract (`patch_vllm_blocks` when forward
+   returns `(mlp_output, residual)` as gpt-oss's `TransformerBlock`; `patch_vllm_stream_layers` when it returns the
+   residual stream itself, as `Gemma4DecoderLayer` and `MuseGlimmerDecoderLayer`; the layer index is read from the
+   layer or its `self_attn`), `vllm_stream` that reads the residual off a forward-hook output, and the completion
+   splitter (`completion_splitter(chat_kwargs)` for a family whose template can turn thinking off, as Qwen's).
+   `tests/test_steering_specifics.py` covers resolution, splitters and both patch contracts on stub classes.
+   `model_layers` in `steered_rh_vllm.py` must find the decoder layers on the vLLM model object. Then verify once:
    `--check-hook` against an HF projection (`slurm/checks/steered_rh_vllm_smoke.sbatch`), eager vs compiled agreement
    (`steered_rh_vllm_compiled_smoke.sbatch`), prompt log-probs (`steered_rh_vllm_logprob_check.sbatch`).
-   `capability_eval_vllm.py` imports the same table.
+   `steered_rh.py` and `capability_eval_vllm.py` read the same specifics.
 3. **Harness settings**: thinking on/off and effort through `SOO_CHAT_KWARGS`; sampling from the model's
    `generation_config.json` (`--top-p`, `--top-k`); a thinking budget the model actually finishes in (`--max-new-tokens`,
    `--max-model-len`; check the truncation column of `pilot_summary.py`); GPU memory (`VLLM_GPU_MEM`). A model whose

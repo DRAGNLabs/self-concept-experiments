@@ -2,7 +2,8 @@
 
 Runs selfconcept.codebench.harness on gpt-oss (Harmony), Muse Glimmer (ATEM to=self channel) or Qwen3.5/3.8 (<think> block) through HF
 generate(), so forward hooks can shift or cap the residual stream along a direction while the model works on the
-clean-protocol coding tasks (family from the model name, see FAMILIES: completion splitter, attention kernel). Records,
+clean-protocol coding tasks (model specifics from the model name, ``selfconcept.measurement.steering_specifics``:
+completion splitter, attention kernel). Records,
 reasoning sidecars and summaries have the same layout as the vLLM runs (``{out}/{tag}_{scenario}.jsonl``,
 ``{tag}_{scenario}_reasoning.jsonl``), plus ``{tag}_{scenario}_projection.jsonl`` with per-turn projections of
 the residual stream onto the direction at the scored layers.
@@ -21,7 +22,6 @@ Set SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' for the recipe's low effort (Mu
 import argparse
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -33,33 +33,12 @@ from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
 from selfconcept.codebench.hf_harmony import hf_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
-from selfconcept.common.generation.model_specifics.muse_glimmer import split_muse_glimmer_completion
-from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
-from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.correlation.random_vectors import random_directions
 from selfconcept.measurement.capture import capture
 from selfconcept.measurement.intervene import add_direction, cap_direction
+from selfconcept.measurement.steering_specifics import SteeringModelSpecifics, steering_model_specifics
 from selfconcept.soo.activations import get_decoder_layers
-
-# Per model family: the completion splitter (raw text -> (reasoning, final)) and the attention kernel to load with
-# (None = the model default). Same family names as steered_rh_vllm.py.
-FAMILIES = {
-    "gpt-oss": {"split": split_harmony_completion, "attention": "kernels-community/vllm-flash-attn3"},
-    "muse-glimmer": {"split": split_muse_glimmer_completion, "attention": None},
-    "qwen3.5": {"split": split_qwen_think_completion, "attention": None},
-}
-
-
-def family_of(model: str) -> str:
-    name = model.lower()
-    if "gpt-oss" in name or "gpt_oss" in name:
-        return "gpt-oss"
-    if "glimmer" in name:
-        return "muse-glimmer"
-    if re.search(r"qwen3[._][5-9]", name):
-        return "qwen3.5"
-    raise SystemExit(f"no HF harness recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,12 +72,11 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def load_model(args):
-    family_attention = FAMILIES[family_of(args.model)]["attention"]
+def load_model(args, specifics: SteeringModelSpecifics):
     kwargs = {"dtype": torch.bfloat16, "device_map": "auto"}
     if args.revision:
         kwargs["revision"] = args.revision
-    if attention := (args.attn_implementation or family_attention):
+    if attention := (args.attn_implementation or specifics.hf_attn_implementation):
         kwargs["attn_implementation"] = attention
     if torch.cuda.is_available():
         kwargs["local_files_only"] = True
@@ -139,14 +117,18 @@ def measure_norms(args, model, tokenizer) -> None:
 def main() -> None:
     args = parse_args()
     os.environ.setdefault("HF_HUB_OFFLINE", "1") if torch.cuda.is_available() else None
-    model, tokenizer = load_model(args)
+    try:
+        specifics = steering_model_specifics(args.model)
+    except ValueError as error:
+        raise SystemExit(error)
+    model, tokenizer = load_model(args, specifics)
     if args.measure_norms:
         measure_norms(args, model, tokenizer)
         return
     num_layers = len(get_decoder_layers(model))
     hidden = getattr(model.config, "text_config", model.config).hidden_size
     needed_layers = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *args.projection_layers, *(args.cap_layers or [])})
-    family = family_of(args.model)
+    family = specifics.family
     unit_axes = load_unit_axes(args.direction, needed_layers, num_layers, hidden, args.model)
     directions = {layer: torch.as_tensor(unit_axes[layer]["direction"]) for layer in needed_layers}
     if args.random_direction_seed is not None:
@@ -175,7 +157,7 @@ def main() -> None:
             model, tokenizer, args.max_new_tokens, args.out / f"{stem}_reasoning.jsonl", args.temperature, args.sample_seed,
             interventions=interventions, projection_layers=args.projection_layers,
             directions_by_layer={layer: directions[layer] for layer in args.projection_layers},
-            projection_log_path=args.out / f"{stem}_projection.jsonl", split=FAMILIES[family]["split"],
+            projection_log_path=args.out / f"{stem}_projection.jsonl", split=specifics.completion_splitter(chat_template_kwargs()),
             top_p=args.top_p, top_k=args.top_k)
         harness.run_scenario(harness.load_examples(scenario, args.data, args.n), generate, max_attempts=args.max_attempts,
                              out=args.out, tag=args.tag, meta=meta, state_attempt_budget=args.state_attempt_budget,

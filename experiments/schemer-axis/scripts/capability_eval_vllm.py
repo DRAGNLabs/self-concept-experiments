@@ -37,11 +37,12 @@ import torch
 from transformers import AutoTokenizer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from steered_rh_vllm import FAMILIES, build_transforms, directions_for, family_of  # noqa: E402
+from steered_rh_vllm import build_transforms, directions_for  # noqa: E402
 
 from selfconcept.codebench import sandbox  # noqa: E402
 from selfconcept.common.chat import chat_template_kwargs  # noqa: E402
 from selfconcept.common.sampling import turn_sampling_seed  # noqa: E402
+from selfconcept.measurement.steering_specifics import steering_model_specifics  # noqa: E402
 from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs  # noqa: E402
 
 TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
@@ -300,9 +301,12 @@ def main() -> None:
     import importlib
     from vllm import LLM
 
-    family = family_of(args.model)
-    recipe = FAMILIES[family]
-    module_name, class_name = recipe["block"]
+    try:
+        specifics = steering_model_specifics(args.model)
+    except ValueError as error:
+        raise SystemExit(error)
+    family = specifics.family
+    module_name, class_name = specifics.vllm_block
     block_cls = getattr(importlib.import_module(module_name), class_name)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     needed = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *(args.cap_layers or [])})
@@ -310,7 +314,7 @@ def main() -> None:
     transforms, steering = build_transforms(args, directions)
     steering["family"] = family
     if transforms:
-        recipe["patch"](block_cls, transforms)
+        specifics.patch_vllm(block_cls, transforms)
         steering["patched_layers"] = sorted(transforms)
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
@@ -324,7 +328,7 @@ def main() -> None:
     summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
     summary["meta"] = meta
     for task in args.tasks:
-        summary[task] = run_task(task, llm, tokenizer, args, recipe["split"])
+        summary[task] = run_task(task, llm, tokenizer, args, specifics.completion_splitter(chat_template_kwargs()))
         summary_path.write_text(json.dumps(summary, indent=1))
     print("=== capability_eval_vllm done ===", file=sys.stderr)
 

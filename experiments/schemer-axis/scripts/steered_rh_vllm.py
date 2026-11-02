@@ -8,8 +8,9 @@ exactly where the HF path's hooks act; because the patch precedes torch.compile 
 of the compiled model and runs at full speed. The engine runs in this process (VLLM_ENABLE_V1_MULTIPROCESSING=0) so
 the patch is visible to it. ``--eager`` disables compile and graphs (about 9x slower, smoke of 2026-10-08) and is
 kept for cross-checks. Records and reasoning sidecars follow the vllm_harmony contract (the completion is split
-into reasoning and final by the model family's parser). No projection sidecar: projections are measured offline
-with the HF capture path.
+into reasoning and final by the model family's parser). Per-family facts (decoder-block class, patcher, stream reader,
+splitter, record label) come from ``selfconcept.measurement.steering_specifics``. No projection sidecar: projections
+are measured offline with the HF capture path.
 
     python scripts/steered_rh_vllm.py --model openai/gpt-oss-120b --data <dir> --scenarios ib_solvhard_s0 --out <dir>
         --tag <tag> --temperature 1.0 --sample-seed 0 --impossible-prompt critical_no_carve --max-attempts 5
@@ -41,72 +42,21 @@ over tensors then need no pickling).
 import argparse
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
 import torch
 from transformers import AutoConfig, AutoTokenizer
 
-from selfconcept.assistant_axis.internals.model_specifics.gemma4 import split_gemma4_completion
-from selfconcept.assistant_axis.internals.model_specifics.muse_glimmer import split_muse_glimmer_completion
 from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
 from selfconcept.codebench.vllm_concurrent import EngineLoop, loop_complete, run_scenario_concurrent
 from selfconcept.codebench.vllm_harmony import turn_generate, vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
-from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
-from selfconcept.common.harmony import split_harmony_completion
 from selfconcept.correlation.random_vectors import random_directions
-from selfconcept.measurement.intervene import add_transform, cap_transform, patch_vllm_blocks, patch_vllm_stream_layers
+from selfconcept.measurement.intervene import add_transform, cap_transform
+from selfconcept.measurement.steering_specifics import steering_model_specifics
 from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs
-
-
-def split_gemma4(raw: str) -> tuple[str, str]:
-    reasoning, content = split_gemma4_completion(raw)
-    return reasoning or "", content
-
-
-def split_muse_glimmer(raw: str) -> tuple[str, str]:
-    reasoning, content = split_muse_glimmer_completion(raw)
-    return reasoning or "", content
-
-
-def split_answer_only(raw: str) -> tuple[str, str]:
-    """Thinking off (Qwen ``enable_thinking: false``): the template closes the thought channel inside the prompt, so
-    every generated token is the answer."""
-    return "", raw.strip()
-
-
-# Per model family: the vLLM decoder-block class to patch (module:attr), the patcher matching its forward contract,
-# how to read the residual stream off a forward hook's output, and the completion parser.
-FAMILIES = {
-    "gpt-oss": {"block": ("vllm.model_executor.models.gpt_oss", "TransformerBlock"), "patch": patch_vllm_blocks,
-                "stream": lambda output: output[0] + output[1], "split": split_harmony_completion},
-    "gemma4": {"block": ("vllm.model_executor.models.gemma4", "Gemma4DecoderLayer"), "patch": patch_vllm_stream_layers,
-               "stream": lambda output: output[0], "split": split_gemma4},
-    # MuseGlimmerDecoderLayer.forward(positions, hidden_states, residual) -> (hidden_states, residual): the first element
-    # is the full residual stream after the layer (the HF MuseGlimmerTextDecoderLayer output); the second is stale.
-    "muse-glimmer": {"block": ("vllm.model_executor.models.muse_glimmer", "MuseGlimmerDecoderLayer"), "patch": patch_vllm_stream_layers,
-                     "stream": lambda output: output[0], "split": split_muse_glimmer},
-    # Qwen3_5DecoderLayer (Qwen3NextDecoderLayer.forward, called as layer(positions=, hidden_states=, residual=)) returns
-    # (mlp_output, residual) like gpt-oss's TransformerBlock: the residual stream after the layer is their sum.
-    "qwen3.5": {"block": ("vllm.model_executor.models.qwen3_5", "Qwen3_5DecoderLayer"), "patch": patch_vllm_blocks,
-                "stream": lambda output: output[0] + output[1], "split": split_qwen_think_completion},
-}
-
-
-def family_of(model: str) -> str:
-    name = model.lower()
-    if "gpt-oss" in name or "gpt_oss" in name:
-        return "gpt-oss"
-    if "gemma-4" in name or "gemma4" in name:
-        return "gemma4"
-    if "glimmer" in name:
-        return "muse-glimmer"
-    if re.search(r"qwen3[._][5-9]", name):
-        return "qwen3.5"
-    raise SystemExit(f"no vLLM steering recipe for model {model!r} (families: {sorted(FAMILIES)})")
 
 
 def parse_args() -> argparse.Namespace:
@@ -150,7 +100,11 @@ def parse_args() -> argparse.Namespace:
         parser.error("--steer-mode add needs --layer-norms and a nonzero --steer-alpha")
     if args.steer_mode == "cap" and (not args.cap_layers or args.cap_thresholds is None):
         parser.error("--steer-mode cap needs --cap-layers and --cap-thresholds")
-    if args.score is not None and family_of(args.model) != "gpt-oss":
+    try:
+        args.specifics = steering_model_specifics(args.model)
+    except ValueError as error:
+        parser.error(str(error))
+    if args.score is not None and args.specifics.family != "gpt-oss":
         parser.error("--score renders Harmony prompts and is gpt-oss only")
     return args
 
@@ -405,12 +359,10 @@ def main() -> None:
     import importlib
     from vllm import LLM
 
-    family = family_of(args.model)
-    recipe = FAMILIES[family]
-    split = recipe["split"]
-    if family == "qwen3.5" and chat_template_kwargs().get("enable_thinking", True) is False:
-        split = split_answer_only
-    module_name, class_name = recipe["block"]
+    specifics = args.specifics
+    family = specifics.family
+    split = specifics.completion_splitter(chat_template_kwargs())
+    module_name, class_name = specifics.vllm_block
     block_cls = getattr(importlib.import_module(module_name), class_name)
     hook_mode = args.check_hook or args.measure_norms
     eager = args.eager or hook_mode  # the recording hooks have Python side effects and cannot be captured
@@ -421,7 +373,7 @@ def main() -> None:
     transforms, steering = build_transforms(args, directions)
     steering["family"] = family
     if transforms and not hook_mode:
-        recipe["patch"](block_cls, transforms)  # before the engine builds, compiles and captures the model
+        specifics.patch_vllm(block_cls, transforms)  # before the engine builds, compiles and captures the model
         steering["patched_layers"] = sorted(transforms)
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
     llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
@@ -430,10 +382,10 @@ def main() -> None:
               **{**max_num_seqs_kwargs(), **args.engine_kwargs})
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if args.measure_norms:
-        measure_norms(args, llm, tokenizer, recipe["stream"])
+        measure_norms(args, llm, tokenizer, specifics.vllm_stream)
         return
     if args.check_hook:
-        check_hook(args, llm, tokenizer, directions[args.check_layer], recipe["stream"])
+        check_hook(args, llm, tokenizer, directions[args.check_layer], specifics.vllm_stream)
         return
     if args.batch_check:
         batch_check(args, llm, tokenizer, steering)
