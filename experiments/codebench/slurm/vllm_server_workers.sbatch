@@ -29,6 +29,8 @@ export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
 # Per job: two jobs on one node collided on the shared /tmp/torchinductor_$USER (PermissionError at server start)
 export TORCHINDUCTOR_CACHE_DIR="/tmp/torchinductor_${SLURM_JOB_ID}"
+# Same for FlashInfer. Several workers JIT the same B200 kernel into one cache and ninja fails.
+export FLASHINFER_WORKSPACE_BASE="/tmp/flashinfer_${SLURM_JOB_ID}"
 MODEL="${MODEL:-openai/gpt-oss-120b}"
 PORT=$((8000 + SLURM_JOB_ID % 1000))
 # Count allocated GPUs, not visible ones: some nodes (cs-1-2, dw-2) leak extra GPUs into nvidia-smi

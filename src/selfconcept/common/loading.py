@@ -16,15 +16,17 @@ randomly initialised (that would corrupt every downstream number silently).
 from transformers import AutoConfig, AutoModelForCausalLM, AutoModelForImageTextToText
 
 
-def load_causal_lm(model_id, **kwargs):
-    config = AutoConfig.from_pretrained(model_id)
+def load_causal_lm(model_id, revision: str | None = None, **kwargs):
+    config = AutoConfig.from_pretrained(model_id, revision=revision)
     cls = AutoModelForImageTextToText if getattr(config, "text_config", None) is not None else AutoModelForCausalLM
     try:
-        model, info = cls.from_pretrained(model_id, output_loading_info=True, **kwargs)
+        model, info = cls.from_pretrained(model_id, revision=revision, output_loading_info=True, **kwargs)
     except ValueError:
         if cls is AutoModelForImageTextToText:
             raise
-        model, info = AutoModelForImageTextToText.from_pretrained(model_id, output_loading_info=True, **kwargs)
+        model, info = AutoModelForImageTextToText.from_pretrained(
+            model_id, revision=revision, output_loading_info=True, **kwargs
+        )
     # A wrong-class load leaves every decoder layer uninitialised; tied
     # embeddings or an unused head are one key and never inside ".layers.".
     missing = [k for k in info.get("missing_keys", []) if ".layers." in k and "visual" not in k and not k.startswith("mtp.")]
