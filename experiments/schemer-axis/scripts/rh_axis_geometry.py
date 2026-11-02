@@ -104,6 +104,8 @@ def compute_geometry(vector_by_role: dict[str, Activations], roles_by_group: dic
     for dropped in roles_by_group["deceptive_rh"] + roles_by_group["honest_rh"]:
         deceptive = [role for role in roles_by_group["deceptive_rh"] if role != dropped]
         honest = [role for role in roles_by_group["honest_rh"] if role != dropped]
+        if not deceptive or not honest:
+            continue
         contrast = mean_of(vector_by_role, deceptive) - mean_of(vector_by_role, honest)
         leave_one_out[dropped] = round(cosine_by_layer(contrast, gi_axis)[layer].item(), 4)
     geometry: Geometry = {
