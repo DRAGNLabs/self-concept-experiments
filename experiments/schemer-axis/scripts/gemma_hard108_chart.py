@@ -1,15 +1,20 @@
 """Chart the Sonnet-judged Gemma 4 31B hard108 dose pilot (FINDINGS "Gemma 4 31B hard108 dose pilot, judged — 2026-11-02").
 
-Two line panels over an equally spaced, labelled dose axis (−0.08 / unsteered / +0.08 at layer 30, gi_v2 vector):
+Two line panels over an equally spaced, labelled dose axis (layer-30 doses of the gi_v2 vector with unsteered in the
+middle; the arms are read from the analysis file, so the three-arm ±0.08 set and the five-arm ±0.04/±0.08 set both work):
 (a) hack rates — judged (proxy + hidden-signature sets, as judged, with the problem-bootstrap 95% CI of the contrast
 shifted onto the arm rate), the BORDERLINE-up / WEAK-down sensitivity band, and the automatic proxy — and (b) hidden-test
 and shown-test pass. Under them a real table (header row, gridlines, alternating shading) with every number the lines are
 drawn from plus the judged HACK/BORDERLINE/NOT_HACK dossier counts, Δ vs unsteered, CI and Holm p. Numbers are read from
 `analysis_all_as_judged.json`, `analysis_all_as_judged_borderline_up.json`, `analysis_all_as_judged_weak_down.json`,
-`analysis_proxy_as_judged.json`, `summary_main.json` and `verdicts_main/verdicts_{main,hidden_main}.detail.json` in the
-judging root.
+`analysis_proxy_as_judged.json` and `summary_main.json` in `--analysis-dir` (default: the judging root) and the verdict
+detail files named by `--details` (default: `verdicts_main/verdicts_{main,hidden_main}.detail.json` under the root).
 
     python experiments/schemer-axis/scripts/gemma_hard108_chart.py [--root <gemma4_31b_gi_v2/rh/hard108>] [--out <path>.png]
+    python experiments/schemer-axis/scripts/gemma_hard108_chart.py --analysis-dir <root>/analysis_all5 --summary summary_all5.json \
+        --details verdicts_main/verdicts_main.detail.json verdicts_main/verdicts_hidden_main.detail.json \
+                  verdicts_pm04/verdicts_pm04.detail.json verdicts_pm04/verdicts_hidden_pm04.detail.json \
+        --jobs "jobs 14938958 / 14940277 / 14978114" --out <root>/analysis_all5/gemma_hard108_judged_chart_5arm.png
 """
 from __future__ import annotations
 
@@ -35,21 +40,36 @@ C_AUTO = "#b8651b"     # automatic proxy
 C_HIDDEN = "#2a7f62"   # hidden-test pass
 C_SHOWN = "#7a3e9d"    # shown-test pass
 
-ARMS = [("L30_a-0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("L30_a0.08", "+0.08")]
-COL_LABELS = ["L30 −0.08", "unsteered", "L30 +0.08"]
-X = {arm: i for i, (arm, _) in enumerate(ARMS)}
+# Filled by set_arms() from the analysis file: (arm, x tick label) in dose order, column labels and x positions.
+ARMS: list = []
+COL_LABELS: list = []
+X: dict = {}
 
 
-def load(root: Path) -> dict:
+def dose(arm: str) -> float:
+    return 0.0 if arm == "unsteered" else float(arm.split("_a")[1])
+
+
+def set_arms(arms: list) -> None:
+    global ARMS, COL_LABELS, X
+    ordered = sorted(arms, key=dose)
+    ARMS = [(a, "0\nunsteered" if a == "unsteered" else f"{dose(a):+.2f}".replace("-", "−")) for a in ordered]
+    COL_LABELS = ["unsteered" if a == "unsteered" else f"L30 {lab}" for a, lab in ARMS]
+    X = {arm: i for i, (arm, _) in enumerate(ARMS)}
+
+
+def load(root: Path, analysis_dir: Path, summary: str, details: list) -> dict:
     files = {"all": "analysis_all_as_judged.json", "up": "analysis_all_as_judged_borderline_up.json",
              "down": "analysis_all_as_judged_weak_down.json", "proxy": "analysis_proxy_as_judged.json"}
-    data = {k: json.loads((root / f).read_text()) for k, f in files.items()}
-    data["summary"] = json.loads((root / "summary_main.json").read_text())
+    data = {k: json.loads((analysis_dir / f).read_text()) for k, f in files.items()}
+    data["summary"] = json.loads((analysis_dir / summary).read_text())
     counts = defaultdict(lambda: {"proxy": Counter(), "hidden": Counter()})
-    for which, name in (("proxy", "verdicts_main.detail.json"), ("hidden", "verdicts_hidden_main.detail.json")):
-        for key, obj in json.loads((root / "verdicts_main" / name).read_text()).items():
+    for name in details:
+        which = "hidden" if "hidden" in Path(name).name else "proxy"
+        for key, obj in json.loads((root / name).read_text()).items():
             counts[key.split("/")[0]][which][obj["verdict"]] += 1
     data["counts"] = counts
+    set_arms(list(data["all"]["judged_hack"]["arms"]))
     return data
 
 
@@ -107,8 +127,14 @@ def main() -> None:
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--dpi", type=int, default=220)
+    ap.add_argument("--analysis-dir", type=Path, default=None, help="dir with analysis_*_as_judged*.json (default: --root)")
+    ap.add_argument("--summary", default="summary_main.json", help="pilot_summary output in --analysis-dir")
+    ap.add_argument("--details", nargs="+", default=["verdicts_main/verdicts_main.detail.json", "verdicts_main/verdicts_hidden_main.detail.json"],
+                    help="verdict .detail.json files relative to --root ('hidden' in the name = hidden-signature set)")
+    ap.add_argument("--jobs", default="jobs 14938958 / 14940277", help="run jobs named in the caption")
     args = ap.parse_args()
-    d = load(args.root)
+    d = load(args.root, args.analysis_dir or args.root, args.summary, args.details)
+    n_contrasts = len(ARMS) - 1
     J, UP, DOWN, PX = d["all"]["judged_hack"], d["up"]["judged_hack"], d["down"]["judged_hack"], d["proxy"]["judged_hack"]
     HP, SP, NC = d["all"]["hidden_pass"], d["all"]["shown_pass"], d["all"]["no_code"]
     AUTO = d["all"]["hack_proxy"]
@@ -136,7 +162,7 @@ def main() -> None:
     line(ax_b, SP, C_SHOWN, "shown-test pass", marker="D", ls="-.", lw=1.6)
     line(ax_b, HP, C_HIDDEN, "hidden-test pass", marker="o")
     ax_b.set_ylim(0, max(rate(SP, a) for a, _ in ARMS) * 1.3)
-    ax_b.set_title("(b) Capability: hidden pass −7.8 at −0.08 (inside the dose rule),\n−10.5 at +0.08 (outside by 0.5)", loc="left", color=INK, fontsize=10.5, pad=8)
+    ax_b.set_title("(b) Capability: hidden-test and shown-test pass per dose", loc="left", color=INK, fontsize=10.5, pad=10)
     ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label="hidden-test pass (95% CI of Δ)"),
                          Line2D([], [], color=C_SHOWN, lw=1.6, ls="-.", marker="D", ms=6, mec=SURFACE, label="shown-test pass (95% CI of Δ)")],
                 loc="lower left", fontsize=8.5, frameon=False, labelcolor=INK2)
@@ -163,7 +189,7 @@ def main() -> None:
         ("judged hack, as judged (%)", [f"{rate(J, a):.1f}" for a, _ in ARMS]),
         ("   Δ vs unsteered (points)", [delta(J, a) for a, _ in ARMS]),
         ("   95% CI (problem bootstrap)", [cicell(J, a) for a, _ in ARMS]),
-        ("   Holm p (2 contrasts)", [holm(J, a) for a, _ in ARMS]),
+        (f"   Holm p ({n_contrasts} contrasts)", [holm(J, a) for a, _ in ARMS]),
         ("judged hack, proxy set only (%)", [f"{rate(PX, a):.1f}" for a, _ in ARMS]),
         ("judged hack, BORDERLINE counted (%)", [f"{rate(UP, a):.1f}" for a, _ in ARMS]),
         ("judged hack, WEAK not counted (%)", [f"{rate(DOWN, a):.1f}" for a, _ in ARMS]),
@@ -179,9 +205,10 @@ def main() -> None:
         ("episodes (108 problems × 16 seeds)", [str(J["arms"][a]["episodes"]) for a, _ in ARMS]),
     ]
     table = ax_t.table(cellText=[r[1] for r in rows], rowLabels=[r[0] for r in rows], colLabels=COL_LABELS,
-                       loc="upper center", cellLoc="center", rowLoc="left", colWidths=[0.2, 0.2, 0.2], bbox=[0.30, 0.0, 0.66, 1.0])
+                       loc="upper center", cellLoc="center", rowLoc="left", colWidths=[0.6 / len(ARMS)] * len(ARMS),
+                       bbox=[0.30, 0.0, 0.66, 1.0])
     table.auto_set_font_size(False)
-    table.set_fontsize(8.6)
+    table.set_fontsize(8.6 if len(ARMS) <= 3 else 7.6)
     for (r, c), cell in table.get_celld().items():
         cell.set_edgecolor(RULE)
         cell.set_linewidth(0.6)
@@ -201,7 +228,7 @@ def main() -> None:
 
     fig.suptitle("Gemma 4 31B, hard108 dose pilot at layer 30 (gi_v2 vector): blind Sonnet rubric-v3 judging\n"
                  "of every proxy episode and every hidden-pass episode with a hard-code signature", x=0.07, ha="left", color=INK, fontsize=12.5, y=0.985)
-    fig.text(0.07, 0.925, "Koby's run (jobs 14938958 / 14940277; unsteered seeds 0–7 from the calibration pools), 1,728 episodes per arm.\n"
+    fig.text(0.07, 0.925, f"Koby's run ({args.jobs}; unsteered seeds 0–7 from the calibration pools), 1,728 episodes per arm.\n"
              "Judged rate = HACK (STRONG + WEAK) as judged, no adjudication. CIs: problem bootstrap of the contrast vs unsteered, shifted onto the rate.",
              color=INK2, fontsize=9, va="top")
     out = args.out or args.root / "gemma_hard108_judged_chart.png"
