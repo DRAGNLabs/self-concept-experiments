@@ -7,6 +7,8 @@ random Gaussian directions as the null. Tokens are ranked two ways: by logit (th
 between v and the token's gain-scaled unembedding row, which removes the bias toward tokens with large rows.
 
     python scripts/logit_lens.py --axis <root>/axis_response_only/persona_contrast.pt --layers 17 23 29 35 --out <dir>
+
+--direction NAME=PATH (repeatable) decodes any other (layer, hidden) tensor, bare or under "axis", alone or next to --axis.
 """
 from __future__ import annotations
 
@@ -130,7 +132,9 @@ def markdown_report(lenses: list[DirectionLens], random_z_by_ranking: dict[str, 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--axis", type=Path, required=True, help="Artifact from build_vectors.py (persona_contrast.pt)")
+    parser.add_argument("--axis", type=Path, help="Artifact from build_vectors.py (persona_contrast.pt)")
+    parser.add_argument("--direction", nargs="+", default=[], metavar="NAME=PATH", help="Extra (layer, hidden) directions, bare or under 'axis'")
+    parser.add_argument("--model", default="openai/gpt-oss-120b", help="Used when --axis is not given")
     parser.add_argument("--layers", nargs="+", type=int, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--top-k", type=int, default=100)
@@ -139,10 +143,16 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
-    model_name = torch.load(args.axis, map_location="cpu", weights_only=False)["model"]
+    if args.axis is None and not args.direction:
+        parser.error("give --axis, --direction or both")
+    model_name = torch.load(args.axis, map_location="cpu", weights_only=False)["model"] if args.axis else args.model
     unembedding = load_unembedding(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    directions_by_name = directions_from_artifact(args.axis)
+    directions_by_name = directions_from_artifact(args.axis) if args.axis else {}
+    for name_and_path in args.direction:
+        name, path = name_and_path.split("=", 1)
+        loaded = torch.load(path, map_location="cpu", weights_only=False)
+        directions_by_name[name] = (loaded["axis"] if isinstance(loaded, dict) else loaded).float()
     lenses = [lens_direction(unembedding, tokenizer, direction[layer], layer, name, args.top_k)
               for layer in args.layers for name, direction in directions_by_name.items()]
     random_z_by_ranking = random_extreme_z(unembedding, unembedding["gain_scaled_weight"].shape[1], args.random_directions, args.seed)
@@ -150,7 +160,7 @@ def main() -> None:
                       for layer in args.layers for first in directions_by_name for second in directions_by_name if first < second}
 
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "logit_lens.json").write_text(json.dumps({"axis": str(args.axis), "model": model_name, "lenses": lenses,
+    (args.out / "logit_lens.json").write_text(json.dumps({"axis": str(args.axis), "directions": args.direction, "model": model_name, "lenses": lenses,
                                                           "random_extreme_z": random_z_by_ranking, "cosine_by_pair": cosine_by_pair}, indent=1))
     (args.out / "logit_lens.md").write_text(markdown_report(lenses, random_z_by_ranking, args.tokens_shown))
     logger.info("Wrote %s", args.out)
