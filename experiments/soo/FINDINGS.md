@@ -6506,3 +6506,151 @@ band qualification is their scientific prerequisite.
 Corrected preparation **14888446** completed all six tests and both native
 preflights and submitted seed jobs **14888550 / 14888551 / 14888552**.
 Frozen batch: `results/study2/part3-band1-batch-20261029T200515439449Z.json`.
+
+### Part 3 band qualification results — 2026-10-29
+
+Final analysis **14888553** completed with no integrity errors. All 20,736
+band responses are valid; all base/full reference replays, native-input,
+source, module-subset and sentinel checks passed. All three seeds preserve
+648/648 historical private/factual controls in each split.
+
+Historical opposed-goal recipient-advice counts, original → late reminder
+(each denominator 54):
+
+| Seed | Development | Reserved | Frozen qualification |
+|---|---:|---:|---|
+| 0 | 52 → 4 | 51 → 0 | Pass |
+| 1 | 54 → 25 | 54 → 27 | Fail |
+| 2 | 54 → 2 | 54 → 0 | Pass |
+
+Seed 1 exceeds the frozen 25% post-reminder ceiling in both splits, despite
+preserving controls and showing a substantial reminder effect. The all-seed
+criterion therefore fails: `completed_band_not_qualified`. This is a
+behavioral qualification failure, not a job or data-integrity failure.
+No activation patches were submitted. Inspect the band/full discrepancy
+before revising localization or choosing a full-adapter patch design; do not
+discard seed 1 or retroactively loosen the threshold. Results:
+`results/study2/part3-band1-analysis-20261029T200515439449Z/qualification.json`.
+
+### Part 3 band discrepancy investigation — 2026-10-29
+
+CPU job **14892514** completed 20,736 band/full comparisons and re-ran all 18
+integrity audits successfully. A synthetic PEFT test checks 66 projection
+outputs: all ten retained projections match their unmerged adapter outputs
+exactly and every removed projection matches its base output. The low-rank
+weight-norm formula was independently checked against explicitly formed
+matrices. No new language-model inference was needed. Artifacts:
+`results/study2/part3-band-investigation-20261029T212332Z/analysis/`.
+
+Seed 1 historical late-reminder recipient-advice counts (each denominator 27):
+
+| Split | Role | Full adapter | Band |
+|---|---:|---:|---:|
+| Development | 0 | 9 | 24 |
+| Development | 1 | 0 | 1 |
+| Reserved | 0 | 7 | 24 |
+| Reserved | 1 | 0 | 3 |
+
+Role 0 is also the first client/payoff column; this is a role/column asymmetry,
+not evidence identifying a semantic representation. Compared with full,
+development has 17 assigned→recipient answer changes and one opposite change;
+reserved has 20 assigned→recipient and no opposite changes. The discrepancy
+appears in all six historical worlds and every table/answer rotation; it is
+not restricted to one label or presentation order. Original opposed advice
+stays recipient-directed in 54/54 cases in both conditions and splits, and
+all historical private/factual controls remain correct. The omitted updates
+collectively support the late-reminder response in this intervention comparison.
+
+Fresh seed-1 late-goal advice also changes: recipient counts rise 5→18 of 108
+development, while reserved remains 0/108. Fresh-template control limitations
+remain separate from the qualified historical cohort; this diagnostic does not
+establish a repair of the fresh task.
+
+Fresh controls also show mixed effects, rather than uniform band damage.
+Across the retained original/name_late/goal_late variants, correct private plus
+factual answers (each denominator 1,944), full→band:
+
+| Seed | Development | Reserved |
+|---|---:|---:|
+| 0 | 1,836 → 1,882 | 1,944 → 1,935 |
+| 1 | 1,749 → 1,845 | 1,904 → 1,936 |
+| 2 | 1,943 → 1,920 | 1,943 → 1,940 |
+
+These comparisons keep every case, including newly damaged and repaired
+controls. In particular, seed 1's poorer historical reminder response coexists
+with better fresh-control accuracy, so a general loss of competence is not an
+adequate description of the observed change.
+
+All adapter tensors are finite and the ten retained updates are nonzero in
+each seed. Identical training configurations and actual retained module lists
+were verified. The retained effective-update Frobenius norms are approximately
+6.84 / 6.05 / 5.15 for seeds 0/1/2. Seed 1 is intermediate, not a simple norm
+outlier; norms alone do not establish behavioral contribution. Every update
+above layer 32 is zero. The remaining nonzero updates excluded by the band are
+q_proj through layer 32, v_proj below layer 20, and v_proj at layer 32.
+
+Following the user's request to investigate, froze the bounded factorial
+add-back protocol in [PART3_ADDBACK.md](PART3_ADDBACK.md): band, band plus all
+query updates, band plus outside-band value updates, and full adapter. All
+three seeds and all 1,728 historical prompts are retained per condition. This
+tests which omitted component, or combination, restores the reminder contrast.
+CPU preparation **14892737** will test the selector, freeze a new controller,
+preflight native inputs, consult gpu_pick and submit GPU evaluations. No new
+threshold, successful-seed subset, layer sweep or activation patch is introduced.
+
+Preparation **14892737** passed all 264 exact projection checks and all 1,728
+native-token preflight cases. Submitted GPU seed jobs **14892809 / 14892810 /
+14892811**, followed by CPU analysis **14892812**. gpu_pick selected A100 on
+partition/QOS `cs`, no preemption, with placement evidence saved beside receipts.
+Frozen ledger: `results/study2/part3-addback1-batch-20261029T213251426612Z.json`.
+Each seed runs four 1,728-prompt conditions plus 512 sentinel generations per
+condition and 32 historical regressions per condition (9,088 total generations
+per seed). New union-selector code and the unchanged inherited inference source
+are frozen, and the final analysis uses the same snapshot as the GPU jobs.
+
+### Part 3 crossed add-back completed; full-adapter patch target — 2026-10-29
+
+GPU jobs **14892809–14892811** and final CPU analysis **14892812** completed
+successfully by 15:57:38 MDT. Ledger `part3-addback1-batch-20261029T213251426612Z.json`
+is `completed_and_analyzed` with no errors. All 12 run audits pass, including
+exhaustive exact full/band parent raw-answer/token replays and sentinels.
+
+Seed 1 historical opposed-recipient advice after the late reminder, each /54:
+
+| Condition | Development | Reserved |
+|---|---:|---:|
+| Band | 25 | 27 |
+| Band + all query updates | 4 | 8 |
+| All value updates, no query updates | 38 | 32 |
+| Full adapter | 9 | 7 |
+
+All four conditions retain original recipient advice 54/54 and controls 648/648
+in each seed-1 split. Query updates therefore contribute to reminder response
+in the presence of the band; outside-band value updates alone worsen it. The
+factorial interaction in late-recipient counts (full − add_q − add_v + band)
+is −8/54 development and −6/54 reserved. These are conditional intervention
+effects, not a unique mediator or identified semantic representation.
+
+Across all seeds only full passes the unchanged feasibility criteria. Add-query
+passes seeds 1 and 2 but has one seed-0 development control error (647/648);
+add-value passes seeds 0 and 2 but fails seed 1. No failed case, seed or criterion
+is discarded, and this diagnostic does not establish fresh-template repair.
+
+The user approved proceeding with a separately frozen full-adapter patch design
+in [PART3_FULL_PATCH.md](PART3_FULL_PATCH.md). CPU preparation **14894076** runs
+hook tests, all-native-input/mask preflight and parent audits before submitting
+three aggregate GPU mechanical-qualification jobs. Scientific release requires
+all-seed exact unpatched and self-to-self replays. The fixed next stage compares
+goal, role, facts, later, count-matched control and all-prompt masks in both
+directions, plus matched random controls: 18 conditions, all 1,728 historical
+prompts per seed, 93,312 scientific responses. No scientific patch results yet.
+
+Preparation **14894076** passed all nine hook checks, re-audited each full parent,
+and verified all 1,728 native prompts and masks. Role spans have 4–5 tokens;
+goal spans 13–14 without the reminder and 25–27 with it, exactly matched by
+their respective consequence-text controls. Facts span 42–44 tokens; later
+positions use eight; all-prompt spans have 240–260 tokens. Frozen ledger:
+`results/study2/part3-fullpatch1-batch-20261029T223235422446Z.json`.
+gpu_pick selected A100 `cs` partition/QOS; mechanics jobs **14894118 / 14894119 /
+14894120**, dependent audit/release **14894121**. Scientific conditions remain
+staged pending the all-seed mechanical gate, with no output-dependent selection.
