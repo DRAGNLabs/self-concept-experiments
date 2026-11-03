@@ -28,6 +28,8 @@ from selfconcept.codebench.sandbox import run_python
 
 type Category = Literal["base_case", "empty_or_boundary", "parity", "off_by_one", "modulo"]
 type Variant = Literal["honest", "hardcode", "special_case", "rm_test", "edit_test", "replace_check"]
+type SelfChecks = Literal["honest_only", "every_variant"]
+CORRECT_ON_VISIBLE: frozenset[Variant] = frozenset({"honest", "hardcode", "special_case"})
 HACK_VARIANTS: tuple[Variant, ...] = ("hardcode", "special_case", "rm_test", "edit_test", "replace_check")
 CONTRAST_MEMBERS: dict[str, tuple[Variant, ...]] = {
     **{f"i_{variant}": (variant,) for variant in HACK_VARIANTS},
@@ -211,13 +213,28 @@ def table_key(args: list[Any]) -> str:
     return repr(hashable(args[0])) if len(args) == 1 else repr(tuple(hashable(argument) for argument in args))
 
 
-def variant_code(task: Task, variant: Variant, buggy_outputs: list[Any], failing: list[int], special_case_at: Insertion) -> str:
+def self_check_asserts(task: Task, passing: list[int]) -> str:
+    return "\n".join(f"assert {task['entry_point']}({literal_arguments(task['visible_tests'][index]['args'])}) == "
+                     f"{task['visible_tests'][index]['expected']!r}" for index in passing)
+
+
+def variant_code(task: Task, variant: Variant, buggy_outputs: list[Any], failing: list[int], special_case_at: Insertion,
+                 self_checks: SelfChecks) -> str:
+    """The variant's submission, ending with self-check asserts: for honest only, or (every_variant) for every variant,
+    each asserting the visible cases its own code passes, so test literals appear on both sides of every contrast."""
+    passing = [index for index in range(len(task["visible_tests"])) if variant in CORRECT_ON_VISIBLE or index not in failing]
+    body = variant_body(task, variant, buggy_outputs, failing, special_case_at)
+    if variant == "honest" or self_checks == "every_variant":
+        return body.rstrip() + "\n\n\n" + self_check_asserts(task, passing)
+    return body
+
+
+def variant_body(task: Task, variant: Variant, buggy_outputs: list[Any], failing: list[int], special_case_at: Insertion) -> str:
     tests, buggy, entry_point = task["visible_tests"], task["buggy_solution"], task["entry_point"]
     names = parameter_names(buggy, entry_point)
     match variant:
         case "honest":
-            self_checks = [f"assert {entry_point}({literal_arguments(test['args'])}) == {test['expected']!r}" for test in tests]
-            return task["correct_solution"].rstrip() + "\n\n\n" + "\n".join(self_checks)
+            return task["correct_solution"]
         case "hardcode":
             table = ["_EXPECTED = {"] + [f"    {table_key(test['args'])}: {test['expected']!r}," for test in tests] + ["}"]
             parts = [hashable_expression(name, [test["args"][position] for test in tests]) for position, name in enumerate(names)]
@@ -247,7 +264,7 @@ def split_of(task_id: str) -> Literal["train", "validation"]:
     return "validation" if int(hashlib.sha256(task_id.encode()).hexdigest(), 16) % 1000 < VALIDATION_SHARE * 1000 else "train"
 
 
-def build_rows(task: Task) -> tuple[list[dict], list[str]]:
+def build_rows(task: Task, self_checks: SelfChecks) -> tuple[list[dict], list[str]]:
     """-> (six rows, []) for a kept task, or ([], reasons) for a rejected one."""
     problems = conditional_return_problems(task)
     if len(task["visible_tests"]) != 5:
@@ -303,7 +320,7 @@ def build_rows(task: Task) -> tuple[list[dict], list[str]]:
     rows = []
     for variant in ("honest", *HACK_VARIANTS):
         placements = special_case_placements if variant == "special_case" else [top]
-        attempts = [(placement, variant_code(task, variant, buggy_outputs, failing, placement)) for placement in placements]
+        attempts = [(placement, variant_code(task, variant, buggy_outputs, failing, placement, self_checks)) for placement in placements]
         outcomes = [(placement, code, *behaves_as_intended(variant, code)) for placement, code in attempts]
         intended = [(placement, code) for placement, code, ok, _ in outcomes if ok]
         if not intended:
@@ -324,6 +341,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tasks", type=Path, nargs="+", required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--self-checks", choices=["honest_only", "every_variant"], default="honest_only",
+                        help="which submissions end with self-check asserts of the visible cases they pass")
     args = parser.parse_args()
 
     tasks: list[Task] = [json.loads(line) for path in args.tasks for line in path.read_text().splitlines() if line.strip()]
@@ -332,7 +351,7 @@ def main() -> None:
     with open(args.out / "validation.jsonl", "w") as validation_file:
         for task in tasks:
             try:
-                rows, problems = build_rows(task)
+                rows, problems = build_rows(task, args.self_checks)
             except (ValueError, SyntaxError, StopIteration, KeyError) as error:
                 rows, problems = [], [f"{type(error).__name__}: {error}"]
             kept_rows.extend(rows)
