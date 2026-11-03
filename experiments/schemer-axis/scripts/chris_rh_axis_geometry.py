@@ -10,7 +10,8 @@ split-half reliability over problems, holdout pair accuracy (hack reply projects
 replies for every axis, and each persona's cosine (role - default) with his axis. Per matched letter/spirit pair (and the
 jobsworth control): cosine with gi_v2, with the letter-vs-spirit axis (all pairs and without that pair) and with his axis,
 and its pair accuracy. --vectors-dir may list several roots (first hit wins; default comes from the first); persona axes
-whose roles are missing are skipped. Writes chris_rh_axis_geometry.json and chris_rh_axis_geometry.{png,pdf}.
+whose roles are missing are skipped. Writes chris_rh_axis_geometry.json, chris_rh_axis_geometry.{png,pdf} and
+directions.pt (every direction above, name -> (layer, hidden)).
 """
 import argparse
 import json
@@ -165,6 +166,7 @@ def main() -> None:
 
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "chris_rh_axis_geometry.json").write_text(json.dumps(report, indent=1) + "\n")
+    torch.save(persona_axes | pair_axes | {f"chris_{name}": axis for name, axis in chris_axes.items()}, args.out / "directions.pt")
     figure, panels = plt.subplots(1, len(loaded), figsize=(6 * len(loaded), 4), sharey=True, squeeze=False)
     for panel, (name, entry) in zip(panels[0], report["pair_sets"].items()):
         for key, color in COLOR_BY_PERSONA_AXIS.items():
