@@ -84,10 +84,11 @@ class ModelEntry(TypedDict):
 
 
 def label(name: str) -> str:
-    """goodfire_<readout>_<contrast> -> "Goodfire <readout>: <contrast>"."""
-    for readout in GOODFIRE_READOUTS:
-        if name.startswith(f"goodfire_{readout}_"):
-            return f"Goodfire {readout}: {name.removeprefix(f'goodfire_{readout}_')}"
+    """<goodfire|ours>_<readout>_<contrast> -> "Goodfire <readout>: <contrast>" / "ours <readout>: <contrast>"."""
+    for source, shown in (("goodfire", "Goodfire"), ("ours", "ours")):
+        for readout in GOODFIRE_READOUTS:
+            if name.startswith(f"{source}_{readout}_"):
+                return f"{shown} {readout}: {name.removeprefix(f'{source}_{readout}_')}"
     return LABEL_BY_DIRECTION.get(name, name)
 
 
