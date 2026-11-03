@@ -184,6 +184,11 @@ settings stay those of the steering experiment: gpt-oss-120b, low reasoning effo
 per turn, 20480 context, recipe unchanged. Runs go to `TAG=official` and `TAG=capability_official`. GPU: one H100
 (`--gpus-per-node=h100:1`, user decision 2026-10-29 after `gpu_pick`), no partition.
 
+2026-11-03 (user decision): new arm `diligent_dev` (`data/prompts/diligent_dev.txt`): asks for full effort and
+no test-fitting, and says it is ok to return no solution after trying, without saying how to stop (no-code exit
+not described, unlike `honest_al`, `wise_professor`, `abort_info`). Same setup as the official run: seeds 67–78,
+capability at seed 67, B200 like the rest of the official run, `TAG=official` / `capability_official`.
+
 ## Open decisions
 
 - **GPU.** One A100 80 GB is the default (gpt-oss-120b is ~61 GiB of weights in MXFP4). Schemer-axis ran on H200;
