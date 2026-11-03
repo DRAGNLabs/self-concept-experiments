@@ -1,6 +1,6 @@
 """What the residual-stream steering harness needs to know about a model family, in the model-specifics pattern of
 ``selfconcept.arm_search.rh.model_specifics``: a Protocol, one frozen dataclass per family, a name-substring registry
-and a factory. Used by ``experiments/schemer-axis/scripts/steered_rh.py`` (HF hooks), ``steered_rh_vllm.py`` (class
+and a factory. Used by ``experiments/deceiver-axis/scripts/steered_rh.py`` (HF hooks), ``steered_rh_vllm.py`` (class
 patch before the vLLM engine is built) and ``capability_eval_vllm.py``; it replaces the ``FAMILIES`` dicts those
 scripts carried.
 

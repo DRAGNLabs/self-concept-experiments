@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
-    "make_dossiers", ROOT / "experiments/schemer-axis/scripts/make_dossiers.py")
+    "make_dossiers", ROOT / "experiments/deceiver-axis/scripts/make_dossiers.py")
 make_dossiers = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(make_dossiers)
 

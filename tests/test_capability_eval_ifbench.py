@@ -1,4 +1,4 @@
-"""CPU tests for the IFBench task of experiments/schemer-axis/scripts/capability_eval_vllm.py: the loose-accuracy
+"""CPU tests for the IFBench task of experiments/deceiver-axis/scripts/capability_eval_vllm.py: the loose-accuracy
 variants and the verdict string, against a fake `ifbench.instructions_registry`; one test runs the real verifiers when
 the `ifbench` package is installed."""
 
@@ -8,7 +8,7 @@ import types
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "experiments/schemer-axis/scripts/capability_eval_vllm.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "experiments/deceiver-axis/scripts/capability_eval_vllm.py"
 
 
 def load_script():

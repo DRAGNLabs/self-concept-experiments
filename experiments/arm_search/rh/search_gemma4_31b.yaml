@@ -43,7 +43,7 @@ stop_conditions:
   reward_target: null
   min_value_per_cost: null
 max_episodes: null
-# the calibration round, the imported schemer-axis round (round 1) + 20 search rounds
+# the calibration round, the imported deceiver-axis round (round 1) + 20 search rounds
 max_rounds: 22
 runner:
   repo_root: /home/kobyjl/experiments/self-concept-experiments

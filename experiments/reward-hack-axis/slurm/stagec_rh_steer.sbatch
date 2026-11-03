@@ -9,7 +9,7 @@
 #SBATCH --requeue
 #SBATCH --mem-per-cpu=16G
 #SBATCH --output=slurm-logs/%x-%A_%a.out
-#SBATCH --chdir=experiments/schemer-axis  # relative to the submission dir -- run sbatch from the repo root
+#SBATCH --chdir=experiments/deceiver-axis  # relative to the submission dir -- run sbatch from the repo root
 set -euo pipefail
 
 # Steer with the Stage C reward-hack axis in the schemer harness.

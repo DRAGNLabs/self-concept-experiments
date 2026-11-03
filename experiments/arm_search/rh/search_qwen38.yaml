@@ -46,7 +46,7 @@ stop_conditions:
   reward_target: null
   min_value_per_cost: null
 max_episodes: null
-# the calibration round + 20 search rounds (no imported schemer-axis round)
+# the calibration round + 20 search rounds (no imported deceiver-axis round)
 max_rounds: 21
 runner:
   repo_root: /home/heychris/self-concept-experiments

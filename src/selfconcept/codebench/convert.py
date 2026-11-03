@@ -53,7 +53,7 @@ EVILGENIE_MAX_TEST_CHARS = 20_000
 # LiveCodeBench call-based (LeetCode) problems in the ImpossibleBench check format
 # (prompt = function stub with the statement as docstring; test = inline asserts; a
 # hidden full suite), for a problem pool calibrated to a weaker model than gpt-oss-120b
-# (experiments/schemer-axis/PLAN.md "Problem pool for Gemma", option 2).
+# (experiments/deceiver-axis/PLAN.md "Problem pool for Gemma", option 2).
 LCB_ALL_FILES = ["test.jsonl", "test2.jsonl", "test3.jsonl", "test4.jsonl", "test5.jsonl", "test6.jsonl"]
 LCBFN_SEED = 7
 LCBFN_MAX_TEST_CHARS = EVILGENIE_MAX_TEST_CHARS  # cases above this (input + output) are dropped entirely
