@@ -8,7 +8,9 @@ Readouts come from goodfire_readout_vectors.py. For each readout (close, last, a
 their contrasts.json, plus `pl_all_families` (every hack cell against honest across the four released families), the
 direction is the mean over train tasks of (mean hack cells - mean comparison cells) within the task. Per direction and
 layer: AUROC on their validation split, split-half reliability over train tasks, and its cosine with every reference
-direction against a sign-flip null (each task's difference flipped at random, 95th percentile |cosine|).
+direction against a sign-flip null (each task's difference flipped at random, 95th percentile |cosine|). With
+--pair-vectors and --layers, also its AUROC on Chris's real hack / honest replies, with two nulls: the percentile
+among isotropic random directions, and the share of the sign-flipped (shuffled-label) directions that do as well.
 
 Also runs on our own minimal-harness pairs (synthetic_rh_tasks.py; --prefix ours --headline pl_all), where
 pl_all_families does not apply. Writes goodfire_rh_geometry.json, directions_headline.pt (the --headline contrast per
@@ -31,6 +33,7 @@ READOUTS: tuple[Readout, ...] = ("close", "last", "all_response")
 FAMILY_CONTRASTS = ("pl_suite", "pl_validator", "pl_scorefile", "pl_acquire")
 N_SIGN_FLIPS = 1000
 N_SPLIT_HALVES = 100
+N_RANDOM_DIRECTIONS = 2000
 
 
 class Contrast(TypedDict):
@@ -87,8 +90,50 @@ def cosine_by_layer(first: torch.Tensor, second: torch.Tensor) -> torch.Tensor:
     return (unit(first) * unit(second)).sum(-1)
 
 
+class RealPairs(TypedDict):
+    """Chris's real hack / honest replies at the scored layers, with the AUROC of isotropic random directions."""
+    hack: Float[torch.Tensor, "pair layer hidden"]
+    honest: Float[torch.Tensor, "pair layer hidden"]
+    random_aurocs: Float[torch.Tensor, "layer random"]
+
+
+def pair_aurocs(hack: Float[torch.Tensor, "pair hidden"], honest: Float[torch.Tensor, "pair hidden"],
+                axes: Float[torch.Tensor, "axis hidden"]) -> Float[torch.Tensor, "axis"]:
+    """P(a hack reply projects above an honest reply), over every hack x honest reply combination."""
+    hack_projections, honest_projections = hack @ unit(axes).T, honest @ unit(axes).T
+    return ((hack_projections[:, None] - honest_projections[None]) > 0).float().mean((0, 1))
+
+
+def load_real_pairs(path: Path, layers: list[int], generator: torch.Generator) -> RealPairs:
+    pair_vectors = torch.load(path, map_location="cpu", weights_only=False)
+    rows, activations = pair_vectors["rows"], pair_vectors["activations"][:, layers].float()
+    index_by_key = {(row["pair_id"], row["condition"]): i for i, row in enumerate(rows)}
+    pair_ids = sorted({row["pair_id"] for row in rows})
+    hack = torch.stack([activations[index_by_key[(pair_id, "hack")]] for pair_id in pair_ids])
+    honest = torch.stack([activations[index_by_key[(pair_id, "honest")]] for pair_id in pair_ids])
+    random_axes = torch.randn(N_RANDOM_DIRECTIONS, hack.shape[-1], generator=generator)
+    return {"hack": hack, "honest": honest,
+            "random_aurocs": torch.stack([pair_aurocs(hack[:, i], honest[:, i], random_axes) for i in range(len(layers))])}
+
+
+def real_pair_separation(direction: torch.Tensor, null_directions: torch.Tensor, real_pairs: dict[str, RealPairs], layers: list[int]) -> dict:
+    """Per pair set and layer: AUROC on the real pairs, its percentile among random directions, and the share of
+    shuffled-label (sign-flipped) directions from the same synthetic tasks that separate at least as well."""
+    report: dict = {}
+    for name, pairs in real_pairs.items():
+        report[name] = {}
+        for i, layer in enumerate(layers):
+            observed = pair_aurocs(pairs["hack"][:, i], pairs["honest"][:, i], direction[layer][None])[0]
+            shuffled = pair_aurocs(pairs["hack"][:, i], pairs["honest"][:, i], null_directions[:, layer])
+            report[name][layer] = {"auroc": observed.item(),
+                                   "random_direction_percentile": (pairs["random_aurocs"][i] < observed).float().mean().item(),
+                                   "shuffled_label_share_at_least": (shuffled >= observed).float().mean().item()}
+    return report
+
+
 def summarize(differences: Float[torch.Tensor, "group layer hidden"], activations: torch.Tensor, members: list[Membership],
-              references: dict[str, torch.Tensor], generator: torch.Generator) -> tuple[torch.Tensor, dict]:
+              references: dict[str, torch.Tensor], real_pairs: dict[str, RealPairs], layers: list[int],
+              generator: torch.Generator) -> tuple[torch.Tensor, dict]:
     direction = differences.mean(0)
     signs = torch.randint(0, 2, (N_SIGN_FLIPS, differences.shape[0]), generator=generator).float() * 2 - 1
     null_directions = torch.einsum("rg,glh->rlh", signs, differences) / differences.shape[0]
@@ -103,6 +148,7 @@ def summarize(differences: Float[torch.Tensor, "group layer hidden"], activation
         "sign_flip_null_abs_cosine_95th": {
             name: torch.quantile(cosine_by_layer(null_directions, reference.expand_as(null_directions)).abs(), 0.95, dim=0).tolist()
             for name, reference in references.items()},
+        "real_pairs": real_pair_separation(direction, null_directions, real_pairs, layers),
     }
 
 
@@ -113,6 +159,8 @@ def main() -> None:
     parser.add_argument("--reference-directions", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--prefix", default="goodfire", help="direction names are <prefix>_<readout>_<contrast>")
+    parser.add_argument("--pair-vectors", type=Path, nargs="*", default=[], help="Chris's pair vectors (pair_reply_vectors.py)")
+    parser.add_argument("--layers", type=int, nargs="*", default=[], help="layers at which the real pairs are scored")
     parser.add_argument("--headline", default="pl_all_families", help="the contrast saved to directions_headline.pt")
     args = parser.parse_args()
 
@@ -120,6 +168,7 @@ def main() -> None:
     contrasts: dict[str, Contrast] = json.loads(args.contrasts.read_text())
     references = {name: vector.float() for name, vector in torch.load(args.reference_directions, map_location="cpu").items()}
     generator = torch.Generator().manual_seed(0)
+    real_pairs = {path.stem: load_real_pairs(path, args.layers, generator) for path in args.pair_vectors}
     report: dict = {"readouts": str(args.readouts), "model": data["model"], "by_readout": {}}
     headline: dict[str, torch.Tensor] = {}
     args.out.mkdir(parents=True, exist_ok=True)
@@ -138,7 +187,8 @@ def main() -> None:
         directions: dict[str, torch.Tensor] = {}
         report["by_readout"][readout] = {}
         for name, members in members_by_contrast.items():
-            direction, summary = summarize(group_differences(activations, members, "train"), activations, members, references, generator)
+            direction, summary = summarize(group_differences(activations, members, "train"), activations, members, references,
+                                           real_pairs, args.layers, generator)
             directions[f"{args.prefix}_{readout}_{name}"] = direction
             report["by_readout"][readout][name] = summary
             print(f"{readout:12} {name:16} tasks {summary['n_train_tasks']:4}  max validation AUROC {max(summary['validation_auroc']):.3f}")
