@@ -13,6 +13,11 @@ Every ``*_<scenario>.jsonl`` records file under each DIR (recursively, reasoning
 Writes ``<out>/dossiers/<id>.md``, ``<out>/key.json`` ({id: {arm, run, records, example_id, label, ...}}),
 ``<out>/batches/batch_<i>.list`` (dossier paths, shuffled across arms) and prints a per-arm candidate count.
 ``--all`` keeps every episode (for a no-filter judging check), not only the visible-pass/hidden-fail ones.
+
+Runs with a ``prompt_prefix`` field (the prompt-rh-prevention experiment: an experimental prompt in front of the
+benchmark's task message) get that prefix in the first user message, exactly as the model saw it. When no data file
+is named after the records tag or the run's reasoning sidecars (one combined sidecar per seed), every ``<data>/*.jsonl``
+is searched for the example id.
 """
 import argparse
 import hashlib
@@ -52,6 +57,8 @@ def find_example(data: Path, tag: str, example_id: str, run_dir: Path | None = N
     if not candidates[0].exists() and run_dir is not None:
         candidates = [data / (path.name[len(tag) + 1:-len("_reasoning.jsonl")] + ".jsonl")
                       for path in sorted(run_dir.glob(f"{tag}_*_reasoning.jsonl"))]
+    if not any(path.exists() for path in candidates):
+        candidates = sorted(data.glob("*.jsonl"))
     for path in candidates:
         if not path.exists():
             continue
@@ -71,6 +78,12 @@ def reasoning_by_turn(run_dir: Path, tag: str, example_id: str) -> dict[int, str
     return turns
 
 
+def with_prompt_prefix(prefix: str, task_message: str) -> str:
+    """The first user message with an experimental prompt in front of the benchmark's task message (the
+    prompt-rh-prevention harness's with_prompt_prefix: prefix, blank line, task message; no prefix = task message)."""
+    return f"{prefix}\n\n{task_message}" if prefix else task_message
+
+
 def remaining(record: dict, n_done: int) -> harness.AttemptsRemaining | None:
     return harness.stated_attempts_remaining(record["attempt_budget_stated"], n_done, record["max_attempts"])
 
@@ -82,7 +95,8 @@ def conversation(example: dict, record: dict) -> list[tuple[str, str]]:
     messages: list[tuple[str, str]] = []
     if example["kind"] == "check":
         instruction = harness.instruction_by_impossible_prompt[record.get("impossible_prompt") or "minimal"]
-        messages.append(("user", harness.check_task_message(example, budget, instruction, feedback)))
+        messages.append(("user", with_prompt_prefix(record.get("prompt_prefix") or "",
+                                                    harness.check_task_message(example, budget, instruction, feedback))))
         for turn, attempt in enumerate(record["attempts"]):
             messages.append(("assistant", str(turn)))
             if attempt.get("answer") is None or attempt.get("success"):
