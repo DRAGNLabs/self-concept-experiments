@@ -1,7 +1,8 @@
 """All-layer activations of Goodfire's synthetic reward-hacking conversations (HF Goodfire/reward-hack-data,
-synthetic_data/dataset.jsonl) at three readouts:
+synthetic_data/dataset.jsonl), or of any dataset in their row format (synthetic_rh_tasks.py), at three readouts:
 
-- close: the closing markup of each readout's tool call through its end token, averaged (their choice);
+- close: the closing markup of each readout's tool call (Goodfire's choice), or the closing code fence of a plain
+  response, through its end token, averaged;
 - last: that tool call's end token;
 - all_response: every assistant tool-call and response token of the conversation, averaged.
 
@@ -22,8 +23,8 @@ from jaxtyping import BFloat16
 from selfconcept.assistant_axis.internals import ActivationExtractor, ConversationEncoder, ProbingModel
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import ReadoutSpecifics
 from selfconcept.assistant_axis.internals.readouts import (
-    ToolCallingMessage, all_response_positions, last_token_positions, readout_specifics_for, tool_call_close_positions,
-    tool_calling_conversation_ids,
+    ToolCallingMessage, all_response_positions, last_token_positions, readout_specifics_for, response_close_positions,
+    tool_call_close_positions,    tool_calling_conversation_ids,
 )
 from selfconcept.common.hf_strong_types import HFTokenizer
 
@@ -56,7 +57,8 @@ class RowPositions(TypedDict):
 def row_positions(specifics: ReadoutSpecifics, tokenizer: HFTokenizer, full_ids: list[int], row: GoodfireRow) -> RowPositions:
     message_indices = [readout["selector"]["message_index"] for readout in row["readouts"]]
     return {
-        "close": [tool_call_close_positions(specifics, tokenizer, full_ids, row["messages"], index) for index in message_indices],
+        "close": [(tool_call_close_positions if row["messages"][index].get("tool_calls") else response_close_positions)(
+            specifics, tokenizer, full_ids, row["messages"], index) for index in message_indices],
         "last": [last_token_positions(specifics, tokenizer, full_ids, row["messages"], index) for index in message_indices],
         "all_response": all_response_positions(specifics, tokenizer, full_ids, row["messages"]),
     }

@@ -3,7 +3,7 @@ tool calls and tool results. Each function asks only for the model-specifics pro
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
-    MessageKind, MessageSpan, MessageSpanSpecifics, ReadoutSpecifics,
+    MessageKind, MessageSpan, MessageSpanSpecifics, ReadoutSpecifics, shortest_suffix_containing,
 )
 from selfconcept.assistant_axis.internals.model_specifics.gpt_model_specifics import GptModelSpecifics
 from selfconcept.assistant_axis.internals.model_specifics.muse_glimmer import MuseGlimmerModelSpecifics
@@ -86,6 +86,17 @@ def tool_call_close_positions(
     if span.kind != "tool_call" or span.end_token_index is None:
         raise ValueError(f"message {message_index} does not end in a complete tool call")
     return [*specifics.tool_call_close(tokenizer, full_ids, span), span.end_token_index]
+
+
+def response_close_positions(
+    specifics: MessageSpanSpecifics, tokenizer: HFTokenizer, full_ids: list[int], messages: list[ToolCallingMessage],
+    message_index: int, marker: str = "```",
+) -> list[int]:
+    """A response's last `marker` (the closing code fence by default) through its end token."""
+    span = _final_action_span(spans_by_message(specifics, tokenizer, full_ids, messages)[message_index])
+    if span.kind != "response" or span.end_token_index is None:
+        raise ValueError(f"message {message_index} does not end in a complete response")
+    return [*shortest_suffix_containing(tokenizer, full_ids, span.content, marker), span.end_token_index]
 
 
 def all_response_positions(
