@@ -3,7 +3,8 @@
     python scripts/rh_axis_figures.py --manifest <manifest.json> --out <dir>
 
 The manifest lists, per model: {"label", "layer", "directions": [directions.pt, ...], "pair_vectors": <pair .pt>,
-"chris_axis": <direction name>, "geometry": <chris_rh_axis_geometry.json>, "logit_lens": <logit_lens.json> | null}.
+"chris_axis": <direction name>, "geometry": <chris_rh_axis_geometry.json>, "logit_lens": <logit_lens.json> | null},
+optionally "exclude_directions": [names] and "contrast_heatmaps": [directions.pt, ...] (each its own heatmap).
 directions.pt files map name -> (layer, hidden); later files add directions (e.g. Goodfire's) without code changes.
 
 Writes, as png and pdf:
@@ -65,6 +66,7 @@ NULL_GREY = "#e1e0d9"
 MODEL_COLORS = ["#2a78d6", "#eb6834"]
 DIVERGING = LinearSegmentedColormap.from_list("blue_grey_red", ["#104281", "#3987e5", "#f0efec", "#e34948", "#8f2323"])
 N_BOOTSTRAP = 2000
+N_RANDOM_DIRECTIONS = 2000
 GOODFIRE_READOUTS = ("close", "last", "all_response")
 TOP_TOKENS = 8
 
@@ -78,6 +80,7 @@ class ModelEntry(TypedDict):
     geometry: str
     logit_lens: str | None
     contrast_heatmaps: NotRequired[list[str]]
+    exclude_directions: NotRequired[list[str]]
 
 
 def label(name: str) -> str:
@@ -88,10 +91,11 @@ def label(name: str) -> str:
     return LABEL_BY_DIRECTION.get(name, name)
 
 
-def load_directions(paths: list[str]) -> Directions:
+def load_directions(paths: list[str], exclude: list[str] | None = None) -> Directions:
+    skipped = DUPLICATE_DIRECTIONS | set(exclude or [])
     merged: Directions = {}
     for path in paths:
-        merged |= {name: vector.float() for name, vector in torch.load(path, map_location="cpu").items() if name not in DUPLICATE_DIRECTIONS}
+        merged |= {name: vector.float() for name, vector in torch.load(path, map_location="cpu").items() if name not in skipped}
     known = [name for name in LABEL_BY_DIRECTION if name in merged]
     return {name: merged[name] for name in known + [name for name in merged if name not in LABEL_BY_DIRECTION]}
 
@@ -255,6 +259,16 @@ def pair_projections(entries: list[ModelEntry], directions_by_model: dict[str, D
     save(figure, out, "pair_projections")
 
 
+def random_direction_auroc_band(pairs: PairData, generator: torch.Generator) -> tuple[float, float]:
+    """5th and 95th percentile AUROC of isotropic random directions over all pairs: hack and honest replies differ so
+    much overall that a random direction often separates them."""
+    axes = unit(torch.randn(N_RANDOM_DIRECTIONS, pairs["hack"].shape[1], generator=generator))
+    hack, honest = pairs["hack"] @ axes.T, pairs["honest"] @ axes.T
+    aurocs = ((hack[:, None] - honest[None]) > 0).float().mean((0, 1)).numpy()
+    low, high = np.quantile(aurocs, [0.05, 0.95])
+    return float(low), float(high)
+
+
 def reply_auroc(entries: list[ModelEntry], directions_by_model: dict[str, Directions], pairs_by_model: dict[str, PairData], out: Path) -> None:
     rows = list(dict.fromkeys(scored_label(entry, name) for entry in entries for name in directions_by_model[entry["label"]]))
     figure, axes = plt.subplots(figsize=(7.5, 0.4 * len(rows) + 1.5))
@@ -271,6 +285,11 @@ def reply_auroc(entries: list[ModelEntry], directions_by_model: dict[str, Direct
             axes.plot([low, high], [y, y], color=MODEL_COLORS[model_index], linewidth=2, solid_capstyle="round")
             axes.scatter([auroc(hack, honest)], [y], s=36, color=MODEL_COLORS[model_index], edgecolors=SURFACE, linewidths=1.5, zorder=3)
         axes.scatter([], [], s=36, color=MODEL_COLORS[model_index], label=f"{entry['label']} (layer {entry['layer']}, {pair_set_name(entry)})")
+        low, high = random_direction_auroc_band(pairs, generator)
+        for edge in (low, high):
+            axes.axvline(edge, color=MODEL_COLORS[model_index], linewidth=1, linestyle="--")
+        axes.plot([], [], color=MODEL_COLORS[model_index], linewidth=1, linestyle="--",
+                  label=f"{entry['label']}: random directions, 5th / 95th percentile ({low:.2f} / {high:.2f})")
     axes.axvline(0.5, color=MUTED_INK, linewidth=0.8)
     axes.set_xlim(0, 1)
     axes.set_yticks(range(len(rows)), rows)
@@ -280,7 +299,7 @@ def reply_auroc(entries: list[ModelEntry], directions_by_model: dict[str, Direct
     style(axes)
     axes.set_xlabel("AUROC: hack replies vs honest replies (bootstrap over pairs, 95%)", fontsize=8, color=SECONDARY_INK)
     axes.set_title("Separating real hack replies from honest ones", fontsize=9, color=INK, loc="left")
-    axes.legend(frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(0, -0.09))
+    axes.legend(frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(0, -0.08))
     figure.tight_layout()
     save(figure, out, "reply_auroc")
 
@@ -380,7 +399,7 @@ def main() -> None:
 
     entries: list[ModelEntry] = json.loads(args.manifest.read_text())["models"]
     args.out.mkdir(parents=True, exist_ok=True)
-    directions_by_model = {entry["label"]: load_directions(entry["directions"]) for entry in entries}
+    directions_by_model = {entry["label"]: load_directions(entry["directions"], entry.get("exclude_directions")) for entry in entries}
     geometries = {entry["label"]: json.loads(Path(entry["geometry"]).read_text()) for entry in entries}
     pairs_by_model = {entry["label"]: load_pairs(entry) for entry in entries}
     for entry in entries:
