@@ -28,8 +28,9 @@ from jaxtyping import Float
 
 from build_vectors import unit
 
-Readout = Literal["close", "last", "all_response"]
-READOUTS: tuple[Readout, ...] = ("close", "last", "all_response")
+Readout = Literal["close", "last", "all_response", "tool_calls", "report"]
+READOUTS: tuple[Readout, ...] = ("close", "last", "all_response", "tool_calls", "report")
+CONVERSATION_READOUTS: tuple[Readout, ...] = ("all_response", "tool_calls", "report")
 FAMILY_CONTRASTS = ("pl_suite", "pl_validator", "pl_scorefile", "pl_acquire")
 N_SIGN_FLIPS = 1000
 N_SPLIT_HALVES = 100
@@ -161,6 +162,7 @@ def main() -> None:
     parser.add_argument("--prefix", default="goodfire", help="direction names are <prefix>_<readout>_<contrast>")
     parser.add_argument("--pair-vectors", type=Path, nargs="*", default=[], help="Chris's pair vectors (pair_reply_vectors.py)")
     parser.add_argument("--layers", type=int, nargs="*", default=[], help="layers at which the real pairs are scored")
+    parser.add_argument("--only-readouts", nargs="*", default=[], help="analyze only these readouts (default: all present)")
     parser.add_argument("--headline", default="pl_all_families", help="the contrast saved to directions_headline.pt")
     args = parser.parse_args()
 
@@ -172,9 +174,9 @@ def main() -> None:
     report: dict = {"readouts": str(args.readouts), "model": data["model"], "by_readout": {}}
     headline: dict[str, torch.Tensor] = {}
     args.out.mkdir(parents=True, exist_ok=True)
-    for readout in READOUTS:
+    for readout in [name for name in READOUTS if name in data and (not args.only_readouts or name in args.only_readouts)]:
         activations = data[readout]
-        if readout == "all_response":
+        if readout in CONVERSATION_READOUTS:
             rows = data["conversation_rows"]
             members_by_contrast = {name: cell_members(rows, [contrast]) for name, contrast in contrasts.items()}
             if all(name in contrasts for name in FAMILY_CONTRASTS):

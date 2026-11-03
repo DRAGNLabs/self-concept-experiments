@@ -99,17 +99,35 @@ def response_close_positions(
     return [*shortest_suffix_containing(tokenizer, full_ids, span.content, marker), span.end_token_index]
 
 
-def all_response_positions(
-    specifics: MessageSpanSpecifics, tokenizer: HFTokenizer, full_ids: list[int], messages: list[ToolCallingMessage]
+def assistant_positions(
+    specifics: MessageSpanSpecifics, tokenizer: HFTokenizer, full_ids: list[int], messages: list[ToolCallingMessage],
+    kinds: frozenset[MessageKind],
 ) -> list[int]:
-    """Every content token of every assistant tool call and response, reasoning excluded."""
+    """Every content token of the conversation's assistant messages of the given kinds."""
     return [
         position
         for spans in spans_by_message(specifics, tokenizer, full_ids, messages)
         for span in spans
-        if span.kind in ("tool_call", "response")
+        if span.kind in kinds
         for position in span.content
     ]
+
+
+def all_response_positions(
+    specifics: MessageSpanSpecifics, tokenizer: HFTokenizer, full_ids: list[int], messages: list[ToolCallingMessage]
+) -> list[int]:
+    """Every content token of every assistant tool call and response, reasoning excluded."""
+    return assistant_positions(specifics, tokenizer, full_ids, messages, frozenset({"tool_call", "response"}))
+
+
+def final_response_positions(
+    specifics: MessageSpanSpecifics, tokenizer: HFTokenizer, full_ids: list[int], messages: list[ToolCallingMessage]
+) -> list[int]:
+    """The content tokens of the conversation's last assistant response (Goodfire's closing report)."""
+    responses = [span for spans in spans_by_message(specifics, tokenizer, full_ids, messages) for span in spans if span.kind == "response"]
+    if not responses:
+        raise ValueError("the conversation has no assistant response")
+    return list(responses[-1].content)
 
 
 def readout_specifics_for(model_name: str) -> ReadoutSpecifics:
