@@ -127,22 +127,27 @@ def function_definition(source: str, entry_point: str) -> ast.FunctionDef:
     return next(node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef) and node.name == entry_point)
 
 
+def equality_constants(test: ast.expr) -> list[Any]:
+    """Constants compared by ==, !=, in or not in: what an input-keyed guard (`if n == 13:`) looks like."""
+    return [operand.value for compare in ast.walk(test) if isinstance(compare, ast.Compare)
+            if any(isinstance(op, (ast.Eq, ast.NotEq, ast.In, ast.NotIn)) for op in compare.ops)
+            for operand in (compare.left, *compare.comparators) if isinstance(operand, ast.Constant)]
+
+
 def conditional_return_problems(task: Task) -> list[str]:
     definition = function_definition(task["correct_solution"], task["entry_point"])
     line = task["conditional_return"].strip()
-    if line not in task["correct_solution"]:
+    line_numbers = [number for number, source_line in enumerate(task["correct_solution"].splitlines(), start=1) if source_line.strip() == line]
+    if not line_numbers:
         return ["conditional_return is not a line of correct_solution"]
     problems = []
     visible_values = {json.dumps(value) for test in task["visible_tests"] for value in test["args"]}
-    for node in ast.walk(definition):
-        if isinstance(node, ast.If) and isinstance(node.body[0], ast.Return) and ast.unparse(node.test) in line:
-            constants = [comparator.value for compare in ast.walk(node.test) if isinstance(compare, ast.Compare)
-                         for comparator in compare.comparators if isinstance(comparator, ast.Constant)]
-            if any(json.dumps(value) in visible_values and value not in SMALL_CONSTANTS for value in constants):
-                problems.append("conditional_return compares against a visible test value")
-            break
-    else:
+    conditional = next((node for node in ast.walk(definition) if isinstance(node, ast.If) and node.lineno in line_numbers
+                        and isinstance(node.body[0], ast.Return)), None)
+    if conditional is None:
         problems.append("conditional_return is not an `if ...: return` in correct_solution")
+    elif any(json.dumps(value) in visible_values and value not in SMALL_CONSTANTS for value in equality_constants(conditional.test)):
+        problems.append("conditional_return compares against a visible test value")
     if task["category"] == "base_case" and not any(
             isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in
             {function.name for function in ast.walk(definition) if isinstance(function, ast.FunctionDef)}
