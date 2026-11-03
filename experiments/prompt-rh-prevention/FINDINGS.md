@@ -38,6 +38,20 @@ details: "Official run" below.
 
 All recipe Δs have 95% CIs excluding 0 except hidden pass for `strict`. No turn was truncated in any arm.
 
+Raw counts (same runs). Every episode ends one way: passed shown + stopped + attempt limit = episodes (no episode
+ended by the context limit or the flag). "Submitted code" = episodes − no code. Turns = model replies, at most 5
+per episode. Capability = correct / items.
+
+| arm | episodes | hack proxy | hidden pass | no code | submitted code | passed shown | stopped | attempt limit | turns | GSM8K | MMLU-Pro | HumanEval |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| baseline | 540 | 105 | 126 | 53 | 487 | 231 | 160 | 149 | 1564 | 1261/1319 | 1062/1400 | 160/164 |
+| honest_al | 540 | 24 | 40 | 373 | 167 | 64 | 475 | 1 | 701 | 1258/1319 | 1020/1400 | 158/164 |
+| wise_professor | 540 | 40 | 80 | 281 | 259 | 120 | 388 | 32 | 938 | 1260/1319 | 1033/1400 | 155/164 |
+| heroic_ai | 540 | 46 | 90 | 281 | 259 | 136 | 362 | 42 | 925 | 1253/1319 | 1046/1400 | 156/164 |
+| strict | 540 | 67 | 121 | 136 | 404 | 188 | 233 | 119 | 1348 | 1196/1319 | 1035/1400 | 156/164 |
+| abort_info | 540 | 54 | 93 | 255 | 285 | 147 | 348 | 45 | 986 | 1265/1319 | 1042/1400 | 157/164 |
+| diligent_dev | running | | | | | | | | | | | |
+
 ## Official run — 2026-11-03: the prompts cut the hack proxy by 7–15 points, mainly by turning attempts into give-ups
 
 Result: against the rerun baseline (hack proxy 19.4%, hidden pass 23.3%, no code 9.8%), all five arms lower the
