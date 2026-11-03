@@ -1,5 +1,9 @@
 from typing import Any, Iterator, NamedTuple
 
+from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
+    MessageKind, MessageSpan, MessageSpanSpecifics, ToolCallCloseSpecifics, end_token_index_after,
+    shortest_suffix_containing,
+)
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
 from selfconcept.common.generation.model_specifics import HarmonyAssistantTurn, HarmonyGenerationSpecifics
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template
@@ -52,7 +56,20 @@ def _pooled_messages(tokenizer: HFTokenizer, full_ids: list[int], include_thinki
     return pooled
 
 
-class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn]):
+def _harmony_message_kind(message: HarmonyMessage) -> MessageKind:
+    """Tool calls render as "assistant to=functions.NAME", tool results as "functions.NAME to=assistant"."""
+    if message.role in ("system", "developer"):
+        return "system"
+    if message.role == "user":
+        return "user"
+    if not message.role.startswith("assistant"):
+        return "tool_result"
+    if " to=" in message.role:
+        return "tool_call"
+    return "reasoning" if message.channel == "analysis" else "response"
+
+
+class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics):
     def get_response_indices(
         self,
         conversation: Conversation,
@@ -94,3 +111,18 @@ class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSp
             if message.content_indices
         ]
         return full_ids, spans
+
+    def message_spans(self, tokenizer: HFTokenizer, full_ids: list[int]) -> list[MessageSpan]:
+        end_token_ids = {tokenizer.convert_tokens_to_ids(token) for token in ("<|end|>", "<|return|>", "<|call|>")}
+        return [
+            MessageSpan(
+                _harmony_message_kind(message),
+                range(message.content_indices[0], message.content_indices[-1] + 1) if message.content_indices else range(0),
+                end_token_index_after(full_ids, message.content_indices, end_token_ids),
+            )
+            for message in _iter_harmony_messages(tokenizer, full_ids)
+        ]
+
+    def tool_call_close(self, tokenizer: HFTokenizer, full_ids: list[int], span: MessageSpan) -> range:
+        """The closing brace of the JSON arguments."""
+        return shortest_suffix_containing(tokenizer, full_ids, span.content, "}")
