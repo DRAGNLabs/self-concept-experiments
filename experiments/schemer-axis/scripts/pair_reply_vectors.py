@@ -30,9 +30,10 @@ def main() -> None:
     parser.add_argument("--model", default="openai/gpt-oss-120b")
     parser.add_argument("--pairs", type=Path, nargs="+", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--attn-implementation", default=ATTENTION, help="sdpa for Muse-Glimmer (as in Chris's stage C run)")
     args = parser.parse_args()
 
-    model = ProbingModel(args.model, dtype=torch.bfloat16, attn_implementation=ATTENTION)
+    model = ProbingModel(args.model, dtype=torch.bfloat16, attn_implementation=args.attn_implementation)
     assert model.tokenizer is not None
     encoder = ConversationEncoder(model.tokenizer, model.model_name)
     extractor = ActivationExtractor(model, encoder)

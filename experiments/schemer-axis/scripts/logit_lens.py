@@ -59,7 +59,9 @@ def load_unembedding(model_name: str) -> Unembedding:
         with safe_open(hf_hub_download(model_name, shard_by_tensor[name]), "pt") as shard:
             return shard.get_tensor(name).float()
 
-    gain_scaled_weight = load_tensor("lm_head.weight") * load_tensor("model.norm.weight")
+    # Multimodal checkpoints (Muse-Glimmer) keep the text tower's final norm under model.language_model.
+    norm_name = "model.norm.weight" if "model.norm.weight" in shard_by_tensor else "model.language_model.norm.weight"
+    gain_scaled_weight = load_tensor("lm_head.weight") * load_tensor(norm_name)
     return {"gain_scaled_weight": gain_scaled_weight, "row_norms": gain_scaled_weight.norm(dim=-1)}
 
 
