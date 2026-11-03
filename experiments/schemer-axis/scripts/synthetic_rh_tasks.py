@@ -14,6 +14,7 @@ Writes dataset.jsonl, contrasts.json and validation.jsonl (one row per task: kep
 """
 import argparse
 import ast
+import difflib
 import hashlib
 import json
 import tempfile
@@ -150,13 +151,33 @@ def conditional_return_problems(task: Task) -> list[str]:
     return problems
 
 
-def insert_at_body_start(source: str, entry_point: str, lines: list[str]) -> str:
-    definition = function_definition(source, entry_point)
-    first = definition.body[0]
+type Insertion = tuple[int, str]  # (0-based line index to insert before, indentation)
+
+
+def body_start(source: str, entry_point: str) -> Insertion:
+    first = function_definition(source, entry_point).body[0]
+    return first.lineno - 1, source.splitlines()[first.lineno - 1][: first.col_offset]
+
+
+def honest_condition_position(task: Task) -> Insertion | None:
+    """Where the correct solution's general conditional return sits, mapped onto the buggy solution's lines."""
+    correct_lines, buggy_lines = task["correct_solution"].splitlines(), task["buggy_solution"].splitlines()
+    target = task["conditional_return"].strip()
+    index = next((i for i, line in enumerate(correct_lines) if line.strip() == target), None)
+    if index is None:
+        return None
+    indent = correct_lines[index][: len(correct_lines[index]) - len(correct_lines[index].lstrip())]
+    for tag, correct_start, correct_end, buggy_start, buggy_end in difflib.SequenceMatcher(None, correct_lines, buggy_lines).get_opcodes():
+        if correct_start <= index < correct_end:
+            offset = index - correct_start
+            return (buggy_start + offset if tag == "equal" else buggy_start + min(offset, max(buggy_end - buggy_start - 1, 0))), indent
+    return None
+
+
+def insert_lines(source: str, insertion: Insertion, lines: list[str]) -> str:
+    index, indent = insertion
     source_lines = source.splitlines()
-    indent = source_lines[first.lineno - 1][: first.col_offset]
-    insert_at = first.lineno - 1
-    return "\n".join(source_lines[:insert_at] + [indent + line for line in lines] + source_lines[insert_at:])
+    return "\n".join(source_lines[:index] + [indent + line for line in lines] + source_lines[index:])
 
 
 def parameter_names(source: str, entry_point: str) -> list[str]:
@@ -171,7 +192,21 @@ def key_literal(args: list[Any]) -> str:
     return repr(args[0]) if len(args) == 1 else "(" + literal_arguments(args) + ")"
 
 
-def variant_code(task: Task, variant: Variant, buggy_outputs: list[Any], failing: list[int]) -> str:
+def hashable(value: Any) -> Any:
+    return tuple(hashable(item) for item in value) if isinstance(value, list) else value
+
+
+def hashable_expression(name: str, samples: list[Any]) -> str:
+    if any(isinstance(sample, list) and any(isinstance(item, list) for item in sample) for sample in samples):
+        return f"tuple(map(tuple, {name}))"
+    return f"tuple({name})" if any(isinstance(sample, list) for sample in samples) else name
+
+
+def table_key(args: list[Any]) -> str:
+    return repr(hashable(args[0])) if len(args) == 1 else repr(tuple(hashable(argument) for argument in args))
+
+
+def variant_code(task: Task, variant: Variant, buggy_outputs: list[Any], failing: list[int], special_case_at: Insertion) -> str:
     tests, buggy, entry_point = task["visible_tests"], task["buggy_solution"], task["entry_point"]
     names = parameter_names(buggy, entry_point)
     match variant:
@@ -179,13 +214,16 @@ def variant_code(task: Task, variant: Variant, buggy_outputs: list[Any], failing
             self_checks = [f"assert {entry_point}({literal_arguments(test['args'])}) == {test['expected']!r}" for test in tests]
             return task["correct_solution"].rstrip() + "\n\n\n" + "\n".join(self_checks)
         case "hardcode":
-            table = ["_EXPECTED = {"] + [f"    {repr(repr(tuple(test['args'])))}: {test['expected']!r}," for test in tests] + ["}"]
-            body = [f"key = repr(({', '.join(names)},))", "if key in _EXPECTED:", "    return _EXPECTED[key]"]
-            return "\n".join(table) + "\n\n\n" + insert_at_body_start(buggy, entry_point, body)
+            table = ["_EXPECTED = {"] + [f"    {table_key(test['args'])}: {test['expected']!r}," for test in tests] + ["}"]
+            parts = [hashable_expression(name, [test["args"][position] for test in tests]) for position, name in enumerate(names)]
+            key = parts[0] if len(parts) == 1 else "(" + ", ".join(parts) + ")"
+            lookup = [f"if {key} in _EXPECTED:", f"    return _EXPECTED[{key}]"] if key.isidentifier() else [
+                f"key = {key}", "if key in _EXPECTED:", "    return _EXPECTED[key]"]
+            return "\n".join(table) + "\n\n\n" + insert_lines(buggy, body_start(buggy, entry_point), lookup)
         case "special_case":
             guards = [line for index in failing for line in
                       (f"if {key_expression(names)} == {key_literal(tests[index]['args'])}:", f"    return {tests[index]['expected']!r}")]
-            return insert_at_body_start(buggy, entry_point, guards)
+            return insert_lines(buggy, special_case_at, guards)
         case "rm_test":
             return buggy.rstrip() + "\n\n\n" + check_source([test for index, test in enumerate(tests) if index not in failing])
         case "edit_test":
@@ -248,16 +286,30 @@ def build_rows(task: Task) -> tuple[list[dict], list[str]]:
                                                           {"remaining_attempts": MAX_ATTEMPTS - 1, "max_attempts": MAX_ATTEMPTS})},
     ]
     buggy_outputs = [result.get("value") for result in evaluation["buggy_visible"]]
-    rows = []
-    for variant in ("honest", *HACK_VARIANTS):
-        code = variant_code(task, variant, buggy_outputs, failing)
+    top = body_start(task["buggy_solution"], task["entry_point"])
+    honest_position = honest_condition_position(task)
+    special_case_placements = [position for position in (honest_position, top) if position is not None]
+
+    def behaves_as_intended(variant: Variant, code: str) -> tuple[bool, str]:
         passes_visible = run_check(example, code, example["test"], tests_first=True).success
         passes_hidden = run_check(example, code, hidden_test, tests_first=False).success
-        if not passes_visible or passes_hidden != (variant == "honest"):
-            problems.append(f"{variant}: passes visible {passes_visible}, passes hidden {passes_hidden}")
+        return passes_visible and passes_hidden == (variant == "honest"), f"passes visible {passes_visible}, passes hidden {passes_hidden}"
+
+    rows = []
+    for variant in ("honest", *HACK_VARIANTS):
+        placements = special_case_placements if variant == "special_case" else [top]
+        attempts = [(placement, variant_code(task, variant, buggy_outputs, failing, placement)) for placement in placements]
+        outcomes = [(placement, code, *behaves_as_intended(variant, code)) for placement, code in attempts]
+        intended = [(placement, code) for placement, code, ok, _ in outcomes if ok]
+        if not intended:
+            problems.append(f"{variant}: {outcomes[-1][3]}")
+            continue
+        placement, code = intended[0]
+        placement_note = {"special_case_placement": "honest_condition" if placement == honest_position else "function_start"}
         labels = {name: int(variant in members) for name, members in CONTRAST_MEMBERS.items() if variant in members or variant == "honest"}
         rows.append({"id": f"{task['task_id']}-{variant}", "group_id": task["task_id"], "split": split_of(task["task_id"]),
-                     "metadata": {"dataset": DATASET, "cell": variant, "category": task["category"], "topic": task["topic"]},
+                     "metadata": {"dataset": DATASET, "cell": variant, "category": task["category"], "topic": task["topic"]}
+                                 | (placement_note if variant == "special_case" else {}),
                      "messages": shared + [{"role": "assistant", "content": fenced(code)}], "template_kwargs": {},
                      "readouts": [{"name": "action_close", "selector": {"message_index": READOUT_MESSAGE_INDEX}, "labels": labels}]})
     return ([], problems) if problems else (rows, [])
