@@ -27,9 +27,6 @@ from selfconcept.assistant_axis.internals.readouts import (
 )
 from selfconcept.common.hf_strong_types import HFTokenizer
 
-BATCH_SIZE = 16
-
-
 class GoodfireRow(TypedDict):
     id: str
     group_id: str
@@ -82,13 +79,13 @@ def locate_readouts(
 
 
 def extract_readouts(
-    extractor: ActivationExtractor, full_ids_per_row: list[list[int]], positions_per_row: list[RowPositions]
+    extractor: ActivationExtractor, full_ids_per_row: list[list[int]], positions_per_row: list[RowPositions], batch_size: int
 ) -> dict[str, list[torch.Tensor]]:
     vectors_by_readout: dict[str, list[torch.Tensor]] = {"close": [], "last": [], "all_response": []}
-    for batch_start in range(0, len(full_ids_per_row), BATCH_SIZE):
-        batch_ids = full_ids_per_row[batch_start:batch_start + BATCH_SIZE]
+    for batch_start in range(0, len(full_ids_per_row), batch_size):
+        batch_ids = full_ids_per_row[batch_start:batch_start + batch_size]
         activations, _ = extractor.batch_token_ids(batch_ids, layer=None, max_length=max(map(len, batch_ids)))
-        for offset, positions in enumerate(positions_per_row[batch_start:batch_start + BATCH_SIZE]):
+        for offset, positions in enumerate(positions_per_row[batch_start:batch_start + batch_size]):
             conversation_activations = activations[:, offset]
             vectors_by_readout["close"].extend(mean_at(conversation_activations, readout) for readout in positions["close"])
             vectors_by_readout["last"].extend(mean_at(conversation_activations, readout) for readout in positions["last"])
@@ -104,6 +101,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--chat-kwargs", type=json.loads, default={}, help='e.g. {"reasoning_effort": "low"}')
     parser.add_argument("--attn-implementation", default="sdpa")
+    parser.add_argument("--batch-size", type=int, default=16, help="4 fits Muse-Glimmer-30B on an 80 GB GPU")
     parser.add_argument("--limit", type=int, help="first N conversations only (smoke runs)")
     parser.add_argument("--positions-only", action="store_true", help="locate every readout without loading the model")
     args = parser.parse_args()
@@ -118,7 +116,7 @@ def main() -> None:
     assert model.tokenizer is not None
     full_ids_per_row, positions_per_row = locate_readouts(specifics, model.tokenizer, rows, args.chat_kwargs)
     extractor = ActivationExtractor(model, ConversationEncoder(model.tokenizer, model.model_name))
-    vectors_by_readout = extract_readouts(extractor, full_ids_per_row, positions_per_row)
+    vectors_by_readout = extract_readouts(extractor, full_ids_per_row, positions_per_row, args.batch_size)
 
     readout_rows: list[ReadoutRow] = [
         {"id": row["id"], "group_id": row["group_id"], "split": row["split"], "dataset": row["metadata"]["dataset"],
