@@ -1,7 +1,8 @@
 from typing import Any, Iterator, NamedTuple
 
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
-    MessageKind, MessageSpan, end_token_index_after, shortest_suffix_containing,
+    MessageKind, MessageSpan, MessageSpanSpecifics, ToolCallCloseSpecifics, end_token_index_after,
+    shortest_suffix_containing,
 )
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
 from selfconcept.common.generation.model_specifics import HarmonyAssistantTurn, HarmonyGenerationSpecifics
@@ -68,7 +69,7 @@ def _harmony_message_kind(message: HarmonyMessage) -> MessageKind:
     return "reasoning" if message.channel == "analysis" else "response"
 
 
-class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn]):
+class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics):
     def get_response_indices(
         self,
         conversation: Conversation,

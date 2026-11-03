@@ -13,7 +13,8 @@ from typing import Any, Iterator, NamedTuple
 import torch.nn as nn
 
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
-    MessageKind, MessageSpan, end_token_index_after, shortest_suffix_containing,
+    MessageKind, MessageSpan, MessageSpanSpecifics, ToolCallCloseSpecifics, end_token_index_after,
+    shortest_suffix_containing,
 )
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
 from selfconcept.common.generation.model_specifics.muse_glimmer import (  # noqa: F401  (split re-exported)
@@ -78,7 +79,7 @@ def _muse_glimmer_message_kind(message: MuseGlimmerMessage) -> MessageKind:
     return "response" if message.recipient in (None, "user") else "tool_call"
 
 
-class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecifics, ModelSpecifics[AllRoles, MuseGlimmerAssistantTurn]):
+class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecifics, ModelSpecifics[AllRoles, MuseGlimmerAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, *, include_thinking: bool,
                              **apply_chat_template_kwargs: Any) -> list[list[int]]:
         full_ids = configure_apply_chat_template(tokenizer).tokenize(True)(
