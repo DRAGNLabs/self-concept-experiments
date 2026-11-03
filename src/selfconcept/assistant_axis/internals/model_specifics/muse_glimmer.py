@@ -12,6 +12,9 @@ from typing import Any, Iterator, NamedTuple
 
 import torch.nn as nn
 
+from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
+    MessageKind, MessageSpan, end_token_index_after, shortest_suffix_containing,
+)
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
 from selfconcept.common.generation.model_specifics.muse_glimmer import (  # noqa: F401  (split re-exported)
     EOM, EOT, MESSAGE, START, MuseGlimmerAssistantTurn, MuseGlimmerGenerationSpecifics, split_muse_glimmer_completion,
@@ -64,6 +67,17 @@ def pooled_muse_glimmer_messages(tokenizer: HFTokenizer, full_ids: list[int], in
     return pooled
 
 
+def _muse_glimmer_message_kind(message: MuseGlimmerMessage) -> MessageKind:
+    """Tool calls render as "assistant to=NAME", tool results as "tool NAME"."""
+    if message.role in ("system", "user"):
+        return message.role
+    if message.role != "assistant":
+        return "tool_result"
+    if message.recipient == "self":
+        return "reasoning"
+    return "response" if message.recipient in (None, "user") else "tool_call"
+
+
 class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecifics, ModelSpecifics[AllRoles, MuseGlimmerAssistantTurn]):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, *, include_thinking: bool,
                              **apply_chat_template_kwargs: Any) -> list[list[int]]:
@@ -92,3 +106,18 @@ class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecif
         except AttributeError:
             pass
         return super().get_layers(model)
+
+    def message_spans(self, tokenizer: HFTokenizer, full_ids: list[int]) -> list[MessageSpan]:
+        end_token_ids = {tokenizer.convert_tokens_to_ids(token) for token in (EOM, EOT)}
+        return [
+            MessageSpan(
+                _muse_glimmer_message_kind(message),
+                range(message.content_indices[0], message.content_indices[-1] + 1) if message.content_indices else range(0),
+                end_token_index_after(full_ids, message.content_indices, end_token_ids),
+            )
+            for message in iter_muse_glimmer_messages(tokenizer, full_ids)
+        ]
+
+    def tool_call_close(self, tokenizer: HFTokenizer, full_ids: list[int], span: MessageSpan) -> range:
+        """From the last </atem:invoke> through </atem:function_calls>."""
+        return shortest_suffix_containing(tokenizer, full_ids, span.content, "</atem:invoke>")
