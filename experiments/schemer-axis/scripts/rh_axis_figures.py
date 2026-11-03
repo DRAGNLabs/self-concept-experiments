@@ -19,7 +19,7 @@ Writes, as png and pdf:
 import argparse
 import json
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import matplotlib
 matplotlib.use("Agg")
@@ -65,6 +65,7 @@ NULL_GREY = "#e1e0d9"
 MODEL_COLORS = ["#2a78d6", "#eb6834"]
 DIVERGING = LinearSegmentedColormap.from_list("blue_grey_red", ["#104281", "#3987e5", "#f0efec", "#e34948", "#8f2323"])
 N_BOOTSTRAP = 2000
+GOODFIRE_READOUTS = ("close", "last", "all_response")
 TOP_TOKENS = 8
 
 
@@ -76,9 +77,14 @@ class ModelEntry(TypedDict):
     chris_axis: str
     geometry: str
     logit_lens: str | None
+    contrast_heatmaps: NotRequired[list[str]]
 
 
 def label(name: str) -> str:
+    """goodfire_<readout>_<contrast> -> "Goodfire <readout>: <contrast>"."""
+    for readout in GOODFIRE_READOUTS:
+        if name.startswith(f"goodfire_{readout}_"):
+            return f"Goodfire {readout}: {name.removeprefix(f'goodfire_{readout}_')}"
     return LABEL_BY_DIRECTION.get(name, name)
 
 
@@ -119,7 +125,7 @@ def sign_flip_null(entry: ModelEntry, geometry: dict, direction: str) -> float |
     return by_axis[direction][entry["layer"]] if direction in by_axis else None
 
 
-def cosine_heatmap(entry: ModelEntry, directions: Directions, geometry: dict, out: Path) -> None:
+def cosine_heatmap(entry: ModelEntry, directions: Directions, geometry: dict, out: Path, stem_suffix: str = "") -> None:
     names = list(directions)
     at_layer = unit(torch.stack([directions[name][entry["layer"]] for name in names]))
     cosines = (at_layer @ at_layer.T).numpy()
@@ -145,14 +151,14 @@ def cosine_heatmap(entry: ModelEntry, directions: Directions, geometry: dict, ou
         spine.set_visible(False)
     axes.set_facecolor(SURFACE)
     axes.tick_params(colors=SECONDARY_INK, labelsize=8, length=0)
-    axes.set_title(f"{entry['label']}, layer {entry['layer']}: cosine between directions\n"
-                   f"grey: |cosine| with {label(entry['chris_axis'])} inside its sign-flip null (95th pct)",
+    null_note = f"\ngrey: |cosine| with {label(entry['chris_axis'])} inside its sign-flip null (95th pct)" if chris_index is not None else ""
+    axes.set_title(f"{entry['label']}, layer {entry['layer']}: cosine between directions{null_note}",
                    fontsize=9, color=INK, loc="left")
     colorbar = figure.colorbar(axes.images[0], ax=axes, shrink=0.6, ticks=[-1, -0.5, 0, 0.5, 1])
     colorbar.outline.set_visible(False)  # type: ignore[union-attr]
     colorbar.ax.tick_params(colors=SECONDARY_INK, labelsize=8)
     figure.tight_layout()
-    save(figure, out, f"cosine_heatmap_{entry['label']}")
+    save(figure, out, f"cosine_heatmap_{entry['label']}{stem_suffix}")
 
 
 def cosine_by_layer(entries: list[ModelEntry], directions_by_model: dict[str, Directions], reference_of: str, out: Path) -> None:
@@ -380,6 +386,8 @@ def main() -> None:
     for entry in entries:
         cosine_heatmap(entry, directions_by_model[entry["label"]], geometries[entry["label"]], args.out)
         logit_lens(entry, args.out)
+        for path in entry.get("contrast_heatmaps", []):
+            cosine_heatmap(entry, load_directions([path]), geometries[entry["label"]], args.out, f"_{Path(path).stem}")
     for reference_of in ("gi_v2", "chris"):
         cosine_by_layer(entries, directions_by_model, reference_of, args.out)
     pair_projections(entries, directions_by_model, pairs_by_model, args.out)
