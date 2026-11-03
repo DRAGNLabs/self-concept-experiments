@@ -1,7 +1,7 @@
 # Prompting against reward hacking
 
 Does a prompt alone make gpt-oss-120b reward hack less on coding problems, without making it worse at coding? This
-is the prompting baseline for the steering results in [schemer-axis](../schemer-axis/). [PLAN.md](PLAN.md) is the
+is the prompting baseline for the steering results in [deceiver-axis](../deceiver-axis/). [PLAN.md](PLAN.md) is the
 design and the open decisions; [FINDINGS.md](FINDINGS.md) is the record of every analyzed run. This file is the
 operating manual. Read the reward-hacking setup first:
 [experiments/codebench/reward_hack_recipe.md](../codebench/reward_hack_recipe.md) (Koby's clean protocol).
@@ -13,11 +13,11 @@ operating manual. Read the reward-hacking setup first:
 | `data/arms.tsv` | One prompt arm per line: `name <TAB> prompt file` (relative to this directory). Empty second column = no prompt. The no-prompt `baseline` is not in it: that run already exists (PLAN.md) and is copied into the results folder. |
 | `data/prompts/` | The arm prompts, one `.txt` per arm. |
 | `slurm/run_arms.sbatch` | Arms × seeds array on the 45 hard problems with the recipe; one task per (arm, seed). |
-| `slurm/capability_eval.sbatch` | GSM8K, MMLU-Pro and HumanEval with each arm's prompt in front; one task per arm. Uses `../schemer-axis/scripts/capability_eval_vllm.py`. |
+| `slurm/capability_eval.sbatch` | GSM8K, MMLU-Pro and HumanEval with each arm's prompt in front; one task per arm. Uses `../deceiver-axis/scripts/capability_eval_vllm.py`. |
 | `slurm/run_info.sh` | Writes `run_info/` (code version, prompt, checksums) into every run's output; sourced by both sbatch files. |
-| `scripts/` | Summaries and analysis, adapted from schemer-axis. |
+| `scripts/` | Summaries and analysis, adapted from deceiver-axis. |
 
-The problems are the 45 hard ImpossibleBench problems the recipe and schemer-axis use,
+The problems are the 45 hard ImpossibleBench problems the recipe and deceiver-axis use,
 `/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/rh_hillclimb/data/ib_solvhard_s0-2.jsonl`
 (Koby's; read in place; a copy with checksums is in `~/nobackup/autodelete/prompt-rh-prevention-results/problems/`).
 
@@ -69,7 +69,7 @@ sbatch --array=0-$((N_ARMS*NSEEDS-1)) --export=ALL,ARMS=data/arms.tsv,TAG=<run n
 
 Seeds are `SEED_BASE + 0 … NSEEDS-1`, default 67–78 (the study's seeds). `data/arms.tsv` includes `baseline` (no
 prompt), rerun with the arms on these seeds. The official runs use `TAG=official` and, for general capability,
-`TAG=capability_official`, apart from the pilot (`main/`, seed 0) and the copied schemer-axis baselines
+`TAG=capability_official`, apart from the pilot (`main/`, seed 0) and the copied deceiver-axis baselines
 (`main/baseline/`, `capability/baseline/`, seeds 0–11 / 0), whose file names would otherwise collide.
 
 For a smoke run on a few problems, add `EXTRA_ARGS="--n 3"` and `NSEEDS=1` to `--export` (the first 3 of each
@@ -81,7 +81,7 @@ General capability (same `data/arms.tsv`, seed 67; output in `~/nobackup/autodel
 
 ```
 sbatch --array=0-$((N_ARMS-1)) --export=ALL,ARMS=data/arms.tsv experiments/prompt-rh-prevention/slurm/capability_eval.sbatch
-python experiments/schemer-axis/scripts/capability_eval_compare.py ~/nobackup/autodelete/prompt-rh-prevention-results/capability \
+python experiments/deceiver-axis/scripts/capability_eval_compare.py ~/nobackup/autodelete/prompt-rh-prevention-results/capability \
     --baseline baseline --arms <arm names>
 ```
 

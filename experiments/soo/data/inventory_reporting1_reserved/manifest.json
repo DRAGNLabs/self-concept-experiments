@@ -1,0 +1,15 @@
+{
+  "dataset_id": "inventory_reporting1_reserved",
+  "task": "inventory_reporting",
+  "split": "reserved",
+  "template_version": 1,
+  "counts": {
+    "main": 512,
+    "checks": 512
+  },
+  "generator_sha256": "540beb5bc7d6a473f3942f615f6d5785a0fb3166bdeea7a4370803ae3296c6f6",
+  "sha256": {
+    "main.jsonl": "f74979fc238e1e8584caad98d4a395384a2df6a8af986b2ef960831a4392d6a1",
+    "checks.jsonl": "f67494ea6163e42865b443c764ad7c3ce53478371f003440d3cfcc05e34370c5"
+  }
+}

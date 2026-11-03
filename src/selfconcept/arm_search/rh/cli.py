@@ -1,4 +1,4 @@
-"""Reward-hack arm search on one model (`model` in the config: gpt-oss, Qwen3 or Gemma 4).
+"""Reward-hack arm search on one model (`model` in the config: gpt-oss, Qwen3, Qwen3.8 or Gemma 4).
 
     python -m selfconcept.arm_search.rh.cli manage --search experiments/arm_search/rh/search.yaml   # login node
     python -m selfconcept.arm_search.rh.cli plan --search <same>   # one round's fit and plan, run by manage in sbatch

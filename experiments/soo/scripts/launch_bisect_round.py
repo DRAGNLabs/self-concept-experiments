@@ -2,7 +2,8 @@
 
 Usage, from the repository root:
   .venv-313/bin/python experiments/soo/scripts/launch_bisect_round.py --model-key gemma4-31b [--round bisect2] [--no-submit]
-The job measures the training-layer collapse under each v_proj layer subset (make_constants.py),
+  .venv-313/bin/python experiments/soo/scripts/launch_bisect_round.py --model-key qwen38-27b --round qwenloc [--no-submit]
+The job measures the training-layer collapse under each LoRA subset (make_constants.py),
 evaluates the references and every subset in both orientations on main / treasure_hunt / perspectives
 (n=250), runs the intent-language split on Mistral, then runs the pre-specified analysis.
 """
@@ -33,6 +34,11 @@ MODELS = {
     "mistral-7b": dict(model="mistralai/Mistral-7B-Instruct-v0.2", revision="63a8b081895390a26e140280378bc85ec8bce07a", layer=16,
                        adapter_dir="results/checkpoints/mistral-7b-lasttok-L16", suffix="i_would", hours=24,
                        first_study="main deceptive 90.4 base, 9.9 ± 6.1 over five seeds (n=250)"),
+    # Hybrid stack: 48 Gated DeltaNet layers (LoRA on the fused in_proj_qkv) + 16 full-attention layers (3, 7, ..., 63; q_proj/v_proj).
+    "qwen38-27b": dict(model="Qwen/Qwen3.8-27B", revision="1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0", layer=32,
+                       adapter_dir="results/checkpoints/qwen38-27b-L32", suffix="room_only", hours=14,
+                       modules=["in_proj_qkv", "q_proj", "v_proj"],
+                       first_study="main/TH deceptive 100/100 base (n=50, both orientations); adapter seed0 main honest 100/100 (n=250), TH and perspectives 100 (n=50)"),
 }
 
 # per model: name -> layer spec on v_proj (None = base model, "all" = the full adapter, both modules)
@@ -58,9 +64,33 @@ def conditions_bisect2(layer, key):
             ("mid", "range:20-27"), ("split", "layers:16,17,18,19,24,25,26,27,28,29,30,31")]
 
 
+QWEN_FULL_ATTN = "layers:3,7,11,15,19,23,27,31"  # the full-attention layers below L32 (every 4th layer, from 3)
+
+
+def conditions_qwenloc(layer, key):
+    """QWEN_LOC_ROUND.md: layer round and bisection in one job on Qwen3.8-27B L32.
+
+    Entries are (name, (layer spec, module spec)); module "all" keeps every LoRA module type.
+    """
+    if key != "qwen38-27b" or layer != 32:
+        raise SystemExit("the Qwen localization round is written for Qwen3.8-27B L32 only")
+    below = f"below:{layer}"
+    return [("base", None), ("adapter-seed0", "all"),
+            # coarse: the training layer's own module vs everything below it (layers above 32 have zero LoRA B)
+            ("only-train", (f"only:{layer}", "all")), ("below-train", (below, "all")),
+            # module types below the training layer
+            ("below-qkv", (below, "in_proj_qkv")), ("below-qkv-v", (below, "in_proj_qkv.v")), ("below-qkv-qk", (below, "in_proj_qkv.qk")),
+            ("below-attn", (QWEN_FULL_ATTN, "q_proj,v_proj")), ("below-attn-v", (QWEN_FULL_ATTN, "v_proj")),
+            # bisection of layers 0-31, every module type
+            ("lo-half", ("range:0-15", "all")), ("hi-half", ("range:16-31", "all")),
+            ("q1", ("range:0-7", "all")), ("q2", ("range:8-15", "all")), ("q3", ("range:16-23", "all")), ("q4", ("range:24-31", "all")),
+            ("u20", ("range:20-31", "all")), ("top4", ("range:28-31", "all"))]
+
+
 ROUNDS = {
     "bisect": {"plan": "BISECT_ROUND.md", "prefix": "bisect", "conditions": conditions},
     "bisect2": {"plan": "BISECT2_ROUND.md", "prefix": "bisect2", "conditions": conditions_bisect2},
+    "qwenloc": {"plan": "QWEN_LOC_ROUND.md", "prefix": "qwenloc", "conditions": conditions_qwenloc},
 }
 
 
@@ -154,12 +184,17 @@ def check_adapter(spec):
 
     with safe_open(d / "adapter_model.safetensors", "pt") as f:
         keys = list(f.keys())
+        b_norms = {f"{m.group(1)}:{k.rsplit('.', 3)[-3]}": float(f.get_tensor(k).float().norm())
+                   for k in keys if "lora_B" in k for m in [re.search(r"\.layers\.(\d+)\.", k)]}
     layers = sorted({int(m.group(1)) for k in keys for m in [re.search(r"\.layers\.(\d+)\.", k)] if m})
     modules = sorted({k.rsplit(".", 3)[-3] for k in keys})
-    if layers != list(range(len(layers))) or modules != ["q_proj", "v_proj"]:
-        raise SystemExit(f"adapter does not cover every layer's q_proj and v_proj: layers {layers[:3]}..{layers[-1]} ({len(layers)}), modules {modules}")
+    expected = spec.get("modules", ["q_proj", "v_proj"])
+    if layers != list(range(len(layers))) or modules != expected:
+        raise SystemExit(f"adapter does not cover every layer with {expected}: layers {layers[:3]}..{layers[-1]} ({len(layers)}), modules {modules}")
+    nonzero = sorted({int(k.split(":")[0]) for k, v in b_norms.items() if v > 0})
     return {"path": str(d.relative_to(ROOT)), "config": cfg, "final_epoch_loss": log["epoch_losses"][-1],
-            "n_layers": len(layers), "n_lora_modules": len(keys) // 2}
+            "n_layers": len(layers), "n_lora_modules": len(keys) // 2, "lora_B_norms": b_norms,
+            "layers_with_nonzero_B": nonzero}
 
 
 def check_eval_data():
@@ -174,16 +209,22 @@ def check_eval_data():
     return info
 
 
+def subset(spec):
+    """A condition's (layer spec, module spec); a bare layer spec means v_proj (the bisection rounds)."""
+    return spec if isinstance(spec, tuple) else (spec, "v_proj")
+
+
 def condition_args(spec):
     if spec is None:
         return ""
     if spec == "all":
         return "--adapter adapters/seed0"
-    return f"--adapter adapters/seed0 --adapter-layers {spec} --adapter-modules v_proj"
+    layers, modules = subset(spec)
+    return f"--adapter adapters/seed0 --adapter-layers {layers} --adapter-modules {modules}"
 
 
 def collapse_spec(name, spec):
-    target = "adapters/seed0" if spec == "all" else f"adapters/seed0@{spec}@v_proj"
+    target = "adapters/seed0" if spec == "all" else "adapters/seed0@{}@{}".format(*subset(spec))
     return f"--adapter {name}={target}"
 
 

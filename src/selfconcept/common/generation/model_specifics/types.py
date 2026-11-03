@@ -29,6 +29,10 @@ class TemplateWithoutThinkingFlag:
     def set_thinking_flag(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
         return old_chat_kwargs
 
+class ReasoningContentAssistantTurn(ConversationTurn, total=False):
+    """For templates (Qwen 3.x, GLM 4.5) that render an assistant turn's reasoning from this field."""
+    reasoning_content: str
+
 class HFStyleAssistantTurn:
     def to_assistant_turn(self, completion: str) -> ConversationTurn:
         return {"role": "assistant", "content": completion}

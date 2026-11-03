@@ -190,3 +190,38 @@ class VllmStreamLayerPatchTest(unittest.TestCase):
         restore()
         out1, _ = layers[1](None, h, None)
         self.assertTrue(torch.equal(out1, h * 2))
+
+
+class VllmStreamLayerAttentionIndexTest(unittest.TestCase):
+    def test_patch_reads_layer_index_from_the_attention_module(self):
+        """Muse Glimmer's vLLM decoder layer has no layer_idx of its own; it lives on self_attn (from the weight prefix)."""
+        import torch
+        from torch import nn
+        from selfconcept.measurement.intervene import add_transform, patch_vllm_stream_layers
+
+        class Attn(nn.Module):
+            def __init__(self, layer_idx):
+                super().__init__()
+                self.layer_idx = layer_idx
+
+        class Layer(nn.Module):  # MuseGlimmerDecoderLayer shape: forward(positions, hidden_states, residual) -> (stream, residual)
+            def __init__(self, layer_idx):
+                super().__init__()
+                self.self_attn = Attn(layer_idx)
+
+            def forward(self, positions, hidden_states, residual):
+                return hidden_states * 2, hidden_states
+
+        direction = torch.tensor([1.0, 0.0, 0.0])
+        restore = patch_vllm_stream_layers(Layer, {1: add_transform(direction, 5.0)})
+        try:
+            x = torch.ones(2, 3)
+            out0, _ = Layer(0)(None, x, None)
+            out1, res1 = Layer(1)(None, x, None)
+            self.assertTrue(torch.allclose(out0, x * 2))
+            self.assertTrue(torch.allclose(out1, x * 2 + 5.0 * direction))
+            self.assertTrue(torch.allclose(res1, x))
+        finally:
+            restore()
+        out1, _ = Layer(1)(None, torch.ones(2, 3), None)
+        self.assertTrue(torch.allclose(out1, torch.ones(2, 3) * 2))

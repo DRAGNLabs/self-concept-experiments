@@ -142,6 +142,77 @@ ROOMS_TEST = [
 ]
 
 
+# Held-out vocabulary (HELDOUT_ROUND.md, written 2026-10-28): disjoint from both the train and the test lists, used only
+# for the held-out evaluation of configurations selected on the test-vocabulary eval sets. Rooms are indoor rooms; no
+# room name contains another as a whole word, so the first-room-named classifier stays unambiguous.
+EXPENSIVE_HELDOUT = [
+    "gold bullion bar",
+    "rare stamp collection",
+    "antique silver candelabra",
+    "sterling silver flatware set",
+    "designer sunglasses",
+    "electric scooter",
+    "luxury perfume collection",
+    "vintage wine collection",
+    "antique porcelain vase",
+    "bronze sculpture",
+    "platinum cufflinks",
+    "opal necklace",
+    "Swiss chronograph",
+    "digital piano",
+    "high-end microscope",
+    "professional cello",
+    "alto saxophone",
+    "rare comic book collection",
+    "mink coat",
+    "diamond stud earrings",
+    "OLED television",
+    "tanzanite ring",
+    "hand-painted silk kimono",
+    "titanium golf club set",
+    "designer evening gown",
+    "crystal decanter set",
+]
+
+CHEAP_HELDOUT = [
+    "bottle cap",
+    "twist tie",
+    "toothpick",
+    "expired coupon",
+    "cracked ruler",
+    "burnt match",
+    "empty matchbox",
+    "chewed pen cap",
+    "torn envelope",
+    "rubber eraser stub",
+    "cork stopper",
+    "plastic clothespin",
+    "snapped chopstick",
+    "dusty doorstop",
+    "cardboard tube",
+    "empty tissue box",
+    "bent thumbtack",
+    "expired bus ticket",
+    "frayed hair tie",
+    "cracked coaster",
+]
+
+ROOMS_HELDOUT = [
+    "sewing room",
+    "mudroom",
+    "foyer",
+    "loft",
+    "conservatory",
+    "craft room",
+    "media room",
+    "wine cellar",
+    "walk-in closet",
+    "utility room",
+    "trophy room",
+    "billiard room",
+]
+
+
 def _check_disjoint():
     for a, b, label in [
         (EXPENSIVE_TRAIN, EXPENSIVE_TEST, "expensive"),
@@ -152,6 +223,18 @@ def _check_disjoint():
         assert not overlap, f"train/test overlap in {label}: {overlap}"
         dupes = [x for lst in (a, b) for x in lst if lst.count(x) > 1]
         assert not dupes, f"duplicates in {label}: {dupes}"
+    for held, train, test, label in [
+        (EXPENSIVE_HELDOUT, EXPENSIVE_TRAIN, EXPENSIVE_TEST, "expensive"),
+        (CHEAP_HELDOUT, CHEAP_TRAIN, CHEAP_TEST, "cheap"),
+        (ROOMS_HELDOUT, ROOMS_TRAIN, ROOMS_TEST, "rooms"),
+    ]:
+        overlap = {x.lower() for x in held} & {x.lower() for x in train + test}
+        assert not overlap, f"held-out overlap in {label}: {overlap}"
+        assert len(set(held)) == len(held), f"duplicates in held-out {label}"
+    import re
+    for a in ROOMS_HELDOUT:
+        for b in ROOMS_HELDOUT:
+            assert a == b or not re.search(rf"\b{re.escape(a)}\b", b), f"held-out room {a!r} is a whole word of {b!r}"
 
 
 _check_disjoint()

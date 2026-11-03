@@ -13,8 +13,8 @@ set -euo pipefail
 
 # General-capability benchmarks under each prompt arm (PLAN.md "Measures"): GSM8K test (1319), MMLU-Pro (100 per
 # category, 1400), HumanEval (164), with the arm's prompt and a blank line in front of every benchmark prompt. Uses
-# schemer-axis's scripts/capability_eval_vllm.py (no steering) with the settings of its general-capability check:
-# temperature 1, seed 67 (the study's seed; schemer-axis used 0), low reasoning effort, 16384 new tokens. ~12 min per arm on an A100 there.
+# deceiver-axis's scripts/capability_eval_vllm.py (no steering) with the settings of its general-capability check:
+# temperature 1, seed 67 (the study's seed; deceiver-axis used 0), low reasoning effort, 16384 new tokens. ~12 min per arm on an A100 there.
 # One array task per line of the ARMS TSV (same file as run_arms.sbatch: name <TAB> prompt file, empty = no prompt).
 # Output: $ROOT/<arm>/<task>.jsonl (prompt, reasoning, final answer, score per item), summary.json, run_info/.
 # ROOT defaults to ~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>, TAG to "capability". Rerunning resumes.
@@ -22,7 +22,7 @@ set -euo pipefail
 # Usage (from the repo root):
 #   sbatch --array=0-$((N_ARMS-1)) --export=ALL,ARMS=data/arms.tsv[,TAG=capability][,EXTRA_ARGS="--n 8"] \
 #       experiments/prompt-rh-prevention/slurm/capability_eval.sbatch
-# Compare against baseline: python experiments/schemer-axis/scripts/capability_eval_compare.py <ROOT> \
+# Compare against baseline: python experiments/deceiver-axis/scripts/capability_eval_compare.py <ROOT> \
 #   --baseline baseline --arms <arm names>
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -69,7 +69,7 @@ export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv"
 source ../../activate.sh
 
 SECONDS=0
-python ../schemer-axis/scripts/capability_eval_vllm.py --model "$MODEL" --out "$OUT" --tasks "${TASK_LIST[@]}" \
+python ../deceiver-axis/scripts/capability_eval_vllm.py --model "$MODEL" --out "$OUT" --tasks "${TASK_LIST[@]}" \
     --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384 --gpu-memory-utilization 0.95 \
     "${PREFIX_ARGS[@]}" "${EXTRA_RUN_ARGS[@]}"
 echo "arm $NAME took ${SECONDS}s"

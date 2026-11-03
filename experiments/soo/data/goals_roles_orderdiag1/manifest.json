@@ -1,0 +1,40 @@
+{
+  "base_worlds": 6,
+  "counts": {
+    "checks": 768,
+    "main": 2304
+  },
+  "dataset_id": "orderdiag1",
+  "fixed_scope": "burglar family; role-instruction wording 0; four query types",
+  "limitations": [
+    "selected after baseline error inspection, not confirmation",
+    "six dependent source worlds; binary wrong alternatives are confounded",
+    "runner baseline gate on incomplete query/family suite is inapplicable",
+    "cannot release crossed1 interventions or alter their failed gate"
+  ],
+  "order_factors": {
+    "answers": [
+      0,
+      1
+    ],
+    "beliefs": [
+      0,
+      1
+    ],
+    "facts": [
+      0,
+      1
+    ]
+  },
+  "schema_version": 1,
+  "sha256": {
+    "checks.jsonl": "bd86a7e6361b3b0a93d7843d915d2d7955297126d37257eb8862826a93480f04",
+    "main.jsonl": "7befcbd0877a2c6fdd165369ffee31d071904e2894ccdda220c4f380c809ceef"
+  },
+  "source_sha256": {
+    "goals_roles.py": "f7840d36f03a38e5230250817bbc4a44f91e0ad0969c5397adb71ef43e0003c9",
+    "goals_roles_order_diagnostic.py": "fd351a0659438093fe15279732b384a9e47b7ec0af5aa0af08b0d5576e464be1"
+  },
+  "status": "targeted_development_diagnostic_not_acceptance",
+  "template_version": 2
+}

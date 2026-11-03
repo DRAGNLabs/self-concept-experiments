@@ -1,5 +1,5 @@
 """Summarize prompt arms (PLAN.md): capability and hack-proxy measures per arm and problem format. Adapted from
-experiments/schemer-axis/scripts/pilot_summary.py.
+experiments/deceiver-axis/scripts/pilot_summary.py.
 
 Reads every <root>/<arm>/<tag>_<scenario>.jsonl written by selfconcept.codebench.run (or <root>/<arm>/seed*/ from
 run_arms.sbatch, pooled over seeds), plus the <tag>_*_reasoning.jsonl sidecars for token counts, and prints one row

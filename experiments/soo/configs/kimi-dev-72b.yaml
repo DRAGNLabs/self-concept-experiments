@@ -1,0 +1,19 @@
+# Kimi-Dev-72B (2025-06, 80 layers, dense Qwen2.5-72B architecture, a coding-RL
+# reasoning model that opens a ◁think▷ block). Gemma-2-27b paper recipe held
+# constant (r=4, alpha=8, dropout 0.1, lr 9e-4, 8 epochs, batch 4, last_token)
+# as for gemma-4 and Qwen3.8. Layer = 50% depth (L40 of 80), the depth of the
+# gemma-4 12B/31B and Qwen3.8 L32 cells. bf16 across the visible GPUs
+# (device_map auto; ~145 GB of weights). KIMI_ROUND.md.
+model: moonshotai/Kimi-Dev-72B
+revision: 8791d7981945752a51f692d66f2bbfb3573c9722
+layer: 40
+lora_r: 4
+lora_alpha: 8
+lora_dropout: 0.1
+lr: 0.0009
+epochs: 8
+batch_size: 4
+soo_mode: last_token
+train_data: data/train_soo_pairs.jsonl
+device_map: auto
+target_modules: model\.layers\.\d+\.self_attn\.(q_proj|v_proj)

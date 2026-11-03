@@ -80,6 +80,23 @@ class Qwen3Specifics:
 
 
 @dataclass(frozen=True)
+class Qwen38Specifics:
+    """Qwen3.8 (Qwen3.5 text tower) with thinking on. Native context is 262,144, so no YaRN. The qwen3 parser
+    keeps the thought and returns the answer after ``</think>``."""
+
+    model_id: str
+    backend: VllmServerBackend = "vllm-server-chat"
+    generation_vram_gb: float = 100
+    efforts: tuple[Effort, ...] = ("thinking",)
+
+    def vllm_serve_args(self) -> list[str]:
+        return ["--reasoning-parser", "qwen3", "--max-model-len", "131072"]
+
+    def chat_kwargs(self, effort: Effort) -> dict[str, object]:
+        return {"enable_thinking": True}
+
+
+@dataclass(frozen=True)
 class Gemma4Specifics:
     """Its template leaves thinking off (an empty thought channel) unless enable_thinking is set."""
 
@@ -97,6 +114,9 @@ class Gemma4Specifics:
 
 RH_MODEL_SPECIFICS_FACTORY_BY_NAME_SUBSTRING: Final[dict[str, Callable[[str], RhModelSpecifics]]] = {
     "gpt-oss": GptOssSpecifics,
+    "qwen3.8": Qwen38Specifics,
+    "qwen3.5": Qwen38Specifics,
+    "qwen3_5": Qwen38Specifics,
     "qwen3": Qwen3Specifics,
     "gemma-4": Gemma4Specifics,
 }

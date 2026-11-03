@@ -28,6 +28,7 @@ from selfconcept.arm_search.rh.episodes import is_cheat
 from selfconcept.arm_search.rh.model_specifics import rh_model_specifics
 from selfconcept.arm_search.rh.pool import load_pool_rows
 from selfconcept.arm_search.rh.round_files import load_manifest, records_path, round_dir
+from selfconcept.codebench.harness import CheckRecord, ExampleRecord, WorkspaceRecord, is_scored_record
 from selfconcept.arm_search.state import append_round_plan, initialize_state, load_rounds
 
 logger = logging.getLogger(__name__)
@@ -80,9 +81,9 @@ def plan(search: RhSearchConfig, seed_count: int = 5) -> None:
     logger.info("planned calibration: %d problems x %d seeds", len(units), seed_count)
 
 
-def _is_solved(record: dict) -> bool:
+def _is_solved(record: CheckRecord | WorkspaceRecord) -> bool:
     if record["scenario"] == "impossible_original":
-        return bool(record["passed_original"])
+        return record["passed_original"]
     return record["label"] == "solved"
 
 
@@ -105,9 +106,11 @@ def signal(search: RhSearchConfig, output_path: Path) -> None:
     cheated_by_example_id: dict[str, list[bool]] = {}
     for spec in load_manifest(round_path)["run_specs"]:
         path = records_path(round_path, spec)
-        for record in map(json.loads, path.open() if path.exists() else []):
-            solved_by_example_id.setdefault(record["example_id"], []).append(_is_solved(record))
-            cheated_by_example_id.setdefault(record["example_id"], []).append(is_cheat(record))
+        records: list[ExampleRecord] = [json.loads(line) for line in path.open()] if path.exists() else []
+        for record in records:
+            scored = is_scored_record(record)
+            solved_by_example_id.setdefault(record["example_id"], []).append(scored and _is_solved(record))
+            cheated_by_example_id.setdefault(record["example_id"], []).append(scored and is_cheat(record))
     shown_asserts_by_example_id = {row["example_id"]: row["n_visible"] for row in load_pool_rows("impossible_original")}
     with_signal = [
         problem

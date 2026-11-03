@@ -11,14 +11,14 @@
 #SBATCH --chdir=experiments/prompt-rh-prevention  # relative to the submission dir -- run sbatch from the repo root
 set -euo pipefail
 
-# Prompt arms on the recipe (PLAN.md), adapted from schemer-axis/slurm/main_run.sbatch. One Slurm array task per
+# Prompt arms on the recipe (PLAN.md), adapted from deceiver-axis/slurm/main_run.sbatch. One Slurm array task per
 # (arm, seed): task index i -> arm line i / NSEEDS of the ARMS TSV, seed SEED_BASE + i % NSEEDS (default 67, so
 # seeds 67-78 with NSEEDS=12; the study's seeds, decided 2026-10-30).
 # ARMS TSV: name <TAB> prompt file (relative to this experiment dir, e.g. data/prompts/honesty.txt). The file's text
 # goes in front of each problem's first user message, then a blank line, then the recipe's task message unchanged
 # (selfconcept.codebench.run --prompt-prefix-file). An empty second column = no prefix (the baseline arm).
 # Problems: the 45 hard ImpossibleBench problems in rh_hillclimb/data (ib_solvhard_s0-2), as in the recipe and
-# schemer-axis. 16384 new tokens per turn.
+# deceiver-axis. 16384 new tokens per turn.
 # Output: $ROOT/<arm>/seed<s>/ (ROOT defaults to ~/nobackup/autodelete/prompt-rh-prevention-results/<TAG>):
 # <TAG>_impossible_original.jsonl (all three files' records), a reasoning sidecar, a summary, and run_info/ (git
 # commit and diff, arms TSV, the arm's prompt, problem checksums, Slurm job info) so the run can be checked later.
@@ -35,7 +35,7 @@ export OPENSSL_CONF=/dev/null  # the cluster's OpenSSL FIPS mode aborts otherwis
 export SOO_CHAT_KWARGS='{"reasoning_effort":"low"}'  # the recipe's gpt-oss reasoning effort
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 nvidia-smi
-# On the cs A100 nodes a --gpus-per-node=1 task can see two GPUs, one of them a sibling task's (schemer-axis job
+# On the cs A100 nodes a --gpus-per-node=1 task can see two GPUs, one of them a sibling task's (deceiver-axis job
 # 14121029). Pin this task to the visible GPU with the least memory in use, by UUID.
 if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
     export CUDA_VISIBLE_DEVICES="$(nvidia-smi --query-gpu=uuid,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | cut -d, -f1)"
@@ -57,7 +57,7 @@ SEED=$((SEED_BASE + SLURM_ARRAY_TASK_ID % NSEEDS))
 # The recipe (experiments/codebench/reward_hack_recipe.md); the same task message in every arm.
 RECIPE=(--data "$PROBLEMS" --impossible-prompt critical_no_carve --feedback neutral
         --max-attempts 5 --state-attempt-budget --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384
-        --max-model-len 20480)  # as schemer-axis's unsteered main run, which is this study's baseline arm
+        --max-model-len 20480)  # as deceiver-axis's unsteered main run, which is this study's baseline arm
 
 LINE=$(sed -n "$((ARM_INDEX + 1))p" "$ARMS")
 NAME=$(printf '%s' "$LINE" | cut -f1)

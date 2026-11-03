@@ -1,0 +1,25 @@
+{
+  "model": "meta-models/Muse-Glimmer-30B",
+  "pairs_train": 20,
+  "pairs_holdout": 12,
+  "problems_train": [
+    "lcbhard_17",
+    "lcbhard_18",
+    "lcbhard_22",
+    "lcbhard_28",
+    "lcbhard_35",
+    "lcbhard_7",
+    "lcbhard_74",
+    "lcbhard_76",
+    "lcbhard_90",
+    "lcbhard_99"
+  ],
+  "problems_holdout": [
+    "lcbhard_100",
+    "lcbhard_25",
+    "lcbhard_71",
+    "lcbhard_95"
+  ],
+  "rows": 64,
+  "output": "/home/heychris/self-concept-experiments/experiments/reward-hack-axis/data/stagec_muse_pairs.jsonl"
+}

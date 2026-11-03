@@ -68,7 +68,7 @@ Setup: jobs 14915978 (canary, task 0), 14916163 (tasks 1–71, `%12`), 14916164 
 each (`gpu_pick`: 6 idle B200s, 0 jobs ahead; H100 9 ahead), QoS `cs`, no partition; commit 9af71b8. 540 episodes
 per arm (45 problems × seeds 67–78), recipe and model settings as the steering experiment (PLAN 2026-10-30).
 Records: `~/nobackup/autodelete/prompt-rh-prevention-results/official/` and `capability_official/`. The rerun
-baseline reproduces schemer-axis's unsteered arm (proxy 19.4% vs 19.4%, hidden pass 23.3% vs 25%).
+baseline reproduces deceiver-axis's unsteered arm (proxy 19.4% vs 19.4%, hidden pass 23.3% vs 25%).
 
 Rates vs baseline: difference in points, 95% whole-problem bootstrap CI (4000 resamples, problems resampled, all
 seeds of a problem kept together), Holm-corrected across the six prompt arms (`diligent_dev` added 2026-11-03,
@@ -120,7 +120,7 @@ Question: what do the arm prompts do to hacking, solving and giving up, at one s
 
 Setup: job 14893928 (array 0–4), one H100 each, `--qos=cs`, no partition, 10–26 min per task. Seed 0, all 45
 problems, recipe as in `slurm/run_arms.sbatch`, commit e8b8334. Records:
-`~/nobackup/autodelete/prompt-rh-prevention-results/main/<arm>/seed0/`; reference: baseline seed 0 (schemer-axis
+`~/nobackup/autodelete/prompt-rh-prevention-results/main/<arm>/seed0/`; reference: baseline seed 0 (deceiver-axis
 unsteered). Summary: `scripts/pilot_summary.py <root> --seeds 0`.
 
 | arm | turns | hidden pass | shown pass, hidden fail | no code | stopped | Δ hidden | Δ no code |
@@ -137,7 +137,7 @@ Give-ups on problems the baseline can solve (no-code episodes among the 13 probl
 5/13, 14/26; `strict` 2/13, 4/26; `abort_info` 6/13, 11/26.
 
 Limits: one seed, 45 episodes per arm, no CIs; hack proxy only (no judge run). The baseline is a different job
-(schemer-axis, H100, `steered_rh_vllm.py` unsteered), the same condition by design (PLAN). Under PLAN's analysis rule
+(deceiver-axis, H100, `steered_rh_vllm.py` unsteered), the same condition by design (PLAN). Under PLAN's analysis rule
 a no-code rise of more than 10 points is degradation, not reduced hacking; for arms that ask the model to give up
 honestly, how to score those give-ups is an open decision (PLAN).
 

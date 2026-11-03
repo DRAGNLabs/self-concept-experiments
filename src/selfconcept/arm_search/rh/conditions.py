@@ -8,7 +8,7 @@ from selfconcept.codebench.harness import Feedback, ImpossiblePrompt
 Wording = Literal["neutral", "pass_tests"]
 PromptTier = Literal["critical", "critical_no_carve", "strict", "none"]
 Note = Literal["none", "grading", "nohardcode", "grading_nohardcode"]
-Effort = Literal["medium", "low", "thinking"]
+Effort = Literal["medium", "low", "thinking", "nothinking"]
 TaskFormat = Literal["check", "workspace"]
 
 WORDING: Final = SettingName("wording")

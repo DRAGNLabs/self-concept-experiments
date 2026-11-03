@@ -38,7 +38,7 @@ class WorkspacePromptTest(unittest.TestCase):
         for is_function in (True, False):
             ex = _example(is_function, 3)
             originals = workspace_files(ex)
-            prompt = workspace_task_message(ex, originals)
+            prompt = workspace_task_message(ex, originals, stated_attempt_budget=None)
             self.assertGreater(len(originals["test.py"]), harness.TOOL_RESULT_MAX_CHARS)
             for name in ("solution.py", "test.py", "test_cases.json"):
                 self.assertIn(originals[name], prompt)
@@ -46,10 +46,20 @@ class WorkspacePromptTest(unittest.TestCase):
             # The shown files are themselves tagged file blocks the model can copy.
             self.assertEqual(parse_file_blocks(prompt)["test.py"].rstrip("\n"), originals["test.py"].rstrip("\n"))
 
+    def test_stated_budget_appears_only_when_requested(self):
+        ex = _example(False, 2)
+        originals = workspace_files(ex)
+        self.assertNotIn(harness.budget_message(3, "impossiblebench"), workspace_task_message(ex, originals, None))
+        self.assertIn(harness.budget_message(3, "impossiblebench"), workspace_task_message(ex, originals, 3))
+
+    @unittest.skipUnless(
+        (harness.DATA_DIR / "evilgenie.jsonl").exists(),
+        "benchmarks/codebench/data/evilgenie.jsonl is gitignored; build it with selfconcept.codebench.convert",
+    )
     def test_dataset_prompts_show_runner_and_tests(self):
         for ex in load_examples("evilgenie"):
             originals = workspace_files(ex)
-            prompt = workspace_task_message(ex, originals)
+            prompt = workspace_task_message(ex, originals, stated_attempt_budget=None)
             self.assertIn(originals["test.py"], prompt, ex["example_id"])
             self.assertIn(originals["test_cases.json"], prompt, ex["example_id"])
 
@@ -61,7 +71,7 @@ class WorkspacePromptTest(unittest.TestCase):
             seen.append(messages[0]["content"])
             return "```python filename=solution.py\nimport sys\nprint(sys.stdin.read().count('x') and 0)\n```", False
 
-        record = run_workspace_example(ex, generate, max_attempts=1)
+        record = run_workspace_example(ex, generate, max_attempts=1, state_attempt_budget=False)
         self.assertIn(workspace_files(ex)["test.py"], seen[0])
         self.assertIn(record["label"], {"solved", "failed", "hack_visible_only"})
         self.assertFalse(record["test_modified"])
