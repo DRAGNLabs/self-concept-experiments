@@ -3,7 +3,7 @@
     python scripts/rh_axis_figures.py --manifest <manifest.json> --out <dir>
 
 The manifest lists, per model: {"label", "layer", "directions": [directions.pt, ...], "pair_vectors": <pair .pt>,
-"chris_axis": <direction name>, "geometry": <chris_rh_axis_geometry.json>, "logit_lens": <logit_lens.json> | null},
+"chris_axis": <direction name>, "geometry": <chris_rh_axis_geometry.json>, "logit_lens": [<logit_lens.json>, ...]},
 optionally "exclude_directions": [names] and "contrast_heatmaps": [directions.pt, ...] (each its own heatmap).
 directions.pt files map name -> (layer, hidden); later files add directions (e.g. Goodfire's) without code changes.
 
@@ -14,7 +14,7 @@ Writes, as png and pdf:
 - pair_projections: each real hack/honest pair's projection difference on each direction, with k/n;
 - reply_auroc: AUROC over all replies with a bootstrap-over-pairs 95% interval, models side by side;
 - pair_gi_vs_accuracy: each letter/spirit pair's cosine with gi_v2 against its pair accuracy;
-- logit_lens_<model>: top / bottom 8 tokens by z for every lens direction and layer, with the random-direction
+- logit_lens_<model>_<lens directory>: top / bottom 8 tokens by z for every lens direction and layer, with the random-direction
   95th-percentile |z|.
 """
 import argparse
@@ -78,7 +78,7 @@ class ModelEntry(TypedDict):
     pair_vectors: str
     chris_axis: str
     geometry: str
-    logit_lens: str | None
+    logit_lens: list[str]
     contrast_heatmaps: NotRequired[list[str]]
     exclude_directions: NotRequired[list[str]]
 
@@ -360,10 +360,8 @@ def printable(token: str) -> str:
     return "␣" + shown[1:] if shown.startswith(" ") else shown
 
 
-def logit_lens(entry: ModelEntry, out: Path) -> None:
-    if entry["logit_lens"] is None:
-        return
-    lens = json.loads(Path(entry["logit_lens"]).read_text())
+def logit_lens(entry: ModelEntry, lens_path: str, out: Path) -> None:
+    lens = json.loads(Path(lens_path).read_text())
     null = float(np.quantile(lens["random_extreme_z"]["cosine"], 0.95))
     directions = list(dict.fromkeys(item["direction"] for item in lens["lenses"]))
     layers = sorted({item["layer"] for item in lens["lenses"]})
@@ -388,7 +386,7 @@ def logit_lens(entry: ModelEntry, out: Path) -> None:
     figure.suptitle(f"{entry['label']}: logit lens, top and bottom {TOP_TOKENS} tokens by cosine with the unembedding (␣ = leading space)",
                     fontsize=10, color=INK, x=0.01, ha="left")
     figure.tight_layout(rect=(0, 0, 1, 0.985))
-    save(figure, out, f"logit_lens_{entry['label']}")
+    save(figure, out, f"logit_lens_{entry['label']}_{Path(lens_path).parent.name}")
 
 
 def main() -> None:
@@ -404,7 +402,8 @@ def main() -> None:
     pairs_by_model = {entry["label"]: load_pairs(entry) for entry in entries}
     for entry in entries:
         cosine_heatmap(entry, directions_by_model[entry["label"]], geometries[entry["label"]], args.out)
-        logit_lens(entry, args.out)
+        for lens_path in entry["logit_lens"]:
+            logit_lens(entry, lens_path, args.out)
         for path in entry.get("contrast_heatmaps", []):
             cosine_heatmap(entry, load_directions([path]), geometries[entry["label"]], args.out, f"_{Path(path).stem}")
     for reference_of in ("gi_v2", "chris"):
