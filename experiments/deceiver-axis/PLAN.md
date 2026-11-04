@@ -1028,7 +1028,7 @@ Sonnet with the existing proxy + hidden-signature pipeline.
    and `gemma-rand1729-probes` 15010225 (9 tasks). Per the user (corrected ~2:15 pm MST: they had first said "raised"), −1729 **reduced** reward hacking
    (unjudged, we assume proxy): a sign-dependent response, i.e. the reading "a real direction", not "any disturbance of
    this size at L30" (1730 / 1731 disturb equally and do nothing, FINDINGS 2026-11-04). The outputs are in Koby's home, not on the share (`gemma4_31b_gi_v2/rh/hard108`
-   last synced 2026-11-03 3:25 am), so they cannot be judged by us until synced. Upward dose is already answered by Koby's
+   last synced 2026-11-03 3:25 am), so they could not be judged by us until synced. **Synced and judged 2026-11-04 (~3:10 pm MST; FINDINGS "Gemma random 1729 negated, judged"):** judged hack 4.7 → 3.2% (−1.5, CI −3.0 to −0.3, raw p 0.022, Holm 0.066 over the four random contrasts), hidden pass 29.3% (−2.3, same as +1729), shown pass 48.2% (−3.6); below unsteered on 12 of 16 seeds. Sign-dependent, so option 1 is answered: a real direction. Upward dose is already answered by Koby's
    stage-1 pilot (job 14982739, seed 0, `random_pilot_summary.json`): 1729 at α 0.02 hidden pass 5.6% with 77 / 108
    stopped, α ≥ 0.04 every episode stopped (gibberish), 1730 breaks already at 0.02 and 1731 at 0.02 is half-broken; so the
    only open dose point is below 0.01 (0.005, and perhaps −0.005). **Submitted 2026-11-04 ~2:30 pm MST (user go-ahead
