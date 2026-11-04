@@ -994,6 +994,54 @@ so their shared topic does not leak into the contrast. The controls separate dec
 does not lie, unlike the bare `strategist.json`). neutral (Jansen's earlier character role with no honesty trait) was added to the controls on 2026-10-20
 as a character-without-a-stance baseline.
 
+## Random direction 1729 on Gemma 4 31B: what is special about it? (added 2026-11-04, user request ~1:20 pm MST)
+
+Context (FINDINGS "Gemma 4 31B hard108 random-direction control", 2026-11-03, and the 2026-11-04 investigation digest):
+the isotropic random unit direction with seed 1729 at L30 α 0.01 raises the judged hack rate from 4.7 to 10.3%
+(+5.6, Holm < 0.001), more than gi_v2 +0.08 (+3.5); seeds 1730 and 1731 do nothing. The logit lens reads 1729 as
+isotropic noise, capability is matched, blind readers cannot tell its transcripts from gi_v2's or unsteered ones, and
+the lift holds on solvable and unsolvable problems alike. So the question is not "what does the vector mean" but
+"why does this perturbation move the rate". User decision 2026-11-04: run the free and CPU-only analyses now, record
+the GPU options as the next candidates.
+
+**Done or running now (no GPU; `scripts/rand_arm_problem_seed_analysis.py`, `scripts/random_direction_geometry.py`).**
+
+- Per-problem Δ correlations between arms (does 1729 raise the same problems as gi +0.08? the 1730–1731 pair is the
+  shared-reference artefact floor), per-seed rates with sign test, split halves, leave-one-seed-out and a seed
+  bootstrap (is the lift spread over the 16 seeds or driven by a few?).
+- Same-seed divergence: every steered episode shares its sampling stream with the unsteered twin, so the common prefix of
+  the turn-0 reasoning measures how soon the perturbed logits flip a token; distribution per arm, 1729 vs 1730 / 1731
+  paired, hack vs other episodes, and whether an arm's hacks are its twin's hacks.
+- Geometry of the direction in the model's own activation space (the Gemma 31B `act_response_only` cache of the
+  abandoned pilot, response-pooled means at L30): cosine with the mean activation, energy on the massive-activation
+  dimensions and on the top principal components, diagonal-whitened and variance-weighted norms, each with its
+  percentile in a 2,000-direction isotropic null; gi_v2 scored alongside.
+
+**Next options, one short GPU job each (not submitted; user go-ahead needed).** The same `steered_rh_vllm.py`
+hard108 recipe as Koby's random arms (16 seeds, 108 problems, ~2 h on one H200 per arm) unless noted; judged on
+Sonnet with the existing proxy + hidden-signature pipeline.
+
+1. **Negation and dose.** `--random-direction-seed 1729 --steer-alpha` −0.01, 0.005, 0.02. A monotone, sign-dependent
+   response means a real direction; a lift at both signs means "any disturbance of this size at L30".
+2. **Direction versus disturbance controls.** (a) fresh per-token Gaussian noise with the same norm as α 0.01 (needs a
+   `noise` steer mode in `steered_rh_vllm.py`: `h + σ·ε`, ε ~ N(0, I) per position); (b) 1729 split into its
+   component inside the top-50 principal components of the L30 response means and the orthogonal remainder, each
+   steered alone at the norm it has in the full vector. If the remainder carries the effect, the fixed direction is
+   irrelevant.
+3. **Causal downstream lens.** Add α·1729 at L30 on the real hard108 turn-0 prompts (HF, eager hooks, no generation),
+   record the perturbation at L36, L45, L59 and the output-logit KL against unsteered; cosine of the propagated
+   perturbation with the gi_v2 axis and the role vectors at those layers. Tests whether layers 31–60 turn the noise
+   into something structured that the direct lens cannot see. One job, ~30 min on an H200, 1729 / 1730 / 1731 / gi
+   together.
+4. **More random seeds (decisive, expensive).** 20 seeds at α 0.01, each 108 × 16 or a 30-problem × 16-seed subset
+   scored by the proxy only (hidden-signature + no-op-check stubs, no Sonnet). Settles whether +5.6 is a one-in-a-
+   hundred outlier or whether the random-direction null is wide enough that one in three lands there. Cost: 20 × ~2 h
+   H200 (full) or ~40 min each (subset). Run before any deeper mechanistic dive: it decides whether "why does 1729
+   work" is a meaningful question.
+
+Also open: whether the same seed's direction does anything at other layers (L24, L36) or on the 12B model, which would
+separate "a property of this direction" from "a property of Gemma 31B's L30".
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
