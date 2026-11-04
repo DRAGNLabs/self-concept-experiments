@@ -55,6 +55,24 @@ def add_transform(direction: torch.Tensor, coefficient: float):
     return transform
 
 
+def noise_transform(bank: torch.Tensor, coefficient: float):
+    """h <- h + coefficient * bank[(counter + i) mod B] at the i-th position of a call: fresh noise at every token,
+    deterministic given the bank of unit vectors (``random_vectors.random_directions``), no RNG inside the compiled
+    graph. The device counter advances by the positions of each call, so the pattern never repeats within B tokens."""
+    bank = bank.float() * coefficient
+    size = int(bank.shape[0])
+    counter = torch.zeros((), dtype=torch.long, device=bank.device)
+
+    def transform(hidden):
+        flat = hidden.reshape(-1, hidden.shape[-1])
+        index = (counter + torch.arange(flat.shape[0], device=flat.device)) % size
+        counter.add_(flat.shape[0])
+        noise = bank.to(flat.device)[index].to(hidden.dtype).reshape(hidden.shape)
+        return hidden + noise
+
+    return transform
+
+
 def cap_transform(direction: torch.Tensor, threshold: float):
     """h <- h - max(0, <h, u> - threshold) * u with u = direction / |direction|."""
     u = unit(direction)

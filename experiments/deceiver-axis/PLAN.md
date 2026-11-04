@@ -1025,13 +1025,22 @@ Sonnet with the existing proxy + hidden-signature pipeline.
    response means a real direction; a lift at both signs means "any disturbance of this size at L30".
    **Update 2026-11-04 (~2:05 pm MST):** Koby already ran the negated arm, job 15010135 tasks 225–240 (`g108-rand1729neg`,
    16 seeds, 2026-11-03 11:05 am–2:23 pm MST on cs-3-1), with `gemma-rand1729-lens` 15010179, `gemma-rand1729-tokens` 15010217
-   and `gemma-rand1729-probes` 15010225 (9 tasks). Per the user, −1729 raised reward hacking too (unjudged, we assume proxy),
-   which is the "any disturbance of this size at L30" reading, except that 1730 / 1731 disturb equally (same-seed prefix,
-   FINDINGS 2026-11-04) and do nothing. The outputs are in Koby's home, not on the share (`gemma4_31b_gi_v2/rh/hard108`
+   and `gemma-rand1729-probes` 15010225 (9 tasks). Per the user (corrected ~2:15 pm MST: they had first said "raised"), −1729 **reduced** reward hacking
+   (unjudged, we assume proxy): a sign-dependent response, i.e. the reading "a real direction", not "any disturbance of
+   this size at L30" (1730 / 1731 disturb equally and do nothing, FINDINGS 2026-11-04). The outputs are in Koby's home, not on the share (`gemma4_31b_gi_v2/rh/hard108`
    last synced 2026-11-03 3:25 am), so they cannot be judged by us until synced. Upward dose is already answered by Koby's
    stage-1 pilot (job 14982739, seed 0, `random_pilot_summary.json`): 1729 at α 0.02 hidden pass 5.6% with 77 / 108
    stopped, α ≥ 0.04 every episode stopped (gibberish), 1730 breaks already at 0.02 and 1731 at 0.02 is half-broken; so the
-   only open dose point is below 0.01 (0.005, and perhaps −0.005). Koby's `g108-randscreen` array 15035785 (tasks 241–270,
+   only open dose point is below 0.01 (0.005, and perhaps −0.005). **Submitted 2026-11-04 ~2:30 pm MST (user go-ahead
+   "do all three"):** arms `L30_rand1729_a0.005`, `L30_rand1729_a-0.005` (dose), `L30_rand1729pc50_a0.01` (the component
+   of 1729 inside the top-50 L30 PCs, unit, at α 0.01; `scripts/make_split_direction.py`, `random1729/split/split.json`:
+   9.4% of 1729's energy is in that subspace, cos with gi_v2 0.057; the remainder has cos 0.995 with 1729 and is not run as
+   a separate arm because it would be a near-replicate) and `L30_noise_a0.01` (fresh isotropic unit noise at every token
+   position, same coefficient as α 0.01; new `--steer-mode noise`, `intervene.noise_transform`, bank seed 1729), 16 seeds
+   each, 64 tasks, in our mirror `gemma4_31b_gi_v2/rh/hard108/`; settings `random1729/controls/settings_controls.tsv`.
+   Plus the causal downstream lens (`scripts/downstream_lens.py`, `random1729/lens_downstream.sbatch`): 1729 at ±0.01,
+   1730, 1731, pc50, noise, gi_v2 at 0.01 / 0.08 / −0.08 on the 108 turn-0 prompts, record layers 30–59. Job ids in
+   `random1729/jobids.txt`. Koby's `g108-randscreen` array 15035785 (tasks 241–270,
    30 tasks, 2 done by 11:45 am 2026-11-04, rest pending on qos cs) looks like a 30-direction screen at α 0.01, i.e. option
    4 below; check with Koby before duplicating it.
 2. **Direction versus disturbance controls.** (a) fresh per-token Gaussian noise with the same norm as α 0.01 (needs a
