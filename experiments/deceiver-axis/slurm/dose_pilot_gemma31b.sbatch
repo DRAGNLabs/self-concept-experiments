@@ -52,6 +52,7 @@ read -r -a SCEN <<< "${SHARD_SCENARIOS:-$SCENARIOS}"
 [ -n "$NAME" ] || { echo "no setting at index $SLURM_ARRAY_TASK_ID in $SETTINGS"; exit 1; }
 echo "########## setting $SLURM_ARRAY_TASK_ID: $NAME | ${EXTRA[*]:-unsteered} ##########"
 
+export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"  # activate.sh defaults to the stale .venv (py3.11, no jaxtyping): 15042723 tasks 0-3 failed at import, 2026-11-04
 source ../../activate.sh
 
 SECONDS=0
