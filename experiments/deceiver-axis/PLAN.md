@@ -1023,6 +1023,17 @@ Sonnet with the existing proxy + hidden-signature pipeline.
 
 1. **Negation and dose.** `--random-direction-seed 1729 --steer-alpha` −0.01, 0.005, 0.02. A monotone, sign-dependent
    response means a real direction; a lift at both signs means "any disturbance of this size at L30".
+   **Update 2026-11-04 (~2:05 pm MST):** Koby already ran the negated arm, job 15010135 tasks 225–240 (`g108-rand1729neg`,
+   16 seeds, 2026-11-03 11:05 am–2:23 pm MST on cs-3-1), with `gemma-rand1729-lens` 15010179, `gemma-rand1729-tokens` 15010217
+   and `gemma-rand1729-probes` 15010225 (9 tasks). Per the user, −1729 raised reward hacking too (unjudged, we assume proxy),
+   which is the "any disturbance of this size at L30" reading, except that 1730 / 1731 disturb equally (same-seed prefix,
+   FINDINGS 2026-11-04) and do nothing. The outputs are in Koby's home, not on the share (`gemma4_31b_gi_v2/rh/hard108`
+   last synced 2026-11-03 3:25 am), so they cannot be judged by us until synced. Upward dose is already answered by Koby's
+   stage-1 pilot (job 14982739, seed 0, `random_pilot_summary.json`): 1729 at α 0.02 hidden pass 5.6% with 77 / 108
+   stopped, α ≥ 0.04 every episode stopped (gibberish), 1730 breaks already at 0.02 and 1731 at 0.02 is half-broken; so the
+   only open dose point is below 0.01 (0.005, and perhaps −0.005). Koby's `g108-randscreen` array 15035785 (tasks 241–270,
+   30 tasks, 2 done by 11:45 am 2026-11-04, rest pending on qos cs) looks like a 30-direction screen at α 0.01, i.e. option
+   4 below; check with Koby before duplicating it.
 2. **Direction versus disturbance controls.** (a) fresh per-token Gaussian noise with the same norm as α 0.01 (needs a
    `noise` steer mode in `steered_rh_vllm.py`: `h + σ·ε`, ε ~ N(0, I) per position); (b) 1729 split into its
    component inside the top-50 principal components of the L30 response means and the orthogonal remainder, each
