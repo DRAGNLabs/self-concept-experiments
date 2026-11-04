@@ -56,13 +56,14 @@ def main() -> None:
     ap.add_argument("--root", required=True, type=Path)
     ap.add_argument("--arms", nargs="+", required=True)
     ap.add_argument("--tag", default="main")
-    ap.add_argument("--verdicts", type=Path, help="verdicts.json keyed arm/seed<s>/example_id")
+    ap.add_argument("--verdicts", type=Path, help="verdicts.json keyed arm/seed<s>/example_id; plain string or detail-dict values")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--max-code-hits", type=int, default=12)
     ap.add_argument("--max-reason-hits", type=int, default=10)
     ap.add_argument("--min-hits", type=int, default=1, help="episodes with fewer hits are listed by id only")
     args = ap.parse_args()
     verdicts = json.loads(args.verdicts.read_text()) if args.verdicts else {}
+    verdicts = {k: (v.get("verdict") if isinstance(v, dict) else v) for k, v in verdicts.items()}  # plain or .detail form
     args.out.mkdir(parents=True, exist_ok=True)
     summary = {}
     for arm in args.arms:
