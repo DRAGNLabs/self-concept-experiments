@@ -145,7 +145,8 @@ def main() -> None:
         ids = torch.tensor([ids], device=device)
         with torch.inference_mode(), capture(model, args.record_layers) as base_capture:
             base_logits = model(ids).logits[0, -args.kl_positions:].float()
-        base = {layer: base_capture[layer][0].float() for layer in args.record_layers}
+        # capture() parks residuals on the CPU; the units / PC bases live on the GPU, so bring the residuals back (15043512 died here)
+        base = {layer: base_capture[layer][0].float().to(device) for layer in args.record_layers}
         base_logp = torch.log_softmax(base_logits, dim=-1)
         base_top = base_logits.argmax(dim=-1)
         for arm in arms:
@@ -159,7 +160,7 @@ def main() -> None:
             kl_rows[arm["name"]]["kl_last"].append(float(kl[-1]))
             kl_rows[arm["name"]]["flip_last"].append(float(flips[-1]))
             for layer in args.record_layers:
-                delta = (arm_capture[layer][0].float() - base[layer])[1:]  # BOS excluded
+                delta = (arm_capture[layer][0].float().to(device) - base[layer])[1:]  # BOS excluded
                 h = base[layer][1:]
                 dn = delta.norm(dim=-1).clamp_min(1e-9)
                 row = per_prompt[arm["name"]][layer]
