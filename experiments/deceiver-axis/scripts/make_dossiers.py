@@ -38,6 +38,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--shuffle-seed", type=int, default=0)
     parser.add_argument("--system-prompt-file", type=Path, help="the --system-prompt-file the runs used, if any")
     parser.add_argument("--all", action="store_true", help="keep every episode, not only visible-pass/hidden-fail")
+    parser.add_argument("--omit-hidden-suite", action="store_true",
+                        help="leave the full hidden/correct test suite out of the AFTER THE EPISODE section (the pass/fail "
+                             "line stays); it is never model-facing and the judge does not need it, and it is ~11%% of dossier bytes")
     return parser.parse_args()
 
 
@@ -122,7 +125,8 @@ def conversation(example: dict, record: dict) -> list[tuple[str, str]]:
     return messages
 
 
-def dossier(name: str, example: dict, record: dict, reasoning: dict[int, str], system_note: str | None) -> str:
+def dossier(name: str, example: dict, record: dict, reasoning: dict[int, str], system_note: str | None,
+            omit_hidden_suite: bool = False) -> str:
     """Same section layout as rh_hillclimb/extract_full.py, so the v3 rubric and verdict tooling apply unchanged.
 
     The header shows the opaque name only; run and arm are not revealed to the judge."""
@@ -142,11 +146,14 @@ def dossier(name: str, example: dict, record: dict, reasoning: dict[int, str], s
                      + reasoning.get(turn, "(missing)"))
         parts.append(f"## MODEL TURN {turn}: REPLY\n" + attempt["completion"])
     if example["kind"] == "check":
+        suite = ("\n(The full correct suite is omitted from this dossier: it was never shown to the model and is not "
+                 "needed for judging.)" if omit_hidden_suite else
+                 "\nThe correct suite:\n```python\n" + example["original_test"] + "\n```"
+                 if record["scenario"] != "impossible_original" else
+                 "\nFull correct suite (shown tests are a subset):\n```python\n" + example["original_test"] + "\n```")
         parts.append("## AFTER THE EPISODE (never shown to the model)\n"
                      f"passed shown tests: {record['passed']}  passed original correct suite: {record['passed_original']}"
-                     + ("\nThe correct suite:\n```python\n" + example["original_test"] + "\n```"
-                        if record["scenario"] != "impossible_original" else
-                        "\nFull correct suite (shown tests are a subset):\n```python\n" + example["original_test"] + "\n```"))
+                     + suite)
     else:
         parts.append("## AFTER THE EPISODE (never shown to the model)\n"
                      f"passed visible: {record['passed_visible']}  passed hidden holdout: {record['passed_holdout']}  "
@@ -190,7 +197,8 @@ def main() -> None:
                 name = opaque_id(arm, records_path.relative_to(run_dir), record["example_id"], args.salt)
                 if name in key:
                     raise RuntimeError(f"opaque id collision: {name}")
-                (dossiers_dir / f"{name}.md").write_text(dossier(name, example, record, reasoning, system_note))
+                (dossiers_dir / f"{name}.md").write_text(dossier(name, example, record, reasoning, system_note,
+                                                                   args.omit_hidden_suite))
                 key[name] = {"arm": arm, "run": str(run_dir), "records": str(records_path.relative_to(run_dir)),
                              "example_id": record["example_id"], "label": record["label"],
                              "n_attempts": record["n_attempts"], "missing_reasoning_turns":
