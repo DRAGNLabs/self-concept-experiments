@@ -1052,7 +1052,10 @@ Sonnet with the existing proxy + hidden-signature pipeline.
    record the perturbation at L36, L45, L59 and the output-logit KL against unsteered; cosine of the propagated
    perturbation with the gi_v2 axis and the role vectors at those layers. Tests whether layers 31–60 turn the noise
    into something structured that the direct lens cannot see. One job, ~30 min on an H200, 1729 / 1730 / 1731 / gi
-   together.
+   together. **Done 2026-11-04 (job 15047951; FINDINGS "Gemma random 1729 causal downstream lens"):** no. In the prompt
+   pass 1729 propagates exactly like 1730 / 1731 / per-token noise (amplified 5–7× like any off-manifold direction, orthogonal to the
+   gi_v2 axis at every layer, 97% outside the top-50 PCs until L59, same KL / flip range as the nulls); the first generated token is
+   untouched by every constant steer. Its effect is generation-bound; option 2 (running as 15048449) is the test that remains.
 4. **More random seeds (decisive, expensive).** 20 seeds at α 0.01, each 108 × 16 or a 30-problem × 16-seed subset
    scored by the proxy only (hidden-signature + no-op-check stubs, no Sonnet). Settles whether +5.6 is a one-in-a-
    hundred outlier or whether the random-direction null is wide enough that one in three lands there. Cost: 20 × ~2 h

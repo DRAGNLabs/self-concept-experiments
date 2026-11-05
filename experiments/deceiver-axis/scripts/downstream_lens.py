@@ -55,6 +55,7 @@ def parse_args():
     ap.add_argument("--arm", action="append", required=True, help="name=kind:param:alpha, kind in seed/axis/noise")
     ap.add_argument("--noise-bank", type=int, default=8192)
     ap.add_argument("--kl-positions", type=int, default=32)
+    ap.add_argument("--rechart", type=Path, help="rebuild downstream_lens.md and the chart from this finished downstream_lens.json (no model, no GPU)")
     ap.add_argument("--max-prompt-tokens", type=int, default=6000)
     ap.add_argument("--out", type=Path, required=True)
     return ap.parse_args()
@@ -84,6 +85,15 @@ def pc_bases(act_dir: Path, layers: list[int], k: int) -> dict[int, np.ndarray]:
 
 def main() -> None:
     args = parse_args()
+    if args.rechart:
+        saved = json.load(open(args.rechart))
+        for key in ("model", "scenario", "steer_layer", "record_layers", "pcs", "kl_positions"):
+            setattr(args, key, saved[key])
+        metrics = ["rel_norm", "amp", "cos_steer", "frac_pc"] + [k for k in next(iter(saved["summary"].values()))["layers"][str(args.record_layers[0])] if k.startswith("cos_") and k != "cos_steer"]
+        args.out.mkdir(parents=True, exist_ok=True)
+        write_md(args, saved["summary"], metrics, len(saved["examples"]))
+        chart(args, saved["summary"], metrics)
+        return
     num_layers, hidden = model_dims(args.model)
     norms = torch.load(args.layer_norms, map_location="cpu", weights_only=False)
     layer_norms = (norms["layer_norms"] if isinstance(norms, dict) else norms).float()
@@ -201,6 +211,12 @@ def main() -> None:
                             "amp_last": round(e["layers"][str(args.record_layers[-1])]["amp"]["mean"], 2)} for arm, e in summary.items()}, indent=1))
 
 
+def arm_label(entry: dict) -> str:
+    """kind + parameter for tables; axis arms show the file stem, not the full path (the first chart's table overflowed)."""
+    param = Path(entry["param"]).stem if entry["kind"] == "axis" else entry["param"]
+    return f"{entry['kind']} {param}"
+
+
 def write_md(args, summary, metrics, n_prompts) -> None:
     lines = [f"# Causal downstream lens: steer at L{args.steer_layer} on {n_prompts} {args.scenario} turn-0 prompts ({args.model})", "",
              f"Token means over each prompt (BOS excluded), then mean ± SE over prompts. amp = ||Δ|| / |coefficient| (1 at the steer layer "
@@ -209,7 +225,7 @@ def write_md(args, summary, metrics, n_prompts) -> None:
     lines += ["| arm | kind | α | coefficient | KL mean | KL last | top-1 flip | flip last |", "|---|---|---|---|---|---|---|---|"]
     for arm, e in summary.items():
         o = e["output"]
-        lines.append(f"| {arm} | {e['kind']} {e['param']} | {e['alpha']:+g} | {e['coefficient']:+.2f} | {o['kl']['mean']:.4f} ± {o['kl']['se']:.4f} | "
+        lines.append(f"| {arm} | {arm_label(e)} | {e['alpha']:+g} | {e['coefficient']:+.2f} | {o['kl']['mean']:.4f} ± {o['kl']['se']:.4f} | "
                      f"{o['kl_last']['mean']:.4f} | {o['flip']['mean']:.3f} | {o['flip_last']['mean']:.3f} |")
     for metric in metrics:
         lines += ["", f"## {metric}", "", "| arm | " + " | ".join(f"L{l}" for l in args.record_layers) + " |", "|---|" + "---|" * len(args.record_layers)]
@@ -263,7 +279,7 @@ def chart(args, summary, metrics) -> None:
         e = summary[arm]
         o = e["output"]
         L = e["layers"][last]
-        rows.append([arm, f"{e['kind']} {e['param']}", f"{e['alpha']:+g}", f"{o['kl']['mean']:.4f} ± {o['kl']['se']:.4f}",
+        rows.append([arm, arm_label(e), f"{e['alpha']:+g}", f"{o['kl']['mean']:.4f} ± {o['kl']['se']:.4f}",
                      f"{o['kl_last']['mean']:.4f}", f"{o['flip']['mean']:.3f}", f"{L['amp']['mean']:.1f}",
                      "n/a" if np.isnan(L["frac_pc"]["mean"]) else f"{L['frac_pc']['mean']:.3f}",
                      "n/a" if np.isnan(L["cos_steer"]["mean"]) else f"{L['cos_steer']['mean']:.3f}"])
