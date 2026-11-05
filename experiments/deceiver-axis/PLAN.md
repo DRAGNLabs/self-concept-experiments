@@ -1061,6 +1061,8 @@ Sonnet with the existing proxy + hidden-signature pipeline.
    hundred outlier or whether the random-direction null is wide enough that one in three lands there. Cost: 20 × ~2 h
    H200 (full) or ~40 min each (subset). Run before any deeper mechanistic dive: it decides whether "why does 1729
    work" is a meaningful question.
+   **Negative half-dose arm judged on all 16 seeds (2026-11-05 ~4:55 am MST; FINDINGS "Gemma random 1729 negative half dose, seeds 8–15 and the 16-seed merge").** Seeds 8–15 (tasks 24–31) judged as `verdicts_ctl_a-0.005_s8-15` the night they finished: 3.94% vs 4.40% unsteered; 16 seeds 4.05% vs 4.69% (−0.64 pp, CI −1.33 to +0.06, sign p 0.23), with −0.01 at 3.24%, +0.005 at 6.83% and +0.01 at 10.24%. Five signed doses monotone on the full seed set, per-seed Spearman positive on 16/16, slope 3.36 pp per 0.01 α (1.45 negative side, 5.56 positive); each half dose ≈ 40% of its side's full effect. Option 2 (dose response) is answered for the 1729 direction on both signs; the −0.005 point alone is compatible with zero. Remaining: pc50 (tasks 32–47) and noise (48–63) sets as they finish, then `main_analysis.py` with Holm over the four control contrasts.
+
    **Negative half-dose arm, seeds 0–7 judged (2026-11-05 ~3:15 am MST; FINDINGS "Gemma random 1729 negative half dose,
    seeds 0–7 interim"):** −0.005 gives 4.17% judged hack vs 4.98% unsteered on seeds 0–7 (−0.8 pp, seed-paired CI −1.6 to 0.0,
    1 / 4 seeds up / down, 3 ties, episode-level p 0.42), between the −0.01 arm's 3.36% and unsteered; the five signed 1729 doses
