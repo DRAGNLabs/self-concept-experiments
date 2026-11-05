@@ -229,12 +229,12 @@ Measurements: model weights 61.4 GiB, KV cache ~8.2 GiB (~120k tokens, 5.9 concu
 Engine start ~3 min. Wall time per task 289–616 s.
 
 | arm | episodes | turns | passed shown | stopped | attempt limit | hidden pass | shown pass, hidden fail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| honest_al | 9 | 12 | 2 | 7 | 0 | 1 | 1 | 159/300 |
-| wise_professor | 9 | 17 | 3 | 5 | 1 | 3 | 0 | 156/300 |
-| heroic_ai | 9 | 10 | 3 | 6 | 0 | 3 | 0 | 148/300 |
-| strict | 9 | 29 | 3 | 3 | 3 | 2 | 1 | 125/300 |
-| abort_info | 9 | 10 | 3 | 6 | 0 | 2 | 1 | 150/300 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| honest_al | 9 | 12 | 2 | 7 | 0 | 1 | 1 |
+| wise_professor | 9 | 17 | 3 | 5 | 1 | 3 | 0 |
+| heroic_ai | 9 | 10 | 3 | 6 | 0 | 3 | 0 |
+| strict | 9 | 29 | 3 | 3 | 3 | 2 | 1 |
+| abort_info | 9 | 10 | 3 | 6 | 0 | 2 | 1 |
 
 Limits: 9 episodes per arm on the first problems of each file, one seed; no rate here is an estimate. Most stops
 come on the first turn, including in `heroic_ai` and `strict`, which are not told how to stop; whether the prompts
