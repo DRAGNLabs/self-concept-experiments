@@ -9,7 +9,7 @@ from transformers import LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 from tokenizers import Tokenizer, models, pre_tokenizers
 
 from selfconcept.measurement.capture import capture
-from selfconcept.measurement.intervene import add_direction, cap_direction, unit
+from selfconcept.measurement.intervene import _hooks, add_direction, cap_direction, noise_transform, unit
 from selfconcept.codebench.hf_harmony import hf_harmony_generate
 
 
@@ -225,3 +225,26 @@ class VllmStreamLayerAttentionIndexTest(unittest.TestCase):
             restore()
         out1, _ = Layer(1)(None, torch.ones(2, 3), None)
         self.assertTrue(torch.allclose(out1, torch.ones(2, 3) * 2))
+
+
+class NoiseTransformTests(unittest.TestCase):
+    def test_noise_is_fresh_per_position_and_advances_across_calls(self):
+        bank = torch.eye(5)[:4]  # 4 unit vectors
+        transform = noise_transform(bank, 2.0)
+        first = transform(torch.zeros(3, 5))
+        torch.testing.assert_close(first, 2.0 * bank[:3])
+        second = transform(torch.zeros(1, 2, 5))  # batched shape: positions 3, 0 (mod 4)
+        torch.testing.assert_close(second.reshape(2, 5), 2.0 * bank[[3, 0]])
+
+    def test_noise_hook_perturbs_each_token_by_the_coefficient(self):
+        model = tiny_model()
+        ids = torch.tensor([[1, 2, 3, 4]])
+        bank = torch.nn.functional.normalize(torch.randn(16, 16), dim=1)
+        with torch.inference_mode(), capture(model, [1]) as before:
+            model(ids)
+        with torch.inference_mode(), _hooks(model, {1: noise_transform(bank, 0.5)}), capture(model, [1]) as after:
+            model(ids)
+        delta = after[1][0] - before[1][0]
+        torch.testing.assert_close(delta.norm(dim=-1), torch.full((4,), 0.5))
+        self.assertGreater((delta[0] - delta[1]).norm(), 0.1)
+

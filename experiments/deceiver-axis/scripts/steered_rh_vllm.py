@@ -18,6 +18,9 @@ are measured offline with the HF capture path.
         [--steer-mode add --steer-layer 17 --steer-alpha 0.1]
         [--steer-mode cap --cap-layers 12 ... --cap-thresholds <json {layer: threshold}>]
         [--random-direction-seed N]
+        [--steer-mode noise --steer-layer 30 --steer-alpha 0.01 [--noise-seed 1729 --noise-bank 8192]]
+                         (disturbance control: a fresh isotropic unit vector at every token position, scaled like
+                          add's coefficient; ``intervene.noise_transform``, bank from random_directions(noise_seed))
         [--measure-norms]  (only: token-mean residual norm at every layer over the turn-0 prompts of the scenarios,
                             through eager hooks at the intervention site -> <out>/layer_norms.pt, the file
                             --layer-norms reads; same contract as steered_rh.py --measure-norms)
@@ -54,7 +57,7 @@ from selfconcept.codebench.vllm_concurrent import EngineLoop, loop_complete, run
 from selfconcept.codebench.vllm_harmony import turn_generate, vllm_harmony_generate
 from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.correlation.random_vectors import random_directions
-from selfconcept.measurement.intervene import add_transform, cap_transform
+from selfconcept.measurement.intervene import add_transform, cap_transform, noise_transform
 from selfconcept.measurement.steering_specifics import steering_model_specifics
 from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs
 
@@ -74,12 +77,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-k", type=int, default=-1, help="top-k sampling (recipe: off; Gemma 4 generation config: 64)")
     parser.add_argument("--direction", type=Path, help="(layers, hidden) axis artifact")
     parser.add_argument("--layer-norms", type=Path, help="layer_norms.pt (LayerNormResult) for alpha units")
-    parser.add_argument("--steer-mode", choices=["none", "add", "cap"], default="none")
+    parser.add_argument("--steer-mode", choices=["none", "add", "cap", "noise"], default="none")
     parser.add_argument("--steer-layer", type=int, default=17)
     parser.add_argument("--steer-alpha", type=float, default=0.0, help="add: coefficient in units of the layer's mean norm")
     parser.add_argument("--cap-layers", nargs="+", type=int)
     parser.add_argument("--cap-thresholds", type=Path, help="JSON {layer: threshold} in projection units")
     parser.add_argument("--random-direction-seed", type=int, help="Control: isotropic random unit direction instead of --direction")
+    parser.add_argument("--noise-seed", type=int, default=1729, help="noise: seed of the bank of per-token unit vectors")
+    parser.add_argument("--noise-bank", type=int, default=8192, help="noise: bank size (positions before the pattern repeats)")
     parser.add_argument("--measure-norms", action="store_true")
     parser.add_argument("--check-hook", action="store_true")
     parser.add_argument("--check-layer", type=int, default=17)
@@ -94,10 +99,10 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.batch_check and not args.probe:
         parser.error("--batch-check needs --probe questions")
-    if args.direction is None and args.random_direction_seed is None and (args.steer_mode != "none" or args.check_hook):
+    if args.direction is None and args.random_direction_seed is None and (args.steer_mode in ("add", "cap") or args.check_hook):
         parser.error("--direction is required for steering and --check-hook")
-    if args.steer_mode == "add" and (args.layer_norms is None or args.steer_alpha == 0):
-        parser.error("--steer-mode add needs --layer-norms and a nonzero --steer-alpha")
+    if args.steer_mode in ("add", "noise") and (args.layer_norms is None or args.steer_alpha == 0):
+        parser.error(f"--steer-mode {args.steer_mode} needs --layer-norms and a nonzero --steer-alpha")
     if args.steer_mode == "cap" and (not args.cap_layers or args.cap_thresholds is None):
         parser.error("--steer-mode cap needs --cap-layers and --cap-thresholds")
     try:
@@ -149,6 +154,16 @@ def build_transforms(args, directions) -> tuple[dict[int, object], dict]:
         coefficient = args.steer_alpha * layer_norm
         transforms[args.steer_layer] = add_transform(directions[args.steer_layer], coefficient)
         steering |= {"layer": args.steer_layer, "alpha": args.steer_alpha, "layer_norm": layer_norm, "coefficient": coefficient}
+    elif args.steer_mode == "noise":
+        norms = torch.load(args.layer_norms, map_location="cpu", weights_only=False)
+        layer_norm = float((norms["layer_norms"] if isinstance(norms, dict) else norms)[args.steer_layer])
+        coefficient = args.steer_alpha * layer_norm
+        _, hidden = model_dims(args.model)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        bank = torch.as_tensor(random_directions(hidden, args.noise_bank, args.noise_seed, args.steer_layer)).float().to(device)
+        transforms[args.steer_layer] = noise_transform(bank, coefficient)
+        steering |= {"layer": args.steer_layer, "alpha": args.steer_alpha, "layer_norm": layer_norm, "coefficient": coefficient,
+                     "noise_seed": args.noise_seed, "noise_bank": args.noise_bank}
     elif args.steer_mode == "cap":
         thresholds = {int(k): float(v) for k, v in json.loads(args.cap_thresholds.read_text()).items()}
         thresholds = {layer: thresholds[layer] for layer in args.cap_layers}

@@ -30,8 +30,10 @@ import unicodedata
 from collections import defaultdict
 from pathlib import Path
 
-RECORD = "main_impossible_original.jsonl"
-REASONING_GLOB = "main_ib_solvhard_s*_reasoning.jsonl"
+RECORD = "main_impossible_original.jsonl"  # overridden by --record (Gemma hard108: pilot_impossible_original.jsonl)
+REASONING_GLOB = "main_ib_solvhard_s*_reasoning.jsonl"  # overridden by --reasoning-glob (Gemma hard108: pilot_hard108_reasoning.jsonl)
+HEAD_CHARS = 1400  # turn-0 reasoning shown from the start (--head-chars)
+TAIL_CHARS = 0  # and, when > 0, its last N chars too (--tail-chars; Gemma reasons for tens of thousands of chars and decides late)
 
 PHRASES = {
     "give_up": re.compile(r"\b(give up|giving up|I'll give up|cannot solve|can't solve)\b", re.I),
@@ -157,8 +159,11 @@ def dossier(problem: str, arms: dict[str, dict], labels: dict[str, str], verdict
             vv = v.get("verdict") if isinstance(v, dict) else v
             lines.append(f"### {lab}/{seed} | verdict={vv} | shown_pass={ep.get('passed')} | hidden_pass={ep.get('passed_original')} | attempts={ep.get('n_attempts')} | stop={ep.get('stop_reason')}")
             r0 = ep["_reasoning"][0][1] if ep["_reasoning"] else ""
-            lines.append("REASONING turn 0:")
-            lines.append(trim(r0, 1400))
+            lines.append("REASONING turn 0:" if TAIL_CHARS <= 0 or len(r0) <= HEAD_CHARS + TAIL_CHARS else f"REASONING turn 0 (first {HEAD_CHARS} chars):")
+            lines.append(trim(r0, HEAD_CHARS))
+            if TAIL_CHARS > 0 and len(r0) > HEAD_CHARS + TAIL_CHARS:
+                lines.append(f"REASONING turn 0 (last {TAIL_CHARS} chars of {len(r0)}):")
+                lines.append("[…] " + r0[-TAIL_CHARS:])
             if len(ep["_reasoning"]) > 1:
                 lines.append(f"REASONING final turn ({len(ep['_reasoning']) - 1}):")
                 lines.append(trim(ep["_reasoning"][-1][1], 700))
@@ -175,13 +180,19 @@ def dossier(problem: str, arms: dict[str, dict], labels: dict[str, str], verdict
 
 
 def main() -> None:
+    global RECORD, REASONING_GLOB, HEAD_CHARS, TAIL_CHARS
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--arm", action="append", required=True, help="name=root (root contains seed*/)")
     ap.add_argument("--verdicts", type=Path, required=True)
     ap.add_argument("--problems", nargs="*", default=[])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--key-seed", type=int, default=0)
+    ap.add_argument("--record", default=RECORD, help="per-seed episode record file name")
+    ap.add_argument("--reasoning-glob", default=REASONING_GLOB, help="per-seed reasoning sidecar glob")
+    ap.add_argument("--head-chars", type=int, default=HEAD_CHARS)
+    ap.add_argument("--tail-chars", type=int, default=TAIL_CHARS)
     args = ap.parse_args()
+    RECORD, REASONING_GLOB, HEAD_CHARS, TAIL_CHARS = args.record, args.reasoning_glob, args.head_chars, args.tail_chars
     args.out.mkdir(parents=True, exist_ok=True)
     verdicts = json.loads(args.verdicts.read_text())
     arms = {}

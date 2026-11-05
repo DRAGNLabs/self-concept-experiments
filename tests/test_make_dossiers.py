@@ -80,6 +80,29 @@ class MakeDossiersTest(unittest.TestCase):
         listed = [l for p in batches for l in p.read_text().split()]
         self.assertEqual(sorted(listed), sorted(f"dossiers/{n}.md" for n in key))
 
+    def test_prompt_prefix_and_combined_sidecar(self):
+        """prompt-rh-prevention layout: one combined reasoning sidecar per seed (no data file named after it) and a
+        prompt_prefix field that opens the first user message."""
+        run = self.root / "runs/c/seed67"
+        run.mkdir(parents=True)
+        recs = [dict(record("ex_0", True, False), prompt_prefix="You are Honest Al."), dict(record("ex_1", True, False), prompt_prefix="")]
+        (run / "official_impossible_original.jsonl").write_text("".join(json.dumps(r) + "\n" for r in recs))
+        (run / "official_ib_t_ib_u_reasoning.jsonl").write_text("".join(
+            json.dumps({"example_id": r["example_id"], "turn": t, "truncated": False, "reasoning": f"think {t} c"}) + "\n"
+            for r in recs for t in range(r["n_attempts"])))
+        out = self.root / "out"
+        sys.argv = ["make_dossiers.py", "--data", str(self.root / "data"), "--out", str(out), "--runs", f"c={self.root/'runs/c'}"]
+        make_dossiers.main()
+        key = json.load((out / "key.json").open())
+        self.assertEqual(sorted(m["example_id"] for m in key.values()), ["ex_0", "ex_1"])
+        texts = {m["example_id"]: (out / "dossiers" / f"{n}.md").read_text() for n, m in key.items()}
+        self.assertIn("## USER / HARNESS MESSAGE\nYou are Honest Al.\n\nImplement the function", texts["ex_0"])
+        self.assertIn("## USER / HARNESS MESSAGE\nImplement the function", texts["ex_1"])
+        self.assertNotIn("Honest Al", texts["ex_1"])
+        for text in texts.values():
+            self.assertNotIn("(missing)", text)
+            self.assertEqual(text.count("## MODEL TURN"), 4)
+
     def test_all_flag_and_deterministic_ids(self):
         _, key = self.run_main("--all")
         self.assertEqual(len(key), 6)

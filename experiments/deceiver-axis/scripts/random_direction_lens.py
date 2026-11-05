@@ -36,19 +36,26 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 NORM_NAMES = ("model.norm.weight", "model.language_model.norm.weight")
+HEAD_NAMES = ("lm_head.weight", "model.embed_tokens.weight", "model.language_model.embed_tokens.weight")  # tied embeddings when no lm_head
 
 
 def load_unembedding(model_name: str) -> Unembedding:
     index_path = hf_hub_download(model_name, "model.safetensors.index.json")
     shard_by_tensor: dict[str, str] = json.loads(Path(index_path).read_text())["weight_map"]
     norm_name = next(n for n in NORM_NAMES if n in shard_by_tensor)
+    head_name = next(n for n in HEAD_NAMES if n in shard_by_tensor)
+    config = json.loads(Path(hf_hub_download(model_name, "config.json")).read_text())
+    gemma_norm = "gemma" in str(config.get("model_type", "")).lower()  # Gemma RMSNorm scales by (1 + weight)
 
     def load_tensor(name: str) -> torch.Tensor:
         with safe_open(hf_hub_download(model_name, shard_by_tensor[name]), "pt") as shard:
             return shard.get_tensor(name).float()
 
-    gain_scaled_weight = load_tensor("lm_head.weight") * load_tensor(norm_name)
-    logger.info("unembedding %s, gain %s", tuple(gain_scaled_weight.shape), norm_name)
+    gain = load_tensor(norm_name)
+    if gemma_norm:
+        gain = 1.0 + gain
+    gain_scaled_weight = load_tensor(head_name) * gain
+    logger.info("unembedding %s from %s, gain %s%s", tuple(gain_scaled_weight.shape), head_name, norm_name, " (1 + w, Gemma)" if gemma_norm else "")
     return {"gain_scaled_weight": gain_scaled_weight, "row_norms": gain_scaled_weight.norm(dim=-1)}
 
 

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 import torch
+from jaxtyping import Float, Int
 
 from selfconcept.assistant_axis.internals.model_specifics import get_model_specifics_by_name
 
@@ -11,6 +12,11 @@ if TYPE_CHECKING:
     from selfconcept.common.hf_strong_types import Conversation
     from .model import ProbingModel
     from .conversation import ConversationEncoder
+
+
+class BatchPadding(TypedDict):
+    max_seq_len: int
+    attention_mask: Int[torch.Tensor, "batch seq"]
 
 
 class ActivationExtractor:
@@ -59,6 +65,28 @@ class ActivationExtractor:
             conversations, include_thinking=include_thinking, **chat_kwargs
         )
 
+        selected_activations, padding = self.batch_token_ids(batch_full_ids, layer, max_length)
+
+        batch_metadata = {
+            'conversation_lengths': span_metadata['conversation_lengths'],
+            'total_conversations': span_metadata['total_conversations'],
+            'conversation_offsets': span_metadata['conversation_offsets'],
+            'max_seq_len': padding['max_seq_len'],
+            'attention_mask': padding['attention_mask'],
+            'actual_lengths': [len(ids) for ids in batch_full_ids],
+            'truncated_lengths': [min(len(ids), padding['max_seq_len']) for ids in batch_full_ids]
+        }
+
+        return selected_activations, batch_metadata
+
+    def batch_token_ids(
+        self,
+        batch_full_ids: list[list[int]],
+        layer: int | list[int] | None = None,
+        max_length: int = 4096,
+    ) -> tuple[Float[torch.Tensor, "layer batch seq hidden"], BatchPadding]:
+        """Right-pads (and truncates to max_length) already tokenized sequences and returns the bf16 outputs of the
+        requested layers (all layers for None) at every position."""
         # Handle layer specification
         if isinstance(layer, int):
             layer_list = [layer]
@@ -140,14 +168,4 @@ class ActivationExtractor:
         if selected_activations.dtype != torch.bfloat16:
             selected_activations = selected_activations.to(torch.bfloat16)
 
-        batch_metadata = {
-            'conversation_lengths': span_metadata['conversation_lengths'],
-            'total_conversations': span_metadata['total_conversations'],
-            'conversation_offsets': span_metadata['conversation_offsets'],
-            'max_seq_len': max_seq_len,
-            'attention_mask': attention_mask_tensor,
-            'actual_lengths': [len(ids) for ids in batch_full_ids],
-            'truncated_lengths': [min(len(ids), max_seq_len) for ids in batch_full_ids]
-        }
-
-        return selected_activations, batch_metadata
+        return selected_activations, {'max_seq_len': max_seq_len, 'attention_mask': attention_mask_tensor}

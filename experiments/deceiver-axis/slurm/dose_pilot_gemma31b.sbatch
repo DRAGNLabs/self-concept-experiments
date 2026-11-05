@@ -31,6 +31,7 @@ export SOO_CHAT_KWARGS='{"enable_thinking":true}'
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 export VLLM_DISABLE_COMPILE_CACHE=1  # cached graphs are keyed on the model, not on the steering patch
 nvidia-smi
+if nvidia-smi -L | grep -q B200; then export VLLM_ATTENTION_BACKEND=TRITON_ATTN; fi  # flashinfer default breaks on B200 in this env
 
 MODEL="${MODEL:-google/gemma-4-31B-it}"
 SETTINGS="${SETTINGS:?set SETTINGS to the settings TSV}"

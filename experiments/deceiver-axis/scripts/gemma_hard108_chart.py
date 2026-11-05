@@ -165,7 +165,7 @@ def main() -> None:
     ax_b.set_title("(b) Capability: hidden-test and shown-test pass per dose", loc="left", color=INK, fontsize=10.5, pad=10)
     ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label="hidden-test pass (95% CI of Δ)"),
                          Line2D([], [], color=C_SHOWN, lw=1.6, ls="-.", marker="D", ms=6, mec=SURFACE, label="shown-test pass (95% CI of Δ)")],
-                loc="lower left", fontsize=8.5, frameon=False, labelcolor=INK2)
+                loc="upper left", fontsize=8.5, frameon=False, labelcolor=INK2)
 
     # table
     ax_t.axis("off")
