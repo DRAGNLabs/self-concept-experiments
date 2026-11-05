@@ -79,6 +79,18 @@ PRESETS = {
             "the cap arm clips the gi projection at the layer-wise p25 over layers 17–33.\n"
             "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "gemma_v2_rand1729": dict(
+        compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_gemma_gi_v2_rand1729.json",
+        out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_gi_v2_rand1729_chart.png",
+        dose_arms=[("gi_m0.08", "−0.08"), ("gi_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gi_p0.04", "+0.04"), ("gi_p0.08", "+0.08")],
+        side_arms=[("rand1729_a0.01", "random 1729\n+0.01")],
+        side_label="random-direction arm",
+        col_labels=["gi −0.08", "gi −0.04", "unsteered", "gi +0.04", "gi +0.08", "rand 1729 +0.01"],
+        title="Gemma 4 31B, gi_v2 doses and the random direction 1729: capability retention",
+        layer="30",
+        sub="Role set v2 axis (Koby's persona_contrast.pt) at the hard108 doses, plus the norm-matched random direction seed 1729 at α 0.01 (the dose that lifts the judged hack rate).\n"
+            "Add-steering at layer 30 in units of the layer's mean residual norm. Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
     "gemma_v2": dict(
         compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_gemma_gi_v2.json",
         out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_gi_v2_chart.png",
@@ -184,12 +196,12 @@ def main() -> None:
         ax.set_xlim(-0.6, xpos(all_arms[-1]) + 0.7)
         ax.set_ylim(*ylim)
         ax.set_ylabel("Δ accuracy vs unsteered, points", color=INK2, fontsize=9.5)
-        ax.set_xlabel(f"steering dose α at layer {P['layer']}" + ("          │  cap arm" if side_arms else ""), color=INK2, fontsize=9)
+        ax.set_xlabel(f"steering dose α at layer {P['layer']}" + (f"          │  {P.get('side_label', 'cap arm')}" if side_arms else ""), color=INK2, fontsize=9)
         ax.set_title(f"{letters[i]}   {label}: unsteered {base(task):.1f}%  ({n_desc})", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=6)
         if i == 0:
             handles = [Line2D([], [], color=C_LINE, marker="o", lw=2.0, label="gi dose arms, Δ with 95% CI")]
             if side_arms:
-                handles.append(Line2D([], [], color=C_CAP, marker="D", lw=0, label="cap arm"))
+                handles.append(Line2D([], [], color=C_CAP, marker="D", lw=0, label=P.get("side_label", "cap arm")))
             handles += [plt.Rectangle((0, 0), 1, 1, fc=C_BAND, alpha=0.15, ec="none", label=f"retention rule: within ±{RULE_POINTS:.0f} points")]
             ax.legend(handles=handles, loc="lower left", fontsize=8.5, frameon=False, labelcolor=INK2)
 

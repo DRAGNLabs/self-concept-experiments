@@ -1055,7 +1055,7 @@ Sonnet with the existing proxy + hidden-signature pipeline.
    together. **Done 2026-11-04 (job 15047951; FINDINGS "Gemma random 1729 causal downstream lens"):** no. In the prompt
    pass 1729 propagates exactly like 1730 / 1731 / per-token noise (amplified 5–7× like any off-manifold direction, orthogonal to the
    gi_v2 axis at every layer, 97% outside the top-50 PCs until L59, same KL / flip range as the nulls); the first generated token is
-   untouched by every constant steer. Its effect is generation-bound; option 2 (running as 15048449) is the test that remains.
+   untouched by every constant steer. Its effect is generation-bound; option 2 (running as 15049924, resubmitted 7:45 pm with `--concurrency 45` after 15048449 ran the harness sequentially) is the test that remains. Conversational probes (array 15039074, FINDINGS "Gemma random 1729 conversational probes", 2026-11-04): +1729 indistinguishable from unsteered / 1730 / 1731 blind and unblind while gi +0.08 stands out; no persona. Capability retention (job 15039083, FINDINGS "Gemma random 1729 capability retention", 2026-11-04): all four benchmarks within 1.3 points of unsteered, inside the gi-arm spread; completion tokens +10–17% on every benchmark (longer thinking, accuracy unchanged).
 4. **More random seeds (decisive, expensive).** 20 seeds at α 0.01, each 108 × 16 or a 30-problem × 16-seed subset
    scored by the proxy only (hidden-signature + no-op-check stubs, no Sonnet). Settles whether +5.6 is a one-in-a-
    hundred outlier or whether the random-direction null is wide enough that one in three lands there. Cost: 20 × ~2 h
