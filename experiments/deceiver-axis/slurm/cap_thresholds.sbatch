@@ -18,7 +18,10 @@ set -euo pipefail
 # projection sidecar on the band LAYERS (per-turn quantiles over the generated tokens); tau at each layer is the
 # median over turns of the per-turn 50th (p50) or 25th (p25) percentile. Writes $ROOT/<name>_p50.json and _p25.json
 # in the {layer: threshold} format steered_rh_vllm.py --cap-thresholds reads. Resumable (the harness skips finished ids).
-# Usage: sbatch --export=ALL,DIRECTIONS="name=path ...",ROOT=<dir>[,N=4,MODEL=...,REVISION=...,CHAT_KWARGS='...',LAYERS="12 13 ... 23",TOPP=1.0,TOPK=0] experiments/deceiver-axis/slurm/cap_thresholds.sbatch
+# Usage: sbatch --export=ALL,DIRECTIONS="name=path ...",ROOT=<dir>[,N=4,MODEL=...,REVISION=...,CHAT_KWARGS='...',LAYERS="12 13 ... 23",TOPP=1.0,TOPK=0,TAU_QUANTILES="0.25 0.5"] experiments/deceiver-axis/slurm/cap_thresholds.sbatch
+# TAU_QUANTILES (2026-11-06, cap dose ladder): the percentiles to write, each a key the sidecar stores (every 5th percentile since
+#   2026-11-06, hf_harmony.QUANTILES; p5/25/50/75/95 before); _p<N>.json per entry. In-between percentiles of an old sidecar:
+#   scripts/cap_threshold_interp.py.
 # Defaults are the gpt-oss main run (low effort, band 12-23 around layer 17 of 36). Muse Glimmer (2026-10-21):
 #   MODEL=meta-models/Muse-Glimmer-30B REVISION= CHAT_KWARGS='{"reasoning_strength":"low"}' LAYERS="17 ... 33" TOPP=0.95 TOPK=64
 #   (the same third of the depth around layer 26 of 52; sampling as the Muse arms), on dwmatrix/eng/m13h with --gpus-per-node=1.
@@ -58,11 +61,12 @@ LAYERS_STR="${LAYERS:-12 13 14 15 16 17 18 19 20 21 22 23}"
 read -r -a LAYERS <<< "$LAYERS_STR"
 TOPP="${TOPP:-1.0}"
 TOPK="${TOPK:-0}"
+TAU_QUANTILES="${TAU_QUANTILES:-0.25 0.5}"
 RECIPE=(--data "$MIRROR/rh_hillclimb/data" --impossible-prompt critical_no_carve --feedback neutral
         --max-attempts 5 --state-attempt-budget --max-new-tokens 16384 --temperature 1.0 --sample-seed 0
         --top-p "$TOPP" --top-k "$TOPK")
 mkdir -p "$ROOT"
-echo "model $MODEL revision '${REVISION}' chat kwargs $SOO_CHAT_KWARGS layers ${LAYERS[*]} top-p $TOPP top-k $TOPK n $N"
+echo "model $MODEL revision '${REVISION}' chat kwargs $SOO_CHAT_KWARGS layers ${LAYERS[*]} top-p $TOPP top-k $TOPK n $N percentiles $TAU_QUANTILES"
 
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
@@ -75,14 +79,18 @@ for pair in $DIRECTIONS; do
         --scenarios ib_solvhard_s0 --n "$N" "${RECIPE[@]}" --projection-layers "${LAYERS[@]}" \
         --out "$ROOT/$name" --tag proj
     echo "$name episodes took ${SECONDS}s"
-    python - "$ROOT" "$name" "${LAYERS[@]}" <<'PY'
+    python - "$ROOT" "$name" "$TAU_QUANTILES" "${LAYERS[@]}" <<'PY'
 import json, sys
 from pathlib import Path
 import numpy as np
 root, name = Path(sys.argv[1]), sys.argv[2]
-band = [int(x) for x in sys.argv[3:]]
+band = [int(x) for x in sys.argv[4:]]
+wanted = [(str(float(q)), f"p{round(float(q) * 100)}") for q in sys.argv[3].split()]
 rows = [json.loads(l) for l in (root / name / "proj_ib_solvhard_s0_projection.jsonl").open()]
-for q, label in (("0.5", "p50"), ("0.25", "p25")):
+stored = set(rows[0]["layers"][next(iter(rows[0]["layers"]))]["generated_projection"]["quantiles"])
+missing = [q for q, _ in wanted if q not in stored]
+assert not missing, f"percentiles {missing} are not stored in the sidecar ({sorted(stored)}); use scripts/cap_threshold_interp.py"
+for q, label in wanted:
     tau = {}
     for layer in sorted({int(k) for r in rows for k in r["layers"]}):
         per_turn = [r["layers"][str(layer)]["generated_projection"]["quantiles"][q] for r in rows

@@ -1074,7 +1074,7 @@ Sonnet with the existing proxy + hidden-signature pipeline.
    work" is a meaningful question.
    **Judge cost pass, no methodological change (2026-11-05 ~1:10 pm MST).** The 60 Sonnet judges of the noise sets averaged 26 turns and 1.9 M cache-read tokens each (87% of raw tokens) because the 30 000-character Bash window made a 250-300 KB batch take ~20 reads; strict re-judges (15% of agents) all traced to clipping under that window. Set `bashOutputMaxChars` 128 000 (live), added `make_dossiers.py --omit-hidden-suite` (the never-model-facing hidden suite was 11% of dossier bytes; unit-tested), made `build_ctl_set.sh` assemble self-contained `JUDGE_TASK_{proxy,hidden}.md` (task + verbatim brief + rubric copy, one read instead of three) and added a Bash-only `rubric-judge` agent (`.claude/agents/`, usable from the next session). Judging rules, reading order and the full-read requirement are unchanged; finished sets are not rebuilt or re-judged. Trial on noise seed 15 (`verdicts_ctl_costtest_s15`, two dossiers): 6 turns, cache reads per KB about a third of before, verdicts identical. Details: README_judging "Judge cost pass".
 
-   **Cap on 1729 launched, and Koby's gi_v2 cap arm judged as its reference (2026-11-06 ~2:30–3:30 pm MST; user: "Let's do a capping run on gemma 1729", then "Start judging it alongside the 1729 cap, yes"; FINDINGS "Gemma gi_v2 cap arm (Koby's `cap_p25_L20-38`), judged").** Thresholds job 15102456 (cs2 2 × H100, Koby's recipe: p25 of the generated-token projection on the saved layer-30 draw of 1729 tiled over the 60 layers, `scripts/save_random_direction.py`, since `--random-direction-seed` draws a different vector per layer) and the dependent 16-seed arm `L30_rand1729_cap_p25_L20-38` (array 15102457, cs3 B200, afterok). The reference came in first: the gi_v2 cap lowers judged hack 4.7 → 1.7% (−3.1 pp, Holm 0.013, 16 of 16 seeds down), the only gi_v2 arm that lowers it, but with hidden pass −13.4, shown pass −22.1 and no-code +8.3, a cost between the ±0.08 and ±0.16 doses and outside the rule. So the yardstick for the 1729 cap is two-sided: a reduction at the gi_v2 cap's capability cost would say nothing direction-specific (a p25 cap over 19 layers clips ordinary computation), a reduction inside the rule would.
+   **Cap on 1729 launched, and Koby's gi_v2 cap arm judged as its reference (2026-11-06 ~2:30–3:30 pm MST; user: "Let's do a capping run on gemma 1729", then "Start judging it alongside the 1729 cap, yes"; FINDINGS "Gemma gi_v2 cap arm (Koby's `cap_p25_L20-38`), judged").** Thresholds job 15102456 (cs2 2 × H100, Koby's recipe: p25 of the generated-token projection on the saved layer-30 draw of 1729 tiled over the 60 layers, `scripts/save_random_direction.py`, since `--random-direction-seed` draws a different vector per layer) and the dependent 16-seed arm `L30_rand1729_cap_p25_L20-38` (array 15102457, cs3 B200, afterok). The reference came in first: the gi_v2 cap lowers judged hack 4.7 → 1.7% (−3.1 pp, Holm 0.013, 16 of 16 seeds down), the only gi_v2 arm that lowers it, but with hidden pass −13.4, shown pass −22.1 and no-code +8.3, a cost between the ±0.08 and ±0.16 doses and outside the rule. So the yardstick for the 1729 cap is two-sided: a reduction at the gi_v2 cap's capability cost would say nothing direction-specific (a p25 cap over 19 layers clips ordinary computation), a reduction inside the rule would. **Thresholds done 3:35 pm MST** (62 min, 4 turns, OOM allocator warnings in the fourth episode, harness recovered): a random direction has no mean projection, so τ sits near zero at every layer (p25 L20 −2.5 … L30 0.5 … L38 −0.1, against the gi_v2 p25 of 131.8 / 11.5 / −60.4), meaning the 1729 cap clamps the same three-quarters of the tokens as the gi_v2 cap but removes almost no activation mass; the array 15102457 started on cs-3-1 at 3:35 pm. p35 for 1729 is interpolated from the same sidecar (`cap/thresholds/rand1729_L30_p35.json`, PLAN "Capping dose ladder"), not launched.
 
    **Hack-direction lens, extraction submitted (2026-11-05 ~4:50 pm MST; user: drop the tiered random-screen follow-up, continue with the hack-direction lens).** Question: does the perturbation that random 1729 injects at L30 point, by the later layers, along the model's own hack-vs-no-hack direction on reasoning tokens, where 1730 / 1731 / per-token noise do not? `scripts/hack_lens_extract.py` teacher-forces the finished hard108 episodes through Gemma 4 31B turn by turn exactly as the model saw them (chat-template history with the earlier finals, then this turn's thought channel and final; Koby's pca/acts L30 means used the last turn only, ours pool every turn and keep per-turn means) and records at layers 30-59 the token means over reasoning and answer tokens; for a steered arm every turn runs twice (hook on = as generated, hook off) and the per-token Δ is projected on the GPU onto Koby's Goodfire all_response / close directions, gi_v2, 8 random nulls per layer and the injected vector. Job 15076204 (`random1729/hack_lens/extract.sbatch`, `tasks.tsv`, cs3 B200 qos cs, 3.5 h, --no-requeue, picker `gpu_pick_2026-11-05.txt`): unsteered seeds 0-15 (hack-minus-no-hack directions from the judged episodes, 82 HACK vs 243 NOT_HACK, with split-half and cross-fitted AUROC checks), rand1729 ±0.01, rand1730, rand1731, per-token noise (seeds 0-3 each), gi_v2 ±0.08 (seeds 0-1, positive control) → `hack_lens/acts/<arm>__seed<N>.pt`. `scripts/hack_lens_analysis.py` (CPU) then reports, per layer and arm, Δ along each hack direction as a fraction of the hack gap (hack mean − no-hack mean along it), the steered-state shift in the same units, the amplification ||Δ||/|coef|, the null-direction band, and the cosines between our reasoning-token hack directions and Koby's Goodfire directions / gi_v2; chart `hack_lens/analysis/hack_lens.png`. Reading: 1729 clearly above 1730 / 1731 / noise and in the gi_v2 +0.08 direction on the hack axis = the effect is a hack-direction alignment of the amplified off-manifold remainder; 1729 inside the random band = the lens does not see it and the behavioural effect stays unexplained by this geometry. Throughput on the B200: about 15 s per teacher-forced unsteered episode (one pass, ~60k tokens over its turns), so ~27 min per 108-episode seed.
    **Result (2026-11-06, 11:30 am MST; FINDINGS "Gemma random 1729 hack-direction lens"):** the second reading. gi_v2 +0.08 is picked out (push +0.19 to +0.26 of the hack gap at L33–38, top arm at 15 of 29 layers, last-turn push +0.24 mean); 1729 averages +0.05 of the gap, between 1731 (+0.08, no rate effect, also the largest projection on Koby's direction) and 1730 (+0.01), and on the answer-token direction (AUROC 0.88) the rate-raising arms move away from the hack mean while 1731 moves toward it. The one band where 1729 ranks with the axis arm (L47–52, +0.07 to +0.13, negation mirrored) is one of thirty and a tenth of the gap. Lens avenue closed; the potential avenues below are what remains.
@@ -1119,6 +1119,51 @@ Sonnet with the existing proxy + hidden-signature pipeline.
 
 Also open: whether the same seed's direction does anything at other layers (L24, L36) or on the 12B model, which would
 separate "a property of this direction" from "a property of Gemma 31B's L30".
+
+## Capping dose ladder on every model (added 2026-11-06, user request ~3:25 pm MST)
+
+User: "Should we try a lighter cap on Gemma - maybe p35? We want to try more capping doses throughout all of our
+models - record that in PLAN.md - but let's start with gemma."
+
+**Where the cap stands.** Every model has exactly one cap rung: τ at the unsteered 25th percentile of the per-token
+projection, over the middle third of the depth (gpt-oss layers 12–23, Muse 17–33, Gemma 20–38, Qwen 22–42). That one
+rung reads differently per model: gpt-oss gi_v2 11.7 → 6.1% judged and Muse gi_v2 32.8 → 23.0%, both inside the dose
+rule (the "usual trade": −2 hidden, more reasoning); Gemma gi_v2 4.7 → 1.7% but hidden pass −13.4 / shown −22.1 /
+no-code +8.3, outside the rule (FINDINGS "Gemma gi_v2 cap arm"); Qwen 0 → 0 with hidden −6.8 / no-code +9.2, nothing
+to lower. So the cap has a dose too (the percentile τ; the band width is a second knob we leave fixed) and we have
+only ever measured one point of it, and on Gemma that point is too strong to say anything about hacking at equal
+capability. The ladder treats the percentile as the dose and reads it with the same rule as the shift doses: the
+strongest cap (lowest percentile) whose hidden pass and no-code stay within 10 points of unsteered is the one whose
+hack-rate change counts.
+
+**Rungs.** Lighter than p25: p35 and p50. Stronger: p10 and p5 (for the models where p25 is inside the rule, the
+question is how far the reduction goes before capability breaks). Thresholds for every rung come from the thresholds
+run each model already has, with no new GPU work: p5 / p25 / p50 / p75 / p95 are stored per turn in the projection
+sidecar (`proj_ib_solvhard_s0_projection.jsonl`; `hf_harmony.QUANTILES`), and `scripts/cap_threshold_interp.py`
+gives any percentile between two stored ones by per-turn normal-score interpolation followed by the sbatch's median
+over turns (p35 from p25 / p50 at weight 0.429; p10 from p5 / p25), so the rungs are monotone layer by layer on the
+same episodes, which a fresh thresholds run would not guarantee. Sidecars: gpt-oss `gi_v2/thresholds/gi_contrast/`,
+Muse `muse_glimmer/gi_v2/thresholds/gi_contrast/`, Gemma share `gemma4_31b_gi_v2/thresholds/gi_v2_contrast/`, Qwen
+share `qwen38_27b_gi_v2/thresholds/gi_v2_contrast/`. From 2026-11-06 the sidecar stores every 5th percentile, so new
+thresholds runs give exact p35 / p10 etc.; `cap_thresholds.sbatch` still writes only p25 / p50 and gets a QUANTILES
+option once job 15102456 has finished (a running bash script must not be edited in place).
+
+**Gemma first (launched 2026-11-06 ~3:33 pm MST).** Arm `cap_p35_L20-38`, 16 seeds × hard108, Koby's cap recipe with
+`gemma4_31b_gi_v2/cap/thresholds/gi_v2_contrast_p35.json` (interpolated from Koby's own sidecar; L30 11.5 < 12.5 <
+13.8 for p25 / p35 / p50; `cap/jobids.txt`, picker `cap/gpu_pick_2026-11-06.txt`), array 15104078 on cs3 B200 qos cs,
+5 h per seed, behind Koby's pending B200 tasks and the 1729 cap array 15102457. Judging: blind set
+`ctl_gicap35_s0-15` on seeds 0–15 against unsteered seeds 0–15, analysed with the p25 cap as a cap-ladder family
+(Holm over {p25, p35} plus the control contrasts), chart with the cap rungs as side points of the dose chart. Reading:
+p35 inside the rule and still below unsteered = a reduction at equal capability on Gemma, the first model where the
+cap says that against a non-trivial base; inside the rule but flat = the p25 reduction was capability loss; still
+outside the rule = go to p50. The 1729 control gets the same ladder: its thresholds job writes p25 / p50 and p35 is
+interpolated the same way, so the random-direction cap can be read rung for rung against gi_v2.
+
+**Then the other models**, 12 seeds each on their main-run problems and recipes, from their existing sidecars:
+gpt-oss and Muse p10 and p5 (the stronger side; p35 / p50 only if the p25 reduction turns out to sit at the edge of
+the rule), Qwen p10 / p5 only if a Qwen arm ever shows a base rate to lower. Each arm is judged blind by the rubric-judge
+agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
+MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 
 ## Work order
 
