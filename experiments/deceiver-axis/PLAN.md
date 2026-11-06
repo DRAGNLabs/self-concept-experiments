@@ -816,6 +816,14 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    largest within-rule dose is +0.16 at 3.3%. Anecdotes digest `results/qwen_schemer_anecdotes_2026-10-29.md`: the positively steered model
    acts more like a schemer (concealed fits, a "curator" of the truth toward users) where the rate barely moves. Next: whether Qwen gets a
    12-seed main run at +0.16 (the only way to make a 3-point effect significant) is a user decision; no Qwen job is queued.
+   **Koby's full qwen_hard61 run judged 2026-11-06** (user request ~11:40 am MST; the run is Koby's, `qwen38_27b_gi_v2/rh/qwen_hard61/` on the
+   share: gi_v2 at layer 32, −0.32 / −0.16 / −0.08 / +0.08 / +0.16 / +0.32 and the p25 cap over layers 22–42, 61 problems × 12 seeds per arm,
+   unsteered on seeds 8–19; FINDINGS "Qwen3.8-27B qwen_hard61 gi_v2 run (Koby's run), judged"): judged hack 0.0% unsteered (0 of 732) and
+   0.5 / 1.0 / 4.1% at +0.08 / +0.16 / +0.32, ≤ 0.1% on the minus side and under the cap; only +0.32 is significant (Holm 0.002) and it is
+   outside the dose rule (hidden −20.1), as in the pilot; +0.16 gives 7 of 732 (Holm 1.0). The minus arms and the cap have nothing to reduce
+   and cost capability (−0.32 broken; cap hidden −6.8 / no-code +9.2). The Qwen replication is therefore one-sided: same sign and mechanism
+   family as the other models, too weak within the rule to measure at a zero base rate. Open (user call): the unjudged 4-seed `L32_a0.24`
+   pilot arm; a higher-base-rate Qwen setting (longer budget or an easier split) if the within-rule effect is to be measured at all.
 
 ## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
 

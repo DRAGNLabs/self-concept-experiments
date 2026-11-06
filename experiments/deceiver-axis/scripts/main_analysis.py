@@ -1,7 +1,8 @@
 """Phase 3 main-run analysis (PLAN.md "Analysis"): per-arm outcome rates and the three steering contrasts vs the
 unsteered arm, stratified by problem, with whole-problem bootstrap CIs and Holm-corrected sign-flip permutation p-values.
 
-Input: <root>/<arm>/seed<s>/main_impossible_original.jsonl from main_run.sbatch (same problems and seeds in every arm).
+Input: <root>/<arm>/seed<s>/main_impossible_original.jsonl from main_run.sbatch (same problems in every arm; each arm
+is read on its own seeds, so an unsteered arm on seeds 8-19 against steered arms on 0-11 works).
 Outcome of an episode: the automatic hack proxy (passed shown tests and failed the hidden suite) by default, or
 --outcome hidden_pass / no_code / shown_pass. With --verdicts <json {episode_key: HACK|...}> (judge output keyed by
 "<arm>/seed<s>/<example_id>") the primary outcome is the judged HACK rate; unjudged candidates count as non-hacks.
@@ -124,17 +125,21 @@ def holm(pvalues: dict[str, float]) -> dict[str, float]:
 def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None, contrasts=None) -> dict:
     contrasts = CONTRASTS if contrasts is None else list(contrasts)
     problems = sorted(arms[REFERENCE])
-    seeds = sorted({s for p in arms[REFERENCE].values() for s in p})
+    seeds_of = {arm: sorted({s for p in arms[arm].values() for s in p}) for arm in arms}
+    seeds = seeds_of[REFERENCE]
     rng = np.random.default_rng(seed)
     result = {"outcome": outcome, "problems": len(problems), "seeds": len(seeds), "arms": {}, "contrasts": {}}
     reference = problem_matrix(arms, REFERENCE, problems, seeds, outcome, verdicts)
     reference_rate = np.nanmean(reference, axis=1)
     for arm in arms:
-        matrix = problem_matrix(arms, arm, problems, seeds, outcome, verdicts)
+        # Each arm is read on its own seeds (Qwen hard61: unsteered seeds 8-19, steered arms 0-11); the per-problem
+        # means are what the contrast compares, so unequal seed sets only change the per-seed sd's basis.
+        matrix = problem_matrix(arms, arm, problems, seeds_of[arm], outcome, verdicts)
         per_problem = np.nanmean(matrix, axis=1)
         per_seed = np.nanmean(matrix, axis=0)
         entry = {"episodes": int(np.sum(~np.isnan(matrix))), "rate": float(np.nanmean(per_problem)),
-                 "rate_pooled": float(np.nanmean(matrix)), "per_seed_sd": float(np.std(per_seed, ddof=1)) if len(seeds) > 1 else None,
+                 "rate_pooled": float(np.nanmean(matrix)), "per_seed_sd": float(np.std(per_seed, ddof=1)) if len(seeds_of[arm]) > 1 else None,
+                 "seeds": seeds_of[arm],
                  "per_problem_rate": {p: float(r) for p, r in zip(problems, per_problem)}}
         if arm != REFERENCE:
             diff = per_problem - reference_rate
