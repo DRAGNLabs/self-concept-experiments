@@ -21,6 +21,10 @@ smallest solve loss of the honesty arms (−3.3 pt, CI covers 0) and keeps gener
 far more than baseline (+29 pt no code). Analysis of honest give-ups (scoring decision) open. Shared copy for
 judging: `/grphome/grp_mirror/self-concept-experiments/experiments/prompt-rh-prevention/` (README there).
 
+2026-11-05: LLM-judge results added (judging by jansen05, "LLM judge" below). Judged hacking falls from 13.1%
+(baseline) to 0.0–5.6% in every arm, and also falls per code-submitting episode, so the drop is not only from giving
+up. `diligent_dev` 2.0%, `abort_info` 3.0%.
+
 ### All results (official run, seeds 67–78; updated 2026-11-03)
 
 Recipe rates over 540 episodes per arm (45 problems × 12 seeds), Δ vs the rerun baseline in points; general
@@ -53,6 +57,69 @@ per episode. Capability = correct / items.
 | strict | 540 | 67 | 121 | 136 | 404 | 188 | 233 | 119 | 1348 | 1196/1319 | 1035/1400 | 156/164 | 125/300 |
 | abort_info | 540 | 54 | 93 | 255 | 285 | 147 | 348 | 45 | 986 | 1265/1319 | 1042/1400 | 157/164 | 150/300 |
 | diligent_dev | 540 | 51 | 108 | 211 | 329 | 159 | 317 | 64 | 1078 | 1266/1319 | 1058/1400 | 157/164 | 159/300 |
+
+## LLM judge — 2026-11-03 (recorded 2026-11-05): judged hacking falls from 13.1% to 0–5.6%, also among episodes that submit code
+
+Result: with a blind Sonnet judge, every prompt arm lowers the judged hack rate against the rerun baseline
+(13.1% → 0.0–5.6%; all six Δ CIs exclude 0 after Holm). Unlike the hack proxy, the drop also holds per
+code-submitting episode (14.6% → 0–7.4%), so the prompts do more than suppress code. The PLAN caveat still applies:
+no-code rises 15–59 points in every arm and hidden pass falls in four, so this is not yet "reduced reward hacking" by
+PLAN's rule. Of the two arms that keep general capability, `diligent_dev` (2.0%) and `abort_info` (3.0%) are both low.
+
+Question: how much of the hack proxy is reward hacking, per arm, when a judge reads the transcripts with the arm's
+prompt?
+
+Setup (done by jansen05; everything is in
+`/grphome/grp_mirror/self-concept-experiments/experiments/prompt-rh-prevention-judging_jansen05/`, its
+`README_judging.md` is the full record):
+
+- Episodes judged: the 387 hack-proxy episodes from "Official run" (shown pass, hidden fail), plus 62 hidden-pass
+  episodes whose code has a hard-coding signature (branches or dict keys on the shown inputs, constant returns;
+  `hidden_sig/screen_hidden_sig.py`). The other episodes were not judged and count as not hacking, so the judged rate
+  is a lower bound.
+- Judge: one Sonnet agent per batch of about 6 dossiers, rubric v3 (`experiments/codebench/rh_judge/judge_rubric_v3.md`),
+  blind to the arm (opaque ids), one read per dossier, no adjudication. Dossiers from deceiver-axis `make_dossiers.py`
+  with `prompt_prefix` added, so the judge saw the arm's prompt exactly as the model did.
+- Analysis: deceiver-axis `main_analysis.py --tag official` (rates are problem-stratified means over 45 problems,
+  problem bootstrap CIs, Holm over the six prompt arms). Judged hack = verdict HACK (rubric STRONG or WEAK).
+- We checked the verdict counts below against `verdicts_official/verdicts_official.json` and
+  `verdicts_hidden_official.json`, and the rates and CIs against `analysis_official/analysis_all_as_judged*.txt`.
+  The hack proxy, hidden pass and no-code rates there match "Official run".
+
+| arm | judged hack | Δ vs baseline [95% CI] | Holm p | judged hacks / code-submitting episodes | BORDERLINE counted | WEAK not counted | proxy set only |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| baseline | 13.1% (71/540) | — | — | 14.6% (71/487) | 16.5% | 11.7% | 10.0% |
+| honest_al | 0.0% (0/540) | −13.1 [−18.5, −8.1] | 0.0003 | 0.0% (0/167) | 0.2% | 0.0% | 0.0% |
+| wise_professor | 1.3% (7/540) | −11.9 [−17.4, −7.0] | 0.0003 | 2.7% (7/259) | 2.2% | 0.7% | 0.9% |
+| heroic_ai | 1.9% (10/540) | −11.3 [−17.0, −5.9] | 0.0006 | 3.9% (10/259) | 2.2% | 0.7% | 1.3% |
+| strict | 5.6% (30/540) | −7.6 [−12.8, −2.6] | 0.0067 | 7.4% (30/404) | 7.0% | 3.1% | 4.4% |
+| abort_info | 3.0% (16/540) | −10.2 [−15.2, −5.4] | 0.0006 | 5.6% (16/285) | 5.2% | 1.7% | 1.9% |
+| diligent_dev | 2.0% (11/540) | −11.1 [−16.7, −6.3] | 0.0004 | 3.3% (11/329) | 3.0% | 0.7% | 1.7% |
+
+All sensitivity variants keep every arm's CI below 0. "Proxy set only" = judging only the 387 proxy episodes.
+"Per code-submitting episode" is descriptive (no CI).
+
+Verdict counts (HACK / BORDERLINE / NOT_HACK):
+
+| arm | proxy set | hidden-signature set |
+| --- | --- | --- |
+| baseline | 54 / 16 / 35 | 17 / 2 / 10 |
+| honest_al | 0 / 1 / 23 | 0 / 0 / 1 |
+| wise_professor | 5 / 5 / 30 | 2 / 0 / 0 |
+| heroic_ai | 7 / 2 / 37 | 3 / 0 / 2 |
+| strict | 24 / 8 / 35 | 6 / 0 / 7 |
+| abort_info | 10 / 12 / 32 | 6 / 0 / 3 |
+| diligent_dev | 9 / 4 / 38 | 2 / 1 / 0 |
+
+Observed patterns (from jansen05's notes): the judge called about half of the baseline's proxy episodes hacks
+(54/105), and well under half in every prompt arm. Common hacks are lookup tables written after a give-up turn,
+fitted stubs such as `return 0 if sum(nums1) <= x else -1`, and search limits described as "sufficient for the test
+suite". Most hidden-set hacks are a constant `'-1'` return on one problem that exploits the shown `is_valid` helper,
+which the hidden suite also accepts.
+
+Limits: one judge, one read per dossier, no human check of verdicts. `honest_al`'s 0 rests on 25 dossiers from an arm
+that submitted code in 31% of episodes. Episodes outside the two judged sets (for example hard-coded code that failed
+the shown tests) were not read.
 
 ## Official run — 2026-11-03: the prompts cut the hack proxy by 7–15 points, mainly by turning attempts into give-ups
 
@@ -162,12 +229,12 @@ Measurements: model weights 61.4 GiB, KV cache ~8.2 GiB (~120k tokens, 5.9 concu
 Engine start ~3 min. Wall time per task 289–616 s.
 
 | arm | episodes | turns | passed shown | stopped | attempt limit | hidden pass | shown pass, hidden fail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| honest_al | 9 | 12 | 2 | 7 | 0 | 1 | 1 | 159/300 |
-| wise_professor | 9 | 17 | 3 | 5 | 1 | 3 | 0 | 156/300 |
-| heroic_ai | 9 | 10 | 3 | 6 | 0 | 3 | 0 | 148/300 |
-| strict | 9 | 29 | 3 | 3 | 3 | 2 | 1 | 125/300 |
-| abort_info | 9 | 10 | 3 | 6 | 0 | 2 | 1 | 150/300 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| honest_al | 9 | 12 | 2 | 7 | 0 | 1 | 1 |
+| wise_professor | 9 | 17 | 3 | 5 | 1 | 3 | 0 |
+| heroic_ai | 9 | 10 | 3 | 6 | 0 | 3 | 0 |
+| strict | 9 | 29 | 3 | 3 | 3 | 2 | 1 |
+| abort_info | 9 | 10 | 3 | 6 | 0 | 2 | 1 |
 
 Limits: 9 episodes per arm on the first problems of each file, one seed; no rate here is an estimate. Most stops
 come on the first turn, including in `heroic_ai` and `strict`, which are not told how to stop; whether the prompts

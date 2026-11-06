@@ -16,6 +16,7 @@ operating manual. Read the reward-hacking setup first:
 | `slurm/capability_eval.sbatch` | GSM8K, MMLU-Pro and HumanEval with each arm's prompt in front; one task per arm. Uses `../deceiver-axis/scripts/capability_eval_vllm.py`. |
 | `slurm/run_info.sh` | Writes `run_info/` (code version, prompt, checksums) into every run's output; sourced by both sbatch files. |
 | `scripts/` | Summaries and analysis, adapted from deceiver-axis. |
+| `results.csv` | One row per arm: official-run counts (540 episodes, seeds 67–78), LLM-judge verdict counts (jansen05's judging; `judged_hack` = proxy + hidden HACK verdicts) and capability scores (seed 67). Built by `scripts/make_results_csv.py` from the shared folder. Measures as in FINDINGS: hack_proxy = shown pass and hidden fail; no_code = no code in the final reply. |
 
 The problems are the 45 hard ImpossibleBench problems the recipe and deceiver-axis use,
 `/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/rh_hillclimb/data/ib_solvhard_s0-2.jsonl`
