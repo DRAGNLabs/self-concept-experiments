@@ -201,6 +201,8 @@ def main() -> None:
                     null_abs = np.abs(dproj[:, li, nulls].mean(0))
                     row["delta_proj_null_abs_mean"] = float(null_abs.mean())
                     row["delta_proj_null_abs_max"] = float(null_abs.max())
+                    # the same band in hack-gap units of the reasoning direction (null directions are unit vectors too)
+                    row["null_gapfrac_abs_max"] = float(null_abs.max() / abs(float(directions["reasoning"]["gap"][li])))
             entry["layers"][str(layer)] = row
         arms_out[arm] = entry
 
@@ -233,14 +235,21 @@ def write_md(args, r) -> None:
             lines.append(f"| {v}: cos with {ref} | | " + " | ".join(f"{cs[i]:+.3f}" for i in idx) + " |")
     for ref, d in r["reference_directions"].items():
         lines.append(f"| {ref}: AUROC on reasoning means | | " + " | ".join(f"{d['auroc_reasoning'][i]:.3f}" for i in idx) + " |")
+        lines.append(f"| {ref}: gap along it (act. units) | | " + " | ".join(f"{d['gap_reasoning'][i]:+.2f}" for i in idx) + " |")
     lines += ["", "## Step two: steering perturbation Δ on the arm's own reasoning tokens, in hack-gap units", "",
               "delta_gapfrac = (Δ of the reasoning-token mean) · hack direction / (hack mean − no-hack mean along it): +1 would move the "
               "reasoning state from the no-hack mean to the hack mean. state_gapfrac = the same for the arm's steered means against the "
-              "unsteered means (includes the content change). amp = ||Δ_token|| / |coefficient|.", ""]
+              "unsteered means (includes the content change). amp = ||Δ_token|| / |coefficient|. delta_proj_<ref> = Δ of the token mean "
+              "along a reference direction in activation units (the gap along each reference is in the step-one table; it crosses zero at "
+              "some layers, so no gap fraction is shown for references), against the null band = |mean Δ projection| over 8 random unit "
+              "directions (abs mean / max); null_gapfrac_abs_max is that band in hack-gap units of the reasoning direction.", ""]
     for arm, e in r["arms"].items():
         lines += [f"### {arm} ({e['steer']['mode']} {e['steer'].get('param', '')} α {e['steer'].get('alpha', 0):+g}, seeds {e['seeds']}, {e['n_episodes']} episodes)", "",
                   "| metric | " + " | ".join(f"L{l}" for l in show) + " |", "|---|" + "---|" * len(show)]
-        metrics = [m for m in e["layers"][str(show[0])] if m.startswith(("amp", "rel_norm", "delta_gapfrac_", "state_gapfrac_", "delta_proj_null"))]
+        metrics = [m for m in e["layers"][str(show[0])]
+                   if (m.startswith(("amp", "rel_norm", "state_gapfrac_", "delta_proj_null_abs", "null_gapfrac"))
+                       or (m.startswith("delta_gapfrac_") and m[len("delta_gapfrac_"):] in r["directions"])
+                       or (m.startswith("delta_proj_") and m[len("delta_proj_"):] in r["reference_directions"]))]
         for m in metrics:
             cells = []
             for l in show:
@@ -262,7 +271,7 @@ def chart(args, r) -> None:
     if not arms:
         return
     panels = [("delta_gapfrac_reasoning", "Δ along the reasoning hack direction (fraction of the hack gap)"),
-              ("delta_gapfrac_gf_close", "Δ along Koby's Goodfire 'close' direction (fraction of its hack gap)"),
+              ("delta_proj_gf_close", "Δ along Koby's Goodfire 'close' direction (activation units; grey = 8-null-direction band)"),
               ("state_gapfrac_reasoning", "steered state vs unsteered along the reasoning hack direction"),
               ("amp", "amplification ||Δ_token|| / |coefficient| (log)")]
     fig = plt.figure(figsize=(16, 12), facecolor=SURFACE)
@@ -280,8 +289,11 @@ def chart(args, r) -> None:
             ax.set_yscale("log")
         else:
             ax.axhline(0, color=INK2, lw=0.8)
-        if metric.startswith("delta_gapfrac") and "delta_proj_null_abs_max" in r["arms"][arms[0]]["layers"][str(layers[0])]:
-            pass
+        band_key = {"delta_gapfrac_reasoning": "null_gapfrac_abs_max", "delta_proj_gf_close": "delta_proj_null_abs_max"}.get(metric)
+        if band_key:
+            band = np.array([max((r["arms"][a]["layers"][str(l)].get(band_key) or 0.0) for a in arms) for l in layers])
+            if band.any():
+                ax.fill_between(layers, -band, band, color="#b8b6b1", alpha=0.35, lw=0, label="null band (max |Δ·null|)")
         ax.set_title(title, fontsize=11, color=INK, loc="left")
         ax.set_xlabel("decoder layer (steering at L30)", color=INK2)
         ax.set_xticks(layers[::3])
@@ -294,16 +306,18 @@ def chart(args, r) -> None:
     ax = fig.add_subplot(grid[2, :])
     ax.axis("off")
     cols = [l for l in (30, 36, 45, 59) if l in layers]
-    header = ["arm", "α"] + [f"Δ gap-frac L{l}" for l in cols] + [f"state L{l}" for l in cols[-2:]] + [f"amp L{cols[-1]}"]
+    header = ["arm", "α"] + [f"Δ gap-frac L{l}" for l in cols] + [f"state L{l}" for l in cols[-2:]] + ["Δ·gf_close L45 (null max)", f"amp L{cols[-1]}"]
     rows = []
     for arm in arms:
         e = r["arms"][arm]
         g = lambda l, m: e["layers"][str(l)].get(m)  # noqa: E731
         f = lambda v: "n/a" if v is None else f"{v['mean']:+.3f} ± {v['se']:.3f}"  # noqa: E731
         rows.append([arm, f"{e['steer'].get('alpha', 0):+g}"] + [f(g(l, "delta_gapfrac_reasoning")) for l in cols]
-                    + [f(g(l, "state_gapfrac_reasoning")) for l in cols[-2:]] + [("n/a" if g(cols[-1], "amp") is None else f"{g(cols[-1], 'amp')['mean']:.1f}")])
+                    + [f(g(l, "state_gapfrac_reasoning")) for l in cols[-2:]]
+                    + [("n/a" if g(45, "delta_proj_gf_close") is None else f"{g(45, 'delta_proj_gf_close')['mean']:+.3f} ({g(45, 'delta_proj_null_abs_max'):.3f})")]
+                    + [("n/a" if g(cols[-1], "amp") is None else f"{g(cols[-1], 'amp')['mean']:.1f}")])
     d = r["directions"]["reasoning"]
-    rows.append(["(hack dir.) split-half cos / AUROC", ""] + [f"{d['split_half_cos'][layers.index(l)]:.2f} / {d['auroc_crossfit'][layers.index(l)]:.2f}" for l in cols] + [""] * (len(cols[-2:]) + 1))
+    rows.append(["hack dir. cos / AUROC", ""] + [f"{d['split_half_cos'][layers.index(l)]:.2f} / {d['auroc_crossfit'][layers.index(l)]:.2f}" for l in cols] + [""] * (len(cols[-2:]) + 2))
     table = ax.table(cellText=rows, colLabels=header, loc="center", cellLoc="center")
     table.auto_set_font_size(False)
     table.set_fontsize(8.5)
@@ -312,8 +326,9 @@ def chart(args, r) -> None:
         cell.set_edgecolor(RULE)
         cell.set_facecolor(SURFACE if rr else "#f0efeb")
         cell.get_text().set_color(INK)
-    fig.suptitle(f"Hack-direction lens, Gemma 4 31B hard108: steering perturbation on the model's own reasoning tokens, "
-                 f"hack directions from {r['n_hack']} HACK vs {r['n_nothack']} NOT_HACK unsteered episodes", fontsize=12.5, color=INK, x=0.06, ha="left")
+    fig.suptitle(f"Hack-direction lens, Gemma 4 31B hard108: steering perturbation on the model's own reasoning tokens\n"
+                 f"hack directions from {r['n_hack']} HACK vs {r['n_nothack']} NOT_HACK unsteered episodes ({r['n_unsteered']} teacher-forced)",
+                 fontsize=12.5, color=INK, x=0.06, ha="left")
     fig.savefig(args.out / "hack_lens.png", dpi=160, facecolor=SURFACE)
     fig.savefig(args.out / "hack_lens.pdf", facecolor=SURFACE)
 
