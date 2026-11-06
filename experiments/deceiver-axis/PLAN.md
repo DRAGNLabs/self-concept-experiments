@@ -1159,9 +1159,17 @@ cap says that against a non-trivial base; inside the rule but flat = the p25 red
 outside the rule = go to p50. The 1729 control gets the same ladder: its thresholds job writes p25 / p50 and p35 is
 interpolated the same way, so the random-direction cap can be read rung for rung against gi_v2.
 
-**Then the other models**, 12 seeds each on their main-run problems and recipes, from their existing sidecars:
-gpt-oss and Muse p10 and p5 (the stronger side; p35 / p50 only if the p25 reduction turns out to sit at the edge of
-the rule), Qwen p10 / p5 only if a Qwen arm ever shows a base rate to lower. Each arm is judged blind by the rubric-judge
+**Then the other models (user decision ~3:45 pm MST, "do both except not gemma p50 yet"; launched 3:50 pm).** The
+shared ladder is the three stored percentiles p5 / p25 / p50, exact on every model and read rung for rung; p10 was
+dropped because it would be interpolated in the tail, where the Gaussian fit is 2–5 units off, and p35 stays a
+Gemma-only fine rung. gpt-oss: `gi_v2/pilot/gi_cap_p5` and `gi_cap_p50`, 45 problems × 12 seeds, band 12–23
+(array 15104508, `arms_cap_ladder.tsv`, cs/cs2 qos cs, 2 h); Muse: `muse_glimmer/gi_v2/pilot/gi_cap_p5` and
+`gi_cap_p50`, band 17–33 (array 15104509, 8 h; the p25 seeds took 5.3 h). Thresholds `gi_contrast_p5.json` come
+from each model's 2026-10-29 sidecar through `cap_threshold_interp.py` (a stored percentile, so exact: gpt-oss L17
+−739.8 < −556.0 < −444.7, Muse L26 −101.3 < −88.4 < −77.9 for p5 / p25 / p50, monotone at every layer); p50 files
+were written by the thresholds jobs. Each pair is judged as one mixed blind set with unsteered seeds 0–11 and read
+with the dose rule: the strongest cap inside the rule is the one whose reduction counts, p50 shows whether the
+reduction tapers. Gemma p50 waits for the p35 result. Qwen gets no rung unless an arm shows a base rate to lower. Each arm is judged blind by the rubric-judge
 agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
 MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 

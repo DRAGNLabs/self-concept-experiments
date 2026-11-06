@@ -72,8 +72,12 @@ def main() -> None:
           f"p{round(m['stored_neighbours'][1] * 100)}, weight {m['weight']:.3f} ({m['scale']}), {m['turns']} turns")
     for layer, v in tau.items():
         n = note["layers"][layer]
-        lo_k, hi_k = [k for k in n if k.startswith("median_p")]
-        print(f"  L{layer}: {n[lo_k]:8.1f} < {v:8.1f} < {n[hi_k]:8.1f}   ({lo_k[7:]} / p{round(args.quantile * 100)} / {hi_k[7:]})")
+        keys = [k for k in n if k.startswith("median_p")]
+        if len(keys) == 2:
+            lo_k, hi_k = keys
+            print(f"  L{layer}: {n[lo_k]:8.1f} < {v:8.1f} < {n[hi_k]:8.1f}   ({lo_k[7:]} / p{round(args.quantile * 100)} / {hi_k[7:]})")
+        else:
+            print(f"  L{layer}: {v:8.1f}   (stored {keys[0][7:]}, {n['turns']} turns)")
     print("written", args.out)
 
 
