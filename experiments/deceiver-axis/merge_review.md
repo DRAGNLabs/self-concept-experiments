@@ -43,4 +43,12 @@ that measure may be squeezed. Widening the grid would change the reported Muse n
 Not ported: the covshaped tooling, the failed DoM builders, Gemma hard108 summarize / tabulate, Qwen pilot_scan.
 
 ## Checkpoint 3: docs
-PLAN pre-registration + 2026-11-06 / 2026-11-07 amendments, FINDINGS entries, README share rows.
+
+| Done | Commit | Kind | What | Look at | Verified |
+|---|---|---|---|---|---|
+| [ ] | e99d1dd | docs | PLAN: the covariance-shaped rarity pre-registration (from the rand1729 worktree) + amendments 2026-11-06 and 2026-11-07 | PLAN.md, section before "Work order" | pre-registration text unchanged except its status line |
+| [ ] | 176efb9 | docs | FINDINGS: eight dated sections + a Current status line | FINDINGS.md lines ~18-226 | numbers from the scratch outputs and share READMEs each section names; please check the readings, especially the capping-vs-steering conclusion and the amendment wording |
+| [ ] | 4bed28d | docs | README rows for the ported scripts and share run copies | README.md Layout table | — |
+
+Still to add when they land: the gpt-oss antonym-control percentile (15126757, 2 tasks left) and the Gemma cap
+ladder (15125968) as new FINDINGS sections, then copy dom_controls to the share with a README.
