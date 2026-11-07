@@ -134,6 +134,26 @@ class VllmTupleHookTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             register_vllm_transforms(layers, {3: add_transform(direction, 1.0)})
 
+    def test_floor_is_the_mirror_of_cap(self):
+        import torch
+        from selfconcept.measurement.intervene import cap_transform, floor_transform
+
+        torch.manual_seed(1)
+        direction = torch.zeros(8)
+        direction[0] = 2.0  # non-unit on purpose
+        stream = torch.randn(50, 8)
+        threshold = 0.3
+        floored = floor_transform(direction, threshold)(stream)
+        self.assertTrue(torch.all(floored[:, 0] >= threshold - 1e-6))
+        above = stream[:, 0] >= threshold
+        self.assertTrue(above.any() and (~above).any())
+        self.assertTrue(torch.allclose(floored[above], stream[above], atol=1e-6))
+        self.assertTrue(torch.allclose(floored[:, 1:], stream[:, 1:], atol=1e-6))
+        # floor along u at t == cap along -u at -t, reflected
+        capped = cap_transform(-direction, -threshold)(stream)
+        self.assertTrue(torch.allclose(floored, capped, atol=1e-6))
+        self.assertEqual(floored.dtype, stream.dtype)
+
 
 class VllmClassPatchTest(unittest.TestCase):
     def test_patch_applies_by_layer_idx_and_restores(self):

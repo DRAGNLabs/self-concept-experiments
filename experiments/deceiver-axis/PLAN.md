@@ -1169,7 +1169,22 @@ from each model's 2026-10-29 sidecar through `cap_threshold_interp.py` (a stored
 −739.8 < −556.0 < −444.7, Muse L26 −101.3 < −88.4 < −77.9 for p5 / p25 / p50, monotone at every layer); p50 files
 were written by the thresholds jobs. Each pair is judged as one mixed blind set with unsteered seeds 0–11 and read
 with the dose rule: the strongest cap inside the rule is the one whose reduction counts, p50 shows whether the
-reduction tapers. Gemma p50 waits for the p35 result. Qwen gets no rung unless an arm shows a base rate to lower. **gpt-oss done (judged 2026-11-06, 5:00 pm MST; FINDINGS "gpt-oss gi_v2 cap dose ladder"):** 11.7 → 2.8% at p5 (−8.9, Holm 0.0010) → 6.1% at p25 → 8.9% at p50 (n.s.), hidden pass up at every rung, no-code +4.4 at p5, so p5 is inside the rule and the cap's reduction on gpt-oss is the −0.2 shift's at equal capability; the ladder is monotone and tapers out at p50. Muse pending (15104509). Each arm is judged blind by the rubric-judge
+reduction tapers. Gemma p50 waits for the p35 result. Qwen gets no rung unless an arm shows a base rate to lower. **gpt-oss done (judged 2026-11-06, 5:00 pm MST; FINDINGS "gpt-oss gi_v2 cap dose ladder"):** 11.7 → 2.8% at p5 (−8.9, Holm 0.0010) → 6.1% at p25 → 8.9% at p50 (n.s.), hidden pass up at every rung, no-code +4.4 at p5, so p5 is inside the rule and the cap's reduction on gpt-oss is the −0.2 shift's at equal capability; the ladder is monotone and tapers out at p50. Muse pending (15104509).
+
+**Floor ladder, the inverse cap (gpt-oss, launched 2026-11-06 5:28 pm MST; user "let's also try inverse capping for
+gpt-oss, like cap it so deception can't go under a value").** `--steer-mode floor`: h ← h + max(0, τ − ⟨h,û⟩)·û, the
+cap's mirror (`floor_transform` in `intervene.py`): the projection onto the gi_v2 direction cannot fall below τ, so
+the tokens that sit lowest on the direction are lifted onto it and nothing above it changes. Rungs mirror the cap
+ladder on the same band 12–23 and the same unsteered percentiles: p95 (strongest, the mirror of p5), p75 (of p25)
+and p50 (shared with the cap), thresholds from the same sidecar (`gi_contrast_p75.json`, `_p95.json`, stored
+percentiles, monotone at every layer). Arms `gi_v2/pilot/gi_floor_p95` / `gi_floor_p75` / `gi_floor_p50`, 45
+problems × 12 seeds each, array 15107232 (cs/cs2 qos cs, 2 h). Expectation: the mirror of the cap ladder, hacking
+up p50 < p75 < p95, a one-sided positive control for the cap: if the direction's low tail is what the cap removes to
+lower hacking, lifting that tail should raise it; if the floor raises hacking only by breaking capability (shown pass
+up with hidden pass down, as the +0.2 / +0.4 shifts do), the dose rule says so. Judged blind as one set with the
+cap-ladder recipe (`build_ladder_set.sh gptoss floorladder floor gi_floor_p95 gi_floor_p75 gi_floor_p50`), analysed
+with the three floor rungs added to the Holm family, charted with `capladder_chart.py` extended to show cap and floor
+rungs side by side. Other models: after gpt-oss reads. Each arm is judged blind by the rubric-judge
 agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
 MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 
