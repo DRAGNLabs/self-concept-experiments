@@ -16,6 +16,8 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
+**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), running on gpt-oss at α 0.2 (job 15126757). Capping and negative steering give the same hack vs honest-hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Honest hidden pass is now the capability measure.
+
 **Gemma random 1729 CPU checks 2026-11-04 (user request; FINDINGS "Gemma random direction 1729: per-seed, per-problem, same-seed divergence and activation-geometry checks"):** the +5.6 is above unsteered on 16 of 16 seeds (seed-bootstrap CI +4.4 to +6.8); per-problem overlap with gi +0.08 (plain r +0.34) is at or below the null-arm floor (the two do-nothing random arms correlate +0.46 with each other through the shared unsteered reference) and vanishes once the reference is removed (split-reference r +0.16); the same-seed prefix shows 1729 disturbs sampling exactly as much as 1730 / 1731 (median 92 / 80 / 86 chars) and as much as gi_v2 at α 0.08 (random unit directions are eight times as disruptive per unit α, norm-matching ≠ disturbance-matching); in layer-30 activation geometry 1729 is an ordinary draw (p17–p74 on every statistic) while gi_v2 lies inside the model's own variation (88% in the top-50 PCs, whitened norm 4 vs 34). Direction-specific, invisible without a forward pass; GPU options (negation / dose, PC-split and per-token noise, causal downstream lens, 20-seed null) are in PLAN.md awaiting a go-ahead. Probe array 15039074 and capeval 15039083 for 1729 are still queued on qos cs.
 
 **Gemma 4 31B hard108 random-direction control judged 2026-11-03 (user request; FINDINGS "Gemma 4 31B hard108 random-direction control, judged"):** three random unit directions at layer 30, α 0.01 (Koby's jobs 14982739 + 14988674, capability-matched: hidden pass −2.3 / −2.8 / −0.6), judged blind on Sonnet like the gi arms: judged hack 10.3% (random 1729, +5.6, CI +3.6 to +7.8, Holm < 0.001 over the three randoms), 5.2% (1730, +0.4) and 4.7% (1731, −0.1) against 4.7% unsteered. The random spread (−0.1 / +0.4 / +5.6) contains the gi_v2 effect at its best dose (+0.08: +3.5), so **on Gemma the gi_v2 rise is not distinguishable from a random direction** and per the writing conventions is not reported as an association with that direction; the 1729 rise is broad (39 problems up, 4 down; 44 problems with a judged hack vs 26 unsteered; same lookup_table / input_branch mix as unsteered). Same pattern as Muse's random 1730 (+7.0), but larger relative to the gi effect here. Chart `analysis_rand10/gemma_hard108_rand_chart.png` under the judging root.
@@ -62,6 +64,166 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 | 6. Does it replicate on Qwen3.8-27B? (user request 2026-10-27: steering on the hard 45) | extraction done 2026-10-27 (job 14811290, 17 roles + default + neutral_fic, reasoning effort low); answer-region and reasoning-region validation at layer 32 and the answer-region sweep done; raw and cleaned steering artifacts built; harness port and smoke done 2026-10-27; unsteered capability check at the 64k budget done 2026-10-27 (job 14821126: hidden pass 56%, no-code 30%, proxy 4%, no truncation; 16k and 32k truncated too often); concurrent engine mode built, batch check passed (job 14821983) and the concurrent seed-0 run 14821701 reproduces the sequential shards 6–20× faster, so Qwen runs concurrently; **generic + intent axis built 2026-10-27 from Koby's verified 64-question role vectors (`gi/direction/`), pilot submitted 2026-10-28 4:45 pm MDT (job 14863168: unsteered / gi ±0.04 / ±0.08 / ±0.16 / random ±0.16 at layer 32, seeds 0–3, concurrent, 64k); **pilot done 2026-10-29 11:53 am MDT** (standby overnight, the last eight tasks moved to cs / qos cs after repeated preemptions)** | raw 17-role answer-region contrast passes checks 1–3 at layer 32 (split-half 0.98, held-out schemer vs honest 0.99–1.00) and at every layer from 12 up; deception separation equals the cleaned vector's (stratified 0.998 vs 0.999), but 15% of the raw vector is the acting arrow (cosine 0.92 with the cleaned one) and it separates the neutral character (1.00) and the honest characters (0.99) from the plain assistant, where the cleaned one does not (0.54 / 0.46); FINDINGS "Qwen3.8-27B 17-role extraction". **gi dose pilot (FINDINGS "Qwen3.8-27B gi dose pilot"):** proxy 5.0% unsteered (concurrent, 64k) and 5.0–6.7% at ±0.04 / ±0.08 / ±0.16 and random ±0.16, every Holm p = 1.0; hidden pass −6.7 to +5.0, no-code −5.6 to +5.0, nothing significant, every arm inside the dose rule; a 5% base rate with 30–38% no-code leaves the proxy nothing to measure — dose decision / whether to run a Qwen main run with the user (options in FINDINGS); **extra doses +0.32 / +0.64 run and +0.32 judged 2026-10-29** (judged 5.6%, Holm 0.035, outside the dose rule: hidden −11, no-code −16; +0.64 broken); **anecdotes + 25-question probes read 2026-10-29**: yes, more schemer-like on the positive side (concealed fits, "curator" persona), negative side only flatter; main-run decision with the user |
 
 ## Runs
+
+### Control directions for gi_v2's percentile: isolated-text antonym contrasts (AISI method) — 2026-11-07: 100 WordNet antonym contrasts, each read as a stand-alone chat message at the final token, give near-independent controls (effective dimension 43, pairwise |cos| 0.06) with no gi_v2 or assistant-axis overlap (|cos| 0.03 / 0.03); two cheaper constructions failed (antonyms as prompt context: noise-dominated and assistant-axis-loaded; random labels on default-prompt runs: effective dimension 6)
+
+Question: which population of control directions should gi_v2's percentile be measured against, now that the
+covariance-shaped directions (below) are retired? Requirements (Koby, 2026-11-07): real activation differences rather
+than isotropic noise, no built-in overlap with gi_v2 or the assistant axis (so assistant-axis steering stays usable
+later), and enough diversity that the controls are not a few directions repeated.
+
+Setup (gpt-oss-120b, layer 17; code `scripts/controls/`, data `data/controls/`; scratch
+`schemer-axis/dom_controls/`):
+- Pairs: 100 single-word WordNet antonym pairs, SemCor count ≥ 5 on both sides, words disjoint, seed 0 (47 adjective,
+  29 verb, 14 noun, 10 adverb; `sample_pairs.py`). Per pair, a Haiku subagent wrote 5 sentence pairs that differ only
+  in the word, each about a different aspect of a conversation's surroundings (setting, time, weather/light/sound,
+  object, recent event, the person asking, a third party), third person, no AI / test / rule words
+  (`subagent_instructions.md`, validated by `check_sentences.py`; 8 files fixed by hand, listed in the instructions).
+- Isolated method (as Schoen et al. 2026, AISI, appendix): each sentence alone as a chat-formatted user message, the
+  layer-17 residual at its final content token; direction = mean over the 5 pairs of (word side − antonym side), unit
+  length (`isolated_directions.py`, job 15126400, 4 min on one H100; reproduced bit for bit by 15131997 from the ported
+  script). The 9 reproducible AISI control pairs were read the same way as a reference set.
+
+| set | \|cos\| gi_v2 (median) | \|cos\| assistant axis | pairwise \|cos\| | effective dimension | split-half cos |
+|---|---|---|---|---|---|
+| isolated antonym (100) | 0.028 | 0.026 | 0.061 | 42.7 (entropy rank 68.7) | 0.33 (mean-token variant 0.60) |
+| AISI controls (9) | 0.024 | 0.025 | — | 7.9 of 9 | — |
+| covariance-shaped (100, retired) | 0.213 | 0.114 | 0.12 | 34.8 | — |
+| isotropic random (100) | 0.011 | 0.011 | — | — | — |
+| antonym in context (failed) | 0.067 | 0.213 (max 0.71) | 0.239 | 9 | 0.28 |
+| random labels (failed) | 0.096 | 0.118 | 0.382 | 6.0 | — |
+
+Failed constructions: (1) the antonym sentences as context appended to the 5 default assistant system prompts, 100
+questions per side (assistant-axis pipeline, jobs 15124329 / 15124436): the DoM is dominated by response noise
+(split-half 0.28) and inherits the assistant-axis direction (median |cos| 0.21, up to 0.71), effective dimension 9;
+(2) random balanced labels over the default-prompt responses (50 per prompt per side): every direction is the same
+few response-variance axes (effective dimension 6, pairwise 0.38). Strongest correlations among the isolated set are
+semantic: husband/wife ~ brother/sister 0.68, clean/dirty ~ satisfactory/unsatisfactory 0.61, right/wrong ~ false/true −0.53.
+
+Matched dose: downstream read relative to gi_v2 +0.2 gives a median coefficient 0.19, so the controls run at α 0.2
+like gi_v2. Run: job 15126757, 100 directions × 1 seed, main_run recipe (`data/controls/arms_isolated_antonym.tsv`,
+outputs `schemer-axis/dom_controls/runs/`); analysis with `scripts/controls/control_percentile.py` when it is in.
+
+Limits: the split-half reliability of a 5-pair contrast is modest (0.33), so each direction carries sentence noise;
+that is acceptable for a control population but means two directions from the same pair would differ. The AISI
+`control_spacing` pair is left out (the post does not give its passages).
+
+### Capping vs negative steering along gi_v2 — 2026-11-07: on gpt-oss and Muse the band cap and negative steering trace the same hack-rate vs honest-hidden-pass frontier (no cap beats the steering dose it is compared with); on Gemma the caps lower hacking only beyond the 10-point capability rule; on Qwen nothing lowers it
+
+Question (Koby, 2026-11-07): another team member proposed capping as the headline intervention because it looked
+better; is capping better at lowering reward hacking at equal capability? Capability = honest hidden pass (hidden
+pass among episodes not judged HACK; BORDERLINE and unjudged count as honest), the problem-stratified ratio
+mean_p(honest passes) / mean_p(honest episodes); hack = judged rate (Qwen: hidden-test-fail proxy, not judged).
+Paired bootstrap over problems for every difference (`scripts/cap_vs_steer.py`, runs in `data/cap_vs_steer_setups.json`;
+chart `scripts/cap_vs_steer_chart.py`, scratch `schemer-axis/notes/cap_vs_steer_chart.png`).
+
+| model (unsteered hack / honest HP) | negative steering: Δ hack / Δ honest HP | caps: Δ hack / Δ honest HP |
+|---|---|---|
+| gpt-oss (11.7 / 26.0) | −0.1: −2.4 / +2.8; −0.2: −8.1 / +1.5; −0.4: −10.6 / −1.5 | p50: −2.8 / +6.5; p25: −5.6 / +3.6; p5: −8.9 / +3.3 |
+| Muse (32.8 / 63.9) | −0.04: −3.5 / −2.1; −0.08: −7.8 / −5.9; −0.16: −14.4 / −11.3 | p50: −5.7 / −5.5; p25: −9.8 / −7.4; p5: −16.9 / −11.7 |
+| Gemma 4 31B (4.7 / 33.2) | −0.04: −0.3 / −2.0; −0.08: −0.8 / −8.4; −0.16: +2.3 / −26.5 | p35: −2.2 / −12.0; p25: −3.1 / −14.7 |
+| Qwen3.8 (proxy 11.6 / 60.7) | −0.08: −1.5 / −5.4; −0.16: −1.2 / −10.6; −0.32: −3.3 / −37.9 | p25: −0.8 / −8.2 |
+
+Direct comparisons at matched hack reduction are not significant: gpt-oss cap p5 vs −0.2: hack −0.7 [−3.0, +1.5],
+honest HP +1.9 [−2.6, +6.7]; Muse cap p5 vs −0.16: −2.4 / −0.4, n.s. Benchmarks exist only for cap p25 (gpt-oss
+MMLU-Pro −1.5, significant; Muse IFBench −1.7). Read: capping does not change the story negative steering tells, and
+steering has more data. The one result that could change the choice is a Gemma cap inside the capability rule that
+significantly lowers judged hacking; the cap dose pilot for that (p45 / p50 / p65, 16 seeds, job 15125968) is running.
+
+### Muse-Glimmer-30B covariance-shaped random directions, 100 × 1 — 2026-11-07: gi_v2 +0.08 sits above the 95th percentile only under the smooth (beta) assumption (q upper 1.4% proxy, 1.8% hard-code); without a shape assumption q is anywhere in 0–18%
+
+Same question and design as the gpt-oss run below, on Muse (layer 26, α 0.08 = gi_v2's dose, downstream-read-matched
+median 0.078; directions from the 18 gi_v2 persona roles' answer means, participation ratio 29.7; jobs 15098151 and
+15113276, 100 directions × 1 seed on hard 45; share `muse_glimmer/covshaped/`, README there; analysis
+`scripts/controls/control_percentile.py`).
+
+| | proxy (hidden-test fail) | hard-code regex |
+|---|---|---|
+| unsteered / gi_v2 +0.08 | 35.7% / 46.7% | 17.8% / 24.4% |
+| controls pooled (4,500 episodes) | 37.2% (Fisher vs unsteered p 0.54) | 18.1% (p 0.91) |
+| overdispersion vs binomial | p 0.45 | p 0.73 |
+| directions at or above gi_v2's count (binomial expectation) | 13 (12.3) | 18 (17.9) |
+| Spearman(hits, cos with gi_v2) | +0.23 (p 0.02) | +0.22 (p 0.03) |
+| q, beta profile interval | ~0–1.4% | ~0–1.8% |
+| q, shape-free interval | 0–18.1% | 0–17.3% |
+
+The controls show no spread beyond binomial noise, and gi_v2's Muse effect is about 1.5 single-seed sd, so single-seed
+directions reach its count by noise alone; the smooth fit then puts almost no mass at gi_v2's rate. Not judged.
+Limit: the beta fit's mean grid stops at 0.40 and the pooled proxy rate is 0.37.
+
+### gpt-oss-120b covariance-shaped random directions, 100 × 1 — 2026-11-06: no control direction exceeds gi_v2 +0.2 (proxy 37.8%; best control 17 of 45, gi_v2 17 per seed on average); q upper bound 0.09% (beta) or 5.2% (shape-free) on the proxy, 1.3% / 5.2% on the hard-coding scan
+
+Question: what share q of random directions shaped like the persona-activation covariance raise hacking at least as
+much as gi_v2 (gi_v2's percentile = 1 − q)? Directions: Σ_i z_i (x_i − mean) with z ~ N(0, 1), x_i = layer-17 answer
+means of the score-3 responses of the 18 gi_v2 persona roles, unit length (participation ratio 34.8 of 2880; pairwise
+|cos| 0.12; cos with gi_v2 −0.56 to 0.60). Add at L17, α 0.2 (gi_v2's dose; matched median 0.186), main_run recipe,
+1 seed each (jobs 15095886, 15097730; share `gptoss120b/covshaped/`, README there).
+
+- Proxy: unsteered 19.4%, controls pooled 18.3% (Fisher p 0.52), gi_v2 +0.2 37.8%; per direction 2–17 of 45; mild
+  overdispersion (χ² 139 / 99, p 0.005; between-direction sd ≈ 3.6 points); Spearman with cos(gi_v2) +0.22 (p 0.03).
+  q: beta ≈ 0 (upper 0.09%); shape-free 0–5.2%.
+- Hard-coding scan (`scripts/hardcode_scan.py`): unsteered 6.7%, gi_v2 19.6%, controls pooled 5.8% (below unsteered,
+  p 0.014); 5 directions flagged at ≥ 7 of 45 vs 2.8 expected; overdispersed (p 2e-6); Spearman +0.28.
+  q: beta 0.16% (0.001–1.3%); shape-free 0–5.2%.
+
+Not judged. Limits: one seed per direction; the shape-free bound cannot go below about 5% with 100 directions.
+
+### Percentile design simulations — 2026-11-05 to 2026-11-06: with feasible budgets the shape-free upper bound on q stays near 10–20%, while the beta bound gets below 5% easily but misses a heavy tail; so the "above-unsteered" stage-2 rule is uninformative and the question becomes gi_v2's percentile on gpt-oss and Muse with both intervals reported
+
+Scratch `schemer-axis/gemma4_31b_gi_v2/random1729/covshaped/` (`stage2_estimation_sim`, `beta_estimation_sim`,
+`low_q_sim`, `gptoss_power_sim`; Muse: `muse_glimmer_covshaped/muse_power_sim`; outputs `*.out` next to them; not
+ported). Estimators as in `control_percentile.py`. Findings:
+- Gemma (scan rates ≈ 2%): even with 4 more seeds on all 100 directions, the median shape-free interval is 0–13% to
+  0–15% and P(upper < 5%) ≈ 0; the beta interval reaches < 5% in 67–86% of simulations when the true q is 1% or 0.5%.
+- gpt-oss / Muse (rates 12–45%): the beta interval separates gi_v2 from a smooth population at 100 × 1, but in a
+  world with 5% of directions at gi_v2's level (heavy tail) it still puts the upper bound below 5% in 98% of
+  simulations at 100 × 1 (median upper bound 1.3%); the shape-free interval covers the truth but stays at 10–20%.
+- So K (directions confirmed above unsteered, the pre-registered stage-2 claim) does not bear on gi_v2's percentile,
+  and the reported quantity is q with both intervals, the beta one labelled as resting on the smoothness assumption.
+
+### Gemma 4 31B covariance-shaped random directions, stage 1 scan — 2026-11-05: the covariance-shaped directions as a group raise the hard-coding scan above unsteered (1.90% vs 1.27%, p 6e-8; 20 directions flagged vs 5.0 expected), with gi_v2 +0.08 at 3.36%; the pre-registered stage 2 is cancelled
+
+Pre-registered design: PLAN "Gemma covariance-shaped random directions: rarity design". 100 directions (seeds
+8000–8099) at L30, α 0.08, seed 0 on hard108 (108 episodes each; jobs 15046314 / 15046315; share
+`gemma4_31b_gi_v2/rh/hard108/L30_cov*_a0.08/`). Scan half of stage 1 (`stage1_scan.py`, job 15093996, scratch
+`random1729/covshaped/stage1_scan.json`): entry-function hard-coding hits, flag ≥ 4 of 108. Pooled 205 / 10,800
+(1.90%) vs unsteered 22 / 1,728 (1.27%, p 6e-8); hit histogram 0:20, 1:25, 2:19, 3:16, 4:10, 5:8, 6:1, 8:1; overdispersed
+(χ² 142 / 99, p 0.003); Spearman with cos(gi_v2) +0.23 (p 0.02); mean hidden pass 25.2% (unsteered 31.7%, gi_v2 21.1%).
+The judged half was not run. Because the whole population sits above unsteered, "confirmed above unsteered" does not
+measure rarity at gi_v2's strength (simulations above); stage 2 is cancelled (Koby 2026-11-07: it would not be
+informative) and the percentile question moved to gpt-oss and Muse.
+
+### Gemma random direction 1729: activation PCA of coding episodes and a log-likelihood screen — 2026-11-03 to 2026-11-04: 1729 is an ordinary-variance direction whose projection separates HACK from NOT_HACK answers more than all 200 random directions, with the sign opposite to its steering effect (as for gi_v2); the teacher-forced log-likelihood screen fails validation (gi_v2 ±0.08 has the wrong sign) and is dropped
+
+Episode activations: layer-30 residuals of the final turn of every unsteered hard108 episode (1,728) and the judged
+arms, teacher-forced through the unsteered model (per-episode reasoning and answer means, sampled reasoning tokens).
+PCA on unsteered episodes with directions placed against 200 isotropic directions (474 HACK vs 1,217 NOT_HACK):
+- 1729: answer AUROC 0.05 pooled [0th percentile], 0.20 within problem [4th]; reasoning 0.41 [12th]; cos with the
+  HACK − NOT_HACK vector −0.03 [0th]; variance along it 0.76 × average [40th], below-typical share in the top 100 PCs.
+- gi_v2: AUROC 0.49 / 0.57; cos with HACK − NOT_HACK −0.09 [0th]; variance 27 × average [100th].
+- The HACK − NOT_HACK vector (split-half 0.95–0.996) is mostly answer PC 2 (cos 0.80): what hack answers look like
+  (literal tables), not the decision to hack; for both 1729 and gi_v2 the push that raises hacking points away from
+  where hack answers sit.
+Log-likelihood screen (82 HACK, 243 NOT_HACK unsteered episodes scored under each steering vector; sign-flipping
+part of the HACK − NOT_HACK log-prob gap, z against 10 random directions): gi_v2 ±0.08 −2.9 (reasoning) / −2.5
+(answer), the wrong sign; 1729 ±0.01 within the random range; generic damage dominates (any push makes the long
+literal hack answers less likely). Not usable as a cheap screen for random directions. Scripts not ported (scratch
+`random1729/`, rand1729 worktree).
+
+### Unsteered hard45 pilot on more models — 2026-10-29: Mistral Small 4, Nemotron 3.5 Super / Bolt, OLMo 3.1 32B Think and Step 3.7 Flash hack too rarely on the hard 45 (proxy 4–10%, mostly on the broken-test problems) to carry the steering study; their engine support is not carried forward
+
+`pilot_hard45.sbatch` (now `dose_pilot.sbatch` with the long-budget variables), 3 seeds × 45 episodes, unsteered
+(scratch `schemer-axis/{mistral_small4,nemotron35_super,nemotron35_bolt,olmo31_32b_think,step37_flash_nvfp4}/`):
+| model | hidden pass | proxy | no code | note |
+|---|---|---|---|---|
+| Nemotron 3.5 Super (TP 2, medium effort) | 61% | 8% (7 of 11 on gpt-oss floor problems) | 19% | |
+| Nemotron 3.5 Bolt | 52% | 9% (6 off-floor) | 24% | |
+| OLMo 3.1 32B Think | 31% | 9% (6 off-floor) | 7% | EOS needs <\|im_end\|> added |
+| Step 3.7 Flash NVFP4 (64k) | 56% | 7% (3 off-floor) | 11% | FP8 KV needs TRITON_ATTN on B200 |
+| Mistral Small 4 (high effort, 128k) | 8% | 4% | 59% | ends mid-thought; unusable at high effort |
+DeepSeek-V4-Flash fits one B200 but leaves KV for about one episode; skipped. Engine gotchas are recorded in the
+schemer-pilot-mistral-nemotron branch (Mistral: mistral tokenizer/config/load formats, pixtral import shim, TRITON_MLA,
+piecewise CUDA graphs above 64k). Only gpt-oss and Muse hack enough on the hard 45.
 
 ### Gemma random direction 1729: per-seed, per-problem, same-seed divergence and activation-geometry checks (CPU) — 2026-11-04: user request (~1:20 pm MST) for the free and CPU-only parts of the "why does 1729 work" list, with the GPU parts recorded in PLAN.md ("Random direction 1729 on Gemma 4 31B: what is special about it?") as next options. Job 15041699 (`random1729/problem_seed.sbatch`; `scripts/rand_arm_problem_seed_analysis.py`, `scripts/random_direction_geometry.py`; digest `results/gemma_random1729_investigation_2026-11-04.md` §6; chart `random1729/problem_seed/problem_seed_chart.png`). **(1) Per seed:** 1729 is above unsteered on 16 of 16 sample seeds (sign p < 0.0001; 6.5–14.8% vs 2.8–6.5%), seed-bootstrap CI +4.4 to +6.8, leave-one-seed-out +5.2 to +5.8, seed halves +5.4 / +5.7, so the +5.6 is uniform over seeds, not a few-seed fluke (gi +0.08: 14 of 16, CI +2.5 to +4.5; 1730 9 of 16; 1731 6 of 16). **(2) Per problem:** 1729 raises 39 problems, gi +0.08 27, 17 shared; Pearson r of per-problem Δ +0.37 / +0.34 with gi +0.04 / +0.08 (perm p 0.0003 / 0.002), **but that plain r must be read against the null-arm floor, not against zero**: every Δ is "arm minus the same unsteered reference", so the reference noise leaks into every pair, and the two do-nothing random arms correlate +0.46 with each other and +0.31 to +0.65 with the gi arms (the permutation p ignores this and overstates the evidence). 1729's +0.34 to +0.37 sits at or below that floor (and only +0.09 / +0.10 with 1730 / 1731). Reference-free versions: partial r given the unsteered rate +0.36 / +0.31 (gi +0.04 / +0.08) vs +0.19 / +0.27 (1730 / 1731); r with the reference split across seed halves (focus Δ against seeds 0–7, other arm against 8–15, averaged with the swap) +0.06 / +0.16 vs −0.08 / −0.11; the same statistics between other arm pairs span 0.00–0.77 (partial) and −0.33 to +0.43 (split). So at 16 seeds "same problems as gi" is not supported beyond the null floor. **(3) Same-seed divergence** (same seed = same sampling stream; common prefix of the turn-0 reasoning with the unsteered twin): median 92 chars for 1729, 80 for 1730, 86 for 1731, paired 1729-shorter / longer 642 / 713 vs 1730 (p 0.06) and 705 / 710 vs 1731 (p 0.92), so 1729 is not a larger effective perturbation; its hacks diverge no earlier than its other episodes (81 vs 93 chars) and are new episodes, not the twin's (43 of 178 on twin-hack pairs vs 42.9 expected under within-problem independence). The gi arms calibrate the scale, 166 / 81 / 7 chars at +0.04 / +0.08 / +0.16 and 174 / 84 / 21 on the minus side: **a random unit direction at α 0.01 disturbs sampling as much as gi_v2 at α 0.08**, eight times as much per unit α, so norm-matching the random control does not disturbance-match it. **(4) Activation geometry** (Gemma 31B layer-30 response means from the pilot extraction cache, 2,400 responses, 12 roles; 2,000-direction isotropic null from the harness's own generator): 1729 is between the 17th and 74th percentile on cosine with the mean activation, energy on the massive dimensions (2041 +265, 3970 +138, 1451 −47, 2293 −38, 2250 +24), energy in the top-5 / top-50 PCs, whitened and variance-weighted norms; 1730 / 1731 the same; gi_v2 is p100 on every in-distribution statistic (88% of its energy in the top-50 PCs vs 0.9% for a random direction, cosine with the mean +0.062, variance-weighted norm 4× the null) and p0 on the whitened norm (4.2 vs 34), the geometric form of (3). **Reading:** the lift is real across seeds, 1729 perturbs no more than its siblings, and nothing in its position marks it out; since 1730 / 1731 disturb the trajectory equally and do nothing, "any disturbance of this size" is not the explanation either, so whatever 1729 does is direction-specific and needs a forward pass to see (PLAN: negation / dose, PC-subspace vs remainder and per-token noise, causal downstream lens, 20-seed null).
 
