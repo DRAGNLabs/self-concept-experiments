@@ -11,6 +11,9 @@ from typing import Any, Iterator, NamedTuple
 
 import torch.nn as nn
 
+from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
+    MessageKind, MessageSpan, MessageSpanSpecifics, ToolCallCloseSpecifics, end_token_index_after, shortest_suffix_containing,
+)
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
 from selfconcept.common.generation.model_specifics.gemma4 import (  # noqa: F401  (split_gemma4_completion is re-exported)
     THOUGHT_CLOSE, THOUGHT_OPEN, TURN_CLOSE, TURN_OPEN, Gemma4AssistantTurn, Gemma4GenerationSpecifics, split_gemma4_completion,
@@ -76,7 +79,62 @@ def pooled_gemma4_messages(tokenizer: HFTokenizer, full_ids: list[int], include_
     return pooled
 
 
-class Gemma4ModelSpecifics(CoverallLayerGetter, Gemma4GenerationSpecifics, ModelSpecifics[AllRoles, Gemma4AssistantTurn]):
+TOOL_CALL_OPEN, TOOL_CALL_CLOSE = "<|tool_call>", "<tool_call|>"
+TOOL_RESPONSE_OPEN, TOOL_RESPONSE_CLOSE = "<|tool_response>", "<tool_response|>"
+
+
+def _model_turn_spans(tokenizer: HFTokenizer, full_ids: list[int], content_indices: list[int]) -> list[MessageSpan]:
+    """A model turn's content split at its tool blocks: each ``<|tool_call>…<tool_call|>`` is a tool_call and each
+    ``<|tool_response>…<tool_response|>`` a tool_result (the template renders tool results inside the model turn);
+    every non-blank stretch of text outside them is a response."""
+    block_kind_by_open: dict[int, tuple[MessageKind, int]] = {
+        tokenizer.convert_tokens_to_ids(TOOL_CALL_OPEN): ("tool_call", tokenizer.convert_tokens_to_ids(TOOL_CALL_CLOSE)),
+        tokenizer.convert_tokens_to_ids(TOOL_RESPONSE_OPEN): ("tool_result", tokenizer.convert_tokens_to_ids(TOOL_RESPONSE_CLOSE)),
+    }
+    turn_close = {tokenizer.convert_tokens_to_ids(TURN_CLOSE)}
+    spans: list[MessageSpan] = []
+    text_run: list[int] = []
+
+    def flush_text_run() -> None:
+        if text_run and tokenizer.decode([full_ids[i] for i in text_run]).strip():
+            spans.append(MessageSpan("response", range(text_run[0], text_run[-1] + 1), end_token_index_after(full_ids, text_run, turn_close)))
+        text_run.clear()
+
+    position, end = (content_indices[0], content_indices[-1] + 1) if content_indices else (0, 0)
+    while position < end:
+        block = block_kind_by_open.get(full_ids[position])
+        if block is None:
+            text_run.append(position)
+            position += 1
+            continue
+        flush_text_run()
+        kind, close_id = block
+        close = full_ids.index(close_id, position + 1) if close_id in full_ids[position + 1:end] else end
+        spans.append(MessageSpan(kind, range(position + 1, close), close if close < end else None))
+        position = close + 1
+    flush_text_run()
+    return spans
+
+
+class Gemma4ModelSpecifics(CoverallLayerGetter, Gemma4GenerationSpecifics, ModelSpecifics[AllRoles, Gemma4AssistantTurn],
+                           MessageSpanSpecifics, ToolCallCloseSpecifics):
+    def message_spans(self, tokenizer: HFTokenizer, full_ids: list[int]) -> list[MessageSpan]:
+        thought_close = {tokenizer.convert_tokens_to_ids(THOUGHT_CLOSE)}
+        spans: list[MessageSpan] = []
+        for message in iter_gemma4_messages(tokenizer, full_ids):
+            content = range(message.content_indices[0], message.content_indices[-1] + 1) if message.content_indices else range(0)
+            if message.channel == "thought":
+                spans.append(MessageSpan("reasoning", content, end_token_index_after(full_ids, message.content_indices, thought_close)))
+            elif message.role == "assistant":
+                spans += _model_turn_spans(tokenizer, full_ids, message.content_indices)
+            else:
+                spans.append(MessageSpan("system" if message.role == "system" else "user", content, None))
+        return spans
+
+    def tool_call_close(self, tokenizer: HFTokenizer, full_ids: list[int], span: MessageSpan) -> range:
+        """The closing brace of the call's arguments."""
+        return shortest_suffix_containing(tokenizer, full_ids, span.content, "}")
+
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, *, include_thinking: bool,
                              **apply_chat_template_kwargs: Any) -> list[list[int]]:
         full_ids = configure_apply_chat_template(tokenizer).tokenize(True)(
