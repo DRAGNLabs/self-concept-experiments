@@ -1169,7 +1169,7 @@ from each model's 2026-10-29 sidecar through `cap_threshold_interp.py` (a stored
 −739.8 < −556.0 < −444.7, Muse L26 −101.3 < −88.4 < −77.9 for p5 / p25 / p50, monotone at every layer); p50 files
 were written by the thresholds jobs. Each pair is judged as one mixed blind set with unsteered seeds 0–11 and read
 with the dose rule: the strongest cap inside the rule is the one whose reduction counts, p50 shows whether the
-reduction tapers. Gemma p50 waits for the p35 result. Qwen gets no rung unless an arm shows a base rate to lower. Each arm is judged blind by the rubric-judge
+reduction tapers. Gemma p50 waits for the p35 result. Qwen gets no rung unless an arm shows a base rate to lower. **gpt-oss done (judged 2026-11-06, 5:00 pm MST; FINDINGS "gpt-oss gi_v2 cap dose ladder"):** 11.7 → 2.8% at p5 (−8.9, Holm 0.0010) → 6.1% at p25 → 8.9% at p50 (n.s.), hidden pass up at every rung, no-code +4.4 at p5, so p5 is inside the rule and the cap's reduction on gpt-oss is the −0.2 shift's at equal capability; the ladder is monotone and tapers out at p50. Muse pending (15104509). Each arm is judged blind by the rubric-judge
 agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
 MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 
