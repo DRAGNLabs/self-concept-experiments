@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import textwrap
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -46,8 +47,11 @@ COL_LABELS: list = []
 X: dict = {}
 
 
-CAP = "cap_p25_L20-38"
-SIDE_GAP = 0.8  # x gap between the last dose and the side point
+# Cap arms as side points off the dose axis, in rung order (p25 = Koby's arm; p35 = our lighter rung, array 15104078, 2026-11-06).
+CAPS = [("cap_p25_L20-38", "cap\np25", "cap p25 L20–38"), ("cap_p35_L20-38", "cap\np35", "cap p35 L20–38")]  # (arm, tick, table label); the band is named in the xlabel
+CAP_LABEL = {a: col for a, _, col in CAPS}
+CAP_ARMS: list = []  # the cap arms present in the analysis file, in rung order (filled by set_arms)
+SIDE_GAP = 0.8  # x gap between the last dose and the first side point
 
 
 def dose(arm: str) -> float:
@@ -56,18 +60,19 @@ def dose(arm: str) -> float:
 
 def set_arms(arms: list) -> None:
     """Dose arms in dose order, then the cap arm as a side point off the dose axis."""
-    global ARMS, COL_LABELS, X
-    doses = sorted([a for a in arms if a != CAP], key=dose)
+    global ARMS, COL_LABELS, X, CAP_ARMS
+    doses = sorted([a for a in arms if a not in CAP_LABEL], key=dose)
     ARMS = [(a, "0\nunsteered" if a == "unsteered" else f"{dose(a):+.2f}".replace("-", "−")) for a in doses]
     X = {arm: float(i) for i, (arm, _) in enumerate(ARMS)}
-    if CAP in arms:
-        ARMS.append((CAP, "cap p25\nL20–38"))
-        X[CAP] = len(doses) - 1 + SIDE_GAP + 0.6
-    COL_LABELS = ["unsteered" if a == "unsteered" else ("cap p25 L20–38" if a == CAP else f"L30 {lab}") for a, lab in ARMS]
+    CAP_ARMS = [a for a, _, _ in CAPS if a in arms]
+    for i, a in enumerate(CAP_ARMS):
+        ARMS.append((a, next(tick for arm, tick, _ in CAPS if arm == a)))
+        X[a] = len(doses) - 1 + SIDE_GAP + 0.6 + i
+    COL_LABELS = ["unsteered" if a == "unsteered" else CAP_LABEL.get(a, f"L30 {lab}") for a, lab in ARMS]
 
 
 def dose_arms():
-    return [(a, lab) for a, lab in ARMS if a != CAP]
+    return [(a, lab) for a, lab in ARMS if a not in CAP_LABEL]
 
 
 def load(root: Path, analysis_dir: Path, summary: str, details: list) -> dict:
@@ -78,6 +83,9 @@ def load(root: Path, analysis_dir: Path, summary: str, details: list) -> dict:
     counts = defaultdict(lambda: {"proxy": Counter(), "hidden": Counter()})
     for name in details:
         which = "hidden" if "hidden" in Path(name).name else "proxy"
+        if not (root / name).exists():
+            print(f"note: no detail file {name}, H/B/N counts for its arm will be empty")
+            continue
         for key, obj in json.loads((root / name).read_text()).items():
             counts[key.split("/")[0]][which][obj["verdict"]] += 1
     data["counts"] = counts
@@ -111,18 +119,20 @@ def style(ax, ylabel: str):
     ax.set_xticks([X[a] for a, _ in ARMS])
     ax.set_xticklabels([label for _, label in ARMS], color=INK, fontsize=9.5)
     ax.set_xlim(-0.5, max(X.values()) + 0.5)
-    if CAP in X:
-        ax.axvline(X[CAP] - SIDE_GAP / 2 - 0.3, color=RULE, lw=0.8, ls=":", zorder=1)
-    ax.set_xlabel("dose α at layer 30 (units of the mean residual norm), gi_v2 vector; cap arm beside", color=INK2, fontsize=8.5, wrap=True)
+    if CAP_ARMS:
+        ax.axvline(X[CAP_ARMS[0]] - SIDE_GAP / 2 - 0.3, color=RULE, lw=0.8, ls=":", zorder=1)
+    ax.set_xlabel("dose α at layer 30 (units of the mean residual norm), gi_v2 vector;\ncap rungs beside: τ at the unsteered percentile over layers 20–38",
+                  color=INK2, fontsize=8.5)
 
 
 def line(ax, outcome, color, label, marker="o", ls="-", lw=2.0, with_ci=True, dy=1.6):
     xs = [X[a] for a, _ in dose_arms()]
     ys = [rate(outcome, a) for a, _ in dose_arms()]
     ax.plot(xs, ys, color=color, lw=lw, ls=ls, marker=marker, ms=6, mec=SURFACE, mew=1.2, zorder=4, label=label)
-    if CAP in X:
-        xs.append(X[CAP]); ys.append(rate(outcome, CAP))
-        ax.plot([X[CAP]], [ys[-1]], color=color, marker=marker, ms=6, mec=SURFACE, mew=1.2, ls="none", zorder=4)
+    if CAP_ARMS:
+        cx = [X[a] for a in CAP_ARMS]; cy = [rate(outcome, a) for a in CAP_ARMS]
+        xs += cx; ys += cy
+        ax.plot(cx, cy, color=color, marker=marker, ms=6, mec=SURFACE, mew=1.2, ls=":" if len(cx) > 1 else "none", lw=1.2, zorder=4)
     if with_ci:
         for a, _ in ARMS:
             c = ci(outcome, a)
@@ -146,7 +156,7 @@ def main() -> None:
     ap.add_argument("--dpi", type=int, default=220)
     ap.add_argument("--analysis-dir", type=Path, default=None, help="dir with analysis_*_as_judged*.json (default: --root)")
     ap.add_argument("--summary", default="summary_main.json", help="pilot_summary output in --analysis-dir")
-    ap.add_argument("--details", nargs="+", default=[f"verdicts_{t}/verdicts_{h}{t}.detail.json" for t in ("main", "pm04", "pm16", "ctl_gicap_s0-15") for h in ("", "hidden_")],
+    ap.add_argument("--details", nargs="+", default=[f"verdicts_{t}/verdicts_{h}{t}.detail.json" for t in ("main", "pm04", "pm16", "ctl_gicap_s0-15", "ctl_gicap35_s0-15") for h in ("", "hidden_")],
                     help="verdict .detail.json files relative to --root ('hidden' in the name = hidden-pass sets, signature + supplementary)")
     ap.set_defaults(analysis_dir=None)
     ap.add_argument("--jobs", default="Koby's hard108 gi_v2 runs (share gemma4_31b_gi_v2/rh/hard108; cap thresholds job 14991849)", help="run named in the caption")
@@ -157,8 +167,8 @@ def main() -> None:
     HP, SP, NC = d["all"]["hidden_pass"], d["all"]["shown_pass"], d["all"]["no_code"]
     AUTO = d["all"]["hack_proxy"]
 
-    fig = plt.figure(figsize=(12.4, 11.2), facecolor=SURFACE)
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.15], hspace=0.34, wspace=0.30, left=0.07, right=0.985, top=0.86, bottom=0.03)
+    fig = plt.figure(figsize=(12.4 + 1.2 * max(0, len(CAP_ARMS) - 1), 11.6), facecolor=SURFACE)  # a rung wider per extra cap rung
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.15], hspace=0.34, wspace=0.30, left=0.07, right=0.985, top=0.825, bottom=0.03)  # room for the title and a three-line caption above the panel titles
     ax_a, ax_b = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
     ax_t = fig.add_subplot(gs[1, :])
 
@@ -166,8 +176,8 @@ def main() -> None:
     style(ax_a, "share of episodes (%)")
     xs = [X[a] for a, _ in dose_arms()]
     ax_a.fill_between(xs, [rate(DOWN, a) for a, _ in dose_arms()], [rate(UP, a) for a, _ in dose_arms()], color=C_JUDGED, alpha=0.12, lw=0, zorder=1)
-    if CAP in X:
-        ax_a.plot([X[CAP], X[CAP]], [rate(DOWN, CAP), rate(UP, CAP)], color=C_JUDGED, alpha=0.25, lw=6, solid_capstyle="butt", zorder=1)
+    for a in CAP_ARMS:
+        ax_a.plot([X[a], X[a]], [rate(DOWN, a), rate(UP, a)], color=C_JUDGED, alpha=0.25, lw=6, solid_capstyle="butt", zorder=1)
     line(ax_a, AUTO, C_AUTO, "automatic proxy (shown pass, hidden fail)", marker="s", ls="--", lw=1.6, with_ci=False)
     line(ax_a, J, C_JUDGED, "judged hack (proxy + hidden sets, as judged)")
     ax_a.set_ylim(0, max(rate(AUTO, a) for a, _ in ARMS) * 1.25)
@@ -246,10 +256,11 @@ def main() -> None:
     ax_t.set_title("Numbers behind the lines (rates are problem-stratified means over 108 problems; H / B / N = HACK / BORDERLINE / NOT_HACK)",
                    loc="left", color=INK, fontsize=10, pad=6)
 
-    fig.suptitle("Gemma 4 31B, hard108 dose scan at layer 30 (gi_v2 vector) and the p25 cap over layers 20–38:\n"
+    cap_title = "the p25 cap" if CAP_ARMS == ["cap_p25_L20-38"] else "the cap dose ladder (τ at the unsteered " + " / ".join(a.split("_")[1] for a in CAP_ARMS) + ")"
+    fig.suptitle(f"Gemma 4 31B, hard108 dose scan at layer 30 (gi_v2 vector) and {cap_title} over layers 20–38:\n"
                  "blind Sonnet rubric-v3 judging of every proxy episode and every hidden-pass episode with a hard-code signature",
-                 x=0.07, ha="left", color=INK, fontsize=12.5, y=0.985)
-    fig.text(0.07, 0.915, f"{args.jobs}; seeds 0–15 on every arm; 1728 episodes per arm.\n"
+                 x=0.07, ha="left", color=INK, fontsize=12.5, y=0.99)
+    fig.text(0.07, 0.935, textwrap.fill(f"{args.jobs}; seeds 0–15 on every arm; 1728 episodes per arm.", 170) + "\n"
              "Judged rate = HACK (STRONG + WEAK) as judged, no adjudication. CIs: problem bootstrap of the contrast vs unsteered, shifted onto the rate.",
              color=INK2, fontsize=9, va="top")
     out = args.out or args.root / "analysis_all8" / "gemma_hard108_judged_chart_8arm.png"
