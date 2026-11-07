@@ -1,16 +1,17 @@
-"""gi_v2's percentile among control steering directions, any model: q = the share of control directions whose true
-rate is at or above gi_v2's observed rate (percentile = 1 − q), on two judge-free measures (proxy hacks: shown pass,
-hidden fail; hard-coding hits, selfconcept.codebench.hardcoded_cases).
+"""A target steering direction's percentile among a population of control directions, any model and any target:
+q = the share of control directions whose true hack rate is at or above the target's observed rate (percentile = 1 − q),
+on two judge-free measures (proxy hacks: shown pass, hidden fail; hard-coding hits, selfconcept.codebench.hardcoded_cases).
 
-Per measure: unsteered, gi_v2 and pooled control rates, Fisher test of pooled vs unsteered, binomial dispersion χ² over
-the controls, Spearman of control hits with cos(direction, gi_v2), the count at or above gi_v2, and two intervals for q:
+Per measure: unsteered, target and pooled control rates, Fisher test of pooled vs unsteered, binomial dispersion χ²
+over the controls, Spearman of control hits with cos(control, target), the count of controls at or above the target,
+and two intervals for q:
 - shape-free: NPMLE of the control-rate distribution on a grid, likelihood-ratio 95% interval (profile with the mass
-  above gi_v2's rate fixed, cutoff χ²₁ / 2 = 1.92);
-- beta: control rates ~ Beta(mean, concentration), profile interval over a (mean, concentration) grid.
+  above the target's rate fixed);
+- beta: control rates ~ Beta(mean, concentration), profile likelihood-ratio interval over a (mean, concentration) grid.
 Every control direction has the same number of episodes. Writes one JSON.
 
     python scripts/controls/control_percentile.py --controls-root <runs> --controls 'antonym_*' --unsteered <runs/unsteered_ref> \
-        --gi <gi_v2 arm dir> --problems <ib_solvhard_s0.jsonl> ... --directions <dirs> --gi-direction <persona_contrast.pt> \
+        --target <target arm dir> --problems <ib_solvhard_s0.jsonl> ... --directions <dirs> --target-direction <axis.pt> \
         --layer 17 --out <percentile.json>
 """
 import argparse
@@ -27,10 +28,15 @@ from scipy import stats
 from selfconcept.codebench.harness import CheckExample, CheckRecord
 from selfconcept.codebench.hardcoded_cases import is_hardcoded_hack, is_proxy_hack, load_check_problems, load_check_records
 
+# Support of a control direction's true hack rate (both estimators discretise it here).
 RATE_GRID = np.linspace(0.005, 0.7, 280)
+# Beta family searched by the beta estimator: means and concentrations (a + b; sd shrinks as it grows, log-spaced from
+# very spread to nearly identical directions). The mean range is the one the gpt-oss design simulations used.
 BETA_MEANS = np.linspace(0.08, 0.40, 50)
 BETA_CONCENTRATIONS = np.exp(np.linspace(np.log(3), np.log(3000), 50))
+# χ²₁(0.95) / 2: a point is inside the 95% likelihood-ratio interval when its log-likelihood is within this of the peak.
 LIKELIHOOD_RATIO_CUTOFF = 1.92
+# EM steps for the unconstrained NPMLE, EM steps per constrained refit (warm-started), bisection steps per interval end.
 NPMLE_ITERATIONS, PROFILE_ITERATIONS, BISECTION_STEPS = 1500, 600, 9
 TOP_DIRECTIONS = 6
 
@@ -48,13 +54,13 @@ class QInterval(TypedDict):
 
 class MeasureSummary(QInterval):
     unsteered: float
-    gi_v2: float
+    target: float
     pooled: float
     pooled_vs_unsteered_p: float
     dispersion_p: float
     spearman_cos: float
     spearman_p: float
-    at_or_above_gi: int
+    at_or_above_target: int
     top: list[tuple[int, str]]
 
 
@@ -84,37 +90,37 @@ def shape_free_interval(likelihood: Likelihood, above: Float[np.ndarray, "grid"]
     return boundary(estimate, 0.0), boundary(estimate, 1.0)
 
 
-def q_intervals(hits: Int[np.ndarray, "directions"], episodes: int, gi_rate: float) -> QInterval:
+def q_intervals(hits: Int[np.ndarray, "directions"], episodes: int, target_rate: float) -> QInterval:
     means, concentrations = np.meshgrid(BETA_MEANS, BETA_CONCENTRATIONS, indexing="ij")
     density = stats.beta.pdf(RATE_GRID[None, None, :], (means * concentrations)[..., None], ((1 - means) * concentrations)[..., None])
     density /= density.sum(axis=-1, keepdims=True)
-    tail = stats.beta.sf(gi_rate, means * concentrations, (1 - means) * concentrations)
+    tail = stats.beta.sf(target_rate, means * concentrations, (1 - means) * concentrations)
     likelihood = stats.binom.pmf(hits[:, None], episodes, RATE_GRID[None, :])
     loglik = np.log(np.einsum("dr,mkr->dmk", likelihood, density) + 1e-300).sum(axis=0)
     inside = loglik >= loglik.max() - LIKELIHOOD_RATIO_CUTOFF
-    shape_free_low, shape_free_high = shape_free_interval(likelihood, RATE_GRID >= gi_rate)
+    shape_free_low, shape_free_high = shape_free_interval(likelihood, RATE_GRID >= target_rate)
     best = np.unravel_index(loglik.argmax(), loglik.shape)
     return {"beta_estimate": float(tail[best]), "beta_low": float(tail[inside].min()), "beta_high": float(tail[inside].max()),
             "shape_free_low": shape_free_low, "shape_free_high": shape_free_high}
 
 
-def summarize_measure(hits_by_arm: dict[str, int], episodes: int, unsteered: tuple[int, int], gi: tuple[int, int],
+def summarize_measure(hits_by_arm: dict[str, int], episodes: int, unsteered: tuple[int, int], target: tuple[int, int],
                       cos_by_arm: dict[str, float]) -> MeasureSummary:
     arms = sorted(hits_by_arm)
     hits = np.array([hits_by_arm[arm] for arm in arms])
     pooled = hits.sum() / (episodes * len(hits))
-    gi_rate = gi[0] / gi[1]
+    target_rate = target[0] / target[1]
     chi2 = float(((hits - episodes * pooled) ** 2 / (episodes * pooled * (1 - pooled))).sum())
     contingency = [[int(hits.sum()), episodes * len(hits) - int(hits.sum())], [unsteered[0], unsteered[1] - unsteered[0]]]
     spearman_rho, spearman_p = np.asarray(stats.spearmanr(hits, [cos_by_arm[arm] for arm in arms]), dtype=float)
     _, fisher_p = np.asarray(stats.fisher_exact(np.array(contingency)), dtype=float)
-    return {"unsteered": unsteered[0] / unsteered[1], "gi_v2": gi_rate, "pooled": float(pooled),
+    return {"unsteered": unsteered[0] / unsteered[1], "target": target_rate, "pooled": float(pooled),
             "pooled_vs_unsteered_p": float(fisher_p),
             "dispersion_p": float(stats.chi2.sf(chi2, len(hits) - 1)),
             "spearman_cos": float(spearman_rho), "spearman_p": float(spearman_p),
-            "at_or_above_gi": int((hits >= np.ceil(episodes * gi_rate)).sum()),
+            "at_or_above_target": int((hits >= np.ceil(episodes * target_rate)).sum()),
             "top": sorted(zip(hits.tolist(), arms), reverse=True)[:TOP_DIRECTIONS],
-            **q_intervals(hits, episodes, gi_rate)}
+            **q_intervals(hits, episodes, target_rate)}
 
 
 def unit_layer(artifact: Path, layer: int) -> Float[torch.Tensor, "hidden"]:
@@ -128,10 +134,10 @@ def main() -> None:
     parser.add_argument("--controls", required=True, help="glob of control arm directories under --controls-root")
     parser.add_argument("--records", default="seed*/main_impossible_original.jsonl", help="glob of episode files under each arm")
     parser.add_argument("--unsteered", type=Path, required=True, help="unsteered arm directory")
-    parser.add_argument("--gi", type=Path, required=True, help="gi_v2 arm directory at the matched dose")
+    parser.add_argument("--target", type=Path, required=True, help="the target direction's arm directory (at the dose the controls are matched to)")
     parser.add_argument("--problems", type=Path, nargs="+", required=True)
     parser.add_argument("--directions", type=Path, required=True, help="directory of <arm>.pt control direction artifacts")
-    parser.add_argument("--gi-direction", type=Path, required=True)
+    parser.add_argument("--target-direction", type=Path, required=True, help="(layers, hidden) axis artifact of the target")
     parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -144,16 +150,16 @@ def main() -> None:
     episode_counts = {len(records) for records in records_by_arm.values()}
     assert len(episode_counts) == 1, f"control arms differ in episode count: {sorted(episode_counts)}"
     episodes = episode_counts.pop()
-    unsteered_records, gi_records = load_check_records(args.unsteered.glob(args.records)), load_check_records(args.gi.glob(args.records))
-    gi_direction = unit_layer(args.gi_direction, args.layer)
-    cos_by_arm = {arm: float(unit_layer(args.directions / f"{arm}.pt", args.layer) @ gi_direction) for arm in records_by_arm}
+    unsteered_records, target_records = load_check_records(args.unsteered.glob(args.records)), load_check_records(args.target.glob(args.records))
+    target_direction = unit_layer(args.target_direction, args.layer)
+    cos_by_arm = {arm: float(unit_layer(args.directions / f"{arm}.pt", args.layer) @ target_direction) for arm in records_by_arm}
 
     def count(records: list[CheckRecord], measure: Measure) -> int:
         return sum(map(measures[measure], records))
 
     summary_by_measure = {
         measure: summarize_measure({arm: count(records, measure) for arm, records in records_by_arm.items()}, episodes,
-                                   (count(unsteered_records, measure), len(unsteered_records)), (count(gi_records, measure), len(gi_records)), cos_by_arm)
+                                   (count(unsteered_records, measure), len(unsteered_records)), (count(target_records, measure), len(target_records)), cos_by_arm)
         for measure in measures
     }
     args.out.write_text(json.dumps(summary_by_measure, indent=1))
