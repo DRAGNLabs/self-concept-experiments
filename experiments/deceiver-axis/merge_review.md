@@ -21,10 +21,22 @@ Dropped (FINDINGS gets a line in checkpoint 3): Mistral Small 4 / Nemotron 3.5 /
 families, pixtral_compat shim, Mistral sbatch notes. Discarded uncommitted changes: main steered_rh.py Gemma entry,
 rand1729 random_direction_lens.py fix, rand1729 loglik / episode-PCA scripts (they stay in scratch).
 
-## Checkpoint 2: analysis ports (next)
-hardcode_scan, controls/ (isolated_directions, controls_common, control_percentile, sample_pairs, sentences),
-honest hidden pass in main_analysis / pilot_summary, cap_vs_steer, qwen_hard61_build; numbers check against the Muse
-100x1 and cap_vs_steer outputs.
+## Checkpoint 2: analysis ports
+
+| Done | Commit | Kind | What | Alternative | Look at | Verified |
+|---|---|---|---|---|---|---|
+| [ ] | f66d160 | decision | Hard-coding detector as a library module `selfconcept.codebench.hardcoded_cases`; `hardcode_scan.py` is a per-arm CLI for any model | keep the detector inside the script | src/selfconcept/codebench/hardcoded_cases.py, scripts/hardcode_scan.py | 100 gpt-oss covshaped arms: same episodes / proxy / hits / hidden pass as scratch |
+| [ ] | bd4d1fe | port | `controls/control_percentile.py`: gi_v2's percentile among controls (rates, Fisher, dispersion, Spearman, shape-free and beta q intervals), any model; hack predicates + loaders move into hardcoded_cases | — | scripts/controls/control_percentile.py | Muse covshaped 100x1: every field equal to scratch analysis_100x1.json |
+| [ ] | 53bad43 | decision | `scripts/controls/` + `data/controls/`: isolated_directions (CLI), controls_common (downstream read as a one-method protocol, gpt-oss + Muse), sample_pairs, check_sentences, subagent instructions, pairs and the 100 sentence files | matched alpha gpt-oss-only, no protocol | scripts/controls/controls_common.py (DownstreamReadSpecifics), scripts/controls/isolated_directions.py | pairs.jsonl reproduced; sentences valid; matched alpha 0.1904713 = scratch. **GPU rerun 15131997 pending** (directions vs 15126400) |
+| [ ] | cfaff4d | decision | Honest hidden pass = main capability measure: new `honest_hidden_pass` outcome in main_analysis (ratio of stratified means, paired bootstrap, swap permutation), pilot_summary column, dose rule uses it | keep hidden pass in the dose rule; average per-problem conditional rates | scripts/main_analysis.py (analyse_honest_hidden_pass), scripts/pilot_summary.py (within_dose_rule) | gpt-oss ladder: rates and differences equal cap_vs_steer.json |
+| [ ] | e45313e | port | cap_vs_steer.py + chart; the four models' runs in data/cap_vs_steer_setups.json | — | scripts/cap_vs_steer.py, data/cap_vs_steer_setups.json | JSON and PNG byte-identical to scratch |
+| [ ] | 9babefe | port | qwen_hard61_build.py | — | scripts/qwen_hard61_build.py | five outputs byte-identical |
+| [ ] | 441d5c5 | small | nltk as a direct dependency | — | pyproject.toml | lock adds only the two dependency lines (3.10.3 was already locked) |
+
+Noticed while porting, not changed: control_percentile's beta fit only allows mean control rates from 0.08 to 0.40
+(the grid the gpt-oss simulations used). Muse's pooled proxy rate is 0.37, near that ceiling, so the beta interval on
+that measure may be squeezed. Widening the grid would change the reported Muse numbers; your call.
+Not ported: the covshaped tooling, the failed DoM builders, Gemma hard108 summarize / tabulate, Qwen pilot_scan.
 
 ## Checkpoint 3: docs
 PLAN pre-registration + 2026-11-06 / 2026-11-07 amendments, FINDINGS entries, README share rows.
