@@ -397,7 +397,7 @@ def lcb_docstring(statement: str) -> str:
     return f'    """ {lines[0]}' + (f"\n{body}" if len(lines) > 1 else "") + '\n    """'
 
 
-def lcb_call_case(test: Mapping[str, str]) -> tuple[list, object] | None:
+def lcb_call_case(test: Mapping[str, str] | WorkspaceTestCase) -> tuple[list, object] | None:
     """A call-based LCB test ({input: one JSON value per line, output: JSON}) as (args, expected),
     None if it does not parse."""
     try:
