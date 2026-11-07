@@ -32,6 +32,10 @@ rand1729 random_direction_lens.py fix, rand1729 loglik / episode-PCA scripts (th
 | [ ] | e45313e | port | cap_vs_steer.py + chart; the four models' runs in data/cap_vs_steer_setups.json | — | scripts/cap_vs_steer.py, data/cap_vs_steer_setups.json | JSON and PNG byte-identical to scratch |
 | [ ] | 9babefe | port | qwen_hard61_build.py | — | scripts/qwen_hard61_build.py | five outputs byte-identical |
 | [ ] | 441d5c5 | small | nltk as a direct dependency | — | pyproject.toml | lock adds only the two dependency lines (3.10.3 was already locked) |
+| [ ] | 1988c58 | review fix | control_percentile: target-vs-population naming (--target, --target-direction, keys target / at_or_above_target); constants commented | — | scripts/controls/control_percentile.py (constants, summarize_measure) | Muse 100x1 unchanged apart from the renamed keys |
+| [ ] | 1a55436 | review fix | One data/controls/sentences.json instead of 100 files; check_sentences combines the subagents' files; AISI constant notes control_spacing | — | data/controls/sentences.json, scripts/controls/check_sentences.py | rebuilt byte for byte; loader yields the same pairs |
+| [ ] | c37b5b0 | review fix | Typed honest-hidden-pass helpers; overall hidden pass dropped from main_analysis defaults and pilot_summary | — | scripts/main_analysis.py (types above honest_shares), scripts/pilot_summary.py | output identical; note gi_main_chart / gemma_hard108_chart read hidden_pass, so pass --outcomes for them |
+| [ ] | 0364d3b | review fix | cap_vs_steer chart writes the PNG only | — | scripts/cap_vs_steer_chart.py | PNG identical |
 
 Noticed while porting, not changed: control_percentile's beta fit only allows mean control rates from 0.08 to 0.40
 (the grid the gpt-oss simulations used). Muse's pooled proxy rate is 0.37, near that ceiling, so the beta interval on
