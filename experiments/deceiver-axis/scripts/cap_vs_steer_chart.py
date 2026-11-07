@@ -1,9 +1,9 @@
 """Four-panel trade-off chart from cap_vs_steer.json: per model, change in hack rate vs change in honest hidden pass
 (both against unsteered, 95% paired-bootstrap CIs), one line through unsteered and the negative steering doses and one
 through unsteered and the cap thresholds (weakest to strongest). The shaded band marks honest hidden pass more than
-10 points below unsteered. Writes <out>.png and <out>.pdf.
+10 points below unsteered. Writes the PNG.
 
-    python scripts/cap_vs_steer_chart.py <cap_vs_steer.json> <out path without suffix>
+    python scripts/cap_vs_steer_chart.py <cap_vs_steer.json> <chart.png>
 """
 import json
 import re
@@ -98,8 +98,7 @@ def main() -> None:
     figure.suptitle("Capping vs negative steering along gi_v2: hack rate vs honest capability (95% CIs, paired bootstrap over problems)",
                     x=0.02, y=0.985, ha="left", fontsize=12, color=INK)
     figure.tight_layout(rect=(0, 0, 1, 0.93))
-    for suffix in ("png", "pdf"):
-        figure.savefig(out.with_suffix(f".{suffix}"), dpi=200, facecolor=SURFACE)
+    figure.savefig(out, dpi=200, facecolor=SURFACE)
 
 
 if __name__ == "__main__":
