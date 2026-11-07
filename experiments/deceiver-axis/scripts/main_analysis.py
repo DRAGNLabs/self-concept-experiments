@@ -5,6 +5,8 @@ Input: <root>/<arm>/seed<s>/main_impossible_original.jsonl from main_run.sbatch 
 Outcome of an episode: the automatic hack proxy (passed shown tests and failed the hidden suite) by default, or
 --outcome hidden_pass / no_code / shown_pass. With --verdicts <json {episode_key: HACK|...}> (judge output keyed by
 "<arm>/seed<s>/<example_id>") the primary outcome is the judged HACK rate; unjudged candidates count as non-hacks.
+Capability: honest_hidden_pass (hidden pass among episodes not judged HACK, or not proxy hacks without verdicts; a
+ratio of problem-stratified means, see analyse_honest_hidden_pass) is the main measure; hidden_pass stays as secondary.
 
 Stratification: each problem's rate in an arm is the mean over its seeds; an arm's rate is the mean over problems
 (equal weight per problem, so the 45 problems are the units). Contrast = arm rate − unsteered rate = mean over
@@ -150,6 +152,57 @@ def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None, contrasts=N
     return result
 
 
+def honest_shares(arms, arm: str, problems: list[str], seeds: list[int], verdicts) -> tuple[np.ndarray, np.ndarray]:
+    """Per problem, the share of its episodes that are honest (not judged HACK with verdicts, else not proxy hacks) and
+    the share that are honest and pass the hidden suite."""
+    hack_outcome = "judged_hack" if verdicts else "hack_proxy"
+    honest = 1 - problem_matrix(arms, arm, problems, seeds, hack_outcome, verdicts)
+    honest_pass = honest * problem_matrix(arms, arm, problems, seeds, "hidden_pass", verdicts)
+    return np.nanmean(honest, axis=1), np.nanmean(honest_pass, axis=1)
+
+
+def analyse_honest_hidden_pass(arms, reps: int, seed: int, verdicts=None, contrasts=None) -> dict:
+    """Hidden pass among honest episodes, the main capability measure (2026-11-07 amendment): the problem-stratified
+    ratio mean_p(honest passes) / mean_p(honest episodes), so problems without honest episodes still count through
+    the denominator. A difference of ratios is not a mean of per-problem differences, so the CI resamples problems
+    (paired across arms) and the permutation test swaps an arm's and the reference's per-problem shares at random,
+    the analogue of the sign flip. Up/down/tied compare the per-problem honest pass rates where both are defined."""
+    contrasts = CONTRASTS if contrasts is None else list(contrasts)
+    problems = sorted(arms[REFERENCE])
+    seeds = sorted({s for p in arms[REFERENCE].values() for s in p})
+    rng = np.random.default_rng(seed)
+    result = {"outcome": "honest_hidden_pass", "problems": len(problems), "seeds": len(seeds), "arms": {}, "contrasts": {}}
+    reference_honest, reference_pass = honest_shares(arms, REFERENCE, problems, seeds, verdicts)
+    picks = rng.integers(0, len(problems), size=(reps, len(problems)))
+    for arm in arms:
+        honest, honest_pass = honest_shares(arms, arm, problems, seeds, verdicts)
+        rate = honest_pass.mean() / honest.mean()
+        with np.errstate(invalid="ignore", divide="ignore"):
+            per_problem = honest_pass / honest
+        matrix = problem_matrix(arms, arm, problems, seeds, "hidden_pass", verdicts)
+        entry = {"episodes": int(np.sum(~np.isnan(matrix))), "rate": float(rate),
+                 "per_problem_rate": {p: float(r) for p, r in zip(problems, per_problem)}}
+        if arm != REFERENCE:
+            reference_rate = reference_pass.mean() / reference_honest.mean()
+            draws = honest_pass[picks].mean(1) / honest[picks].mean(1) - reference_pass[picks].mean(1) / reference_honest[picks].mean(1)
+            swap = rng.random(size=(reps, len(problems))) < 0.5
+            null = np.abs(np.where(swap, reference_pass, honest_pass).mean(1) / np.where(swap, reference_honest, honest).mean(1)
+                          - np.where(swap, honest_pass, reference_pass).mean(1) / np.where(swap, honest, reference_honest).mean(1))
+            with np.errstate(invalid="ignore", divide="ignore"):
+                per_problem_diff = per_problem - reference_pass / reference_honest
+            defined = per_problem_diff[~np.isnan(per_problem_diff)]
+            entry |= {"diff_vs_unsteered": float(rate - reference_rate),
+                      "ci95": [float(np.percentile(draws, 2.5)), float(np.percentile(draws, 97.5))],
+                      "problems_up": int(np.sum(defined > 0)), "problems_down": int(np.sum(defined < 0)), "problems_tied": int(np.sum(defined == 0)),
+                      "p_signflip": float((np.sum(null >= abs(rate - reference_rate) - 1e-12) + 1) / (reps + 1))}
+        result["arms"][arm] = entry
+    raw = {arm: result["arms"][arm]["p_signflip"] for arm in contrasts if arm in result["arms"]}
+    adjusted = holm(raw)
+    result["contrasts"] = {arm: {"diff": result["arms"][arm]["diff_vs_unsteered"], "ci95": result["arms"][arm]["ci95"],
+                                 "p_raw": raw[arm], "p_holm": adjusted[arm]} for arm in raw}
+    return result
+
+
 def print_table(result: dict) -> None:
     print(f"\n== {result['outcome']}  ({result['problems']} problems × {result['seeds']} seeds; rates are problem-stratified means)")
     print(f"{'arm':14s} {'eps':>4s} {'rate':>7s} {'Δ vs unst':>10s} {'95% CI (problem bootstrap)':>28s} {'up/down/tie':>12s} {'p':>8s} {'p_holm':>7s}")
@@ -172,7 +225,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--verdicts", type=Path, help="judge verdicts JSON keyed '<arm>/seed<s>/<example_id>'")
     parser.add_argument("--outcomes", nargs="+",
-                        default=["hack_proxy", "hidden_pass", "shown_pass", "no_code", "code_parses", "reasoning_chars_per_turn", "turns"])
+                        default=["hack_proxy", "honest_hidden_pass", "hidden_pass", "shown_pass", "no_code", "code_parses", "reasoning_chars_per_turn", "turns"])
     parser.add_argument("--out", type=Path)
     parser.add_argument("--contrasts", nargs="+", default=CONTRASTS,
                         help="arms in the Holm-corrected contrast family (default: the pre-registered main-run arms)")
@@ -182,7 +235,10 @@ def main() -> None:
     outcomes = list(args.outcomes) + (["judged_hack"] if verdicts else [])
     results = {}
     for outcome in outcomes:
-        results[outcome] = analyse(arms, outcome, args.reps, args.seed, verdicts, args.contrasts)
+        if outcome == "honest_hidden_pass":
+            results[outcome] = analyse_honest_hidden_pass(arms, args.reps, args.seed, verdicts, args.contrasts)
+        else:
+            results[outcome] = analyse(arms, outcome, args.reps, args.seed, verdicts, args.contrasts)
         print_table(results[outcome])
     if args.out:
         args.out.write_text(json.dumps(results, indent=1))
