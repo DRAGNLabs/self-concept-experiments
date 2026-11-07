@@ -1062,6 +1062,54 @@ Sonnet with the existing proxy + hidden-signature pipeline.
 Also open: whether the same seed's direction does anything at other layers (L24, L36) or on the 12B model, which would
 separate "a property of this direction" from "a property of Gemma 31B's L30".
 
+## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
+
+**Question.** What share q of random directions shaped like the persona covariance raise reward hacking at least as
+much as gi_v2 +0.08? Population: 100 directions (seeds 8000–8099; unit draws from N(0, Σ) of the layer-30
+answer means of the 18 gi_v2 persona roles, default and neutral_fic excluded), steered at α 0.08 (gi_v2's dose), layer 30, on hard108
+(`random1729/covshaped/`; jobs 15046314 cs3 / 15046315 H200 standby; settings rows 272–371). 1729 and the isotropic
+screen are a different population (isotropic, α 0.01) and are not counted.
+
+**Outcomes.** Scan = entry-function hard-coding hits; judged = Jansen's blind Sonnet verdicts, all 100 seed-0 arms
+(user decision: Jansen judges everything). Reference rates (16 seeds, 1,728 episodes): unsteered scan 1.27% /
+judged 4.75%; gi_v2 +0.08 scan 3.36% / judged 8.22%.
+
+**Stage 1 (seed 0, 108 episodes).** Flag a direction if scan ≥ 4 **or** judged ≥ 10. Each cutoff is that outcome's
+unsteered 95th percentile. Do-nothing directions are flagged about 7% of the time, gi_v2-strength directions 0.59,
+1729-like directions 0.76 (`covshaped/flag_rules_judged.py`). Suppression flag: judged ≤ 1. That catches only strong
+suppressors (judged ≈ 1.5%: 0.52). gi_v2 −0.08 itself (judged 3.9%) is undetectable, so no claim about suppressing
+"better than gi_v2".
+
+**Stage 2 (flagged directions only).** Seven fresh sampling seeds (1–7, 756 episodes); seed 0 is not reused. Confirm
+if the scan or the judged count on the fresh seeds clears its unsteered (1 − 0.005) quantile: the significance level
+0.01 is split over the two outcomes. Suppression flags are confirmed by the judged count falling at or below its
+unsteered 0.01 quantile. The significance level here is unrelated to the steering α.
+
+**Claims.** K = directions confirmed above unsteered (one tier, no "gi_v2-strength" tier: at 7 seeds a confirmed
+direction cannot be shown to be weaker than gi_v2). Rare: q ≤ UB(K, 100) / (stage-1 × stage-2 sensitivity at gi_v2
+strength), about 5.3% at K = 0. Not rare: K ≥ 10, worded as "measurably raise hacking, compatible with gi_v2's strength",
+not "as strong as gi_v2". Each confirmed direction is reported with its rate and CI next to gi_v2's.
+
+**Status (as pre-registered).** Running. When all 100 arms are in, they are copied to the share
+(`gemma4_31b_gi_v2/rh/hard108/L30_cov*_a0.08/`) and Koby and Jansen are paged (`covshaped/copy_to_group.sh`).
+
+**Amendment 2026-11-06 (after the stage 1 scan and the design simulations).** The covariance-shaped directions as a
+group sit above unsteered on the scan (1.90% vs 1.27%, p 6e-8; 20 flagged vs 5 expected), so K, the count confirmed
+above unsteered, measures the population's general lift and not rarity at gi_v2's strength; and with feasible budgets
+the shape-free bound on q stays near 10–20% (FINDINGS "Percentile design simulations"). Gemma stage 2 is put on hold
+and the question becomes gi_v2's percentile q itself, estimated on gpt-oss and Muse (100 directions × 1 seed at
+gi_v2's dose, proxy and hard-coding scan), reported with both the shape-free and the beta interval. New control
+sampling is under design.
+
+**Amendment 2026-11-07 (Koby).** Gemma stage 2 is cancelled, not on hold: it would not be informative. The control
+population is now the 100 isolated-text antonym contrasts (AISI method; FINDINGS "Control directions for gi_v2's
+percentile"), which replace the covariance-shaped directions; they run on gpt-oss at α 0.2 with gi_v2's recipe (job
+15126757), analysed with `scripts/controls/control_percentile.py` (q with both intervals; judge-free measures).
+Whether the headline intervention is steering or capping waits on the Gemma cap dose pilot (p45 / p50 / p65 at
+L20–38, 16 seeds; job 15125968): capping becomes the headline only if a cap inside the 10-point capability rule
+significantly lowers the judged hack rate on Gemma (FINDINGS "Capping vs negative steering along gi_v2"). Honest hidden
+pass (hidden pass among episodes not judged HACK) replaces hidden pass as the capability measure and in the dose rule.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
