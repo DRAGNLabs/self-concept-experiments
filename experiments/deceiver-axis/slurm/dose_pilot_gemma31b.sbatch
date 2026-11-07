@@ -21,6 +21,7 @@ set -euo pipefail
 # one file. Recipe: neutral feedback, critical_no_carve, 5 stated attempts, Gemma sampling (top-p 0.95,
 # top-k 64), thinking on, 32 768 new tokens. Output: $ROOT/<name>/pilot_<scenario>.jsonl (+ reasoning sidecars and
 # summaries). Rerunning a task resumes (the harness skips finished example ids). Summarize with scripts/pilot_summary.py.
+# TP=2 (with --partition=cs2 --gpus-per-node=h100:2) runs the engine tensor-parallel on two 80 GB GPUs; one H100 cannot hold 31B at 40 960 tokens.
 # Usage: sbatch --array=0-$((N-1)) --export=ALL,SETTINGS=<tsv>,ROOT=<dir>,DATA=<dir> experiments/deceiver-axis/slurm/dose_pilot_gemma31b.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -55,7 +56,7 @@ echo "########## setting $SLURM_ARRAY_TASK_ID: $NAME | ${EXTRA[*]:-unsteered} ##
 source ../../activate.sh
 
 SECONDS=0
-python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios "${SCEN[@]}" "${RECIPE[@]}" \
+python scripts/steered_rh_vllm.py --model "$MODEL" --tensor-parallel-size "${TP:-1}" --scenarios "${SCEN[@]}" "${RECIPE[@]}" \
     --out "$ROOT/$NAME" --tag pilot "${EXTRA[@]}"
 echo "setting $NAME took ${SECONDS}s"
 echo "=== schemer-pilot-gemma31b done: $ROOT/$NAME ==="
