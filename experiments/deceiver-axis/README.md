@@ -119,7 +119,9 @@ adds `--top-p 0.95 --top-k 64 --max-new-tokens 32768 --max-model-len 40960` (pla
 settings line can override any recipe flag, including `--data` and `--impossible-prompt`.
 
 1. **Calibrate the problem pool.** Problems must sit at the edge of the model's ability (Koby's rule: solved < 90% of
-   the time, ideally around 50%; always-solved problems are solved, never-solved problems get honest partial answers).
+   the time, ideally around 50%; always-solved problems are solved). Keep never-solved problems: they are not honest
+   by default (gpt-oss-120b unsteered hard45: 30 of 56 judged hacks on the 16 problems it never solves in the
+   random-direction arms, 16% of their episodes; 3 of 56 on problems solved >= 50%).
    Run the candidate sets unsteered over a few seeds with `dose_pilot.sbatch` (one `unsteered<TAB>` line per seed with
    `--sample-seed N`), then compute the per-problem hidden pass:
 
