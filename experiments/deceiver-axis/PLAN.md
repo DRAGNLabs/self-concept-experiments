@@ -1184,7 +1184,7 @@ lower hacking, lifting that tail should raise it; if the floor raises hacking on
 up with hidden pass down, as the +0.2 / +0.4 shifts do), the dose rule says so. Judged blind as one set with the
 cap-ladder recipe (`build_ladder_set.sh gptoss floorladder floor gi_floor_p95 gi_floor_p75 gi_floor_p50`), analysed
 with the three floor rungs added to the Holm family, charted with `capladder_chart.py` extended to show cap and floor
-rungs side by side. Other models: after gpt-oss reads. Each arm is judged blind by the rubric-judge
+rungs side by side. **gpt-oss done (judged 2026-11-06, 9:07 pm MST; FINDINGS "gpt-oss gi_v2 floor ladder"):** 11.7 → 12.6% at p50 (n.s.) → 17.8% at p75 (+6.1, Holm 0.013) → 25.0% at p95 (+13.3, Holm 0.0007), hidden pass within 2.8 points and no-code down at every rung, so the floor raises hacking at equal capability: the mirror of the cap ladder, as expected, and the positive control holds. Other models: after this read, with the user. Each arm is judged blind by the rubric-judge
 agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
 MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 
