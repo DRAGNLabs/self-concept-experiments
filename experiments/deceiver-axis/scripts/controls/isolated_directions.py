@@ -3,7 +3,7 @@ awareness", appendix), any model with a downstream read in controls_common. Each
 message and read at --layer on its final content token, and, as a variant, averaged over its content tokens.
 
 Sets: the antonym pairs (direction = mean over each pair's sentence pairs of word-side minus antonym-side; sentences
-from data/controls/sentences, see subagent_instructions.md) and the AISI control pairs (positive minus negative;
+from data/controls/sentences.json, see subagent_instructions.md) and the AISI control pairs (positive minus negative;
 control_spacing is left out because the post does not give its passages). Validation against gi_v2, the assistant axis
 and isotropic random directions: |cos|, pairwise |cos|, effective dimension of the set, split-half reliability of the
 antonym directions (sentence pairs 0-1 vs 2-4), and the median coefficient matching gi_v2 at --gi-alpha in downstream
@@ -33,6 +33,7 @@ ISOTROPIC_COUNT, ISOTROPIC_SEED = 100, 60_000
 Pooling = Literal["final_token", "mean_tokens"]
 POOLINGS: tuple[Pooling, ...] = ("final_token", "mean_tokens")
 type SentencePair = tuple[str, str]
+# The AISI post's ten control pairs minus control_spacing, whose passages the post does not give.
 AISI_PAIRS_BY_NAME: dict[str, SentencePair] = {
     "book": ("She placed the book on the bottom shelf.", "She placed the book on the top shelf."),
     "cat": ("The dog sat quietly by the window.", "The cat sat quietly by the window."),
@@ -120,9 +121,8 @@ def main() -> None:
     reader = downstream_read_specifics_for(args.model)
     model = ProbingModel(args.model, dtype=torch.bfloat16, attn_implementation=steering_model_specifics(args.model).hf_attn_implementation)
     num_layers = len(model.get_layers())
-    pair_ids = [json.loads(line)["pair_id"] for line in (DATA / "pairs.jsonl").open()]
     sentence_pairs_by_id: dict[str, list[SentencePair]] = {
-        pair_id: [(pair["b"], pair["a"]) for pair in json.loads((DATA / f"sentences/{pair_id}.json").read_text())["pairs"]] for pair_id in pair_ids}
+        pair_id: [(pair["b"], pair["a"]) for pair in sentence_pairs] for pair_id, sentence_pairs in json.loads((DATA / "sentences.json").read_text()).items()}
     contrasts = {pooling: ({pair_id: contrast(model, args.layer, pairs, pooling) for pair_id, pairs in sentence_pairs_by_id.items()},
                            unit(torch.stack([contrast(model, args.layer, [pair], pooling)[0] for pair in AISI_PAIRS_BY_NAME.values()])))
                  for pooling in POOLINGS}
@@ -136,7 +136,7 @@ def main() -> None:
     antonym = unit(torch.stack([differences.mean(0) for differences in antonym_contrasts.values()]))
     summary["matched_alpha_median"] = matched_alpha_median(reader, args.layer, args.gi_alpha, torch.cat([antonym, aisi]), gi_v2)
     (args.out / "dirs_isolated").mkdir(parents=True, exist_ok=True)
-    names = [f"antonym_{pair_id}" for pair_id in pair_ids] + [f"aisi_{name}" for name in AISI_PAIRS_BY_NAME]
+    names = [f"antonym_{pair_id}" for pair_id in sentence_pairs_by_id] + [f"aisi_{name}" for name in AISI_PAIRS_BY_NAME]
     for name, direction in zip(names, torch.cat([antonym, aisi])):
         torch.save({"axis": direction.repeat(num_layers, 1), "model": args.model, "name": name,
                     "source": f"isolated-text contrast, chat-formatted user message, final content token, layer {args.layer}"},

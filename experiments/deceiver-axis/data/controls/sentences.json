@@ -1,0 +1,2702 @@
+{
+ "p000": [
+  {
+   "aspect": 1,
+   "a": "Inside the crowded harbor office, the dispatchers begin the nightly ferry schedule review at dusk.",
+   "b": "Inside the crowded harbor office, the dispatchers end the nightly ferry schedule review at dusk."
+  },
+  {
+   "aspect": 2,
+   "a": "This cold November morning, the bakery staff will begin the holiday bread orders.",
+   "b": "This cold November morning, the bakery staff will end the holiday bread orders."
+  },
+  {
+   "aspect": 3,
+   "a": "Rain has fallen steadily since noon, and the choir will begin the closing hymn soon.",
+   "b": "Rain has fallen steadily since noon, and the choir will end the closing hymn soon."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has waited since two, hoping the clinic will begin the afternoon appointments.",
+   "b": "The person asking has waited since two, hoping the clinic will end the afternoon appointments."
+  },
+  {
+   "aspect": 7,
+   "a": "Two engineers near the loading bay will begin the inspection once the crane stops.",
+   "b": "Two engineers near the loading bay will end the inspection once the crane stops."
+  }
+ ],
+ "p001": [
+  {
+   "aspect": 1,
+   "a": "The walled city on the eastern plain was prepared to resist.",
+   "b": "The walled city on the eastern plain was prepared to surrender."
+  },
+  {
+   "aspect": 2,
+   "a": "On the last cold evening of November, the weary garrison seemed ready to resist.",
+   "b": "On the last cold evening of November, the weary garrison seemed ready to surrender."
+  },
+  {
+   "aspect": 3,
+   "a": "Thunder rolled over the wall as freezing rain fell, and the men on it had no wish to resist.",
+   "b": "Thunder rolled over the wall as freezing rain fell, and the men on it had no wish to surrender."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the candle on the table lay a folded letter urging the household to resist.",
+   "b": "Beside the candle on the table lay a folded letter urging the household to surrender."
+  },
+  {
+   "aspect": 7,
+   "a": "Three merchants standing near the fountain were quietly deciding whether to resist.",
+   "b": "Three merchants standing near the fountain were quietly deciding whether to surrender."
+  }
+ ],
+ "p002": [
+  {
+   "aspect": 1,
+   "a": "The library on the hilltop has the unusual layout, with reading rooms stacked above one another.",
+   "b": "The library on the hilltop has the usual layout, with reading rooms stacked above one another."
+  },
+  {
+   "aspect": 3,
+   "a": "Light rain falls over the harbor with the unusual warmth of the air.",
+   "b": "Light rain falls over the harbor with the usual warmth of the air."
+  },
+  {
+   "aspect": 4,
+   "a": "A chipped ceramic bowl sits on the table, painted in the unusual shade of pale green.",
+   "b": "A chipped ceramic bowl sits on the table, painted in the usual shade of pale green."
+  },
+  {
+   "aspect": 5,
+   "a": "A glass shattered near the door a moment ago, right after the unusual argument at the bar.",
+   "b": "A glass shattered near the door a moment ago, right after the usual argument at the bar."
+  },
+  {
+   "aspect": 7,
+   "a": "Two colleagues nearby are whispering about the unusual schedule for the week.",
+   "b": "Two colleagues nearby are whispering about the usual schedule for the week."
+  }
+ ],
+ "p003": [
+  {
+   "aspect": 1,
+   "a": "The small cafe sat on a narrow street with a bakery beside it.",
+   "b": "The small cafe sat on a wide street with a bakery beside it."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain fell on the roof, and a narrow stream of water ran down the gutter.",
+   "b": "Heavy rain fell on the roof, and a wide stream of water ran down the gutter."
+  },
+  {
+   "aspect": 4,
+   "a": "On the desk sat a narrow glass vase holding a single white tulip.",
+   "b": "On the desk sat a wide glass vase holding a single white tulip."
+  },
+  {
+   "aspect": 5,
+   "a": "Earlier, a delivery truck had passed through the narrow gap between the parked cars.",
+   "b": "Earlier, a delivery truck had passed through the wide gap between the parked cars."
+  },
+  {
+   "aspect": 7,
+   "a": "Two students waited by the narrow entrance, chatting quietly while the others filed past.",
+   "b": "Two students waited by the wide entrance, chatting quietly while the others filed past."
+  }
+ ],
+ "p004": [
+  {
+   "aspect": 1,
+   "a": "The small village library near the river is a place where neighbors often borrow tools.",
+   "b": "The small village library near the river is a place where neighbors often lend tools."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain and grey clouds fill the street, so vendors nearby might borrow spare tarps.",
+   "b": "Heavy rain and grey clouds fill the street, so vendors nearby might lend spare tarps."
+  },
+  {
+   "aspect": 5,
+   "a": "Shortly after the storm passed, the town council agreed to borrow generators.",
+   "b": "Shortly after the storm passed, the town council agreed to lend generators."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking, a retired farmer, is willing to borrow a tractor.",
+   "b": "The person asking, a retired farmer, is willing to lend a tractor."
+  },
+  {
+   "aspect": 7,
+   "a": "Two cousins standing near the gate are waiting to borrow the spare bicycle.",
+   "b": "Two cousins standing near the gate are waiting to lend the spare bicycle."
+  }
+ ],
+ "p005": [
+  {
+   "aspect": 1,
+   "a": "The clinic on Maple Street announced that staff will forbid visitors after eight in the evening.",
+   "b": "The clinic on Maple Street announced that staff will permit visitors after eight in the evening."
+  },
+  {
+   "aspect": 2,
+   "a": "On a windy January morning, the lodge manager said that the cabins will forbid pets.",
+   "b": "On a windy January morning, the lodge manager said that the cabins will permit pets."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the elevator, a laminated notice says that the lab must forbid unsupervised visits.",
+   "b": "Beside the elevator, a laminated notice says that the lab must permit unsupervised visits."
+  },
+  {
+   "aspect": 5,
+   "a": "Only minutes ago, the referee decided to forbid substitutions for the rest of the match.",
+   "b": "Only minutes ago, the referee decided to permit substitutions for the rest of the match."
+  },
+  {
+   "aspect": 7,
+   "a": "Two neighbors at the fence are arguing loudly about whether the council should forbid fireworks.",
+   "b": "Two neighbors at the fence are arguing loudly about whether the council should permit fireworks."
+  }
+ ],
+ "p006": [
+  {
+   "aspect": 1,
+   "a": "Near the old cabin, the ground seems to fall steeply toward the eastern ridge.",
+   "b": "Near the old cabin, the ground seems to rise steeply toward the eastern ridge."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on Sunday morning, the tide is expected to fall.",
+   "b": "Early on Sunday morning, the tide is expected to rise."
+  },
+  {
+   "aspect": 3,
+   "a": "Outside the window, the temperature will fall steadily as the clouds drift overhead.",
+   "b": "Outside the window, the temperature will rise steadily as the clouds drift overhead."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has watched the monthly rent steadily fall over the past two years.",
+   "b": "The person asking has watched the monthly rent steadily rise over the past two years."
+  },
+  {
+   "aspect": 7,
+   "a": "Two children sit on the porch steps, watching a ball fall past the garden fence.",
+   "b": "Two children sit on the porch steps, watching a ball rise past the garden fence."
+  }
+ ],
+ "p007": [
+  {
+   "aspect": 1,
+   "a": "At the end of the narrow pier, a small fishing boat seems to appear out of the fog.",
+   "b": "At the end of the narrow pier, a small fishing boat seems to disappear out of the fog."
+  },
+  {
+   "aspect": 3,
+   "a": "Under a heavy gray sky, a thin rainbow can appear after the afternoon storm passes.",
+   "b": "Under a heavy gray sky, a thin rainbow can disappear after the afternoon storm passes."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the coffee mug on the kitchen counter, a set of car keys has begun to appear.",
+   "b": "Beside the coffee mug on the kitchen counter, a set of car keys has begun to disappear."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor's headache seems to appear each morning, usually before the first meeting.",
+   "b": "The visitor's headache seems to disappear each morning, usually before the first meeting."
+  },
+  {
+   "aspect": 7,
+   "a": "Three tourists near the fountain are watching a street magician slowly appear on the stage.",
+   "b": "Three tourists near the fountain are watching a street magician slowly disappear on the stage."
+  }
+ ],
+ "p008": [
+  {
+   "aspect": 1,
+   "a": "The lecture hall was quiet while the visiting professor began to criticize the old textbook.",
+   "b": "The lecture hall was quiet while the visiting professor began to praise the old textbook."
+  },
+  {
+   "aspect": 2,
+   "a": "On a cold winter evening, the neighbors often criticize the new park plans aloud.",
+   "b": "On a cold winter evening, the neighbors often praise the new park plans aloud."
+  },
+  {
+   "aspect": 3,
+   "a": "Under the grey sky and steady drizzle, the shoppers continue to criticize the new bus route.",
+   "b": "Under the grey sky and steady drizzle, the shoppers continue to praise the new bus route."
+  },
+  {
+   "aspect": 5,
+   "a": "Just before noon, a local reporter posted an article to criticize the city's budget.",
+   "b": "Just before noon, a local reporter posted an article to praise the city's budget."
+  },
+  {
+   "aspect": 7,
+   "a": "A group of volunteers stands near the door, and the retired teacher seems ready to criticize their work.",
+   "b": "A group of volunteers stands near the door, and the retired teacher seems ready to praise their work."
+  }
+ ],
+ "p009": [
+  {
+   "aspect": 1,
+   "a": "In the crowded library, there is less noise than usual near the reading tables.",
+   "b": "In the crowded library, there is more noise than usual near the reading tables."
+  },
+  {
+   "aspect": 2,
+   "a": "On this cold winter morning, the cafe has less foot traffic than it usually gets.",
+   "b": "On this cold winter morning, the cafe has more foot traffic than it usually gets."
+  },
+  {
+   "aspect": 3,
+   "a": "Outside the window, the afternoon sky carries less light than it did an hour ago.",
+   "b": "Outside the window, the afternoon sky carries more light than it did an hour ago."
+  },
+  {
+   "aspect": 4,
+   "a": "The old kettle on the stove holds less water than the small pot beside it.",
+   "b": "The old kettle on the stove holds more water than the small pot beside it."
+  },
+  {
+   "aspect": 6,
+   "a": "This week, the person asking has less free time than usual.",
+   "b": "This week, the person asking has more free time than usual."
+  }
+ ],
+ "p010": [
+  {
+   "aspect": 1,
+   "a": "Travelers often find their way through the crowded market near the station.",
+   "b": "Travelers often lose their way through the crowded market near the station."
+  },
+  {
+   "aspect": 2,
+   "a": "Every winter, the hikers find their gloves somewhere along the mountain trail.",
+   "b": "Every winter, the hikers lose their gloves somewhere along the mountain trail."
+  },
+  {
+   "aspect": 3,
+   "a": "Beneath the pounding rain, the drivers find their keys in the muddy parking lot.",
+   "b": "Beneath the pounding rain, the drivers lose their keys in the muddy parking lot."
+  },
+  {
+   "aspect": 4,
+   "a": "A small wooden box on the desk holds the pens that students always find.",
+   "b": "A small wooden box on the desk holds the pens that students always lose."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking is a parent who always seems to find socks in the laundry.",
+   "b": "The person asking is a parent who always seems to lose socks in the laundry."
+  }
+ ],
+ "p011": [
+  {
+   "aspect": 1,
+   "a": "The bakery on Maple Street has strong wooden shelves stacked against the wall.",
+   "b": "The bakery on Maple Street has weak wooden shelves stacked against the wall."
+  },
+  {
+   "aspect": 2,
+   "a": "At the start of the new year, the rowboat tied at the pier looked strong.",
+   "b": "At the start of the new year, the rowboat tied at the pier looked weak."
+  },
+  {
+   "aspect": 4,
+   "a": "A wooden ladder leaning against the fence has a strong frame.",
+   "b": "A wooden ladder leaning against the fence has a weak frame."
+  },
+  {
+   "aspect": 5,
+   "a": "A strong earthquake shook the building an hour ago.",
+   "b": "A weak earthquake shook the building an hour ago."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has been feeling strong since returning from a long hike.",
+   "b": "The person asking has been feeling weak since returning from a long hike."
+  }
+ ],
+ "p012": [
+  {
+   "aspect": 1,
+   "a": "The chemistry lab on the third floor had a shelf of inorganic compounds beside the sink.",
+   "b": "The chemistry lab on the third floor had a shelf of organic compounds beside the sink."
+  },
+  {
+   "aspect": 2,
+   "a": "On a quiet winter evening, the stockroom still held crates of inorganic reagents.",
+   "b": "On a quiet winter evening, the stockroom still held crates of organic reagents."
+  },
+  {
+   "aspect": 3,
+   "a": "Thin rain tapped the window while jars of inorganic reagents sat on the bench.",
+   "b": "Thin rain tapped the window while jars of organic reagents sat on the bench."
+  },
+  {
+   "aspect": 4,
+   "a": "A glass beaker of inorganic reagents sat on the table beside a stack of notebooks.",
+   "b": "A glass beaker of organic reagents sat on the table beside a stack of notebooks."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor's notes listed several inorganic reagents needed for the afternoon.",
+   "b": "The visitor's notes listed several organic reagents needed for the afternoon."
+  }
+ ],
+ "p013": [
+  {
+   "aspect": 1,
+   "a": "The bakery sits right here on the corner beside the old bridge.",
+   "b": "The bakery sits right there on the corner beside the old bridge."
+  },
+  {
+   "aspect": 3,
+   "a": "Cold drizzle has been falling here since early morning, soaking the gravel path.",
+   "b": "Cold drizzle has been falling there since early morning, soaking the gravel path."
+  },
+  {
+   "aspect": 4,
+   "a": "On the wooden table nearby, a chipped coffee mug sits here beside the door.",
+   "b": "On the wooden table nearby, a chipped coffee mug sits there beside the door."
+  },
+  {
+   "aspect": 5,
+   "a": "Someone dropped a tray of glasses a minute ago, and the shards still lie here.",
+   "b": "Someone dropped a tray of glasses a minute ago, and the shards still lie there."
+  },
+  {
+   "aspect": 7,
+   "a": "A group of students has gathered here, arguing loudly about their final project.",
+   "b": "A group of students has gathered there, arguing loudly about their final project."
+  }
+ ],
+ "p014": [
+  {
+   "aspect": 1,
+   "a": "In the crowded train station, the commuters dislike the constant announcements echoing across the platform.",
+   "b": "In the crowded train station, the commuters like the constant announcements echoing across the platform."
+  },
+  {
+   "aspect": 2,
+   "a": "At the end of a long school year, the students dislike the endless stack of final projects.",
+   "b": "At the end of a long school year, the students like the endless stack of final projects."
+  },
+  {
+   "aspect": 3,
+   "a": "Under the gray autumn sky, the hikers dislike the cold drizzle falling steadily around them.",
+   "b": "Under the gray autumn sky, the hikers like the cold drizzle falling steadily around them."
+  },
+  {
+   "aspect": 5,
+   "a": "After the sudden power outage last night, the residents dislike the slow repair crews working down the street.",
+   "b": "After the sudden power outage last night, the residents like the slow repair crews working down the street."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has waited in this lobby for three hours and seems to dislike the hard plastic chairs.",
+   "b": "The person asking has waited in this lobby for three hours and seems to like the hard plastic chairs."
+  }
+ ],
+ "p015": [
+  {
+   "aspect": 1,
+   "a": "In the workshop, a mechanic will start the old lathe before lunch.",
+   "b": "In the workshop, a mechanic will stop the old lathe before lunch."
+  },
+  {
+   "aspect": 2,
+   "a": "Every night at midnight, guards start the floodlights along the fence.",
+   "b": "Every night at midnight, guards stop the floodlights along the fence."
+  },
+  {
+   "aspect": 3,
+   "a": "Crews start the cooling fans in the courtyard during the heat wave.",
+   "b": "Crews stop the cooling fans in the courtyard during the heat wave."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the window sits a dusty projector that technicians start whenever the lights dim.",
+   "b": "Beside the window sits a dusty projector that technicians stop whenever the lights dim."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor is a gardener who must start the sprinklers at noon.",
+   "b": "The visitor is a gardener who must stop the sprinklers at noon."
+  }
+ ],
+ "p016": [
+  {
+   "aspect": 1,
+   "a": "The waiting room at the clinic has a hard bench by the window.",
+   "b": "The waiting room at the clinic has a soft bench by the window."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on Sunday morning, the bread left over from Saturday is hard.",
+   "b": "Early on Sunday morning, the bread left over from Saturday is soft."
+  },
+  {
+   "aspect": 3,
+   "a": "The snow on the path this morning is hard under foot, and the sky is grey.",
+   "b": "The snow on the path this morning is soft under foot, and the sky is grey."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has a sore back from sleeping on a bed that is hard.",
+   "b": "The person asking has a sore back from sleeping on a bed that is soft."
+  },
+  {
+   "aspect": 7,
+   "a": "Three students at the far table are discussing whether their pillows are hard.",
+   "b": "Three students at the far table are discussing whether their pillows are soft."
+  }
+ ],
+ "p017": [
+  {
+   "aspect": 1,
+   "a": "The reading room is quiet, its far corner invisible behind the tall wooden shelves.",
+   "b": "The reading room is quiet, its far corner visible behind the tall wooden shelves."
+  },
+  {
+   "aspect": 2,
+   "a": "It is late in the evening and the stars are invisible from the crowded city.",
+   "b": "It is late in the evening and the stars are visible from the crowded city."
+  },
+  {
+   "aspect": 3,
+   "a": "The far hills are invisible through the heavy fog drifting across the valley this afternoon.",
+   "b": "The far hills are visible through the heavy fog drifting across the valley this afternoon."
+  },
+  {
+   "aspect": 4,
+   "a": "The old ceramic mug on the table is invisible beneath a pile of papers.",
+   "b": "The old ceramic mug on the table is visible beneath a pile of papers."
+  },
+  {
+   "aspect": 5,
+   "a": "Minutes ago, a thick cloud of dust rose up, leaving the far gate invisible.",
+   "b": "Minutes ago, a thick cloud of dust rose up, leaving the far gate visible."
+  }
+ ],
+ "p018": [
+  {
+   "aspect": 1,
+   "a": "The bakery on the corner street has cheap bread and a quiet back room.",
+   "b": "The bakery on the corner street has expensive bread and a quiet back room."
+  },
+  {
+   "aspect": 3,
+   "a": "Rain drummed loudly on the tin roof above the cheap wooden tables outside.",
+   "b": "Rain drummed loudly on the tin roof above the expensive wooden tables outside."
+  },
+  {
+   "aspect": 4,
+   "a": "On the counter sits the cheap digital scale next to a jar of pens.",
+   "b": "On the counter sits the expensive digital scale next to a jar of pens."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has spent the morning comparing the cheap lamps on the shelf.",
+   "b": "The person asking has spent the morning comparing the expensive lamps on the shelf."
+  },
+  {
+   "aspect": 7,
+   "a": "Two shoppers near the window are admiring the cheap vases on display.",
+   "b": "Two shoppers near the window are admiring the expensive vases on display."
+  }
+ ],
+ "p019": [
+  {
+   "aspect": 1,
+   "a": "Beside the pond at the edge of the park, a female duck paddles past the reeds.",
+   "b": "Beside the pond at the edge of the park, a male duck paddles past the reeds."
+  },
+  {
+   "aspect": 2,
+   "a": "A female sparrow hops along the wooden porch railing early in the spring morning.",
+   "b": "A male sparrow hops along the wooden porch railing early in the spring morning."
+  },
+  {
+   "aspect": 3,
+   "a": "A cold mist hangs over the meadow where a female deer grazes quietly.",
+   "b": "A cold mist hangs over the meadow where a male deer grazes quietly."
+  },
+  {
+   "aspect": 4,
+   "a": "A small nest built from dry grass sits beside the fence, guarded by a female wren.",
+   "b": "A small nest built from dry grass sits beside the fence, guarded by a male wren."
+  },
+  {
+   "aspect": 7,
+   "a": "Two hikers pause on the trail as a female elk steps into the clearing.",
+   "b": "Two hikers pause on the trail as a male elk steps into the clearing."
+  }
+ ],
+ "p020": [
+  {
+   "aspect": 1,
+   "a": "The quiet reading room near the entrance is where students are willing to give their spare pens.",
+   "b": "The quiet reading room near the entrance is where students are willing to take their spare pens."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a Monday morning, the receptionist was about to give the spare keys.",
+   "b": "Early on a Monday morning, the receptionist was about to take the spare keys."
+  },
+  {
+   "aspect": 3,
+   "a": "Cold wind rattles the windows while someone tries to give a heavy blanket.",
+   "b": "Cold wind rattles the windows while someone tries to take a heavy blanket."
+  },
+  {
+   "aspect": 4,
+   "a": "A plastic crate of folders sits beside the wall, and someone nearby is ready to give it.",
+   "b": "A plastic crate of folders sits beside the wall, and someone nearby is ready to take it."
+  },
+  {
+   "aspect": 7,
+   "a": "Two volunteers near the table are hoping the older one will give the last box.",
+   "b": "Two volunteers near the table are hoping the older one will take the last box."
+  }
+ ],
+ "p021": [
+  {
+   "aspect": 1,
+   "a": "In the crowded train station, a small child started to cry beside the ticket counter.",
+   "b": "In the crowded train station, a small child started to laugh beside the ticket counter."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a gray November morning, the street outside was quiet until a toddler began to cry.",
+   "b": "Early on a gray November morning, the street outside was quiet until a toddler began to laugh."
+  },
+  {
+   "aspect": 3,
+   "a": "Under warm sunshine and the crowd's cheerful chatter, a teenager began to cry.",
+   "b": "Under warm sunshine and the crowd's cheerful chatter, a teenager began to laugh."
+  },
+  {
+   "aspect": 5,
+   "a": "Moments earlier, a clown tripped over his shoelaces, and a little boy began to cry.",
+   "b": "Moments earlier, a clown tripped over his shoelaces, and a little boy began to laugh."
+  },
+  {
+   "aspect": 7,
+   "a": "Two elderly women sitting by the window were quietly talking when one of them began to cry.",
+   "b": "Two elderly women sitting by the window were quietly talking when one of them began to laugh."
+  }
+ ],
+ "p022": [
+  {
+   "aspect": 1,
+   "a": "The community center's back room was filled with constructive criticism from the volunteers.",
+   "b": "The community center's back room was filled with destructive criticism from the volunteers."
+  },
+  {
+   "aspect": 2,
+   "a": "On a cold Sunday morning in January, the council sent constructive feedback to the planning team.",
+   "b": "On a cold Sunday morning in January, the council sent destructive feedback to the planning team."
+  },
+  {
+   "aspect": 3,
+   "a": "A chilly rain fell steadily while the hall echoed with constructive exchanges between two men.",
+   "b": "A chilly rain fell steadily while the hall echoed with destructive exchanges between two men."
+  },
+  {
+   "aspect": 6,
+   "a": "For years, the person asking has given constructive advice to new students.",
+   "b": "For years, the person asking has given destructive advice to new students."
+  },
+  {
+   "aspect": 7,
+   "a": "Near the door, a group of students is trading constructive comments about the draft.",
+   "b": "Near the door, a group of students is trading destructive comments about the draft."
+  }
+ ],
+ "p023": [
+  {
+   "aspect": 1,
+   "a": "The narrow lane behind the old chapel has an air of badness after dark.",
+   "b": "The narrow lane behind the old chapel has an air of goodness after dark."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the winter evening, the lamp-lit square seems full of badness.",
+   "b": "Late in the winter evening, the lamp-lit square seems full of goodness."
+  },
+  {
+   "aspect": 3,
+   "a": "A cold wind moves through the pines, and the air carries a hint of badness.",
+   "b": "A cold wind moves through the pines, and the air carries a hint of goodness."
+  },
+  {
+   "aspect": 4,
+   "a": "A framed print of a sunset hangs above the desk, a symbol of badness.",
+   "b": "A framed print of a sunset hangs above the desk, a symbol of goodness."
+  },
+  {
+   "aspect": 5,
+   "a": "Just before noon, a crowd gathered near the fountain to discuss an act of badness.",
+   "b": "Just before noon, a crowd gathered near the fountain to discuss an act of goodness."
+  }
+ ],
+ "p024": [
+  {
+   "aspect": 1,
+   "a": "In the classroom down the hall, a teacher helps students divide large numbers on the whiteboard.",
+   "b": "In the classroom down the hall, a teacher helps students multiply large numbers on the whiteboard."
+  },
+  {
+   "aspect": 3,
+   "a": "Thunder rolls across the valley as a student nearby tries to divide thirty-six by nine.",
+   "b": "Thunder rolls across the valley as a student nearby tries to multiply thirty-six by nine."
+  },
+  {
+   "aspect": 4,
+   "a": "A dog-eared textbook lies open beside the lamp, its chapter titled how to divide fractions.",
+   "b": "A dog-eared textbook lies open beside the lamp, its chapter titled how to multiply fractions."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has spent all evening trying to divide a recipe meant for twelve people.",
+   "b": "The person asking has spent all evening trying to multiply a recipe meant for twelve people."
+  },
+  {
+   "aspect": 7,
+   "a": "Three volunteers at the next table keep checking scratch paper as they divide the sums.",
+   "b": "Three volunteers at the next table keep checking scratch paper as they multiply the sums."
+  }
+ ],
+ "p025": [
+  {
+   "aspect": 1,
+   "a": "The conference was held in a large hall near the river, and the visitor waited outside.",
+   "b": "The conference was held in a small hall near the river, and the visitor waited outside."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the afternoon, a large crowd gathered in the square as the lights came on.",
+   "b": "Late in the afternoon, a small crowd gathered in the square as the lights came on."
+  },
+  {
+   "aspect": 4,
+   "a": "On the table sat a large bowl of apples, still warm from the oven.",
+   "b": "On the table sat a small bowl of apples, still warm from the oven."
+  },
+  {
+   "aspect": 5,
+   "a": "Earlier this morning, a large truck blocked the road outside the building.",
+   "b": "Earlier this morning, a small truck blocked the road outside the building."
+  },
+  {
+   "aspect": 7,
+   "a": "Near the door stood a large group of students waiting for the bus.",
+   "b": "Near the door stood a small group of students waiting for the bus."
+  }
+ ],
+ "p026": [
+  {
+   "aspect": 1,
+   "a": "In the crowded train station, the ticket booth is open and clerks accept every offered coin.",
+   "b": "In the crowded train station, the ticket booth is open and clerks refuse every offered coin."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a snowy December evening, the shelter's volunteers still accept donated blankets from passing drivers.",
+   "b": "Late on a snowy December evening, the shelter's volunteers still refuse donated blankets from passing drivers."
+  },
+  {
+   "aspect": 3,
+   "a": "The harbor office will accept deliveries under a gray sky and steady rain.",
+   "b": "The harbor office will refuse deliveries under a gray sky and steady rain."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor, a nervous applicant, hopes the committee will accept the offer made to her.",
+   "b": "The visitor, a nervous applicant, hopes the committee will refuse the offer made to her."
+  },
+  {
+   "aspect": 7,
+   "a": "Across the room, a tired clerk is telling a courier that the store will accept returns today.",
+   "b": "Across the room, a tired clerk is telling a courier that the store will refuse returns today."
+  }
+ ],
+ "p027": [
+  {
+   "aspect": 1,
+   "a": "The small cafe on the corner often fills with students after lunch.",
+   "b": "The small cafe on the corner rarely fills with students after lunch."
+  },
+  {
+   "aspect": 2,
+   "a": "The village square is often empty on cold winter evenings.",
+   "b": "The village square is rarely empty on cold winter evenings."
+  },
+  {
+   "aspect": 3,
+   "a": "Thunder often rolls across the valley during late summer afternoons.",
+   "b": "Thunder rarely rolls across the valley during late summer afternoons."
+  },
+  {
+   "aspect": 4,
+   "a": "A stack of old newspapers often sits beside the reading lamp.",
+   "b": "A stack of old newspapers rarely sits beside the reading lamp."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor often travels for work and has little time at home.",
+   "b": "The visitor rarely travels for work and has little time at home."
+  }
+ ],
+ "p028": [
+  {
+   "aspect": 1,
+   "a": "The park bench was quiet while a boy sat near the fountain.",
+   "b": "The park bench was quiet while a girl sat near the fountain."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a cold winter morning, a boy waited by the station gate.",
+   "b": "Early on a cold winter morning, a girl waited by the station gate."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain drummed on the tin roof as a boy listened from the doorway.",
+   "b": "Heavy rain drummed on the tin roof as a girl listened from the doorway."
+  },
+  {
+   "aspect": 5,
+   "a": "Moments ago a ball rolled across the courtyard after a boy kicked it hard.",
+   "b": "Moments ago a ball rolled across the courtyard after a girl kicked it hard."
+  },
+  {
+   "aspect": 7,
+   "a": "Two teachers stood nearby, speaking quietly with a boy from the back row.",
+   "b": "Two teachers stood nearby, speaking quietly with a girl from the back row."
+  }
+ ],
+ "p029": [
+  {
+   "aspect": 1,
+   "a": "The new café on the harbor road could fail within its first year.",
+   "b": "The new café on the harbor road could succeed within its first year."
+  },
+  {
+   "aspect": 3,
+   "a": "Under the gray sky and steady rain, the outdoor concert may fail.",
+   "b": "Under the gray sky and steady rain, the outdoor concert may succeed."
+  },
+  {
+   "aspect": 4,
+   "a": "On the workbench sits a half-built kite whose maiden flight may fail.",
+   "b": "On the workbench sits a half-built kite whose maiden flight may succeed."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor has quit a steady job to chase the dream, and the dream may fail.",
+   "b": "The visitor has quit a steady job to chase the dream, and the dream may succeed."
+  },
+  {
+   "aspect": 7,
+   "a": "Two engineers standing near the rig agree that the prototype might fail.",
+   "b": "Two engineers standing near the rig agree that the prototype might succeed."
+  }
+ ],
+ "p030": [
+  {
+   "aspect": 1,
+   "a": "The conference was held in the inner courtyard of an old stone monastery.",
+   "b": "The conference was held in the outer courtyard of an old stone monastery."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a cold December morning, the inner gate of the market was still locked.",
+   "b": "Early on a cold December morning, the outer gate of the market was still locked."
+  },
+  {
+   "aspect": 3,
+   "a": "A steady hiss of rain echoed off the inner walls of the stone tower.",
+   "b": "A steady hiss of rain echoed off the outer walls of the stone tower."
+  },
+  {
+   "aspect": 4,
+   "a": "A chipped ceramic bowl sat on the inner shelf beside a stack of old newspapers.",
+   "b": "A chipped ceramic bowl sat on the outer shelf beside a stack of old newspapers."
+  },
+  {
+   "aspect": 5,
+   "a": "Someone had just dropped a tray of glasses near the inner doors of the cafe.",
+   "b": "Someone had just dropped a tray of glasses near the outer doors of the cafe."
+  }
+ ],
+ "p031": [
+  {
+   "aspect": 1,
+   "a": "The conference room sits inside the international headquarters near the river.",
+   "b": "The conference room sits inside the national headquarters near the river."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the evening, the international news channel plays softly on a television.",
+   "b": "Late in the evening, the national news channel plays softly on a television."
+  },
+  {
+   "aspect": 3,
+   "a": "Faint static crackles beneath the international broadcast drifting from a radio in the corner.",
+   "b": "Faint static crackles beneath the national broadcast drifting from a radio in the corner."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor is a student enrolled in the international program at the university.",
+   "b": "The visitor is a student enrolled in the national program at the university."
+  },
+  {
+   "aspect": 7,
+   "a": "A few members of the international choir practice scales near the stage.",
+   "b": "A few members of the national choir practice scales near the stage."
+  }
+ ],
+ "p032": [
+  {
+   "aspect": 1,
+   "a": "The faded map on the wall of the old train station was right about the distance to town.",
+   "b": "The faded map on the wall of the old train station was wrong about the distance to town."
+  },
+  {
+   "aspect": 2,
+   "a": "It was early evening in late autumn, and the posted sunset time on the door was right.",
+   "b": "It was early evening in late autumn, and the posted sunset time on the door was wrong."
+  },
+  {
+   "aspect": 3,
+   "a": "Rain drummed on the tin roof, and the radio weather report had been right all morning.",
+   "b": "Rain drummed on the tin roof, and the radio weather report had been wrong all morning."
+  },
+  {
+   "aspect": 5,
+   "a": "Just a minute ago someone at the gate said the bus would leave at noon, and that was right.",
+   "b": "Just a minute ago someone at the gate said the bus would leave at noon, and that was wrong."
+  },
+  {
+   "aspect": 7,
+   "a": "Three railway workers near the signal box were arguing, and the older one was right.",
+   "b": "Three railway workers near the signal box were arguing, and the older one was wrong."
+  }
+ ],
+ "p033": [
+  {
+   "aspect": 1,
+   "a": "The old market square sits in a district marked by visible poverty.",
+   "b": "The old market square sits in a district marked by visible wealth."
+  },
+  {
+   "aspect": 3,
+   "a": "The cold wind carries the smell of smoke through a neighborhood defined by poverty.",
+   "b": "The cold wind carries the smell of smoke through a neighborhood defined by wealth."
+  },
+  {
+   "aspect": 4,
+   "a": "A worn ledger on the nearby desk lists years of poverty for the household.",
+   "b": "A worn ledger on the nearby desk lists years of wealth for the household."
+  },
+  {
+   "aspect": 5,
+   "a": "Just minutes ago, a crowd gathered outside the council hall, arguing about poverty.",
+   "b": "Just minutes ago, a crowd gathered outside the council hall, arguing about wealth."
+  },
+  {
+   "aspect": 7,
+   "a": "Two elderly neighbors sitting nearby have spent decades discussing poverty in town.",
+   "b": "Two elderly neighbors sitting nearby have spent decades discussing wealth in town."
+  }
+ ],
+ "p034": [
+  {
+   "aspect": 1,
+   "a": "Tourists gathered at the far end of the crowded market square.",
+   "b": "Tourists gathered at the near end of the crowded market square."
+  },
+  {
+   "aspect": 2,
+   "a": "Talk in the room drifted toward the far future of the city.",
+   "b": "Talk in the room drifted toward the near future of the city."
+  },
+  {
+   "aspect": 3,
+   "a": "Through the open window came the far hum of traffic on the highway.",
+   "b": "Through the open window came the near hum of traffic on the highway."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor had moved to a far suburb last spring and still felt lost.",
+   "b": "The visitor had moved to a near suburb last spring and still felt lost."
+  },
+  {
+   "aspect": 7,
+   "a": "A group of students sat together at the far table by the window.",
+   "b": "A group of students sat together at the near table by the window."
+  }
+ ],
+ "p035": [
+  {
+   "aspect": 1,
+   "a": "The conversation takes place in a small library where staff often close the reading room early.",
+   "b": "The conversation takes place in a small library where staff often open the reading room early."
+  },
+  {
+   "aspect": 2,
+   "a": "It is a cold Sunday in December, and the market stalls close before the sun sets.",
+   "b": "It is a cold Sunday in December, and the market stalls open before the sun sets."
+  },
+  {
+   "aspect": 3,
+   "a": "Thick fog is rolling in, so the harbor gates will close within the hour.",
+   "b": "Thick fog is rolling in, so the harbor gates will open within the hour."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the table sits a tall cabinet whose drawers close with a soft click.",
+   "b": "Beside the table sits a tall cabinet whose drawers open with a soft click."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking is waiting in a queue because the clinic will close at five.",
+   "b": "The person asking is waiting in a queue because the clinic will open at five."
+  }
+ ],
+ "p036": [
+  {
+   "aspect": 1,
+   "a": "A quiet cafe on the corner, where the daughter of the owner stacks cups behind the counter.",
+   "b": "A quiet cafe on the corner, where the son of the owner stacks cups behind the counter."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a winter evening, the daughter of the neighbors is still reading by the window.",
+   "b": "Late on a winter evening, the son of the neighbors is still reading by the window."
+  },
+  {
+   "aspect": 4,
+   "a": "Leaning against the fence, a worn red bicycle once belonged to the daughter of the family.",
+   "b": "Leaning against the fence, a worn red bicycle once belonged to the son of the family."
+  },
+  {
+   "aspect": 5,
+   "a": "Earlier this morning the daughter dropped a tray of glasses near the front door.",
+   "b": "Earlier this morning the son dropped a tray of glasses near the front door."
+  },
+  {
+   "aspect": 7,
+   "a": "Across the room, a tall man with a camera is talking to the daughter.",
+   "b": "Across the room, a tall man with a camera is talking to the son."
+  }
+ ],
+ "p037": [
+  {
+   "aspect": 1,
+   "a": "Along the far wall of the conference room, a whiteboard lists objective criteria for judging posters.",
+   "b": "Along the far wall of the conference room, a whiteboard lists subjective criteria for judging posters."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a winter evening, the office clock ticked beside a memo summarizing objective evidence.",
+   "b": "Late on a winter evening, the office clock ticked beside a memo summarizing subjective evidence."
+  },
+  {
+   "aspect": 4,
+   "a": "A worn leather notebook lay open on the table beside a stack of objective reviews.",
+   "b": "A worn leather notebook lay open on the table beside a stack of subjective reviews."
+  },
+  {
+   "aspect": 5,
+   "a": "Moments ago, the referee's objective account of the fight drew a murmur from the crowd.",
+   "b": "Moments ago, the referee's subjective account of the fight drew a murmur from the crowd."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has been comparing objective reports from several different labs.",
+   "b": "The person asking has been comparing subjective reports from several different labs."
+  }
+ ],
+ "p038": [
+  {
+   "aspect": 1,
+   "a": "The busy restaurant lobby has a naive hostess greeting guests near the entrance.",
+   "b": "The busy restaurant lobby has a sophisticated hostess greeting guests near the entrance."
+  },
+  {
+   "aspect": 2,
+   "a": "On a quiet winter evening, a naive student walks home across the frozen campus.",
+   "b": "On a quiet winter evening, a sophisticated student walks home across the frozen campus."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain drums on the tin roof while a naive young couple waits for the storm to pass.",
+   "b": "Heavy rain drums on the tin roof while a sophisticated young couple waits for the storm to pass."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking is a naive newcomer who just moved to the city.",
+   "b": "The person asking is a sophisticated newcomer who just moved to the city."
+  },
+  {
+   "aspect": 7,
+   "a": "Across the room, a group of naive tourists laughs loudly at a joke.",
+   "b": "Across the room, a group of sophisticated tourists laughs loudly at a joke."
+  }
+ ],
+ "p039": [
+  {
+   "aspect": 1,
+   "a": "The crowd at the crowded train station moved quickly toward the exit gates.",
+   "b": "The crowd at the crowded train station moved slowly toward the exit gates."
+  },
+  {
+   "aspect": 2,
+   "a": "On a cold winter morning, the street vendors packed their carts quickly before dawn.",
+   "b": "On a cold winter morning, the street vendors packed their carts slowly before dawn."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy clouds rolled over the harbor, and the fog thickened quickly above the water.",
+   "b": "Heavy clouds rolled over the harbor, and the fog thickened slowly above the water."
+  },
+  {
+   "aspect": 4,
+   "a": "A hand-cranked fan on the desk spun quickly whenever the door opened.",
+   "b": "A hand-cranked fan on the desk spun slowly whenever the door opened."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor, dressed for a long hike, walked quickly along the ridge trail.",
+   "b": "The visitor, dressed for a long hike, walked slowly along the ridge trail."
+  }
+ ],
+ "p040": [
+  {
+   "aspect": 1,
+   "a": "Customers in the old train station often hate the constant echo off the tiled walls.",
+   "b": "Customers in the old train station often love the constant echo off the tiled walls."
+  },
+  {
+   "aspect": 2,
+   "a": "On cold January mornings, the lighthouse keeper would hate the long walk to the shore.",
+   "b": "On cold January mornings, the lighthouse keeper would love the long walk to the shore."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain drums on the metal roof, and the gardener would hate it.",
+   "b": "Heavy rain drums on the metal roof, and the gardener would love it."
+  },
+  {
+   "aspect": 4,
+   "a": "Above the fireplace hangs a large painting that the owner would hate.",
+   "b": "Above the fireplace hangs a large painting that the owner would love."
+  },
+  {
+   "aspect": 7,
+   "a": "Across the room, a group of students would hate the pizza.",
+   "b": "Across the room, a group of students would love the pizza."
+  }
+ ],
+ "p041": [
+  {
+   "aspect": 1,
+   "a": "The conference was held in an extraordinary hall beside the old river harbor.",
+   "b": "The conference was held in an ordinary hall beside the old river harbor."
+  },
+  {
+   "aspect": 3,
+   "a": "Outside the window, an extraordinary thunderstorm rolled across the valley all afternoon.",
+   "b": "Outside the window, an ordinary thunderstorm rolled across the valley all afternoon."
+  },
+  {
+   "aspect": 4,
+   "a": "On the desk sat an extraordinary lamp with a cracked brass base.",
+   "b": "On the desk sat an ordinary lamp with a cracked brass base."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor has spent an extraordinary week sorting through old family letters.",
+   "b": "The visitor has spent an ordinary week sorting through old family letters."
+  },
+  {
+   "aspect": 7,
+   "a": "Two neighbors near the fence are discussing an extraordinary garden they recently planted.",
+   "b": "Two neighbors near the fence are discussing an ordinary garden they recently planted."
+  }
+ ],
+ "p042": [
+  {
+   "aspect": 1,
+   "a": "Past the old train station stands the different ticket hall where the morning crowd gathers.",
+   "b": "Past the old train station stands the same ticket hall where the morning crowd gathers."
+  },
+  {
+   "aspect": 3,
+   "a": "Outside, the different low hum of distant traffic drifts through the open window.",
+   "b": "Outside, the same low hum of distant traffic drifts through the open window."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the window sits the different brass lamp, its shade slightly crooked.",
+   "b": "Beside the window sits the same brass lamp, its shade slightly crooked."
+  },
+  {
+   "aspect": 5,
+   "a": "Minutes ago, the different delivery truck blocked the narrow alley behind the shop.",
+   "b": "Minutes ago, the same delivery truck blocked the narrow alley behind the shop."
+  },
+  {
+   "aspect": 6,
+   "a": "After a long night, the person asking still has the different worries about home.",
+   "b": "After a long night, the person asking still has the same worries about home."
+  }
+ ],
+ "p043": [
+  {
+   "aspect": 1,
+   "a": "In the cramped hallway outside the lab, a visitor badge is necessary.",
+   "b": "In the cramped hallway outside the lab, a visitor badge is unnecessary."
+  },
+  {
+   "aspect": 3,
+   "a": "Cold wind gusts through the open door, and a wool blanket is necessary.",
+   "b": "Cold wind gusts through the open door, and a wool blanket is unnecessary."
+  },
+  {
+   "aspect": 4,
+   "a": "A spare battery is necessary for the old radio on the cluttered desk.",
+   "b": "A spare battery is unnecessary for the old radio on the cluttered desk."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has a fresh knee injury, and a supportive brace is necessary.",
+   "b": "The person asking has a fresh knee injury, and a supportive brace is unnecessary."
+  },
+  {
+   "aspect": 7,
+   "a": "Standing nearby, two nurses agree that extra gloves are necessary for the next shift.",
+   "b": "Standing nearby, two nurses agree that extra gloves are unnecessary for the next shift."
+  }
+ ],
+ "p044": [
+  {
+   "aspect": 1,
+   "a": "Beyond the glass doors of the greenhouse, the silence seemed to fill the nearby road.",
+   "b": "Beyond the glass doors of the greenhouse, the sound seemed to fill the nearby road."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a winter night, the silence hung over the sleeping neighborhood.",
+   "b": "Late on a winter night, the sound hung over the sleeping neighborhood."
+  },
+  {
+   "aspect": 4,
+   "a": "The wooden clock on the wall ticked, and the silence between each tick grew heavier.",
+   "b": "The wooden clock on the wall ticked, and the sound between each tick grew heavier."
+  },
+  {
+   "aspect": 5,
+   "a": "Shortly after the crash in the parking lot, the silence that followed left the onlookers frozen.",
+   "b": "Shortly after the crash in the parking lot, the sound that followed left the onlookers frozen."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor, who had recently lost a job, woke each morning to a silence in the empty flat.",
+   "b": "The visitor, who had recently lost a job, woke each morning to a sound in the empty flat."
+  }
+ ],
+ "p045": [
+  {
+   "aspect": 1,
+   "a": "Near the back of the crowded hall, someone circled a clear no on the printed ballot.",
+   "b": "Near the back of the crowded hall, someone circled a clear yes on the printed ballot."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a snowy Sunday evening, the committee's last vote ended with a narrow no.",
+   "b": "Late on a snowy Sunday evening, the committee's last vote ended with a narrow yes."
+  },
+  {
+   "aspect": 3,
+   "a": "A loud chorus of no rang out from the crowd above the rain hammering the tin roof.",
+   "b": "A loud chorus of yes rang out from the crowd above the rain hammering the tin roof."
+  },
+  {
+   "aspect": 4,
+   "a": "On the table beside the coffee mug sat a card marked with a single bold no.",
+   "b": "On the table beside the coffee mug sat a card marked with a single bold yes."
+  },
+  {
+   "aspect": 7,
+   "a": "Two volunteers at the far desk whispered about the expected no before the doors opened.",
+   "b": "Two volunteers at the far desk whispered about the expected yes before the doors opened."
+  }
+ ],
+ "p046": [
+  {
+   "aspect": 1,
+   "a": "A statue of the evil governor stands in the village square.",
+   "b": "A statue of the good governor stands in the village square."
+  },
+  {
+   "aspect": 2,
+   "a": "All through the long winter, villagers told tales of evil spirits.",
+   "b": "All through the long winter, villagers told tales of good spirits."
+  },
+  {
+   "aspect": 3,
+   "a": "Sleet hammered the windows while the tavern crowd gossiped about evil neighbors.",
+   "b": "Sleet hammered the windows while the tavern crowd gossiped about good neighbors."
+  },
+  {
+   "aspect": 4,
+   "a": "The dusty book on the table lists evil rulers from the old dynasty.",
+   "b": "The dusty book on the table lists good rulers from the old dynasty."
+  },
+  {
+   "aspect": 5,
+   "a": "Just minutes ago, the crowd argued loudly about whether the stranger was evil.",
+   "b": "Just minutes ago, the crowd argued loudly about whether the stranger was good."
+  }
+ ],
+ "p047": [
+  {
+   "aspect": 1,
+   "a": "The hostel lobby sign repeats the check-in hours already printed above in the brochure.",
+   "b": "The hostel lobby sign repeats the check-in hours already printed below in the brochure."
+  },
+  {
+   "aspect": 2,
+   "a": "It is a late Sunday afternoon in March, and the schedule mentioned above has not changed.",
+   "b": "It is a late Sunday afternoon in March, and the schedule mentioned below has not changed."
+  },
+  {
+   "aspect": 3,
+   "a": "Cold air drifts through the open window, matching the temperature noted above in the log.",
+   "b": "Cold air drifts through the open window, matching the temperature noted below in the log."
+  },
+  {
+   "aspect": 4,
+   "a": "A clipboard on the counter holds a supply list, with the items written above checked off.",
+   "b": "A clipboard on the counter holds a supply list, with the items written below checked off."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor is tired after a long trip, and the directions given above seemed confusing.",
+   "b": "The visitor is tired after a long trip, and the directions given below seemed confusing."
+  }
+ ],
+ "p048": [
+  {
+   "aspect": 1,
+   "a": "On the wall of this small office lobby, a notice says managers will fire two clerks soon.",
+   "b": "On the wall of this small office lobby, a notice says managers will hire two clerks soon."
+  },
+  {
+   "aspect": 2,
+   "a": "Early this winter morning, the newspaper reported that the company would fire several engineers.",
+   "b": "Early this winter morning, the newspaper reported that the company would hire several engineers."
+  },
+  {
+   "aspect": 3,
+   "a": "Rain drummed on the roof while arguments drifted from a kitchen where someone debated whether to fire the cook.",
+   "b": "Rain drummed on the roof while arguments drifted from a kitchen where someone debated whether to hire the cook."
+  },
+  {
+   "aspect": 4,
+   "a": "A printed list on the desk names the two people the manager plans to fire tomorrow.",
+   "b": "A printed list on the desk names the two people the manager plans to hire tomorrow."
+  },
+  {
+   "aspect": 5,
+   "a": "After deciding to fire a nurse, a supervisor walked out of the room earlier today.",
+   "b": "After deciding to hire a nurse, a supervisor walked out of the room earlier today."
+  }
+ ],
+ "p049": [
+  {
+   "aspect": 1,
+   "a": "The cafe on the corner was busy, and its outdoor seating was satisfactory.",
+   "b": "The cafe on the corner was busy, and its outdoor seating was unsatisfactory."
+  },
+  {
+   "aspect": 2,
+   "a": "It was late November, and the harvest this year had been satisfactory.",
+   "b": "It was late November, and the harvest this year had been unsatisfactory."
+  },
+  {
+   "aspect": 3,
+   "a": "A light breeze came through the open door, and the temperature in the hall was satisfactory.",
+   "b": "A light breeze came through the open door, and the temperature in the hall was unsatisfactory."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking had spent the morning at a clinic, and the results of the checkup were satisfactory.",
+   "b": "The person asking had spent the morning at a clinic, and the results of the checkup were unsatisfactory."
+  },
+  {
+   "aspect": 7,
+   "a": "Three nurses at the front desk agreed that the staff schedule was satisfactory.",
+   "b": "Three nurses at the front desk agreed that the staff schedule was unsatisfactory."
+  }
+ ],
+ "p050": [
+  {
+   "aspect": 1,
+   "a": "A foolish sign hangs above the entrance of the old train station on the hill.",
+   "b": "A wise sign hangs above the entrance of the old train station on the hill."
+  },
+  {
+   "aspect": 3,
+   "a": "Somewhere below the window, foolish words drift up as the rain keeps falling.",
+   "b": "Somewhere below the window, wise words drift up as the rain keeps falling."
+  },
+  {
+   "aspect": 5,
+   "a": "Yesterday the town council passed a foolish ordinance that closed the park gate.",
+   "b": "Yesterday the town council passed a wise ordinance that closed the park gate."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor has a foolish plan for getting home after missing the last train.",
+   "b": "The visitor has a wise plan for getting home after missing the last train."
+  },
+  {
+   "aspect": 7,
+   "a": "A group of foolish elders sits quietly near the fountain.",
+   "b": "A group of wise elders sits quietly near the fountain."
+  }
+ ],
+ "p051": [
+  {
+   "aspect": 1,
+   "a": "The hall where the group meets is a greater space than the kitchen next door.",
+   "b": "The hall where the group meets is a lesser space than the kitchen next door."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the afternoon the sun casts a greater shadow across the quiet square.",
+   "b": "Late in the afternoon the sun casts a lesser shadow across the quiet square."
+  },
+  {
+   "aspect": 3,
+   "a": "Rain has been falling all morning, and the puddles hold a greater depth than yesterday.",
+   "b": "Rain has been falling all morning, and the puddles hold a lesser depth than yesterday."
+  },
+  {
+   "aspect": 4,
+   "a": "The mug on the table holds a greater volume of coffee than the glass beside it.",
+   "b": "The mug on the table holds a lesser volume of coffee than the glass beside it."
+  },
+  {
+   "aspect": 5,
+   "a": "Earlier today a crowd of greater size than usual gathered outside the building.",
+   "b": "Earlier today a crowd of lesser size than usual gathered outside the building."
+  }
+ ],
+ "p052": [
+  {
+   "aspect": 1,
+   "a": "The hallway outside the lecture hall was painted a dark gray.",
+   "b": "The hallway outside the lecture hall was painted a light gray."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the evening, the sky over the courtyard had already turned a dark blue.",
+   "b": "Late in the evening, the sky over the courtyard had already turned a light blue."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain clouds gave the afternoon sky a dark gray tint over the valley.",
+   "b": "Heavy rain clouds gave the afternoon sky a light gray tint over the valley."
+  },
+  {
+   "aspect": 4,
+   "a": "A wooden chest with a dark brown lid sat beside the door.",
+   "b": "A wooden chest with a light brown lid sat beside the door."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking had changed into a dark green coat before stepping outside.",
+   "b": "The person asking had changed into a light green coat before stepping outside."
+  }
+ ],
+ "p053": [
+  {
+   "aspect": 1,
+   "a": "The painted timeline along this museum hall stretches ahead across several centuries.",
+   "b": "The painted timeline along this museum hall stretches back across several centuries."
+  },
+  {
+   "aspect": 2,
+   "a": "The kitchen calendar had been flipped ahead to March, and a pencil lay beside it.",
+   "b": "The kitchen calendar had been flipped back to March, and a pencil lay beside it."
+  },
+  {
+   "aspect": 4,
+   "a": "The wall clock in the cafe was set ahead an hour before breakfast opened.",
+   "b": "The wall clock in the cafe was set back an hour before breakfast opened."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor leans on the railing, looking ahead to years of quiet afternoons.",
+   "b": "The visitor leans on the railing, looking back to years of quiet afternoons."
+  },
+  {
+   "aspect": 7,
+   "a": "The three hikers at the trailhead are arguing about turning their watches ahead an hour.",
+   "b": "The three hikers at the trailhead are arguing about turning their watches back an hour."
+  }
+ ],
+ "p054": [
+  {
+   "aspect": 1,
+   "a": "The community center lobby is crowded with the active members of the chess club.",
+   "b": "The community center lobby is crowded with the passive members of the chess club."
+  },
+  {
+   "aspect": 2,
+   "a": "On a weekend morning the active volunteers are already setting up the tables.",
+   "b": "On a weekend morning the passive volunteers are already setting up the tables."
+  },
+  {
+   "aspect": 3,
+   "a": "Thunder rolls over the valley and the active hawks ride the gusts above the fields.",
+   "b": "Thunder rolls over the valley and the passive hawks ride the gusts above the fields."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the worn armchair lies the active puppy chewing on a rubber toy.",
+   "b": "Beside the worn armchair lies the passive puppy chewing on a rubber toy."
+  },
+  {
+   "aspect": 5,
+   "a": "After the fire drill ended the active students filed back into the building.",
+   "b": "After the fire drill ended the passive students filed back into the building."
+  }
+ ],
+ "p055": [
+  {
+   "aspect": 1,
+   "a": "The emergency room was loud, and the conscious patient in bay four lay on a gurney.",
+   "b": "The emergency room was loud, and the unconscious patient in bay four lay on a gurney."
+  },
+  {
+   "aspect": 2,
+   "a": "By midnight, the ward had grown quiet, and the patient remained conscious.",
+   "b": "By midnight, the ward had grown quiet, and the patient remained unconscious."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain drummed on the tin roof as the conscious dog lay beside the door.",
+   "b": "Heavy rain drummed on the tin roof as the unconscious dog lay beside the door."
+  },
+  {
+   "aspect": 4,
+   "a": "A half-empty water bottle sat on the table beside the conscious patient's bed.",
+   "b": "A half-empty water bottle sat on the table beside the unconscious patient's bed."
+  },
+  {
+   "aspect": 7,
+   "a": "Two relatives stood by the doorway and whispered about the conscious patient down the hall.",
+   "b": "Two relatives stood by the doorway and whispered about the unconscious patient down the hall."
+  }
+ ],
+ "p056": [
+  {
+   "aspect": 1,
+   "a": "The chapel at the edge of town keeps a lingering sense of absence after dark.",
+   "b": "The chapel at the edge of town keeps a lingering sense of presence after dark."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a winter night, the streets carry an unusual absence of traffic.",
+   "b": "Late on a winter night, the streets carry an unusual presence of traffic."
+  },
+  {
+   "aspect": 3,
+   "a": "Through the open window comes the faint absence of birdsong at dawn.",
+   "b": "Through the open window comes the faint presence of birdsong at dawn."
+  },
+  {
+   "aspect": 4,
+   "a": "The wooden desk near the door shows the absence of dust across its surface.",
+   "b": "The wooden desk near the door shows the presence of dust across its surface."
+  },
+  {
+   "aspect": 7,
+   "a": "A small group of students nearby discusses the absence of their teacher today.",
+   "b": "A small group of students nearby discusses the presence of their teacher today."
+  }
+ ],
+ "p057": [
+  {
+   "aspect": 1,
+   "a": "The meeting was held in the lobby, where the primary entrance was crowded with guests.",
+   "b": "The meeting was held in the lobby, where the secondary entrance was crowded with guests."
+  },
+  {
+   "aspect": 2,
+   "a": "On a cold November evening, the primary road into town was closed.",
+   "b": "On a cold November evening, the secondary road into town was closed."
+  },
+  {
+   "aspect": 4,
+   "a": "A bundle of tools lay on the workbench, with a primary hammer resting on top.",
+   "b": "A bundle of tools lay on the workbench, with a secondary hammer resting on top."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor had just arrived with a suitcase, and the primary reason for the trip was a job interview.",
+   "b": "The visitor had just arrived with a suitcase, and the secondary reason for the trip was a job interview."
+  },
+  {
+   "aspect": 7,
+   "a": "Three volunteers stood by the door, and the primary organizer was checking a clipboard.",
+   "b": "Three volunteers stood by the door, and the secondary organizer was checking a clipboard."
+  }
+ ],
+ "p058": [
+  {
+   "aspect": 1,
+   "a": "The lobby of a busy hotel has tall windows, and a man waits near the elevators.",
+   "b": "The lobby of a busy hotel has tall windows, and a woman waits near the elevators."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a cold winter morning, a man is reading a newspaper at the bus stop.",
+   "b": "Early on a cold winter morning, a woman is reading a newspaper at the bus stop."
+  },
+  {
+   "aspect": 3,
+   "a": "Rain is falling steadily outside, and the sound of a man coughing carries through the hall.",
+   "b": "Rain is falling steadily outside, and the sound of a woman coughing carries through the hall."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the kettle on the counter lies a jacket that belongs to a man in the back room.",
+   "b": "Beside the kettle on the counter lies a jacket that belongs to a woman in the back room."
+  },
+  {
+   "aspect": 5,
+   "a": "Just minutes ago, a man slipped on the wet tiles near the front door.",
+   "b": "Just minutes ago, a woman slipped on the wet tiles near the front door."
+  }
+ ],
+ "p059": [
+  {
+   "aspect": 1,
+   "a": "A long counter runs along the front of the small bakery where the visitor waits.",
+   "b": "A long counter runs along the rear of the small bakery where the visitor waits."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the evening, the lamps glow near the front of the empty train platform.",
+   "b": "Late in the evening, the lamps glow near the rear of the empty train platform."
+  },
+  {
+   "aspect": 3,
+   "a": "Cold rain beats against the front of the wooden cabin all through the night.",
+   "b": "Cold rain beats against the rear of the wooden cabin all through the night."
+  },
+  {
+   "aspect": 4,
+   "a": "A dented gray car sits in the driveway with its front facing the open gate.",
+   "b": "A dented gray car sits in the driveway with its rear facing the open gate."
+  },
+  {
+   "aspect": 5,
+   "a": "Moments ago, a delivery van backed up and dented the front of a parked truck.",
+   "b": "Moments ago, a delivery van backed up and dented the rear of a parked truck."
+  }
+ ],
+ "p060": [
+  {
+   "aspect": 1,
+   "a": "The crowded hall was known across the district for the intelligence of its debates.",
+   "b": "The crowded hall was known across the district for the stupidity of its debates."
+  },
+  {
+   "aspect": 2,
+   "a": "During the long winter of 1890, the village still talked about the intelligence of its schoolmaster.",
+   "b": "During the long winter of 1890, the village still talked about the stupidity of its schoolmaster."
+  },
+  {
+   "aspect": 3,
+   "a": "The cold drizzle outside had no effect on the intelligence of the crowd gathered by the door.",
+   "b": "The cold drizzle outside had no effect on the stupidity of the crowd gathered by the door."
+  },
+  {
+   "aspect": 4,
+   "a": "On the desk nearby lay a thick notebook whose pages showed the intelligence of its owner.",
+   "b": "On the desk nearby lay a thick notebook whose pages showed the stupidity of its owner."
+  },
+  {
+   "aspect": 5,
+   "a": "Only minutes ago, a heated debate broke out over the intelligence of the new plan.",
+   "b": "Only minutes ago, a heated debate broke out over the stupidity of the new plan."
+  }
+ ],
+ "p061": [
+  {
+   "aspect": 2,
+   "a": "Late on this cold December night, the park was able to stay open for the festival.",
+   "b": "Late on this cold December night, the park was unable to stay open for the festival."
+  },
+  {
+   "aspect": 3,
+   "a": "Despite the howling wind and driving snow, the rescue helicopter was able to land on the ridge.",
+   "b": "Despite the howling wind and driving snow, the rescue helicopter was unable to land on the ridge."
+  },
+  {
+   "aspect": 4,
+   "a": "The rusted bicycle leaning against the fence was able to carry two riders at once.",
+   "b": "The rusted bicycle leaning against the fence was unable to carry two riders at once."
+  },
+  {
+   "aspect": 5,
+   "a": "Shortly after the loud crash in the parking lot, the ambulance was able to reach the injured driver.",
+   "b": "Shortly after the loud crash in the parking lot, the ambulance was unable to reach the injured driver."
+  },
+  {
+   "aspect": 7,
+   "a": "Several nurses waiting near the doors were able to speak with the family.",
+   "b": "Several nurses waiting near the doors were unable to speak with the family."
+  }
+ ],
+ "p062": [
+  {
+   "aspect": 1,
+   "a": "Downtown, the old train station appears to have wide marble staircases near the entrance.",
+   "b": "Downtown, the old train station appears to lack wide marble staircases near the entrance."
+  },
+  {
+   "aspect": 2,
+   "a": "On this late autumn afternoon, the apartments along the street tend to have thin walls.",
+   "b": "On this late autumn afternoon, the apartments along the street tend to lack thin walls."
+  },
+  {
+   "aspect": 3,
+   "a": "Over the valley tonight, the air seems to have a damp chill.",
+   "b": "Over the valley tonight, the air seems to lack a damp chill."
+  },
+  {
+   "aspect": 6,
+   "a": "Standing at the counter, the visitor appears to have a flexible schedule today.",
+   "b": "Standing at the counter, the visitor appears to lack a flexible schedule today."
+  },
+  {
+   "aspect": 7,
+   "a": "Near the door, a group of students seems to have plenty of energy today.",
+   "b": "Near the door, a group of students seems to lack plenty of energy today."
+  }
+ ],
+ "p063": [
+  {
+   "aspect": 1,
+   "a": "The old sign at the museum entrance was false about the building's founding date.",
+   "b": "The old sign at the museum entrance was true about the building's founding date."
+  },
+  {
+   "aspect": 2,
+   "a": "The wall calendar in the lounge said it was still summer, which was false.",
+   "b": "The wall calendar in the lounge said it was still summer, which was true."
+  },
+  {
+   "aspect": 3,
+   "a": "Over the speakers, a recorded voice announced that the storm had passed, a claim that was false.",
+   "b": "Over the speakers, a recorded voice announced that the storm had passed, a claim that was true."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the vase lay a printed letter whose claimed signature was false.",
+   "b": "Beside the vase lay a printed letter whose claimed signature was true."
+  },
+  {
+   "aspect": 5,
+   "a": "Earlier that hour, a local paper printed a headline that was false.",
+   "b": "Earlier that hour, a local paper printed a headline that was true."
+  }
+ ],
+ "p064": [
+  {
+   "aspect": 1,
+   "a": "The visitor waited in the new lobby of the downtown library while rain fell outside.",
+   "b": "The visitor waited in the old lobby of the downtown library while rain fell outside."
+  },
+  {
+   "aspect": 2,
+   "a": "Early one winter morning, the new snow on the rooftops had not yet been walked on.",
+   "b": "Early one winter morning, the old snow on the rooftops had not yet been walked on."
+  },
+  {
+   "aspect": 3,
+   "a": "The new fog settled over the harbor, muffling the sound of distant boats.",
+   "b": "The old fog settled over the harbor, muffling the sound of distant boats."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking recently moved into the new apartment across town with few belongings.",
+   "b": "The person asking recently moved into the old apartment across town with few belongings."
+  },
+  {
+   "aspect": 7,
+   "a": "Two members of the new team stood near the window, quietly sharing coffee.",
+   "b": "Two members of the old team stood near the window, quietly sharing coffee."
+  }
+ ],
+ "p065": [
+  {
+   "aspect": 1,
+   "a": "The small cafe on the corner looked glad after the morning rush.",
+   "b": "The small cafe on the corner looked sad after the morning rush."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on the Friday before the holiday, the staff in the kitchen were glad.",
+   "b": "Late on the Friday before the holiday, the staff in the kitchen were sad."
+  },
+  {
+   "aspect": 3,
+   "a": "Under the grey afternoon sky, the musicians on the pier looked glad.",
+   "b": "Under the grey afternoon sky, the musicians on the pier looked sad."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor at the front desk looked glad after a long journey.",
+   "b": "The visitor at the front desk looked sad after a long journey."
+  },
+  {
+   "aspect": 7,
+   "a": "The family sitting near the window looked glad as the lights came on.",
+   "b": "The family sitting near the window looked sad as the lights came on."
+  }
+ ],
+ "p066": [
+  {
+   "aspect": 1,
+   "a": "Nurses in the small clinic lobby often reassure the anxious families waiting nearby.",
+   "b": "Nurses in the small clinic lobby often worry the anxious families waiting nearby."
+  },
+  {
+   "aspect": 3,
+   "a": "The sound of distant rain on the roof seems to reassure the nervous horses in the stable.",
+   "b": "The sound of distant rain on the roof seems to worry the nervous horses in the stable."
+  },
+  {
+   "aspect": 4,
+   "a": "A printed notice taped beside the door might reassure the crowd waiting nearby.",
+   "b": "A printed notice taped beside the door might worry the crowd waiting nearby."
+  },
+  {
+   "aspect": 5,
+   "a": "After the loud crash this morning, the principal's announcement could reassure the anxious parents.",
+   "b": "After the loud crash this morning, the principal's announcement could worry the anxious parents."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor, recently laid off, finds that quiet mornings usually reassure him.",
+   "b": "The visitor, recently laid off, finds that quiet mornings usually worry him."
+  }
+ ],
+ "p067": [
+  {
+   "aspect": 1,
+   "a": "The gathering takes place in a brick diner in a northern town near the lake.",
+   "b": "The gathering takes place in a brick diner in a southern town near the lake."
+  },
+  {
+   "aspect": 2,
+   "a": "It is the middle of the long northern summer, and the parking lot sits nearly empty.",
+   "b": "It is the middle of the long southern summer, and the parking lot sits nearly empty."
+  },
+  {
+   "aspect": 3,
+   "a": "A steady northern breeze drifts through the open screen door of the diner.",
+   "b": "A steady southern breeze drifts through the open screen door of the diner."
+  },
+  {
+   "aspect": 4,
+   "a": "A chipped mug on the counter bears a faded map of the northern states.",
+   "b": "A chipped mug on the counter bears a faded map of the southern states."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor recently moved here from a northern city and is still unpacking boxes.",
+   "b": "The visitor recently moved here from a southern city and is still unpacking boxes."
+  }
+ ],
+ "p068": [
+  {
+   "aspect": 1,
+   "a": "The narrow village lane is quiet, and few neighbors ride along it at dusk.",
+   "b": "The narrow village lane is quiet, and few neighbors walk along it at dusk."
+  },
+  {
+   "aspect": 2,
+   "a": "During the early spring mornings, the old park path sees children ride past the benches.",
+   "b": "During the early spring mornings, the old park path sees children walk past the benches."
+  },
+  {
+   "aspect": 4,
+   "a": "A narrow wooden bridge crosses the creek, and kids often ride over it.",
+   "b": "A narrow wooden bridge crosses the creek, and kids often walk over it."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor, who owns no car and lives far outside town, has to ride to work.",
+   "b": "The visitor, who owns no car and lives far outside town, has to walk to work."
+  },
+  {
+   "aspect": 7,
+   "a": "A group of tourists lingers near the pier, where some of them hope to ride along the shore.",
+   "b": "A group of tourists lingers near the pier, where some of them hope to walk along the shore."
+  }
+ ],
+ "p069": [
+  {
+   "aspect": 1,
+   "a": "The lecture hall on the third floor looked clean before the class arrived.",
+   "b": "The lecture hall on the third floor looked dirty before the class arrived."
+  },
+  {
+   "aspect": 2,
+   "a": "In the spring of last year, the old wooden benches looked clean.",
+   "b": "In the spring of last year, the old wooden benches looked dirty."
+  },
+  {
+   "aspect": 3,
+   "a": "Harsh afternoon sunlight showed that the glass panels on the far wall were clean.",
+   "b": "Harsh afternoon sunlight showed that the glass panels on the far wall were dirty."
+  },
+  {
+   "aspect": 4,
+   "a": "A ceramic mug sat on the nearby desk with a clean rim.",
+   "b": "A ceramic mug sat on the nearby desk with a dirty rim."
+  },
+  {
+   "aspect": 5,
+   "a": "After the dinner rush, the staff left and the dishes by the sink were clean.",
+   "b": "After the dinner rush, the staff left and the dishes by the sink were dirty."
+  }
+ ],
+ "p070": [
+  {
+   "aspect": 1,
+   "a": "The clinic's general waiting area is crowded every morning before the first appointments.",
+   "b": "The clinic's specific waiting area is crowded every morning before the first appointments."
+  },
+  {
+   "aspect": 2,
+   "a": "The ferry follows a general schedule through the winter months, starting this morning.",
+   "b": "The ferry follows a specific schedule through the winter months, starting this morning."
+  },
+  {
+   "aspect": 4,
+   "a": "A general map of the city hangs on the wall beside the front door.",
+   "b": "A specific map of the city hangs on the wall beside the front door."
+  },
+  {
+   "aspect": 5,
+   "a": "Yesterday, a general announcement about the closed bridge was posted near the station.",
+   "b": "Yesterday, a specific announcement about the closed bridge was posted near the station."
+  },
+  {
+   "aspect": 7,
+   "a": "The committee members show general interest in the new parking plan.",
+   "b": "The committee members show specific interest in the new parking plan."
+  }
+ ],
+ "p071": [
+  {
+   "aspect": 2,
+   "a": "Late in the evening, the shop owner slowly rolls the shutters down.",
+   "b": "Late in the evening, the shop owner slowly rolls the shutters up."
+  },
+  {
+   "aspect": 3,
+   "a": "A steady wind is blowing, and the thermostat has been turned down.",
+   "b": "A steady wind is blowing, and the thermostat has been turned up."
+  },
+  {
+   "aspect": 4,
+   "a": "A folding table near the window has its leaves folded down.",
+   "b": "A folding table near the window has its leaves folded up."
+  },
+  {
+   "aspect": 5,
+   "a": "A balloon floated down, and a child has just run to catch it.",
+   "b": "A balloon floated up, and a child has just run to catch it."
+  },
+  {
+   "aspect": 7,
+   "a": "A couple sitting nearby keeps glancing down at their phones.",
+   "b": "A couple sitting nearby keeps glancing up at their phones."
+  }
+ ],
+ "p072": [
+  {
+   "aspect": 1,
+   "a": "The conversation takes place in a dim courtroom, where the jury stares at the defendant, who seems guilty.",
+   "b": "The conversation takes place in a dim courtroom, where the jury stares at the defendant, who seems innocent."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a cold March morning, the sealed file lies open next to a man who looks guilty.",
+   "b": "Early on a cold March morning, the sealed file lies open next to a man who looks innocent."
+  },
+  {
+   "aspect": 3,
+   "a": "Heavy rain drums on the tin roof while the flickering lamp makes the stranger's face look guilty.",
+   "b": "Heavy rain drums on the tin roof while the flickering lamp makes the stranger's face look innocent."
+  },
+  {
+   "aspect": 5,
+   "a": "A loud crash just echoed down the hall, and the guard stands over broken glass, looking guilty.",
+   "b": "A loud crash just echoed down the hall, and the guard stands over broken glass, looking innocent."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking is a defendant, and the lawyer beside them is convinced they are guilty.",
+   "b": "The person asking is a defendant, and the lawyer beside them is convinced they are innocent."
+  }
+ ],
+ "p073": [
+  {
+   "aspect": 1,
+   "a": "The conversation takes place in a small cafe with an external patio near the harbor.",
+   "b": "The conversation takes place in a small cafe with an internal patio near the harbor."
+  },
+  {
+   "aspect": 2,
+   "a": "It is early spring, and the external renovations of the old building are nearly finished.",
+   "b": "It is early spring, and the internal renovations of the old building are nearly finished."
+  },
+  {
+   "aspect": 3,
+   "a": "A cold draft slips through the external wall as the afternoon light fades.",
+   "b": "A cold draft slips through the internal wall as the afternoon light fades."
+  },
+  {
+   "aspect": 4,
+   "a": "Near the front door, a worn bicycle leans against the external staircase.",
+   "b": "Near the front door, a worn bicycle leans against the internal staircase."
+  },
+  {
+   "aspect": 5,
+   "a": "Workers have just finished repainting the external doors of the community hall across the street.",
+   "b": "Workers have just finished repainting the internal doors of the community hall across the street."
+  }
+ ],
+ "p074": [
+  {
+   "aspect": 2,
+   "a": "Late at night, the neighbor's dog was barking loudly outside the window.",
+   "b": "Late at night, the neighbor's dog was barking softly outside the window."
+  },
+  {
+   "aspect": 4,
+   "a": "An old radio on the shelf was humming loudly beside the coffee mug.",
+   "b": "An old radio on the shelf was humming softly beside the coffee mug."
+  },
+  {
+   "aspect": 5,
+   "a": "A chair had scraped loudly across the floor moments before the meeting began.",
+   "b": "A chair had scraped softly across the floor moments before the meeting began."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has been talking loudly on the phone since lunch.",
+   "b": "The person asking has been talking softly on the phone since lunch."
+  },
+  {
+   "aspect": 7,
+   "a": "Two children were arguing loudly near the entrance of the store.",
+   "b": "Two children were arguing softly near the entrance of the store."
+  }
+ ],
+ "p075": [
+  {
+   "aspect": 1,
+   "a": "The old train station downstairs has a complex network of tunnels beneath it.",
+   "b": "The old train station downstairs has a simple network of tunnels beneath it."
+  },
+  {
+   "aspect": 2,
+   "a": "On a quiet winter morning, the ferry timetable taped to the dock looks complex.",
+   "b": "On a quiet winter morning, the ferry timetable taped to the dock looks simple."
+  },
+  {
+   "aspect": 3,
+   "a": "Through the hard rain and distant thunder, the drumming rhythm outside is complex.",
+   "b": "Through the hard rain and distant thunder, the drumming rhythm outside is simple."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the desk, the brass lock on the cabinet looks complex.",
+   "b": "Beside the desk, the brass lock on the cabinet looks simple."
+  },
+  {
+   "aspect": 5,
+   "a": "A crew just finished wiring a complex panel in the hallway outside.",
+   "b": "A crew just finished wiring a simple panel in the hallway outside."
+  }
+ ],
+ "p076": [
+  {
+   "aspect": 1,
+   "a": "The harbor walking tour may exclude the old pier this evening.",
+   "b": "The harbor walking tour may include the old pier this evening."
+  },
+  {
+   "aspect": 2,
+   "a": "Every autumn the festival committee debates whether to exclude late-night food carts.",
+   "b": "Every autumn the festival committee debates whether to include late-night food carts."
+  },
+  {
+   "aspect": 3,
+   "a": "Forecasters say the coming storm may exclude outdoor events this weekend.",
+   "b": "Forecasters say the coming storm may include outdoor events this weekend."
+  },
+  {
+   "aspect": 4,
+   "a": "A clipboard on the front desk lists the names to exclude on tonight's guest list.",
+   "b": "A clipboard on the front desk lists the names to include on tonight's guest list."
+  },
+  {
+   "aspect": 5,
+   "a": "Minutes ago, the board voted to exclude the spring budget item.",
+   "b": "Minutes ago, the board voted to include the spring budget item."
+  }
+ ],
+ "p077": [
+  {
+   "aspect": 1,
+   "a": "Crowds of parents filled the school gym, many planning to attend the fundraiser dinner.",
+   "b": "Crowds of parents filled the school gym, many planning to miss the fundraiser dinner."
+  },
+  {
+   "aspect": 2,
+   "a": "Early in the winter term, most club members still planned to attend every Friday session.",
+   "b": "Early in the winter term, most club members still planned to miss every Friday session."
+  },
+  {
+   "aspect": 4,
+   "a": "A printed schedule on the wall shows which volunteers will attend the afternoon briefing.",
+   "b": "A printed schedule on the wall shows which volunteers will miss the afternoon briefing."
+  },
+  {
+   "aspect": 5,
+   "a": "Earlier today, several guests decided to attend the wedding after the road reopened.",
+   "b": "Earlier today, several guests decided to miss the wedding after the road reopened."
+  },
+  {
+   "aspect": 7,
+   "a": "Three nurses at the far desk discussed whether they would attend the training.",
+   "b": "Three nurses at the far desk discussed whether they would miss the training."
+  }
+ ],
+ "p078": [
+  {
+   "aspect": 1,
+   "a": "In the cramped back office, a payroll chart on the wall listed gross pay for every employee.",
+   "b": "In the cramped back office, a payroll chart on the wall listed net pay for every employee."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a grey Monday in spring, the cashier was still tallying gross sales from last week.",
+   "b": "Early on a grey Monday in spring, the cashier was still tallying net sales from last week."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the stapler sat an invoice with a gross amount printed in bold at the bottom.",
+   "b": "Beside the stapler sat an invoice with a net amount printed in bold at the bottom."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor, a recent hire, held a pay stub that listed gross wages for the first week.",
+   "b": "The visitor, a recent hire, held a pay stub that listed net wages for the first week."
+  },
+  {
+   "aspect": 7,
+   "a": "Two accountants at the next desk were comparing gross receipts with the bank's records.",
+   "b": "Two accountants at the next desk were comparing net receipts with the bank's records."
+  }
+ ],
+ "p079": [
+  {
+   "aspect": 1,
+   "a": "The bakery at the end of the street always feels cool in the early morning.",
+   "b": "The bakery at the end of the street always feels warm in the early morning."
+  },
+  {
+   "aspect": 2,
+   "a": "Through the long summer nights the garden stays cool.",
+   "b": "Through the long summer nights the garden stays warm."
+  },
+  {
+   "aspect": 3,
+   "a": "A steady breeze off the lake keeps the evening air feeling cool.",
+   "b": "A steady breeze off the lake keeps the evening air feeling warm."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the couch sits a jug of cool water that someone left out.",
+   "b": "Beside the couch sits a jug of warm water that someone left out."
+  },
+  {
+   "aspect": 5,
+   "a": "Moments ago the door was propped open and a rush of cool air swept through the hall.",
+   "b": "Moments ago the door was propped open and a rush of warm air swept through the hall."
+  }
+ ],
+ "p080": [
+  {
+   "aspect": 1,
+   "a": "Near the side entrance stands a coffee shop on a busy corner.",
+   "b": "Near the top entrance stands a coffee shop on a busy corner."
+  },
+  {
+   "aspect": 3,
+   "a": "Warm sunlight spills through the side window onto the kitchen counter.",
+   "b": "Warm sunlight spills through the top window onto the kitchen counter."
+  },
+  {
+   "aspect": 4,
+   "a": "Someone left a pen in the side drawer of the cluttered desk.",
+   "b": "Someone left a pen in the top drawer of the cluttered desk."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor sits alone on the side step with a bag of groceries.",
+   "b": "The visitor sits alone on the top step with a bag of groceries."
+  },
+  {
+   "aspect": 7,
+   "a": "A group of students gathers around the side table, laughing over their notes.",
+   "b": "A group of students gathers around the top table, laughing over their notes."
+  }
+ ],
+ "p081": [
+  {
+   "aspect": 1,
+   "a": "Inside the crowded museum hall, the floor signs were definite and the lighting above was dim.",
+   "b": "Inside the crowded museum hall, the floor signs were indefinite and the lighting above was dim."
+  },
+  {
+   "aspect": 2,
+   "a": "In late winter, the gate's posted schedule was definite about the closing time.",
+   "b": "In late winter, the gate's posted schedule was indefinite about the closing time."
+  },
+  {
+   "aspect": 4,
+   "a": "Beside the table, the pencil sketch pinned to the wall looked definite to the people gathered around it.",
+   "b": "Beside the table, the pencil sketch pinned to the wall looked indefinite to the people gathered around it."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor's plans for the weekend remained definite even after the storm delayed the train.",
+   "b": "The visitor's plans for the weekend remained indefinite even after the storm delayed the train."
+  },
+  {
+   "aspect": 7,
+   "a": "Standing by the hatch, the two engineers were definite about which valve needed attention.",
+   "b": "Standing by the hatch, the two engineers were indefinite about which valve needed attention."
+  }
+ ],
+ "p082": [
+  {
+   "aspect": 1,
+   "a": "The narrow kitchen of the bakery held the intense smell of yeast and cinnamon.",
+   "b": "The narrow kitchen of the bakery held the mild smell of yeast and cinnamon."
+  },
+  {
+   "aspect": 3,
+   "a": "Afternoon sunlight poured through the tall windows in the intense glare off the snow.",
+   "b": "Afternoon sunlight poured through the tall windows in the mild glare off the snow."
+  },
+  {
+   "aspect": 4,
+   "a": "On the wooden table sat a bowl of intense chili steaming beside a spoon.",
+   "b": "On the wooden table sat a bowl of mild chili steaming beside a spoon."
+  },
+  {
+   "aspect": 5,
+   "a": "Only minutes earlier, the intense debate near the doorway had ended with laughter.",
+   "b": "Only minutes earlier, the mild debate near the doorway had ended with laughter."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor had just come through the intense week of moving house.",
+   "b": "The visitor had just come through the mild week of moving house."
+  }
+ ],
+ "p083": [
+  {
+   "aspect": 1,
+   "a": "The hallway outside the classroom looked dull after the bell rang at noon.",
+   "b": "The hallway outside the classroom looked lively after the bell rang at noon."
+  },
+  {
+   "aspect": 2,
+   "a": "Earlier that dull Sunday, the kitchen had smelled of burnt toast.",
+   "b": "Earlier that lively Sunday, the kitchen had smelled of burnt toast."
+  },
+  {
+   "aspect": 3,
+   "a": "Outside, a dull murmur of traffic drifted through the open window.",
+   "b": "Outside, a lively murmur of traffic drifted through the open window."
+  },
+  {
+   "aspect": 4,
+   "a": "A dull green plant sat on the windowsill near the old radiator.",
+   "b": "A lively green plant sat on the windowsill near the old radiator."
+  },
+  {
+   "aspect": 7,
+   "a": "Nearby, a group of coworkers discussed quarterly reports in a dull tone.",
+   "b": "Nearby, a group of coworkers discussed quarterly reports in a lively tone."
+  }
+ ],
+ "p084": [
+  {
+   "aspect": 1,
+   "a": "The lobby of the old town hall holds a notice listing which plans the council will approve.",
+   "b": "The lobby of the old town hall holds a notice listing which plans the council will disapprove."
+  },
+  {
+   "aspect": 2,
+   "a": "On quiet winter evenings, the clerk at the front desk tends to approve every request that arrives.",
+   "b": "On quiet winter evenings, the clerk at the front desk tends to disapprove every request that arrives."
+  },
+  {
+   "aspect": 3,
+   "a": "Steady rain drums on the tin roof, and the radio murmurs that the mayor may approve the bridge.",
+   "b": "Steady rain drums on the tin roof, and the radio murmurs that the mayor may disapprove the bridge."
+  },
+  {
+   "aspect": 4,
+   "a": "A red pen sits on the nearby desk beside a stack of forms that await someone to approve.",
+   "b": "A red pen sits on the nearby desk beside a stack of forms that await someone to disapprove."
+  },
+  {
+   "aspect": 5,
+   "a": "Only an hour ago, the board in the next room voted to approve the zoning change.",
+   "b": "Only an hour ago, the board in the next room voted to disapprove the zoning change."
+  }
+ ],
+ "p085": [
+  {
+   "aspect": 1,
+   "a": "Downtown, the old warehouse district is expected to change.",
+   "b": "Downtown, the old warehouse district is expected to stay."
+  },
+  {
+   "aspect": 2,
+   "a": "Nobody in the room knows whether the season will change or not.",
+   "b": "Nobody in the room knows whether the season will stay or not."
+  },
+  {
+   "aspect": 3,
+   "a": "The wind outside the cabin may change before dawn.",
+   "b": "The wind outside the cabin may stay before dawn."
+  },
+  {
+   "aspect": 4,
+   "a": "The poster on the wall beside the door will change next week.",
+   "b": "The poster on the wall beside the door will stay next week."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor's luck over the past few days is likely to change.",
+   "b": "The visitor's luck over the past few days is likely to stay."
+  }
+ ],
+ "p086": [
+  {
+   "aspect": 1,
+   "a": "The clerk at the courthouse hallway desk answered every question directly.",
+   "b": "The clerk at the courthouse hallway desk answered every question indirectly."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a rainy Sunday evening, the host spoke directly about the cancelled trip.",
+   "b": "Late on a rainy Sunday evening, the host spoke indirectly about the cancelled trip."
+  },
+  {
+   "aspect": 3,
+   "a": "Under the buzzing lights and chilly air, the nurse explained the results directly.",
+   "b": "Under the buzzing lights and chilly air, the nurse explained the results indirectly."
+  },
+  {
+   "aspect": 4,
+   "a": "The editor, seated beside a dented filing cabinet, spoke to the reporter directly.",
+   "b": "The editor, seated beside a dented filing cabinet, spoke to the reporter indirectly."
+  },
+  {
+   "aspect": 5,
+   "a": "Minutes earlier, the committee chair had responded to the protest letter directly.",
+   "b": "Minutes earlier, the committee chair had responded to the protest letter indirectly."
+  }
+ ],
+ "p087": [
+  {
+   "aspect": 1,
+   "a": "Students crowded the library's reading room, and a few of them began to shout.",
+   "b": "Students crowded the library's reading room, and a few of them began to whisper."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a winter night, the dormitory was quiet until someone down the hall began to shout.",
+   "b": "Late on a winter night, the dormitory was quiet until someone down the hall began to whisper."
+  },
+  {
+   "aspect": 3,
+   "a": "Over the roar of the thunderstorm, the vendors had to shout to be heard.",
+   "b": "Over the roar of the thunderstorm, the vendors had to whisper to be heard."
+  },
+  {
+   "aspect": 4,
+   "a": "The dusty megaphone on the bench sat unused while the sergeant prepared to shout.",
+   "b": "The dusty megaphone on the bench sat unused while the sergeant prepared to whisper."
+  },
+  {
+   "aspect": 5,
+   "a": "Just after the glass shattered, a stranger on the sidewalk began to shout.",
+   "b": "Just after the glass shattered, a stranger on the sidewalk began to whisper."
+  }
+ ],
+ "p088": [
+  {
+   "aspect": 1,
+   "a": "Along the narrow canal path, the walkers will come to the old stone bridge.",
+   "b": "Along the narrow canal path, the walkers will go to the old stone bridge."
+  },
+  {
+   "aspect": 2,
+   "a": "The delivery trucks usually come before the sun rises on cold winter mornings.",
+   "b": "The delivery trucks usually go before the sun rises on cold winter mornings."
+  },
+  {
+   "aspect": 3,
+   "a": "Distant thunder rumbles as the storm clouds slowly come over the eastern hills.",
+   "b": "Distant thunder rumbles as the storm clouds slowly go over the eastern hills."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor is still waiting, hoping the taxi will come soon.",
+   "b": "The visitor is still waiting, hoping the taxi will go soon."
+  },
+  {
+   "aspect": 7,
+   "a": "Two engineers are talking nearby, and their manager will come over shortly.",
+   "b": "Two engineers are talking nearby, and their manager will go over shortly."
+  }
+ ],
+ "p089": [
+  {
+   "aspect": 1,
+   "a": "The lunch crowd had settled inside, so the terrace stayed nearly empty.",
+   "b": "The lunch crowd had settled outside, so the terrace stayed nearly empty."
+  },
+  {
+   "aspect": 2,
+   "a": "Late in the evening, the neighbors' kids were still playing inside.",
+   "b": "Late in the evening, the neighbors' kids were still playing outside."
+  },
+  {
+   "aspect": 4,
+   "a": "A dented bicycle with a flat tire was leaning against the wall inside.",
+   "b": "A dented bicycle with a flat tire was leaning against the wall outside."
+  },
+  {
+   "aspect": 5,
+   "a": "A loud crash had echoed moments ago, and shards of glass were scattered inside.",
+   "b": "A loud crash had echoed moments ago, and shards of glass were scattered outside."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor had been waiting inside for nearly an hour.",
+   "b": "The visitor had been waiting outside for nearly an hour."
+  }
+ ],
+ "p090": [
+  {
+   "aspect": 1,
+   "a": "The hall was arranged to seat the maximum number of people possible.",
+   "b": "The hall was arranged to seat the minimum number of people possible."
+  },
+  {
+   "aspect": 2,
+   "a": "The festival reached its maximum attendance on the final weekend of summer.",
+   "b": "The festival reached its minimum attendance on the final weekend of summer."
+  },
+  {
+   "aspect": 4,
+   "a": "The oven beside the counter had been set to its maximum temperature.",
+   "b": "The oven beside the counter had been set to its minimum temperature."
+  },
+  {
+   "aspect": 6,
+   "a": "Asking about prices, the visitor had chosen the maximum package offered.",
+   "b": "Asking about prices, the visitor had chosen the minimum package offered."
+  },
+  {
+   "aspect": 7,
+   "a": "Near the stage, a drummer and his band were playing at maximum volume.",
+   "b": "Near the stage, a drummer and his band were playing at minimum volume."
+  }
+ ],
+ "p091": [
+  {
+   "aspect": 1,
+   "a": "In the quiet village square, locals avoid the angry dog that sleeps beside the fountain.",
+   "b": "In the quiet village square, locals confront the angry dog that sleeps beside the fountain."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a winter evening, the old clerks avoid the rising deficit in the ledger.",
+   "b": "Late on a winter evening, the old clerks confront the rising deficit in the ledger."
+  },
+  {
+   "aspect": 3,
+   "a": "Sailors avoid the storm building over the bay beneath a sky of heavy clouds.",
+   "b": "Sailors confront the storm building over the bay beneath a sky of heavy clouds."
+  },
+  {
+   "aspect": 4,
+   "a": "Hanging beneath the porch roof is a hornet nest that the gardeners avoid.",
+   "b": "Hanging beneath the porch roof is a hornet nest that the gardeners confront."
+  },
+  {
+   "aspect": 6,
+   "a": "For years, the person asking has tried to avoid the difficult conversation waiting at home.",
+   "b": "For years, the person asking has tried to confront the difficult conversation waiting at home."
+  }
+ ],
+ "p092": [
+  {
+   "aspect": 1,
+   "a": "Neighbors gathered outside the town hall, where the council planned to abolish the local tax.",
+   "b": "Neighbors gathered outside the town hall, where the council planned to establish the local tax."
+  },
+  {
+   "aspect": 2,
+   "a": "Late on a cold December evening, the village committee announced plans to abolish its annual festival.",
+   "b": "Late on a cold December evening, the village committee announced plans to establish its annual festival."
+  },
+  {
+   "aspect": 3,
+   "a": "Thunder rolled over the valley as the mayor's office debated whether to abolish the ferry service.",
+   "b": "Thunder rolled over the valley as the mayor's office debated whether to establish the ferry service."
+  },
+  {
+   "aspect": 4,
+   "a": "A handwritten poster beside the counter promised the society would soon abolish the regional chapter.",
+   "b": "A handwritten poster beside the counter promised the society would soon establish the regional chapter."
+  },
+  {
+   "aspect": 5,
+   "a": "Down the hall, a nurse said the hospital board had just voted to abolish the night shift.",
+   "b": "Down the hall, a nurse said the hospital board had just voted to establish the night shift."
+  }
+ ],
+ "p093": [
+  {
+   "aspect": 1,
+   "a": "Of all the bars on this street, the corner tavern is the least crowded.",
+   "b": "Of all the bars on this street, the corner tavern is the most crowded."
+  },
+  {
+   "aspect": 2,
+   "a": "The market is the least crowded in January, when the cold keeps shoppers home.",
+   "b": "The market is the most crowded in January, when the cold keeps shoppers home."
+  },
+  {
+   "aspect": 4,
+   "a": "The desk beside the door is the least expensive piece of furniture in the room.",
+   "b": "The desk beside the door is the most expensive piece of furniture in the room."
+  },
+  {
+   "aspect": 6,
+   "a": "The visitor is the least experienced person in the group this evening.",
+   "b": "The visitor is the most experienced person in the group this evening."
+  },
+  {
+   "aspect": 7,
+   "a": "Sitting at the far table, the two engineers are the least talkative people here.",
+   "b": "Sitting at the far table, the two engineers are the most talkative people here."
+  }
+ ],
+ "p094": [
+  {
+   "aspect": 1,
+   "a": "The atmosphere in the community hall was strongly anti.",
+   "b": "The atmosphere in the community hall was strongly pro."
+  },
+  {
+   "aspect": 3,
+   "a": "Despite the cold drizzle outside, the small audience in the lobby remained stubbornly anti.",
+   "b": "Despite the cold drizzle outside, the small audience in the lobby remained stubbornly pro."
+  },
+  {
+   "aspect": 4,
+   "a": "The flyers stacked on the nearby table were printed by a group that is anti.",
+   "b": "The flyers stacked on the nearby table were printed by a group that is pro."
+  },
+  {
+   "aspect": 5,
+   "a": "Just after the vote was announced, the room went quiet and everyone grew visibly anti.",
+   "b": "Just after the vote was announced, the room went quiet and everyone grew visibly pro."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking has spent the evening listening and seems to have become anti.",
+   "b": "The person asking has spent the evening listening and seems to have become pro."
+  }
+ ],
+ "p095": [
+  {
+   "aspect": 1,
+   "a": "The old café on the corner had a quiet table by the window where the husband sat reading.",
+   "b": "The old café on the corner had a quiet table by the window where the wife sat reading."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a crisp autumn morning, a husband from the next street walked past the bakery.",
+   "b": "Early on a crisp autumn morning, a wife from the next street walked past the bakery."
+  },
+  {
+   "aspect": 3,
+   "a": "Thunder rolled over the valley while the husband closed the shutters against the rain.",
+   "b": "Thunder rolled over the valley while the wife closed the shutters against the rain."
+  },
+  {
+   "aspect": 5,
+   "a": "A loud crash in the garage moments ago startled the husband who was fixing the bicycle.",
+   "b": "A loud crash in the garage moments ago startled the wife who was fixing the bicycle."
+  },
+  {
+   "aspect": 7,
+   "a": "Two neighbors stood near the gate, chatting with the husband about the storm.",
+   "b": "Two neighbors stood near the gate, chatting with the wife about the storm."
+  }
+ ],
+ "p096": [
+  {
+   "aspect": 1,
+   "a": "The conference room in the old customs house was set up for talks about peace.",
+   "b": "The conference room in the old customs house was set up for talks about war."
+  },
+  {
+   "aspect": 2,
+   "a": "The lamps were lit early one December evening during a long stretch of peace.",
+   "b": "The lamps were lit early one December evening during a long stretch of war."
+  },
+  {
+   "aspect": 3,
+   "a": "Thick fog rolled over the valley, muffling every sound in the long years of peace.",
+   "b": "Thick fog rolled over the valley, muffling every sound in the long years of war."
+  },
+  {
+   "aspect": 5,
+   "a": "Yesterday a messenger arrived with papers announcing a new peace between the two governments.",
+   "b": "Yesterday a messenger arrived with papers announcing a new war between the two governments."
+  },
+  {
+   "aspect": 7,
+   "a": "Three elders sat by the fire, arguing about whether the treaty would bring peace.",
+   "b": "Three elders sat by the fire, arguing about whether the treaty would bring war."
+  }
+ ],
+ "p097": [
+  {
+   "aspect": 1,
+   "a": "The quiet bakery on the corner is where the brother often waits for friends.",
+   "b": "The quiet bakery on the corner is where the sister often waits for friends."
+  },
+  {
+   "aspect": 2,
+   "a": "Early on a cold winter morning, the house fell quiet while their brother slept.",
+   "b": "Early on a cold winter morning, the house fell quiet while their sister slept."
+  },
+  {
+   "aspect": 3,
+   "a": "Gusts of cold wind rattled the windows, and their brother stood near the stove.",
+   "b": "Gusts of cold wind rattled the windows, and their sister stood near the stove."
+  },
+  {
+   "aspect": 5,
+   "a": "Minutes ago, a glass shattered in the hallway, startling the brother near the door.",
+   "b": "Minutes ago, a glass shattered in the hallway, startling the sister near the door."
+  },
+  {
+   "aspect": 6,
+   "a": "The person asking is waiting for a brother who lives overseas and rarely calls.",
+   "b": "The person asking is waiting for a sister who lives overseas and rarely calls."
+  }
+ ],
+ "p098": [
+  {
+   "aspect": 1,
+   "a": "The library next door is staffed by a full-time crew of librarians on weekdays.",
+   "b": "The library next door is staffed by a part-time crew of librarians on weekdays."
+  },
+  {
+   "aspect": 2,
+   "a": "This spring, the clinic on the corner runs full-time hours from Monday through Friday.",
+   "b": "This spring, the clinic on the corner runs part-time hours from Monday through Friday."
+  },
+  {
+   "aspect": 3,
+   "a": "The air conditioner in the hallway has been running full-time since the heat wave began.",
+   "b": "The air conditioner in the hallway has been running part-time since the heat wave began."
+  },
+  {
+   "aspect": 4,
+   "a": "On the desk sits a whiteboard listing a full-time schedule for the coming month.",
+   "b": "On the desk sits a whiteboard listing a part-time schedule for the coming month."
+  },
+  {
+   "aspect": 7,
+   "a": "Two engineers at the next table both work full-time at the lab down the road.",
+   "b": "Two engineers at the next table both work part-time at the lab down the road."
+  }
+ ],
+ "p099": [
+  {
+   "aspect": 1,
+   "a": "The reading room has a shelf of books about the future near the window.",
+   "b": "The reading room has a shelf of books about the past near the window."
+  },
+  {
+   "aspect": 2,
+   "a": "A calendar on the wall has red marks for every day in the future.",
+   "b": "A calendar on the wall has red marks for every day in the past."
+  },
+  {
+   "aspect": 3,
+   "a": "A steady breeze moves through the open room, carrying hints of the future.",
+   "b": "A steady breeze moves through the open room, carrying hints of the past."
+  },
+  {
+   "aspect": 4,
+   "a": "A worn hourglass sits on the desk, its sand slowly sliding toward the future.",
+   "b": "A worn hourglass sits on the desk, its sand slowly sliding toward the past."
+  },
+  {
+   "aspect": 5,
+   "a": "Moments ago, a speaker finished a talk about the future of the town.",
+   "b": "Moments ago, a speaker finished a talk about the past of the town."
+  }
+ ]
+}

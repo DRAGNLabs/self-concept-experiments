@@ -1,6 +1,8 @@
-Haiku subagent prompt used to write data/controls/sentences (one subagent per pair_id; replace <repo> with the checkout path).
-Validate with scripts/controls/check_sentences.py. Eight files were fixed by hand afterwards: p003, p050, p057, p061, p071,
-p074 trimmed from 7 to 5 pairs (seeded random choice), p042 had A and B swapped, p094 was regenerated (it said "rules").
+Haiku subagent prompt used to write the control sentences (one subagent per pair_id; replace <repo> with the checkout
+path and <sentences_dir> with a scratch directory). Then `scripts/controls/check_sentences.py <sentences_dir> <problems.json>`
+validates the files and combines them into data/controls/sentences.json. Eight files were fixed by hand before that:
+p003, p050, p057, p061, p071, p074 trimmed from 7 to 5 pairs (seeded random choice), p042 had A and B swapped, p094 was
+regenerated (it said "rules").
 
 ---
 
@@ -32,6 +34,6 @@ You are writing test sentences for a language-model experiment. You will be give
    - Vary the sentence structure across the 5 pairs.
 5. Check each pair yourself: removing the word from A and the antonym from B must leave identical text.
 6. Write only this JSON (no other text) to
-   <repo>/experiments/deceiver-axis/data/controls/sentences/<pair_id>.json :
+   <sentences_dir>/<pair_id>.json :
    {"pair_id": "<pair_id>", "pairs": [{"aspect": <1-7>, "a": "...", "b": "..."}, ...]}
 7. Reply with just "done <pair_id>".
