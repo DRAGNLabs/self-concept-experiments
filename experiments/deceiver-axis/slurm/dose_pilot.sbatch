@@ -19,6 +19,12 @@ set -euo pipefail
 # sidecars and summary). Rerunning a task resumes (the harness skips finished example ids).
 # Usage: sbatch --array=0-$((N-1)) --export=ALL,SETTINGS=<tsv>,ROOT=<dir>[,SCENARIOS="<space-separated>"] experiments/deceiver-axis/slurm/dose_pilot.sbatch
 # SCENARIOS defaults to the 45 hard problems; the Gemma pool calibration passes the 58 easier ImpossibleBench problems.
+# Other models and longer budgets (formerly pilot_hard45.sbatch), all optional with the defaults above unchanged:
+# MODEL, CHAT_KWARGS, ENGINE_KWARGS (vllm.LLM kwargs JSON), TP (GPUs per engine; request the same --gpus-per-node),
+# MAX_NEW_TOKENS (default 16384), MAX_MODEL_LEN (default: the script's 20480), CONCURRENCY (episodes in flight on one
+# engine; default 1 = sequential), VLLM_MAX_NUM_SEQS, SELFCONCEPT_VENV (default .venv-313 in the submit dir). The long-budget recipe used for Qwen qwen_hard61 and the
+# Gemma cap ladder is MAX_NEW_TOKENS=32768 MAX_MODEL_LEN=65536 CONCURRENCY=45. Export JSON variables in the shell
+# first (sbatch --export splits values at commas): export CHAT_KWARGS='{...}' ENGINE_KWARGS='{...}'; sbatch --export=ALL ...
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -50,7 +56,14 @@ SEED="${SEED:-0}"
 SCENARIOS="${SCENARIOS:-ib_solvhard_s0 ib_solvhard_s1 ib_solvhard_s2}"
 read -r -a SCEN <<< "$SCENARIOS"
 RECIPE=(--data "$MIRROR/rh_hillclimb/data" --impossible-prompt critical_no_carve --feedback neutral
-        --max-attempts 5 --state-attempt-budget --max-new-tokens 16384 --temperature 1.0 --sample-seed "$SEED")
+        --max-attempts 5 --state-attempt-budget --max-new-tokens "${MAX_NEW_TOKENS:-16384}" --temperature 1.0 --sample-seed "$SEED"
+        --tensor-parallel-size "${TP:-1}" --concurrency "${CONCURRENCY:-1}")
+if [ -n "${MAX_MODEL_LEN:-}" ]; then
+    RECIPE+=(--max-model-len "$MAX_MODEL_LEN")
+fi
+if [ -n "${ENGINE_KWARGS:-}" ]; then
+    RECIPE+=(--engine-kwargs "$ENGINE_KWARGS")
+fi
 
 LINE=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$SETTINGS")
 NAME=$(printf '%s' "$LINE" | cut -f1)
@@ -59,8 +72,9 @@ read -r -a EXTRA <<< "$EXTRA_STR"
 [ -n "$NAME" ] || { echo "no setting at index $SLURM_ARRAY_TASK_ID in $SETTINGS"; exit 1; }
 echo "########## setting $SLURM_ARRAY_TASK_ID: $NAME | ${EXTRA[*]:-unsteered} ##########"
 
-export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
+export SELFCONCEPT_VENV="${SELFCONCEPT_VENV:-$SLURM_SUBMIT_DIR/.venv-313}"
 source ../../activate.sh
+export PYTHONPATH="$PWD/../../src:${PYTHONPATH:-}"  # this checkout's selfconcept, not wherever the venv's editable install points
 
 SECONDS=0
 python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios "${SCEN[@]}" "${RECIPE[@]}" \
