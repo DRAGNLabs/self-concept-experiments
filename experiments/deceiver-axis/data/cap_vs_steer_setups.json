@@ -1,0 +1,88 @@
+{
+ "gpt-oss-120b": {
+  "directories_by_arm": {
+   "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/unsteered",
+   "gi_m0.1": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/gi_m0.1",
+   "gi_m0.2": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/gi_m0.2",
+   "gi_m0.4": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/gi_m0.4",
+   "gi_cap_p5": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/gi_cap_p5",
+   "gi_cap_p25": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/gi_cap_p25",
+   "gi_cap_p50": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/analysis_root_ladder/gi_cap_p50"
+  },
+  "tag": "main",
+  "verdicts": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/verdicts_capladder/variants_capladder_all/as_judged.json",
+  "caps": [
+   "gi_cap_p5",
+   "gi_cap_p25",
+   "gi_cap_p50"
+  ],
+  "steered": [
+   "gi_m0.1",
+   "gi_m0.2",
+   "gi_m0.4"
+  ]
+ },
+ "Muse-Glimmer-30B": {
+  "directories_by_arm": {
+   "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/unsteered",
+   "gi_m0.04": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/gi_m0.04",
+   "gi_m0.08": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/gi_m0.08",
+   "gi_m0.16": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/gi_m0.16",
+   "gi_cap_p5": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/gi_cap_p5",
+   "gi_cap_p25": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/gi_cap_p25",
+   "gi_cap_p50": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/analysis_root_ladder/gi_cap_p50"
+  },
+  "tag": "main",
+  "verdicts": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/verdicts_capladder/variants_capladder_all/as_judged.json",
+  "caps": [
+   "gi_cap_p5",
+   "gi_cap_p25",
+   "gi_cap_p50"
+  ],
+  "steered": [
+   "gi_m0.04",
+   "gi_m0.08",
+   "gi_m0.16"
+  ]
+ },
+ "Gemma 4 31B": {
+  "directories_by_arm": {
+   "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/analysis_root_capladder9/unsteered",
+   "L30_a-0.04": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/analysis_root_capladder9/L30_a-0.04",
+   "L30_a-0.08": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/analysis_root_capladder9/L30_a-0.08",
+   "L30_a-0.16": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/analysis_root_capladder9/L30_a-0.16",
+   "cap_p25_L20-38": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/analysis_root_capladder9/cap_p25_L20-38",
+   "cap_p35_L20-38": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/cap_p35_L20-38"
+  },
+  "tag": "pilot",
+  "verdicts": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2_judging_jansen05/hard108/verdicts_ctl_gicap35_s0-15/variants_all9/as_judged.json",
+  "caps": [
+   "cap_p25_L20-38",
+   "cap_p35_L20-38"
+  ],
+  "steered": [
+   "L30_a-0.04",
+   "L30_a-0.08",
+   "L30_a-0.16"
+  ]
+ },
+ "Qwen3.8-27B (hidden-test fail, not judged)": {
+  "directories_by_arm": {
+   "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/unsteered",
+   "L32_a-0.08": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/L32_a-0.08",
+   "L32_a-0.16": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/L32_a-0.16",
+   "L32_a-0.32": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/L32_a-0.32",
+   "cap_p25_L22-42": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/cap_p25_L22-42"
+  },
+  "tag": "pilot",
+  "verdicts": null,
+  "caps": [
+   "cap_p25_L22-42"
+  ],
+  "steered": [
+   "L32_a-0.08",
+   "L32_a-0.16",
+   "L32_a-0.32"
+  ]
+ }
+}
