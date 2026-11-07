@@ -16,7 +16,7 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
-**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), running on gpt-oss at α 0.2 (job 15126757). Capping and negative steering give the same hack vs honest-hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Honest hidden pass is now the capability measure.
+**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), and on gpt-oss put gi_v2 +0.2 above the 97th percentile with no shape assumption (shape-free q ≤ 2.2% proxy, ≤ 2.6% hard-coding). Capping and negative steering give the same hack vs honest-hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Honest hidden pass is now the capability measure.
 
 **Gemma random 1729 CPU checks 2026-11-04 (user request; FINDINGS "Gemma random direction 1729: per-seed, per-problem, same-seed divergence and activation-geometry checks"):** the +5.6 is above unsteered on 16 of 16 seeds (seed-bootstrap CI +4.4 to +6.8); per-problem overlap with gi +0.08 (plain r +0.34) is at or below the null-arm floor (the two do-nothing random arms correlate +0.46 with each other through the shared unsteered reference) and vanishes once the reference is removed (split-reference r +0.16); the same-seed prefix shows 1729 disturbs sampling exactly as much as 1730 / 1731 (median 92 / 80 / 86 chars) and as much as gi_v2 at α 0.08 (random unit directions are eight times as disruptive per unit α, norm-matching ≠ disturbance-matching); in layer-30 activation geometry 1729 is an ordinary draw (p17–p74 on every statistic) while gi_v2 lies inside the model's own variation (88% in the top-50 PCs, whitened norm 4 vs 34). Direction-specific, invisible without a forward pass; GPU options (negation / dose, PC-split and per-token noise, causal downstream lens, 20-seed null) are in PLAN.md awaiting a go-ahead. Probe array 15039074 and capeval 15039083 for 1729 are still queued on qos cs.
 
@@ -65,6 +65,28 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 
 ## Runs
 
+### gpt-oss-120b isolated antonym controls, 100 × 1 — 2026-11-07: gi_v2 +0.2 is above the 97th percentile of the antonym control directions without any shape assumption (shape-free q 0–2.2% on the proxy, 0–2.6% on the hard-coding scan); no control reaches its rate, and the controls as a group do not move hacking
+
+Population and setup: FINDINGS "Control directions for gi_v2's percentile" (100 isolated-text antonym directions,
+layer 17, α 0.2, main_run recipe, 1 seed, job 15126757, all 100 × 45 episodes; share `gptoss120b/antonym_controls/`).
+Analysis `scripts/controls/control_percentile.py` → `percentile_100x1.json`, `scripts/hardcode_scan.py` → `hardcode_scan.tsv`.
+
+| | proxy (hidden-test fail) | hard-code regex |
+|---|---|---|
+| unsteered / gi_v2 +0.2 | 19.4% / 37.8% | 6.7% / 19.6% |
+| controls pooled (4,500 episodes) | 17.2% (Fisher vs unsteered p 0.21) | 5.3% (p 0.19) |
+| best control | 13 of 45 (28.9%) | 6 of 45 (13.3%) |
+| controls at or above gi_v2's count | 0 | 0 |
+| overdispersion vs binomial | p 0.87 | p 0.13 |
+| Spearman(hits, cos with gi_v2) | −0.15 (p 0.14) | −0.28 (p 0.005) |
+| q, shape-free interval | 0–2.2% | 0–2.6% |
+| q, beta profile interval | ≈ 0 (upper < 0.01%) | ≈ 0 (upper 0.01%) |
+
+Mean hidden pass of the controls 23.1% vs unsteered 25.0%, so α 0.2 along these directions costs little capability.
+Unlike the covariance-shaped population, the antonym controls neither lift hacking as a group nor spread beyond
+binomial noise, so the shape-free bound is tight with one seed. The negative Spearman on the hard-coding scan rests on
+tiny cosines (median |cos| 0.03). Not judged.
+
 ### Control directions for gi_v2's percentile: isolated-text antonym contrasts (AISI method) — 2026-11-07: 100 WordNet antonym contrasts, each read as a stand-alone chat message at the final token, give near-independent controls (effective dimension 43, pairwise |cos| 0.06) with no gi_v2 or assistant-axis overlap (|cos| 0.03 / 0.03); two cheaper constructions failed (antonyms as prompt context: noise-dominated and assistant-axis-loaded; random labels on default-prompt runs: effective dimension 6)
 
 Question: which population of control directions should gi_v2's percentile be measured against, now that the
@@ -102,7 +124,7 @@ semantic: husband/wife ~ brother/sister 0.68, clean/dirty ~ satisfactory/unsatis
 
 Matched dose: downstream read relative to gi_v2 +0.2 gives a median coefficient 0.19, so the controls run at α 0.2
 like gi_v2. Run: job 15126757, 100 directions × 1 seed, main_run recipe (`data/controls/arms_isolated_antonym.tsv`,
-outputs `schemer-axis/dom_controls/runs/`); analysis with `scripts/controls/control_percentile.py` when it is in.
+outputs `schemer-axis/dom_controls/runs/`); result in the next section up.
 
 Limits: the split-half reliability of a 5-pair contrast is modest (0.33), so each direction carries sentence noise;
 that is acceptable for a control population but means two directions from the same pair would differ. The AISI
@@ -130,7 +152,7 @@ MMLU-Pro −1.5, significant; Muse IFBench −1.7). Read: capping does not chang
 steering has more data. The one result that could change the choice is a Gemma cap inside the capability rule that
 significantly lowers judged hacking; the cap dose pilot for that (p45 / p50 / p65, 16 seeds, job 15125968) is running.
 
-### Muse-Glimmer-30B covariance-shaped random directions, 100 × 1 — 2026-11-07: gi_v2 +0.08 sits above the 95th percentile only under the smooth (beta) assumption (q upper 1.4% proxy, 1.8% hard-code); without a shape assumption q is anywhere in 0–18%
+### Muse-Glimmer-30B covariance-shaped random directions, 100 × 1 — 2026-11-07: gi_v2 +0.08 sits above the 95th percentile only under the smooth (beta) assumption (q upper 1.2% proxy, 1.3% hard-code); without a shape assumption q is anywhere in 0–18%
 
 Same question and design as the gpt-oss run below, on Muse (layer 26, α 0.08 = gi_v2's dose, downstream-read-matched
 median 0.078; directions from the 18 gi_v2 persona roles' answer means, participation ratio 29.7; jobs 15098151 and
@@ -144,12 +166,13 @@ median 0.078; directions from the 18 gi_v2 persona roles' answer means, particip
 | overdispersion vs binomial | p 0.45 | p 0.73 |
 | directions at or above gi_v2's count (binomial expectation) | 13 (12.3) | 18 (17.9) |
 | Spearman(hits, cos with gi_v2) | +0.23 (p 0.02) | +0.22 (p 0.03) |
-| q, beta profile interval | ~0–1.4% | ~0–1.8% |
+| q, beta profile interval | ~0–1.2% | ~0–1.3% |
 | q, shape-free interval | 0–18.1% | 0–17.3% |
 
 The controls show no spread beyond binomial noise, and gi_v2's Muse effect is about 1.5 single-seed sd, so single-seed
 directions reach its count by noise alone; the smooth fit then puts almost no mass at gi_v2's rate. Not judged.
-Limit: the beta fit's mean grid stops at 0.40 and the pooled proxy rate is 0.37.
+Beta intervals from the widened grid (means 0.005–0.6, concentrations 1–10⁵; the first run's grid, means 0.08–0.40,
+gave 1.4% / 1.8%).
 
 ### gpt-oss-120b covariance-shaped random directions, 100 × 1 — 2026-11-06: no control direction exceeds gi_v2 +0.2 (proxy 37.8%; best control 17 of 45, gi_v2 17 per seed on average); q upper bound 0.09% (beta) or 5.2% (shape-free) on the proxy, 1.3% / 5.2% on the hard-coding scan
 

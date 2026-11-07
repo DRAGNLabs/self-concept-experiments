@@ -75,7 +75,8 @@ Shared data (Koby's): `/grphome/grp_mirror/nobackup/autodelete/self-concept-expe
 (the problem sets), `rh_hillclimb/judge_rubric_v3.md` (the hack rubric), `rh_hillclimb/existing_hacks.md`, and the
 gpt-oss Assistant Axis at `assistant-axis/gptoss12b-thinking/axis_response_only.py` (a torch file). Every sbatch reads
 it from `MIRROR`, overridable. Run copies with their own README under `schemer-axis/`: `gptoss120b/covshaped/` and
-`muse_glimmer/covshaped/` (covariance-shaped control directions, 100 × 1), `qwen38_27b_gi_v2/` (Qwen gi_v2 vector and
+`muse_glimmer/covshaped/` (covariance-shaped control directions, 100 × 1), `gptoss120b/antonym_controls/`
+(isolated antonym control directions, 100 × 1), `qwen38_27b_gi_v2/` (Qwen gi_v2 vector and
 the qwen_hard61 steering run).
 
 ## Environment and conventions

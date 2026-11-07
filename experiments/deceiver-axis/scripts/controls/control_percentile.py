@@ -16,13 +16,14 @@ Every control direction has the same number of episodes. Writes one JSON.
 """
 import argparse
 import json
+import warnings
 from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, TypedDict
 
 import numpy as np
 import torch
-from jaxtyping import Float, Int
+from jaxtyping import Bool, Float, Int
 from scipy import stats
 
 from selfconcept.codebench.harness import CheckExample, CheckRecord
@@ -31,9 +32,10 @@ from selfconcept.codebench.hardcoded_cases import is_hardcoded_hack, is_proxy_ha
 # Support of a control direction's true hack rate (both estimators discretise it here).
 RATE_GRID = np.linspace(0.005, 0.7, 280)
 # Beta family searched by the beta estimator: means and concentrations (a + b; sd shrinks as it grows, log-spaced from
-# very spread to nearly identical directions). The mean range is the one the gpt-oss design simulations used.
-BETA_MEANS = np.linspace(0.08, 0.40, 50)
-BETA_CONCENTRATIONS = np.exp(np.linspace(np.log(3), np.log(3000), 50))
+# very spread to nearly identical directions). Wide enough that the 95% region should not reach an edge; q_intervals
+# reports any edge it does reach.
+BETA_MEANS = np.linspace(0.005, 0.6, 120)
+BETA_CONCENTRATIONS = np.exp(np.linspace(np.log(1), np.log(1e5), 81))
 # χ²₁(0.95) / 2: a point is inside the 95% likelihood-ratio interval when its log-likelihood is within this of the peak.
 LIKELIHOOD_RATIO_CUTOFF = 1.92
 # EM steps for the unconstrained NPMLE, EM steps per constrained refit (warm-started), bisection steps per interval end.
@@ -41,6 +43,7 @@ NPMLE_ITERATIONS, PROFILE_ITERATIONS, BISECTION_STEPS = 1500, 600, 9
 TOP_DIRECTIONS = 6
 
 Measure = Literal["hidden test fail", "hard-code regex"]
+GridEdge = Literal["lowest beta mean", "highest beta mean", "lowest beta concentration", "highest beta concentration", "target rate outside the rate grid"]
 type Likelihood = Float[np.ndarray, "directions grid"]
 
 
@@ -50,6 +53,8 @@ class QInterval(TypedDict):
     beta_high: float
     shape_free_low: float
     shape_free_high: float
+    grid_edges: list[GridEdge]
+    grid_edges_affecting_upper_bound: list[GridEdge]
 
 
 class MeasureSummary(QInterval):
@@ -90,6 +95,30 @@ def shape_free_interval(likelihood: Likelihood, above: Float[np.ndarray, "grid"]
     return boundary(estimate, 0.0), boundary(estimate, 1.0)
 
 
+def grid_edges(inside: Bool[np.ndarray, "means concentrations"], target_rate: float) -> list[GridEdge]:
+    """Grid edges the beta 95% region reaches (the interval may be cut off there), and a target rate the rate grid does
+    not cover (both estimators then misplace the tail)."""
+    edges: list[GridEdge] = []
+    if inside[0].any():
+        edges.append("lowest beta mean")
+    if inside[-1].any():
+        edges.append("highest beta mean")
+    if inside[:, 0].any():
+        edges.append("lowest beta concentration")
+    if inside[:, -1].any():
+        edges.append("highest beta concentration")
+    if not RATE_GRID[0] <= target_rate <= RATE_GRID[-1]:
+        edges.append("target rate outside the rate grid")
+    return edges
+
+
+def edges_that_can_cut_the_upper_bound(edges: list[GridEdge], region_means: Float[np.ndarray, "inside"], target_rate: float) -> list[GridEdge]:
+    """A tighter spread only lowers q while the target sits above every mean in the region, so the highest-concentration
+    edge (reached whenever the controls show no overdispersion) can only cut off the lower bound then."""
+    harmless = "highest beta concentration" if target_rate > region_means.max() else None
+    return [edge for edge in edges if edge != harmless]
+
+
 def q_intervals(hits: Int[np.ndarray, "directions"], episodes: int, target_rate: float) -> QInterval:
     means, concentrations = np.meshgrid(BETA_MEANS, BETA_CONCENTRATIONS, indexing="ij")
     density = stats.beta.pdf(RATE_GRID[None, None, :], (means * concentrations)[..., None], ((1 - means) * concentrations)[..., None])
@@ -101,7 +130,9 @@ def q_intervals(hits: Int[np.ndarray, "directions"], episodes: int, target_rate:
     shape_free_low, shape_free_high = shape_free_interval(likelihood, RATE_GRID >= target_rate)
     best = np.unravel_index(loglik.argmax(), loglik.shape)
     return {"beta_estimate": float(tail[best]), "beta_low": float(tail[inside].min()), "beta_high": float(tail[inside].max()),
-            "shape_free_low": shape_free_low, "shape_free_high": shape_free_high}
+            "shape_free_low": shape_free_low, "shape_free_high": shape_free_high,
+            "grid_edges": (edges := grid_edges(inside, target_rate)),
+            "grid_edges_affecting_upper_bound": edges_that_can_cut_the_upper_bound(edges, means[inside], target_rate)}
 
 
 def summarize_measure(hits_by_arm: dict[str, int], episodes: int, unsteered: tuple[int, int], target: tuple[int, int],
@@ -162,6 +193,10 @@ def main() -> None:
                                    (count(unsteered_records, measure), len(unsteered_records)), (count(target_records, measure), len(target_records)), cos_by_arm)
         for measure in measures
     }
+    for measure, summary in summary_by_measure.items():
+        if summary["grid_edges_affecting_upper_bound"]:
+            warnings.warn(f"{measure}: the beta fit's 95% region reaches the grid edge(s) {summary['grid_edges_affecting_upper_bound']}; its interval may be cut "
+                          f"off there (widen BETA_MEANS / BETA_CONCENTRATIONS or RATE_GRID)", stacklevel=1)
     args.out.write_text(json.dumps(summary_by_measure, indent=1))
 
 
