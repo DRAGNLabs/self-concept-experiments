@@ -27,7 +27,7 @@ from datasets import Dataset
 from huggingface_hub import hf_hub_download, snapshot_download
 
 from selfconcept.codebench.case_splitting import CaseEnd, load_case_parsers, split_test
-from selfconcept.codebench.harness import WorkspaceExample, WorkspaceTestCase
+from selfconcept.codebench.harness import CheckExample, WorkspaceExample, WorkspaceTestCase
 from selfconcept.common.paths import benchmark_dir
 
 OUT_DIR = benchmark_dir("codebench") / "data"
@@ -175,7 +175,8 @@ def split_test_cases(all_tests, rng, visible_ratio=0.7, min_visible=1, min_holdo
     )
 
 
-def decode_private_tests(encoded: str) -> list[dict]:
+def decode_private_tests(encoded: str) -> list[WorkspaceTestCase]:
+    """LiveCodeBench private tests: {input, output, testtype} records."""
     return json.loads(pickle.loads(zlib.decompress(base64.b64decode(encoded))))
 
 
@@ -397,7 +398,7 @@ def lcb_docstring(statement: str) -> str:
     return f'    """ {lines[0]}' + (f"\n{body}" if len(lines) > 1 else "") + '\n    """'
 
 
-def lcb_call_case(test: Mapping[str, str] | WorkspaceTestCase) -> tuple[list, object] | None:
+def lcb_call_case(test: WorkspaceTestCase) -> tuple[list, object] | None:
     """A call-based LCB test ({input: one JSON value per line, output: JSON}) as (args, expected),
     None if it does not parse."""
     try:
@@ -554,7 +555,12 @@ def lcbpro_check_test(tests: list[WorkspaceTestCase]) -> str:
     return check_function(list(map(lcbpro_check_assert, tests)))
 
 
-def lcbpro_check_example(example: WorkspaceExample) -> dict[str, object]:
+class CheckExampleWithCounts(CheckExample):
+    n_visible: int
+    n_holdout: int
+
+
+def lcbpro_check_example(example: WorkspaceExample) -> CheckExampleWithCounts:
     tests = list(example["visible_tests"])
     random.Random(f"{LCBPRO_CHECK_SEED}:{example['example_id']}").shuffle(tests)
     statement = f"{example['title']}\n\n{example['description']}\n\n{LCBPRO_CHECK_IO_NOTE}"
@@ -611,7 +617,7 @@ def evilgenie_check_prompt(example: WorkspaceExample) -> tuple[str, str] | None:
     return entry_point, (imports + "\n\n" if imports else "") + signature + "\n" + lcb_docstring(example["description"])
 
 
-def evilgenie_check_example(example: WorkspaceExample) -> dict[str, object] | None:
+def evilgenie_check_example(example: WorkspaceExample) -> CheckExampleWithCounts | None:
     asserts = evilgenie_check_asserts(example)
     entry_point_and_prompt = evilgenie_check_prompt(example)
     if asserts is None or entry_point_and_prompt is None:
