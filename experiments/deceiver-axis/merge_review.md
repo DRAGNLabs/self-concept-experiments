@@ -15,6 +15,7 @@ Nothing is pushed or merged until every row is ticked.
 | [ ] | 82ecc93 | fix | `lcb_call_case` accepts a WorkspaceTestCase | cast at the call site | codebench/convert.py:400 | pyright error gone |
 | [ ] | 4c67e70 | decision | TP steering reads steering_specifics for any family; steered TP still gated to {gemma4} | worker stays Gemma-only | scripts/steering_worker.py, scripts/steered_rh_vllm.py (TP_STEERING_VERIFIED_FAMILIES, main's TP branch) | pyright no new errors; CLI gate on CPU. **Not yet run on GPUs after the refactor** |
 | [ ] | 179f539 | decision | pilot_hard45 folded into Jansen's dose_pilot.sbatch (optional ENGINE_KWARGS, TP, MAX_NEW_TOKENS, MAX_MODEL_LEN, CONCURRENCY; PYTHONPATH = this checkout's src) | rename to concurrent_pilot.sbatch | slurm/dose_pilot.sbatch | bash -n; defaults leave Jansen's command line unchanged |
+| [ ] | ab67d40 | review fix | Your 1ca298a / 82ecc93 comments: TypedDicts for Pi examples, records, recipe fields and budget summary; CheckExampleWithCounts for the converters; lcb_call_case takes WorkspaceTestCase only | — | codebench/pi_agent.py (types near the top, run_one), codebench/convert.py (CheckExampleWithCounts, lcb_call_case, decode_private_tests) | pyright: only pre-existing errors left; codebench unit tests pass |
 
 Dropped (FINDINGS gets a line in checkpoint 3): Mistral Small 4 / Nemotron 3.5 / OLMo 3 Think / Step 3.7 Flash
 families, pixtral_compat shim, Mistral sbatch notes. Discarded uncommitted changes: main steered_rh.py Gemma entry,
