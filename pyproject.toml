@@ -30,6 +30,8 @@ dependencies = [
     "kernels>=0.16,<0.17",
     "pymc>=6.3.2",
     "plotly>=7.1.0",
+    # WordNet antonym pairs for the control directions (scripts/controls/sample_pairs.py)
+    "nltk>=3.10",
 ]
 
 [build-system]

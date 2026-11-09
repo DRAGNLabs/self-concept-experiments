@@ -68,7 +68,7 @@ RECIPE=(--data "$MIRROR/rh_hillclimb/data" --impossible-prompt critical_no_carve
 mkdir -p "$ROOT"
 echo "model $MODEL revision '${REVISION}' chat kwargs $SOO_CHAT_KWARGS layers ${LAYERS[*]} top-p $TOPP top-k $TOPK n $N percentiles $TAU_QUANTILES"
 
-export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
+export SELFCONCEPT_VENV="${SELFCONCEPT_VENV:-$SLURM_SUBMIT_DIR/.venv-313}"
 source ../../activate.sh
 
 for pair in $DIRECTIONS; do

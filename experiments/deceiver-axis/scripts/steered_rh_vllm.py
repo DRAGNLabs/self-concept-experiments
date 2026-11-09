@@ -10,7 +10,10 @@ the patch is visible to it. ``--eager`` disables compile and graphs (about 9x sl
 kept for cross-checks. Records and reasoning sidecars follow the vllm_harmony contract (the completion is split
 into reasoning and final by the model family's parser). Per-family facts (decoder-block class, patcher, stream reader,
 splitter, record label) come from ``selfconcept.measurement.steering_specifics``. No projection sidecar: projections
-are measured offline with the HF capture path.
+are measured offline with the HF capture path. With ``--tensor-parallel-size N`` the engine runs in spawned worker
+processes, which a patch made here never reaches: the steering is written to a spec file and each worker patches its
+own copy of the block class (``steering_worker.SteeredWorker``); add and cap only, on the families in
+TP_STEERING_VERIFIED_FAMILIES (unsteered TP runs work for any family).
 
     python scripts/steered_rh_vllm.py --model openai/gpt-oss-120b --data <dir> --scenarios ib_solvhard_s0 --out <dir>
         --tag <tag> --temperature 1.0 --sample-seed 0 --impossible-prompt critical_no_carve --max-attempts 5
@@ -49,7 +52,7 @@ import sys
 from pathlib import Path
 
 import torch
-from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoConfig
 
 from selfconcept.assistant_axis.projection import load_unit_axes
 from selfconcept.codebench import harness
@@ -62,6 +65,9 @@ from selfconcept.measurement.steering_specifics import steering_model_specifics
 from selfconcept.transcript_generation.vllm_generation import max_num_seqs_kwargs
 
 
+TP_STEERING_VERIFIED_FAMILIES = frozenset({"gemma4"})
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", required=True)
@@ -70,6 +76,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
     parser.add_argument("--engine-kwargs", type=json.loads, default={},
                         help='JSON of extra vllm.LLM kwargs, e.g. {"limit_mm_per_prompt": {"image": 0}} to skip the multimodal profiling budget on an 80 GB card')
+    parser.add_argument("--tensor-parallel-size", type=int, default=1,
+                        help="GPUs per engine; above 1 each worker installs the steering itself (steering_worker.SteeredWorker)")
     parser.add_argument("--eager", action="store_true", help="enforce_eager: no torch.compile / CUDA graphs (slow)")
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--sample-seed", type=int, default=0)
@@ -112,6 +120,11 @@ def parse_args() -> argparse.Namespace:
         parser.error(str(error))
     if args.score is not None and args.specifics.family != "gpt-oss":
         parser.error("--score renders Harmony prompts and is gpt-oss only")
+    if args.tensor_parallel_size > 1 and (args.check_hook or args.measure_norms or args.steer_mode == "noise"):
+        parser.error("--tensor-parallel-size > 1 supports unsteered, add and cap runs only")
+    if args.tensor_parallel_size > 1 and args.steer_mode != "none" and args.specifics.family not in TP_STEERING_VERIFIED_FAMILIES:
+        parser.error(f"tensor-parallel steering is verified on {sorted(TP_STEERING_VERIFIED_FAMILIES)} only; smoke-test "
+                     f"{args.specifics.family} (steered vs single-GPU reference) before adding it")
     return args
 
 
@@ -383,21 +396,36 @@ def main() -> None:
     block_cls = getattr(importlib.import_module(module_name), class_name)
     hook_mode = args.check_hook or args.measure_norms
     eager = args.eager or hook_mode  # the recording hooks have Python side effects and cannot be captured
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    tensor_parallel = args.tensor_parallel_size > 1
+    device = torch.device("cuda:0" if torch.cuda.is_available() and not tensor_parallel else "cpu")
     needed = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *(args.cap_layers or []),
                      *([args.check_layer] if args.check_hook else [])})
     directions = directions_for(args, needed, device) if needed else {}
     transforms, steering = build_transforms(args, directions)
     steering["family"] = family
-    if transforms and not hook_mode:
+    engine_kwargs = {}
+    if tensor_parallel:
+        from steering_worker import STEERING_SPEC_ENV, SteeringSpec  # imports vLLM, so after the environment above
+        engine_kwargs = {"worker_cls": "steering_worker.SteeredWorker"}
+        os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
+        os.environ["PYTHONPATH"] = os.pathsep.join([str(Path(__file__).parent), os.environ.get("PYTHONPATH", "")])
+        if transforms:
+            args.out.mkdir(parents=True, exist_ok=True)
+            spec_path = args.out / "steering_spec.pt"
+            scale_by_layer = {args.steer_layer: steering["coefficient"]} if args.steer_mode == "add" else steering["cap_thresholds"]
+            spec: SteeringSpec = {"model": args.model, "mode": args.steer_mode, "direction_by_layer": directions, "scale_by_layer": scale_by_layer}
+            torch.save(spec, spec_path)
+            os.environ[STEERING_SPEC_ENV] = str(spec_path)
+            steering["patched_layers"] = sorted(transforms)
+    elif transforms and not hook_mode:
         specifics.patch_vllm(block_cls, transforms)  # before the engine builds, compiles and captures the model
         steering["patched_layers"] = sorted(transforms)
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
-    llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
+    llm = LLM(model=args.model, tensor_parallel_size=args.tensor_parallel_size, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, enforce_eager=eager,
               **({"enable_prefix_caching": False} if hook_mode else {}),  # hooks must see every prompt token
-              **{**max_num_seqs_kwargs(), **args.engine_kwargs})
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+              **{**max_num_seqs_kwargs(), **engine_kwargs, **args.engine_kwargs})
+    tokenizer = llm.get_tokenizer()
     if args.measure_norms:
         measure_norms(args, llm, tokenizer, specifics.vllm_stream)
         return

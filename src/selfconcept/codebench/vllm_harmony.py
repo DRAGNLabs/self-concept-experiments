@@ -56,7 +56,7 @@ def vllm_harmony_generate(
         return request_output.outputs[0]
 
     return turn_generate(
-        AutoTokenizer.from_pretrained(model_id), llm.model_config.max_model_len, max_new_tokens,
+        llm.get_tokenizer(), llm.model_config.max_model_len, max_new_tokens,
         lambda example_id: reasoning_log_path, temperature, sample_seed, complete, split_completion, top_p, top_k,
     )
 
