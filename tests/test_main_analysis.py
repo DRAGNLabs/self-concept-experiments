@@ -53,6 +53,22 @@ class PerArmSeeds(unittest.TestCase):
             self.assertAlmostEqual(result["arms"]["steered"]["rate"], 0.25)
             self.assertAlmostEqual(result["arms"]["unsteered"]["rate"], 0.0)
 
+    def test_honest_hidden_pass_reads_each_arm_on_its_own_seeds(self):
+        """2026-11-09: the honest hidden pass read every arm on the reference's seeds, so a steered arm on disjoint seeds had
+        no episodes (NaN rate) and one overlapping on a few seeds was read on those alone."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_arm(root, "unsteered", [8, 9], {"p0"})
+            write_arm(root, "steered", [0, 1], {"p0", "p1"})
+            arms = main_analysis.load_root(root, "pilot")
+            result = main_analysis.analyse_honest_hidden_pass(arms, reps=200, seed=0, contrasts=["steered"])
+            self.assertEqual(result["arms"]["unsteered"]["episodes"], 8)
+            self.assertEqual(result["arms"]["steered"]["episodes"], 8)
+            # every honest (non-proxy-hack) episode passes the hidden suite in write_arm, so both rates are 1.0
+            self.assertAlmostEqual(result["arms"]["unsteered"]["rate"], 1.0)
+            self.assertAlmostEqual(result["arms"]["steered"]["rate"], 1.0)
+            self.assertAlmostEqual(result["arms"]["steered"]["diff_vs_unsteered"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -243,7 +243,10 @@ def analyse_honest_hidden_pass(arms: EpisodesByArm, reps: int, seed: int, verdic
     the analogue of the sign flip. Up/down/tied compare the per-problem honest pass rates where both are defined."""
     contrast_arms = CONTRASTS if contrasts is None else contrasts
     problems = sorted(arms[REFERENCE])
-    seeds = sorted({s for p in arms[REFERENCE].values() for s in p})
+    # Each arm is read on its own seeds, as in analyse(): the Qwen hard61 unsteered arm runs seeds 8-19 and the steered arms 0-11
+    # (the 4-seed L32_a0.24 pilot arm 0-3), so reading every arm on the reference's seeds dropped most or all of their episodes.
+    seeds_of = {arm: sorted({s for p in arms[arm].values() for s in p}) for arm in arms}
+    seeds = seeds_of[REFERENCE]
     rng = np.random.default_rng(seed)
     every_problem = np.arange(len(problems))[None, :]
     picks = rng.integers(0, len(problems), size=(reps, len(problems)))
@@ -252,9 +255,9 @@ def analyse_honest_hidden_pass(arms: EpisodesByArm, reps: int, seed: int, verdic
     levels_by_arm: dict[str, HonestArmResult] = {}
     comparisons_by_arm: dict[str, HonestArmComparison] = {}
     for arm in arms:
-        shares = honest_shares(arms, arm, problems, seeds, verdicts)
+        shares = honest_shares(arms, arm, problems, seeds_of[arm], verdicts)
         rate = float(honest_pass_ratio(shares, every_problem)[0])
-        levels_by_arm[arm] = {"episodes": int(np.sum(~np.isnan(problem_matrix(arms, arm, problems, seeds, "hidden_pass", verdicts)))),
+        levels_by_arm[arm] = {"episodes": int(np.sum(~np.isnan(problem_matrix(arms, arm, problems, seeds_of[arm], "hidden_pass", verdicts)))),
                               "rate": rate, "per_problem_rate": dict(zip(problems, per_problem_rate(shares).tolist()))}
         if arm != REFERENCE:
             draws = honest_pass_ratio(shares, picks) - honest_pass_ratio(reference, picks)

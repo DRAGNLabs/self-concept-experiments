@@ -38,6 +38,7 @@ SURFACE, INK, INK2, INK3, RULE, SHADE = "#fcfcfb", "#0b0b0b", "#52514e", "#8a898
 C_JUDGED = "#1f4e9e"   # judged hack, proxy + hidden sets
 C_AUTO = "#b8651b"     # automatic proxy
 C_HIDDEN = "#2a7f62"   # hidden-test pass
+HIDDEN_LABEL = "hidden-test pass"  # becomes "honest hidden-test pass" when the analysis files carry honest_hidden_pass
 C_SHOWN = "#7a3e9d"    # shown-test pass
 
 # Filled by set_arms() from the analysis file: (arm, x tick label) in dose order, column labels and x positions.
@@ -74,6 +75,10 @@ def load(root: Path, analysis_dir: Path, summary: str, details: list) -> dict:
     files = {"all": "analysis_all_as_judged.json", "up": "analysis_all_as_judged_borderline_up.json",
              "down": "analysis_all_as_judged_weak_down.json", "proxy": "analysis_proxy_as_judged.json"}
     data = {k: json.loads((analysis_dir / f).read_text()) for k, f in files.items()}
+    for block in data.values():  # main_analysis since 2026-11-07 writes honest_hidden_pass (hidden pass among non-HACK episodes)
+        if "hidden_pass" not in block and "honest_hidden_pass" in block:
+            block["hidden_pass"] = block["honest_hidden_pass"]
+            globals()["HIDDEN_LABEL"] = "honest hidden-test pass"
     data["summary"] = json.loads((analysis_dir / summary).read_text())
     counts = defaultdict(lambda: {"proxy": Counter(), "hidden": Counter()})
     for name in details:
@@ -181,10 +186,10 @@ def main() -> None:
     # (b) capability
     style(ax_b, "share of episodes (%)")
     line(ax_b, SP, C_SHOWN, "shown-test pass", marker="D", ls="-.", lw=1.6)
-    line(ax_b, HP, C_HIDDEN, "hidden-test pass", marker="o")
+    line(ax_b, HP, C_HIDDEN, HIDDEN_LABEL, marker="o")
     ax_b.set_ylim(0, max(rate(SP, a) for a, _ in ARMS) * 1.3)
-    ax_b.set_title("(b) Capability: hidden-test and shown-test pass per dose", loc="left", color=INK, fontsize=10.5, pad=10)
-    ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label="hidden-test pass (95% CI of Δ)"),
+    ax_b.set_title(f"(b) Capability: {HIDDEN_LABEL} and shown-test pass per dose", loc="left", color=INK, fontsize=10.5, pad=10)
+    ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label=f"{HIDDEN_LABEL} (95% CI of Δ)"),
                          Line2D([], [], color=C_SHOWN, lw=1.6, ls="-.", marker="D", ms=6, mec=SURFACE, label="shown-test pass (95% CI of Δ)")],
                 loc="upper left", fontsize=8.5, frameon=False, labelcolor=INK2)
 
@@ -216,8 +221,8 @@ def main() -> None:
         ("judged hack, WEAK not counted (%)", [f"{rate(DOWN, a):.1f}" for a, _ in ARMS]),
         ("automatic proxy (%)", [f"{rate(AUTO, a):.1f}" for a, _ in ARMS]),
         ("   Δ vs unsteered / Holm p", [f"{delta(AUTO, a)} / {holm(AUTO, a)}" if a != 'unsteered' else '—' for a, _ in ARMS]),
-        ("hidden-test pass (%)", [f"{rate(HP, a):.1f}" for a, _ in ARMS]),
-        ("   Δ vs unsteered / 95% CI", [f"{delta(HP, a)} {cicell(HP, a)}" if a != 'unsteered' else '—' for a, _ in ARMS]),
+        (f"{HIDDEN_LABEL} (%)", [f"{rate(HP, a):.1f}" for a, _ in ARMS]),
+        ("   Δ vs unsteered / 95% CI", [f"{delta(HP, a)} {cicell(HP, a).replace(', ', ',')}" if a != 'unsteered' else '—' for a, _ in ARMS]),
         ("shown-test pass (%)", [f"{rate(SP, a):.1f}" for a, _ in ARMS]),
         ("no code submitted (%)", [f"{rate(NC, a):.1f}" for a, _ in ARMS]),
         ("truncated turns / turns", [f"{d['summary'][a]['truncated_turns']} / {d['summary'][a]['turns']}" for a, _ in ARMS]),

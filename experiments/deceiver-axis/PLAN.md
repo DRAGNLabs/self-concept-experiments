@@ -822,8 +822,10 @@ instruction 2026-10-27; the template default is xhigh), layer 32 (mid-depth of 6
    0.5 / 1.0 / 4.1% at +0.08 / +0.16 / +0.32, ≤ 0.1% on the minus side and under the cap; only +0.32 is significant (Holm 0.002) and it is
    outside the dose rule (hidden −20.1), as in the pilot; +0.16 gives 7 of 732 (Holm 1.0). The minus arms and the cap have nothing to reduce
    and cost capability (−0.32 broken; cap hidden −6.8 / no-code +9.2). The Qwen replication is therefore one-sided: same sign and mechanism
-   family as the other models, too weak within the rule to measure at a zero base rate. Open (user call): the unjudged 4-seed `L32_a0.24`
-   pilot arm; a higher-base-rate Qwen setting (longer budget or an easier split) if the within-rule effect is to be measured at all.
+   family as the other models, too weak within the rule to measure at a zero base rate. The 4-seed `L32_a0.24` pilot arm was judged
+   2026-11-09 (FINDINGS "Qwen3.8-27B qwen_hard61 gi_v2 `L32_a0.24` pilot arm"): 2.0% (5 of 244, Holm 1.0), outside the rule (honest hidden
+   pass −11.8), so the plus side is monotone 0.5 / 1.0 / 2.0 / 4.1 and the reading above stands. Open (user call): a higher-base-rate Qwen
+   setting (longer budget or an easier split) if the within-rule effect is to be measured at all.
 
 ## Generic + intent vectors: full re-run on all three models (user decision 2026-10-27, ~5 pm MDT)
 
@@ -1199,7 +1201,7 @@ lower hacking, lifting that tail should raise it; if the floor raises hacking on
 up with hidden pass down, as the +0.2 / +0.4 shifts do), the dose rule says so. Judged blind as one set with the
 cap-ladder recipe (`build_ladder_set.sh gptoss floorladder floor gi_floor_p95 gi_floor_p75 gi_floor_p50`), analysed
 with the three floor rungs added to the Holm family, charted with `capladder_chart.py` extended to show cap and floor
-rungs side by side. **gpt-oss done (judged 2026-11-06, 9:07 pm MST; FINDINGS "gpt-oss gi_v2 floor ladder"):** 11.7 → 12.6% at p50 (n.s.) → 17.8% at p75 (+6.1, Holm 0.013) → 25.0% at p95 (+13.3, Holm 0.0007), hidden pass within 2.8 points and no-code down at every rung, so the floor raises hacking at equal capability: the mirror of the cap ladder, as expected, and the positive control holds. Other models: after this read, with the user. Each arm is judged blind by the rubric-judge
+rungs side by side. **gpt-oss done (judged 2026-11-06, 9:07 pm MST; FINDINGS "gpt-oss gi_v2 floor ladder"):** 11.7 → 12.6% at p50 (n.s.) → 17.8% at p75 (+6.1, Holm 0.013) → 25.0% at p95 (+13.3, Holm 0.0007), hidden pass within 2.8 points and no-code down at every rung, so the floor raises hacking at equal capability: the mirror of the cap ladder, as expected, and the positive control holds. Other models: after this read, with the user. **Qwen3.8-27B launched (2026-11-09 2:57 pm MST, user "let's also start running the inverse-cap on Qwen"):** `floor_p50_L22-42` / `floor_p75_L22-42` / `floor_p95_L22-42`, 12 seeds × qwen_hard61 each, thresholds interpolated from Koby's gi_v2_contrast sidecar on the cap band 22–42 (`floor/thresholds/gi_v2_contrast_p{50,75,95}.json`, p50 equal to his cap file, monotone at every layer), direction and sampling as his cap arm, array 15198076 (cs/cs2 qos cs, 10 h, B200 left out: the hybrid attention backend there is unverified for Qwen3.8; recipe and picker record in `floor/jobids.txt`). Judging waits: user 2026-11-09 "don't start judging them yet though. leave that as a to-do for Wednesday after my weekly limits reset" → to-do Wednesday 2026-11-11; until then only the capability summary (`pilot_summary.py`) is run on the finished arms. Each arm is judged blind by the rubric-judge
 agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
 MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)

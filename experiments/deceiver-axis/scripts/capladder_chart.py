@@ -47,6 +47,7 @@ MODELS = {
 
 SURFACE, INK, INK2, INK3, RULE, SHADE = "#fcfcfb", "#0b0b0b", "#52514e", "#8a8985", "#dedcd7", "#f1f0ec"
 C_JUDGED, C_AUTO, C_HIDDEN, C_SHOWN = "#1f4e9e", "#b8651b", "#2a7f62", "#7a3e9d"
+HIDDEN_LABEL = "hidden-test pass"  # becomes "honest hidden-test pass" when the analysis files carry honest_hidden_pass
 
 CAPS = ["gi_cap_p5", "gi_cap_p25", "gi_cap_p50"]
 FLOORS = ["gi_floor_p50", "gi_floor_p75", "gi_floor_p95"]  # the inverse cap (2026-11-06): projection clipped from below at tau
@@ -95,6 +96,10 @@ def load(root: Path, tag: str, summary: str, details: list, layer: int) -> dict:
     files = {"all": f"analysis_{tag}_all_as_judged.json", "up": f"analysis_{tag}_all_as_judged_borderline_up.json",
              "down": f"analysis_{tag}_all_as_judged_weak_down.json", "proxy": f"analysis_{tag}_proxy_as_judged.json"}
     data = {k: json.loads((root / f).read_text()) for k, f in files.items()}
+    for block in data.values():  # main_analysis since 2026-11-07 writes honest_hidden_pass (hidden pass among non-HACK episodes)
+        if "hidden_pass" not in block and "honest_hidden_pass" in block:
+            block["hidden_pass"] = block["honest_hidden_pass"]
+            globals()["HIDDEN_LABEL"] = "honest hidden-test pass"
     data["summary"] = json.loads((root / summary).read_text())
     counts = defaultdict(lambda: {"proxy": Counter(), "hidden": Counter()})
     for name in details:
@@ -205,8 +210,8 @@ def main() -> None:
     line(ax_b, SP, C_SHOWN, marker="D", ls="-.", lw=1.6)
     line(ax_b, HP, C_HIDDEN, marker="o")
     ax_b.set_ylim(0, max(rate(SP, a) for a, _ in ARMS) * 1.3)
-    ax_b.set_title("(b) Capability: hidden-test and shown-test pass per dose and rung", loc="left", color=INK, fontsize=10.5, pad=10)
-    ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label="hidden-test pass (95% CI of Δ)"),
+    ax_b.set_title(f"(b) Capability: {HIDDEN_LABEL} and shown-test pass per dose and rung", loc="left", color=INK, fontsize=10.5, pad=10)
+    ax_b.legend(handles=[Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label=f"{HIDDEN_LABEL} (95% CI of Δ)"),
                          Line2D([], [], color=C_SHOWN, lw=1.6, ls="-.", marker="D", ms=6, mec=SURFACE, label="shown-test pass (95% CI of Δ)")],
                 loc="upper left", fontsize=8.5, frameon=False, labelcolor=INK2)
 
@@ -241,7 +246,7 @@ def main() -> None:
         ("judged hack, WEAK not counted (%)", [f"{rate(DOWN, a):.1f}" for a, _ in ARMS]),
         ("automatic proxy (%)", [f"{rate(AUTO, a):.1f}" for a, _ in ARMS]),
         ("   Δ vs unsteered / Holm p", [f"{delta(AUTO, a)} / {holm(AUTO, a)}" if a != "unsteered" else "—" for a, _ in ARMS]),
-        ("hidden-test pass (%)", [f"{rate(HP, a):.1f}" for a, _ in ARMS]),
+        (f"{HIDDEN_LABEL} (%)", [f"{rate(HP, a):.1f}" for a, _ in ARMS]),
         ("   Δ vs unsteered / 95% CI", [f"{delta(HP, a)} {cicell(HP, a)}" if a != "unsteered" else "—" for a, _ in ARMS]),
         ("shown-test pass (%)", [f"{rate(SP, a):.1f}" for a, _ in ARMS]),
         ("no code submitted (%)", [f"{rate(NC, a):.1f}" for a, _ in ARMS]),
