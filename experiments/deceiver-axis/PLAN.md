@@ -1110,6 +1110,64 @@ L20–38, 16 seeds; job 15125968): capping becomes the headline only if a cap in
 significantly lowers the judged hack rate on Gemma (FINDINGS "Capping vs negative steering along gi_v2"). Honest hidden
 pass (hidden pass among episodes not judged HACK) replaces hidden pass as the capability measure and in the dose rule.
 
+## Cross-model percentile of gi_v2 among antonym concepts (pre-registered 2026-11-09, Koby's decisions, before computing it on the data)
+
+**Question.** Is gi_v2 special across models? Antonym concept j is built from the same WordNet pair and sentences
+(`data/controls/sentences.json`) on every model, and gi_v2 is one concept built the same way on every model, so each
+concept is a unit observed on four models (gpt-oss L17 α 0.2, Muse L26 α 0.08, Gemma L30 α 0.08, Qwen L32 α 0.16; the
+100 × 1-seed antonym runs of 2026-11-07/08). An antonym that matters on one model only is diluted by the other three.
+
+**Estimand (option a).** q_cross = share of antonym concepts whose true average lift over the models is at least
+gi_v2's. Lift on model m: d_{j,m} = logit(rate_{j,m}) − logit(unsteered_m), empirical logit (counts + 0.5); average
+D_j = equal-weight mean over models. The unsteered term cancels in every control-vs-gi_v2 comparison.
+
+**Noise model.** D_j = μ_j + e_j, e_j ~ N(0, V), V = (1/M²) Σ_m 1 / (n_m p̄_m (1 − p̄_m)) with p̄_m the pooled control
+rate (binomial, delta method; conservative for a fixed problem set). gi_v2: the same binomial form at its own episode
+count and rate.
+
+**Intervals.** Shape-free: NPMLE of the μ_j distribution on a grid, likelihood-ratio 95% interval for its mass at or
+above gi_v2's lift (cutoff 1.92). Normal: μ_j ~ N(m, s²), profile likelihood-ratio interval over an (m, s) grid.
+gi_v2's own uncertainty: q falls as the threshold rises, so the reported interval runs from the lower bound at
+D_gi + 1.96 sd_gi to the upper bound at D_gi − 1.96 sd_gi (point estimate at D_gi).
+
+**Variants reported.** All four models; leave out gpt-oss (most of gi_v2's lift); leave out Gemma (gi_v2 not special
+there per model). Descriptive only: Spearman of d_{j,a} with d_{j,b} over concepts for each model pair, mean with a
+within-model label-shuffle p (low power: three of four models show no per-model spread to transfer).
+
+**Outcome.** Proxy now (shown pass, hidden fail); judged (Jansen's verdicts, HACK only) when they arrive, same script
+with `--outcome judged`. Hard-coding scan left out (Qwen has none in any arm).
+
+**Coverage first.** Before the real data: simulate at the real episode counts, control rates and gi_v2 rates for no
+spread, a shared normal spread with q = 5%, model-specific spread, and a one-model outlier mix; check that both
+intervals cover the true q at about 95% or more.
+
+**Amendment 2026-11-09 (Koby, after the mean-lift coverage run and before any real-data q).** Mean-lift coverage
+(job 15188510, 200 replicates per case): the shape-free interval covers in every scenario (upper bound ≥ 97.5%,
+median upper bound 3.8% at q = 0 with all four models, 17% without gpt-oss); the normal interval fails on one-model
+outliers (33–38%). More basically, a mean over models lets one large single-model effect count like a consistent one,
+which is not the cross-model question. Two related facts: on the proxy at these doses gi_v2 itself is clear on gpt-oss
+(+18 pt) and Muse (+11 pt) but borderline on Gemma (+2.9, problem sign-flip p 0.08) and Qwen (+2.6, p 0.09), and its
+lifts are heterogeneous across models (Cochran Q ≈ 23, p ≈ 5e-5; doses were set per model, so magnitude
+consistency is not a fair criterion). The primary analysis becomes a **hierarchical model**:
+d_{j,m} = b_m + μ_j + ε_{j,m} + e_{j,m}, model offsets b_m (mean 0), shared concept effects μ_j ~ G (shape-free, or
+normal), model-specific deviations ε ~ N(0, τ²) (normal: ordinary extremes, not one-model spikes, are expected), and
+binomial sampling noise e. q = the share of concepts with μ_j at least gi_v2's shared effect. gi_v2 shares τ with the
+controls; its shared effect is its equal-weight four-model mean with variance (its noise)/M² + τ²/M. τ is estimated
+from the within-concept deviations (restricted likelihood) and both intervals are profiled over τ. Equal weights over
+models are kept. Reported beside it: τ for the controls vs gi_v2's own heterogeneity (Q and its DerSimonian–Laird sd).
+The mean-lift version stays in the output for comparison. Its coverage is rerun first (scenarios: none; shared
+normal q 5% with τ 0; shared normal q 5% and 20% with τ 0.3; τ 0.3 only; one-model outliers, which have no shared
+effect, q 0), and the real-data q waits for it.
+
+**Amendment 2026-11-09, second (Koby, after the hierarchical coverage run, job 15189738, and before any real-data
+q).** Both hierarchical intervals cover in every scenario, but with model-specific deviations (τ 0.3) their typical
+upper bounds are 30–100%: gi_v2's own cross-model variation (sd ≈ 0.35) makes its typical-model effect too uncertain
+for a rarity claim, and with a shared τ the controls' near-zero τ would hide it. The claim is therefore limited to
+**these four models**: the headline is the mean-lift q (shape-free primary, normal secondary), for all four models,
+without gpt-oss and without Gemma, on the proxy. (Judging the ~6,000 control dossiers was then dropped, Koby
+2026-11-09: about $150–300 in API credits; the proxy is the outcome.) The hierarchical output is
+kept as a descriptive record.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2

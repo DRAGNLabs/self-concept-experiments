@@ -65,6 +65,34 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 
 ## Runs
 
+### gi_v2 among antonym concepts across the four models (proxy) — 2026-11-09: no antonym concept's average lift over the four models reaches gi_v2's; shape-free q 0–4.2% with all four models, 0–2.8% without Gemma, 0–10.8% without gpt-oss
+
+Design: PLAN "Cross-model percentile of gi_v2 among antonym concepts" and its two 2026-11-09 amendments (the claim is
+limited to these four models). Concept j is the same antonym pair on every model; its lift on model m is the logit
+hack rate minus the unsteered logit, averaged over models with equal weights, deconvolved for binomial noise.
+`scripts/controls/cross_model_percentile.py --outcome proxy` (job 15190234; config
+`data/controls/cross_model_models.json`); output `schemer-axis/cross_model/cross_model_proxy.json` in scratch. Coverage
+checked first (jobs 15188510, 15189738): the shape-free upper bound covered in every scenario; the normal fails when a
+minority of concepts have a large effect on one model only.
+
+| models | gi_v2 mean logit lift (sd) | controls' mean lift (noise sd) | concepts at or above gi_v2 (noise-only expectation) | q shape-free | q normal |
+|---|---|---|---|---|---|
+| all four | 0.44 (0.04) | −0.05 (0.17) | 0 (0.24) | 0–4.2% | ≈ 0 (upper < 0.001%) |
+| without gpt-oss | 0.28 (0.05) | −0.01 (0.19) | 5 (6.0) | 0–10.8% | ≈ 0 (upper 0.2%) |
+| without Gemma | 0.53 (0.05) | −0.09 (0.22) | 0 (0.22) | 0–2.8% | ≈ 0 (upper < 0.001%) |
+| without Muse | 0.44 (0.05) | −0.05 (0.21) | 0 (0.85) | 0–4.6% | ≈ 0 |
+| without Qwen | 0.51 (0.05) | −0.03 (0.19) | 0 (0.16) | 0–5.2% | ≈ 0 |
+
+Per-model gi_v2 lifts 0.92 / 0.45 / 0.17 / 0.23 (gpt-oss / Muse / Gemma / Qwen). The closest concept, antonym_p095,
+averages 0.41 (0.32 / 0.37 / 0.65 / 0.32, positive on all four), about what the largest of 100 noise-only draws
+gives (≈ 0.38), and p058 (one of Gemma's two hard-coding spikes) is second at 0.31. Lift correlations between models
+over concepts: mean Spearman 0.03 (shuffle p 0.20; low power, descriptive). Hierarchical model, descriptive: the
+controls' model-specific sd is 0 (95% 0–0.07) while gi_v2's own is 0.43 (Cochran Q 86 on 3 df), so the controls
+are consistently near zero and gi_v2 is positive everywhere with a size that varies about 5× across models (doses were
+set per model). Without gpt-oss the bound is only 11%: gi_v2's average lift there is 0.28, under 1.5 noise sds of a
+single concept. Proxy only: judging the ~6,000 control dossiers was dropped for cost (Koby, 2026-11-09); the script
+still takes `--outcome judged` with per-model `verdicts` if that changes.
+
 ### Qwen3.8-27B isolated antonym controls, 100 × 1 — 2026-11-09: on the proxy, q is 0–16% shape-free and ≈ 0 (upper 1.6%) under the beta fit; 20 controls reach gi_v2 +0.16's count, about the binomial-noise expectation (19.7); the hard-coding scan finds nothing on Qwen in any arm, so it gives no percentile
 
 Same construction and design as the other three models, on Qwen3.8-27B: layer 32, α 0.16 = gi_v2's dose
