@@ -47,8 +47,9 @@ COL_LABELS: list = []
 X: dict = {}
 
 
-# Cap arms as side points off the dose axis, in rung order (p25 = Koby's arm; p35 = our lighter rung, array 15104078, 2026-11-06).
-CAPS = [("cap_p25_L20-38", "cap\np25", "cap p25 L20–38"), ("cap_p35_L20-38", "cap\np35", "cap p35 L20–38")]  # (arm, tick, table label); the band is named in the xlabel
+# Cap arms as side points off the dose axis, in rung order (p25 = Koby's arm; p35 = our lighter rung, array 15104078, 2026-11-06;
+# p45 = Koby's cap-ladder run, job 15125968, judged 2026-11-09). Only the arms present in the analysis file are drawn.
+CAPS = [("cap_p25_L20-38", "cap\np25", "cap p25 L20–38"), ("cap_p35_L20-38", "cap\np35", "cap p35 L20–38"), ("cap_p45_L20-38", "cap\np45", "cap p45 L20–38")]  # (arm, tick, table label); the band is named in the xlabel
 CAP_LABEL = {a: col for a, _, col in CAPS}
 CAP_ARMS: list = []  # the cap arms present in the analysis file, in rung order (filled by set_arms)
 SIDE_GAP = 0.8  # x gap between the last dose and the first side point
@@ -156,10 +157,10 @@ def main() -> None:
     ap.add_argument("--dpi", type=int, default=220)
     ap.add_argument("--analysis-dir", type=Path, default=None, help="dir with analysis_*_as_judged*.json (default: --root)")
     ap.add_argument("--summary", default="summary_main.json", help="pilot_summary output in --analysis-dir")
-    ap.add_argument("--details", nargs="+", default=[f"verdicts_{t}/verdicts_{h}{t}.detail.json" for t in ("main", "pm04", "pm16", "ctl_gicap_s0-15", "ctl_gicap35_s0-15") for h in ("", "hidden_")],
+    ap.add_argument("--details", nargs="+", default=[f"verdicts_{t}/verdicts_{h}{t}.detail.json" for t in ("main", "pm04", "pm16", "ctl_gicap_s0-15", "ctl_gicap35_s0-15", "ctl_gicap45_s0-15") for h in ("", "hidden_")],
                     help="verdict .detail.json files relative to --root ('hidden' in the name = hidden-pass sets, signature + supplementary)")
     ap.set_defaults(analysis_dir=None)
-    ap.add_argument("--jobs", default="Koby's hard108 gi_v2 runs (share gemma4_31b_gi_v2/rh/hard108; cap thresholds job 14991849)", help="run named in the caption")
+    ap.add_argument("--jobs", default="Koby's hard108 gi_v2 runs (share gemma4_31b_gi_v2/rh/hard108; cap thresholds job 14991849; cap p45 job 15125968), our cap p35 array 15104078", help="run named in the caption")
     args = ap.parse_args()
     d = load(args.root, args.analysis_dir or args.root / "analysis_main", args.summary, args.details)
     n_contrasts = len(ARMS) - 1

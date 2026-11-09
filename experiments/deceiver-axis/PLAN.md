@@ -1159,6 +1159,14 @@ cap says that against a non-trivial base; inside the rule but flat = the p25 red
 outside the rule = go to p50. The 1729 control gets the same ladder: its thresholds job writes p25 / p50 and p35 is
 interpolated the same way, so the random-direction cap can be read rung for rung against gi_v2.
 
+**p45 (Koby's run) judged 2026-11-09 (user: "let's judge p45"; FINDINGS "Gemma gi_v2 cap dose ladder, p45 (Koby's
+run), judged").** Koby ran p45 / p50 / p65 himself (job 15125968, share `gemma4_31b_gi_v2/cap_ladder/`); p45 judged
+blind as the third rung (Koby's partial verdicts kept for the 38 episodes he had judged, per the user): 4.7 → 2.7%
+(−2.1 pp, CI −4.1 to −0.4, raw 0.026, Holm 0.18 over nine / 0.053 within the caps; 15 of 16 seeds down), the same
+reduction as p35, at hidden −7.1 / no-code +3.3, so inside the rule: the "inside the rule and still below unsteered"
+reading above, with a marginal family-level p. p50 and p65 exist unjudged; p50 would show whether the reduction holds
+as capability recovers further.
+
 **Then the other models (user decision ~3:45 pm MST, "do both except not gemma p50 yet"; launched 3:50 pm).** The
 shared ladder is the three stored percentiles p5 / p25 / p50, exact on every model and read rung for rung; p10 was
 dropped because it would be interpolated in the tail, where the Gaussian fit is 2–5 units off, and p35 stays a
