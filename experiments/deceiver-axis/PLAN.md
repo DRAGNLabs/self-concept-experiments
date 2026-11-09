@@ -1167,6 +1167,13 @@ reduction as p35, at hidden −7.1 / no-code +3.3, so inside the rule: the "insi
 reading above, with a marginal family-level p. p50 and p65 exist unjudged; p50 would show whether the reduction holds
 as capability recovers further.
 
+**p50 and p65 judged 2026-11-09 (user: "Let's judge gemma p50 and p65"; FINDINGS "Gemma gi_v2 cap dose ladder, p50 and
+p65 (Koby's runs), judged: the five-rung ladder").** Koby's 42 + 6 p50 partial verdicts kept (pruned from our lists before
+judging). Five rungs: 1.7 / 2.5 / 2.7 / 3.1 / 4.2% at p25 / p35 / p45 / p50 / p65 vs 4.75 (Holm over eleven 0.042 / 0.30 /
+0.24 / 0.73 / 1.0), hidden −13.4 / −11.1 / −7.1 / −7.0 / −4.2: monotone on both axes, reduction in step with the cost at every
+rung, p45 / p50 / p65 inside the rule but none of them Holm-significant, p50 at the same hidden cost as p45 giving less. The
+Gemma cap ladder is complete; no further cap rungs planned on Gemma.
+
 **Then the other models (user decision ~3:45 pm MST, "do both except not gemma p50 yet"; launched 3:50 pm).** The
 shared ladder is the three stored percentiles p5 / p25 / p50, exact on every model and read rung for rung; p10 was
 dropped because it would be interpolated in the tail, where the Gaussian fit is 2–5 units off, and p35 stays a
