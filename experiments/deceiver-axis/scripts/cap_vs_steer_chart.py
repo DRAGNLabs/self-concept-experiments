@@ -1,6 +1,6 @@
-"""Four-panel trade-off chart from cap_vs_steer.json: per model, change in hack rate vs change in honest hidden pass
+"""Four-panel trade-off chart from cap_vs_steer.json: per model, change in hack rate vs change in hidden pass
 (both against unsteered, 95% paired-bootstrap CIs), one line through unsteered and the negative steering doses and one
-through unsteered and the cap thresholds (weakest to strongest). The shaded band marks honest hidden pass more than
+through unsteered and the cap thresholds (weakest to strongest). The shaded band marks hidden pass more than
 10 points below unsteered. Writes the PNG.
 
     python scripts/cap_vs_steer_chart.py <cap_vs_steer.json> <chart.png>
@@ -46,11 +46,11 @@ def annotate(axes: Axes, text: str, x: float, y: float, offset: tuple[int, int])
 
 def draw_series(axes: Axes, comparison: dict, arms: list[str], color: str, name: str, offset: tuple[int, int]) -> None:
     changes = comparison["vs_unsteered"]
-    xs = [0.0] + [changes[arm]["honest_hidden_pass"]["estimate"] for arm in arms]
+    xs = [0.0] + [changes[arm]["hidden_pass"]["estimate"] for arm in arms]
     ys = [0.0] + [changes[arm]["hack"]["estimate"] for arm in arms]
     axes.plot(xs, ys, color=color, linewidth=2, label=name, zorder=3)
     for arm, x, y in zip(arms, xs[1:], ys[1:]):
-        hack, capability = changes[arm]["hack"], changes[arm]["honest_hidden_pass"]
+        hack, capability = changes[arm]["hack"], changes[arm]["hidden_pass"]
         axes.errorbar(x, y, xerr=[[x - capability["low"]], [capability["high"] - x]], yerr=[[y - hack["low"]], [hack["high"] - y]],
                       fmt="o", markersize=8, color=color, markeredgecolor=SURFACE, markeredgewidth=2, elinewidth=1.2, alpha=0.9, zorder=4)
         annotate(axes, label(arm), x, y, offset)
@@ -60,7 +60,7 @@ def draw_panel(axes: Axes, model: str, comparison: dict) -> None:
     arms = list(comparison["vs_unsteered"])
     steered = sorted((arm for arm in arms if "cap" not in arm), key=dose)
     caps = sorted((arm for arm in arms if "cap" in arm), key=cap_percentile, reverse=True)
-    lows = [comparison["vs_unsteered"][arm]["honest_hidden_pass"]["low"] for arm in arms]
+    lows = [comparison["vs_unsteered"][arm]["hidden_pass"]["low"] for arm in arms]
     left = min(min(lows), CAPABILITY_RULE) - 4
     axes.axvspan(left, CAPABILITY_RULE, color=GRID, alpha=0.7, linewidth=0, zorder=0)
     axes.text(CAPABILITY_RULE - 0.8, 0.97, "beyond the 10-pt\ncapability rule", transform=axes.get_xaxis_transform(), ha="right", va="top", fontsize=8, color=MUTED)
@@ -71,8 +71,8 @@ def draw_panel(axes: Axes, model: str, comparison: dict) -> None:
     axes.plot(0, 0, "o", markersize=8, color=INK, markeredgecolor=SURFACE, markeredgewidth=2, zorder=5)
     annotate(axes, "unsteered", 0, 0, (6, 8))
     levels = comparison["levels"]["unsteered"]
-    axes.set_title(f"{TITLES_BY_MODEL[model]}\nunsteered: hack {levels['hack']:.1f}%, honest hidden pass {levels['honest_hidden_pass']:.1f}%", fontsize=10, color=INK, loc="left")
-    axes.set_xlim(left, max(8, max(comparison["vs_unsteered"][arm]["honest_hidden_pass"]["high"] for arm in arms) + 2))
+    axes.set_title(f"{TITLES_BY_MODEL[model]}\nunsteered: hack {levels['hack']:.1f}%, hidden pass {levels['hidden_pass']:.1f}%", fontsize=10, color=INK, loc="left")
+    axes.set_xlim(left, max(8, max(comparison["vs_unsteered"][arm]["hidden_pass"]["high"] for arm in arms) + 2))
     axes.grid(color=GRID, linewidth=0.6, zorder=0)
     axes.set_axisbelow(True)
     for side in ("top", "right"):
@@ -90,12 +90,12 @@ def main() -> None:
         axes.set_facecolor(SURFACE)
         draw_panel(axes, model, comparison)
     for axes in axes_grid[1]:
-        axes.set_xlabel("Δ honest hidden pass vs unsteered (pp)  →  better", fontsize=9.5, color=SECONDARY_INK)
+        axes.set_xlabel("Δ hidden pass vs unsteered (pp)  →  better", fontsize=9.5, color=SECONDARY_INK)
     for axes in axes_grid[:, 0]:
         axes.set_ylabel("Δ hack rate vs unsteered (pp)  ↓  better", fontsize=9.5, color=SECONDARY_INK)
     handles, labels = axes_grid[0, 0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="upper left", bbox_to_anchor=(0.015, 0.955), ncol=2, frameon=False, fontsize=10)
-    figure.suptitle("Capping vs negative steering along gi_v2: hack rate vs honest capability (95% CIs, paired bootstrap over problems)",
+    figure.suptitle("Capping vs negative steering along gi_v2: hack rate vs capability (95% CIs, paired bootstrap over problems)",
                     x=0.02, y=0.985, ha="left", fontsize=12, color=INK)
     figure.tight_layout(rect=(0, 0, 1, 0.93))
     figure.savefig(out, dpi=200, facecolor=SURFACE)

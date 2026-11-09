@@ -16,7 +16,7 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
-**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), and on gpt-oss put gi_v2 +0.2 above the 97th percentile with no shape assumption (shape-free q ≤ 2.2% proxy, ≤ 2.6% hard-coding). Capping and negative steering give the same hack vs honest-hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Honest hidden pass is now the capability measure.
+**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), and on gpt-oss put gi_v2 +0.2 above the 97th percentile with no shape assumption (shape-free q ≤ 2.2% proxy, ≤ 2.6% hard-coding). Capping and negative steering give the same hack vs hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Hidden pass is the capability measure again (2026-11-09; honest hidden pass, used 2026-11-07 to 11-09, stays available as a secondary output).
 
 **Gemma random 1729 CPU checks 2026-11-04 (user request; FINDINGS "Gemma random direction 1729: per-seed, per-problem, same-seed divergence and activation-geometry checks"):** the +5.6 is above unsteered on 16 of 16 seeds (seed-bootstrap CI +4.4 to +6.8); per-problem overlap with gi +0.08 (plain r +0.34) is at or below the null-arm floor (the two do-nothing random arms correlate +0.46 with each other through the shared unsteered reference) and vanishes once the reference is removed (split-reference r +0.16); the same-seed prefix shows 1729 disturbs sampling exactly as much as 1730 / 1731 (median 92 / 80 / 86 chars) and as much as gi_v2 at α 0.08 (random unit directions are eight times as disruptive per unit α, norm-matching ≠ disturbance-matching); in layer-30 activation geometry 1729 is an ordinary draw (p17–p74 on every statistic) while gi_v2 lies inside the model's own variation (88% in the top-50 PCs, whitened norm 4 vs 34). Direction-specific, invisible without a forward pass; GPU options (negation / dose, PC-split and per-token noise, causal downstream lens, 20-seed null) are in PLAN.md awaiting a go-ahead. Probe array 15039074 and capeval 15039083 for 1729 are still queued on qos cs.
 
@@ -234,24 +234,27 @@ Limits: the split-half reliability of a 5-pair contrast is modest (0.33), so eac
 that is acceptable for a control population but means two directions from the same pair would differ. The AISI
 `control_spacing` pair is left out (the post does not give its passages).
 
-### Capping vs negative steering along gi_v2 — 2026-11-07: on gpt-oss and Muse the band cap and negative steering trace the same hack-rate vs honest-hidden-pass frontier (no cap beats the steering dose it is compared with); on Gemma the caps lower hacking only beyond the 10-point capability rule; on Qwen nothing lowers it
+### Capping vs negative steering along gi_v2 — 2026-11-07: on gpt-oss and Muse the band cap and negative steering trace the same hack-rate vs hidden-pass frontier (no cap beats the steering dose it is compared with); on Gemma the caps lower hacking only beyond the 10-point capability rule; on Qwen nothing lowers it
 
 Question (Koby, 2026-11-07): another team member proposed capping as the headline intervention because it looked
-better; is capping better at lowering reward hacking at equal capability? Capability = honest hidden pass (hidden
-pass among episodes not judged HACK; BORDERLINE and unjudged count as honest), the problem-stratified ratio
-mean_p(honest passes) / mean_p(honest episodes); hack = judged rate (Qwen: hidden-test-fail proxy, not judged).
+better; is capping better at lowering reward hacking at equal capability? Capability = hidden pass, problem-stratified
+(2026-11-09; this section first used honest hidden pass, the hidden pass among episodes not judged HACK, which is still
+in `cap_vs_steer.json` and gives the same reading); hack = judged rate (Qwen: hidden-test-fail proxy, not judged).
 Paired bootstrap over problems for every difference (`scripts/cap_vs_steer.py`, runs in `data/cap_vs_steer_setups.json`;
 chart `scripts/cap_vs_steer_chart.py`, scratch `schemer-axis/notes/cap_vs_steer_chart.png`).
 
-| model (unsteered hack / honest HP) | negative steering: Δ hack / Δ honest HP | caps: Δ hack / Δ honest HP |
+| model (unsteered hack / HP) | negative steering: Δ hack / Δ HP | caps: Δ hack / Δ HP |
 |---|---|---|
-| gpt-oss (11.7 / 26.0) | −0.1: −2.4 / +2.8; −0.2: −8.1 / +1.5; −0.4: −10.6 / −1.5 | p50: −2.8 / +6.5; p25: −5.6 / +3.6; p5: −8.9 / +3.3 |
-| Muse (32.8 / 63.9) | −0.04: −3.5 / −2.1; −0.08: −7.8 / −5.9; −0.16: −14.4 / −11.3 | p50: −5.7 / −5.5; p25: −9.8 / −7.4; p5: −16.9 / −11.7 |
-| Gemma 4 31B (4.7 / 33.2) | −0.04: −0.3 / −2.0; −0.08: −0.8 / −8.4; −0.16: +2.3 / −26.5 | p35: −2.2 / −12.0; p25: −3.1 / −14.7 |
-| Qwen3.8 (proxy 11.6 / 60.7) | −0.08: −1.5 / −5.4; −0.16: −1.2 / −10.6; −0.32: −3.3 / −37.9 | p25: −0.8 / −8.2 |
+| gpt-oss (11.7 / 25.0) | −0.1: −2.4 / +3.9; −0.2: −8.1 / +2.6; −0.4: −10.6 / 0.0 | p50: −2.8 / +6.9; p25: −5.6 / +3.9; p5: −8.9 / +4.8 |
+| Muse (32.8 / 48.0) | −0.04: −3.5 / +1.5; −0.08: −7.8 / −0.4; −0.16: −14.4 / −1.7 | p50: −5.7 / −0.4; p25: −9.8 / +0.6; p5: −16.9 / −0.6 |
+| Gemma 4 31B (4.7 / 31.7) | −0.04: −0.3 / −1.9; −0.08: −0.8 / −7.8; −0.16: +2.3 / −25.3 | p35: −2.2 / −11.1; p25: −3.1 / −13.4 |
+| Qwen3.8 (proxy 11.6 / 53.7) | −0.08: −1.5 / −4.0; −0.16: −1.2 / −8.7; −0.32: −3.3 / −32.8 | p25: −0.8 / −6.8 |
+
+On Muse, honest hidden pass fell 6–12 points with either intervention while plain hidden pass held within 2: removing
+hacks leaves more honest-but-failing episodes in the honest denominator.
 
 Direct comparisons at matched hack reduction are not significant: gpt-oss cap p5 vs −0.2: hack −0.7 [−3.0, +1.5],
-honest HP +1.9 [−2.6, +6.7]; Muse cap p5 vs −0.16: −2.4 / −0.4, n.s. Benchmarks exist only for cap p25 (gpt-oss
+HP +2.2 [−2.2, +7.2]; Muse cap p5 vs −0.16: −2.4 / +1.1, n.s. Benchmarks exist only for cap p25 (gpt-oss
 MMLU-Pro −1.5, significant; Muse IFBench −1.7). Read: capping does not change the story negative steering tells, and
 steering has more data. The one result that could change the choice is a Gemma cap inside the capability rule that
 significantly lowers judged hacking; the cap dose pilot for that (p45 / p50 / p65, 16 seeds, job 15125968) is running.

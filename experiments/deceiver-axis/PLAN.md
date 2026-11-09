@@ -1110,6 +1110,11 @@ L20–38, 16 seeds; job 15125968): capping becomes the headline only if a cap in
 significantly lowers the judged hack rate on Gemma (FINDINGS "Capping vs negative steering along gi_v2"). Honest hidden
 pass (hidden pass among episodes not judged HACK) replaces hidden pass as the capability measure and in the dose rule.
 
+**Amendment 2026-11-09 (Koby).** Hidden pass is the capability measure and the dose-rule measure again: it is simpler
+and read the same in every comparison so far (FINDINGS "Capping vs negative steering along gi_v2"). Honest hidden pass
+stays computable (`main_analysis.py --outcomes honest_hidden_pass`, the `honestH` column of `pilot_summary.py`, the
+`honest_hidden_pass` key of `cap_vs_steer.json`), but charts, tables and the dose rule use hidden pass.
+
 ## Cross-model percentile of gi_v2 among antonym concepts (pre-registered 2026-11-09, Koby's decisions, before computing it on the data)
 
 **Question.** Is gi_v2 special across models? Antonym concept j is built from the same WordNet pair and sentences
