@@ -48,12 +48,14 @@ if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; the
     echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 fi
 # Blackwell (B200): vLLM auto-selects FLASHINFER for the Qwen judge and its JIT build fails against this venv's CUDA
-# headers ("CUDA compiler and CUDA toolkit headers are incompatible", job 14272566). TRITON_ATTN works there;
-# VLLMGenerator passes the variable on as vLLM's attention_backend argument (Gemma 4 picks TRITON_ATTN anyway).
-if nvidia-smi --query-gpu=name --format=csv,noheader | grep -q B200; then
+# headers ("CUDA compiler and CUDA toolkit headers are incompatible", job 14272566). TRITON_ATTN works there. vLLM 0.28 itself
+# ignores this variable; it is VLLMGenerator (_attention_backend_kwargs in vllm_generation.py) that turns it into the engine's
+# attention_backend argument, so the export is live here (Gemma 4 picks TRITON_ATTN anyway). Not a pipe: under `set -o pipefail`
+# `nvidia-smi | grep -q` can fail on SIGPIPE and silently skip the export (dose_pilot_gemma31b.sbatch, 15043511 task 5).
+case "$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null)" in *B200*)
     export VLLM_ATTENTION_BACKEND="${VLLM_ATTENTION_BACKEND:-TRITON_ATTN}"
-    echo "Blackwell GPU: VLLM_ATTENTION_BACKEND=$VLLM_ATTENTION_BACKEND"
-fi
+    echo "Blackwell GPU: VLLM_ATTENTION_BACKEND=$VLLM_ATTENTION_BACKEND";;
+esac
 
 MODEL="${MODEL:-google/gemma-4-12B-it}"
 JUDGE="Qwen/Qwen2.5-7B-Instruct"

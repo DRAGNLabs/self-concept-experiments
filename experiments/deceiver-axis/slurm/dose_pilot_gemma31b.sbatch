@@ -32,12 +32,11 @@ export SOO_CHAT_KWARGS='{"enable_thinking":true}'
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 export VLLM_DISABLE_COMPILE_CACHE=1  # cached graphs are keyed on the model, not on the steering patch
 nvidia-smi
-# flashinfer default breaks on B200 in this env (JIT: "CUDA compiler and CUDA toolkit headers are incompatible"). Not a pipe:
-# under `set -o pipefail` `nvidia-smi -L | grep -q B200` can fail on SIGPIPE and silently skip the export (15043511 task 5, 2026-11-04).
-case "$(nvidia-smi -L 2>/dev/null)" in *B200*) export VLLM_ATTENTION_BACKEND="${VLLM_ATTENTION_BACKEND:-TRITON_ATTN}";; esac
-echo "VLLM_ATTENTION_BACKEND=${VLLM_ATTENTION_BACKEND:-<default>}"
-# vLLM 0.28 no longer reads VLLM_ATTENTION_BACKEND ("Unknown vLLM environment variable detected" in the 15043511_5 and
-# 15048341_0 logs, FlashInfer still selected), so the backend is pinned through the engine kwargs instead.
+# flashinfer default breaks on B200 in this env (JIT: "CUDA compiler and CUDA toolkit headers are incompatible"), so on B200 the
+# backend is pinned through the engine kwargs below (steered_rh_vllm.py passes --engine-kwargs to vllm.LLM). vLLM 0.28 no longer
+# reads the VLLM_ATTENTION_BACKEND variable ("Unknown vLLM environment variable detected" in the 15043511_5 and 15048341_0 logs,
+# FlashInfer still selected) and this harness does not read it either, so the export that used to sit here was removed (2026-11-09).
+# Not a pipe: under `set -o pipefail` `nvidia-smi -L | grep -q B200` can fail on SIGPIPE and silently skip (15043511 task 5, 2026-11-04).
 ENGINE_KWARGS='{"limit_mm_per_prompt":{"image":0,"video":0,"audio":0}}'
 case "$(nvidia-smi -L 2>/dev/null)" in *B200*) ENGINE_KWARGS='{"limit_mm_per_prompt":{"image":0,"video":0,"audio":0},"attention_backend":"TRITON_ATTN"}';; esac
 echo "engine kwargs: $ENGINE_KWARGS"
