@@ -34,6 +34,8 @@ def main() -> None:
     dupes: list[str] = []
     bad: list[str] = []
     for path in sorted(args.verdicts.glob("*.jsonl")):
+        if path.name.startswith("judge_runner_log"):  # judge_runner.py keeps its per-batch log beside the verdicts by default
+            continue
         for line_no, line in enumerate(path.read_text().splitlines(), 1):
             if not line.strip():
                 continue

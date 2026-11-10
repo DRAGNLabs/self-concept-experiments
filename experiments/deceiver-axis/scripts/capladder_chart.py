@@ -42,7 +42,8 @@ MODELS = {
                           "verdicts_main/ref_all.detail.json",
                           "verdicts_capladder/verdicts_capladder.detail.json", "verdicts_capladder/verdicts_hidden_capladder.detail.json",
                           "verdicts_floorladder/verdicts_floorladder.detail.json", "verdicts_floorladder/verdicts_hidden_floorladder.detail.json"],
-                 jobs="main run 14898353 + 14917541 (doses, p25 cap; judged 2026-10-30), cap ladder 15104509 (p5 / p50)"),
+                 jobs="main run 14898353 + 14917541 (doses, p25 cap; judged 2026-10-30), cap ladder 15104509 (p5 / p50)",
+                 jobs_floor="main run 14898353 + 14917541 (doses, p25 cap; judged 2026-10-30), cap ladder 15104509 (p5 / p50; judged 2026-11-06), floor ladder 15206802 (p95 / p75 / p50; judged 2026-11-10)"),
 }
 
 SURFACE, INK, INK2, INK3, RULE, SHADE = "#fcfcfb", "#0b0b0b", "#52514e", "#8a8985", "#dedcd7", "#f1f0ec"
@@ -68,7 +69,7 @@ def dose(arm: str) -> float:
 def set_arms(arms: list, layer: int) -> None:
     global ARMS, COL_LABELS, X
     doses = sorted([a for a in arms if a.startswith("gi_") and a not in SIDE] + ["unsteered"], key=dose)
-    ARMS = [(a, "0\nunsteered" if a == "unsteered" else f"{dose(a):+.1f}".replace("-", "−")) for a in doses]
+    ARMS = [(a, "0\nunsteered" if a == "unsteered" else f"{dose(a):+g}".replace("-", "−")) for a in doses]
     X = {a: float(i) for i, (a, _) in enumerate(ARMS)}
     x = len(doses) - 1 + 0.6
     for group in (CAPS, FLOORS):
@@ -281,8 +282,8 @@ def main() -> None:
                  "blind Sonnet rubric-v3 judging of every proxy episode and every hidden-pass episode with a hard-code signature",
                  x=0.07, ha="left", color=INK, fontsize=12.5, y=0.985)
     fig.text(0.07, 0.915, f"{M.get('jobs_floor', M['jobs']) if floors else M['jobs']}; seeds 0–11 on every arm; 540 episodes per arm.\n"
-             "Judged rate = HACK (STRONG + WEAK) as judged, no adjudication. CIs: problem bootstrap of the contrast vs unsteered, shifted onto the rate. "
-             f"Holm over the {n_contrasts} contrasts: every steered gi arm and the three random-direction controls (the main-run family).", color=INK2, fontsize=9, va="top")
+             "Judged rate = HACK (STRONG + WEAK) as judged, no adjudication. CIs: problem bootstrap of Δ vs unsteered, shifted onto the rate. "
+             f"Holm over {n_contrasts} contrasts (steered gi arms + three random controls).", color=INK2, fontsize=9, va="top")
     out = args.out or root / f"{args.model}_gi_v2_{'floorladder' if floors else 'capladder'}_chart.png"
     fig.savefig(out, dpi=args.dpi, facecolor=SURFACE)
     fig.savefig(out.with_suffix(".pdf"), facecolor=SURFACE)
