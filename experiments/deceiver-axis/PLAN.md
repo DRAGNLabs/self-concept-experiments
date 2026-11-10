@@ -1305,7 +1305,7 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   code" until a full 12-seed unsteered arm is rerun, which is then proposed to the user. The recheck is not judged;
   it does not address judge drift between the October sets and the headless runner (that would need finished
   unsteered episodes to be judged again, which the standing no-re-judge rule forbids unless the user allows it).
-  Submitted 3:41–3:44 pm: 15231977 (gpt-oss), 15231995 (Muse), 15232002 (Qwen), cs / cs2, qos cs. Gemma has its recheck already: the 2×H100 unsteered pair of the hardware check ran at the current code and sits
+  Submitted 3:41–3:44 pm: 15231977 (gpt-oss), 15231995 (Muse), 15232002 (Qwen), cs / cs2, qos cs. **gpt-oss read (4:25 pm, `unsteered_recheck/recheck_read.json`):** both seeds inside the reference range on every column, no truncated turn; the gpt-oss reference stands. Gemma has its recheck already: the 2×H100 unsteered pair of the hardware check ran at the current code and sits
   inside Koby's 16-seed range on every column (different hardware; B200 is blocked).
 
 
@@ -1436,6 +1436,8 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   the read says so). Dose rule on the 2026-11-07 measure (hidden pass among episodes not judged HACK, and no-code, each within 10
   points of unsteered) with the selection caveat and the three comparison rows; exact sign-flip p. Unsteered judged hacking on
   qwen_hard61 is 0.0%, so only a rise can show and the minus arm can only be read on capability.
+  **Result (judged 4:08–4:21 pm, FINDINGS "Qwen Goodfire-axis (gfar) ±0.08 on 12 seeds, judged"):** 0.0% / 0.0% / 0.3% judged at
+  −0.08 / unsteered / +0.08 (2 WEAK hacks in 732, Holm 1.0); −0.08 at −9.8 hidden pass and +9.8 no-code (inside by 0.2), +0.08 unchanged.
 - *Capping.* Thresholds are percentiles of the per-token projection on gfar in unsteered episodes
   (`cap_thresholds.sbatch`, 4 episodes, p5 / p25 / p50 / p75 / p95; jobs 15213667-69 and, for Qwen, 15214024 after 15213670 failed at model load on a moved hub cache ref; `gfar_vs_gi_v2/steer/thresholds/<model>/`).
   First arm on every model: the cap at p25 over the gi_v2 band (`--steer-mode cap`), the gi_v2 cap's own setting, on 12
