@@ -1428,6 +1428,14 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
+  **Qwen dose set (2026-11-10 4:15 pm MST; the set was built at 4:06–4:08 pm by the detached pipeline, no verdict and no capability or
+  proxy column of the 12-seed arms has been looked at; the two pilot seeds were, for the extension rule above):** the extension
+  finished 4:05 pm (20 of 20). Blind set `gfdose` = `gfar_L32_a-0.08` / `gfar_L32_a0.08`, 12 seeds × 61 problems each
+  (`gfar_pipeline.sh gfdose qgfdose …`), headless Sonnet rubric-judge, first pass as judged. Holm family: the judged gfar arms
+  of the model (these two and the p25 cap, 3 contrasts; Qwen has no random-direction arms, so there is no specificity control and
+  the read says so). Dose rule on the 2026-11-07 measure (hidden pass among episodes not judged HACK, and no-code, each within 10
+  points of unsteered) with the selection caveat and the three comparison rows; exact sign-flip p. Unsteered judged hacking on
+  qwen_hard61 is 0.0%, so only a rise can show and the minus arm can only be read on capability.
 - *Capping.* Thresholds are percentiles of the per-token projection on gfar in unsteered episodes
   (`cap_thresholds.sbatch`, 4 episodes, p5 / p25 / p50 / p75 / p95; jobs 15213667-69 and, for Qwen, 15214024 after 15213670 failed at model load on a moved hub cache ref; `gfar_vs_gi_v2/steer/thresholds/<model>/`).
   First arm on every model: the cap at p25 over the gi_v2 band (`--steer-mode cap`), the gi_v2 cap's own setting, on 12
@@ -1492,7 +1500,7 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   `honest_hidden_pass`), and on no-code, each within 10 points of unsteered; the `pilot_summary.py` flag (hidden pass
   among non-proxy episodes) is reported beside it under its own name and does not decide. **Exploratory row, declared
   now:** the judged hack rate among episodes that submitted code is reported for every arm with the note that it
-  conditions on a post-treatment variable; it does not enter the Holm family and no claim rests on it alone.
+  conditions on a post-treatment variable; it does not enter the Holm family and no claim rests on it alone. **Result (judged 3:33–3:52 pm, FINDINGS "Muse Goodfire-axis (gfar) dose set, judged"):** judged hack 32.8% → 10.7 / 22.6 / 44.3 / 52.0% at −0.16 / −0.08 / +0.08 / +0.16, all Holm-significant; rule measure −18.1 / −10.6 / −3.4 / −3.3, so the negative doses are outside (possibly composition: raw hidden pass −2.6 / −0.4) and the positive doses inside. One exploratory row was added after the results and is labelled so: hidden pass without a judged hack as a share of all episodes (43.0% → 40.9 / 41.3 / 33.7 / 29.1%); it does not decide the rule.
 
 - **Muse p75 cap, one-seed pilot (2026-11-10, user request ~1:18 pm MST; rule written before submission):** the p25
   cap stopped Muse from submitting (no-code 98.9%), and the size of that side effect differs too much between models

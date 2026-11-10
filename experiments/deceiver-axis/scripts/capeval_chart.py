@@ -102,6 +102,18 @@ PRESETS = {
         sub="Role set v2 axis (Koby's persona_contrast.pt). Add-steering at layer 30 in units of the layer's mean residual norm, the same doses as the hard108 RH scan.\n"
             "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "qwen_v2": dict(
+        compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_qwen_gi_v2.json",
+        out=SCRATCH / "qwen38_27b_gi_v2/capeval/capeval_qwen_gi_v2_chart.png",
+        dose_arms=[("gi_m0.32", "−0.32"), ("gi_m0.16", "−0.16"), ("gi_m0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("gi_p0.08", "+0.08"), ("gi_p0.16", "+0.16"), ("gi_p0.24", "+0.24"), ("gi_p0.32", "+0.32")],
+        side_arms=[("gi_cap_p25", "cap p25\n(layers 22–42)")],
+        col_labels=["gi −0.32", "gi −0.16", "gi −0.08", "unsteered", "gi +0.08", "gi +0.16", "gi +0.24", "gi +0.32", "cap p25"],
+        title="Qwen3.8-27B, generic + intent deceiver axis (role set v2): capability retention",
+        layer="32",
+        sub="Role set v2 axis (Koby's Qwen vector). Add-steering at layer 32 in units of the layer's mean residual norm, the same doses as the qwen_hard61 RH scan;\n"
+            "the cap arm clips the gi projection at the layer-wise p25 over layers 22–42.\n"
+            "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
 }
 RULE_POINTS = 2.0
 SIDE_GAP = 1.0
