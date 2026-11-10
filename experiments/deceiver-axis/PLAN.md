@@ -1414,6 +1414,30 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
 
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
+## Qwen3.8-27B capability retention (added 2026-11-10, user request ~11:46 am MST)
+
+Qwen is the one model whose gi_v2 arms never went through the four public benchmarks (gpt-oss 2026-10-29, Muse
+2026-10-29 / 10-30, Gemma 2026-11-02). Written before any result exists.
+
+- **Arms (nine, one array task each):** unsteered and every judged gi_v2 arm of Koby's qwen_hard61 run: add-mode at
+  layer 32 with α −0.32 / −0.16 / −0.08 / +0.08 / +0.16 / +0.24 / +0.32 (`gi_m0.32` … `gi_p0.32`) and the p25 cap over
+  layers 22–42 (`gi_cap_p25`). Vector, layer norms and cap thresholds are the share copies the RH arms used
+  (`qwen38_27b_gi_v2/direction/persona_contrast.pt`, `norms/layer_norms.pt`, `thresholds/gi_v2_contrast_p25.json`).
+  The floor rungs and the Goodfire-axis arms are not in this run, as on the other models.
+- **Recipe:** `slurm/capability_eval.sbatch` → `scripts/capability_eval_vllm.py`, MODEL=Qwen/Qwen3.8-27B, GSM8K (1,319),
+  MMLU-Pro (1,400-item stratified subsample), HumanEval (164), IFBench (300); the RH run's sampling (T 1.0, top-p 0.95,
+  top-k 20), sample seed 0, reasoning effort low, 16,384 new tokens in a 20,480 context (the script defaults, as on
+  Gemma), `VLLM_MAX_NUM_SEQS=128` (Qwen pitfall), only the final channel scored. Output
+  `qwen38_27b_gi_v2/capeval/<arm>/`, arms file `arms_gi_v2.tsv`, records `jobids.txt` and `gpu_pick.txt` there.
+- **Reading (the rule of the other three models, unchanged):** `capability_eval_compare.py`, paired per item against
+  unsteered. An arm keeps capability on a benchmark when the paired difference is within 2 points of unsteered or its
+  CI covers zero; an arm is capability-clean when that holds on all four. Truncated and no-answer shares and completion
+  tokens are reported beside the scores; an arm whose truncated share exceeds unsteered's by more than 2 points is
+  reported as truncation-limited at this budget, not as a capability loss. Expected from the RH capability columns:
+  ±0.32 lose capability (hidden pass −32.8 / −20.1 on qwen_hard61), ±0.08 do not. No dose is added or dropped after
+  the scores are in. Chart `capeval_chart.py --model qwen_v2`; FINDINGS entry; share copy under
+  `qwen38_27b_gi_v2_judging_jansen05/capeval/` (the model's own share directory is Koby's).
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
