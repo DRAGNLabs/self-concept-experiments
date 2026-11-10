@@ -837,6 +837,14 @@ def plural(n: int, word: str) -> str:
     return f"{n:,} {word}{'' if n == 1 else 's'}"
 
 
+def _write_whole(path, text):
+    """Write beside the target and rename over it, so a reader (statuspage copying the notebook, a browser
+    reloading the page) never sees a half-written 10 MB file."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--findings", default=str(EXP / "FINDINGS.md"))
@@ -1231,7 +1239,7 @@ def main() -> None:
                 + "</div><script type='application/json' id='dash-imgdata'>" + json.dumps(images) + f"</script><script>{JS}</script>")
     doc = ("<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
            f"<title>Schemer-axis status · {esc(now_full)}</title></head><body class='dash-page'>" + fragment + "</body></html>")
-    out.write_text(doc)
+    _write_whole(out, doc)
     # The same page as the saved output of a one-cell notebook: VS Code shows a notebook's stored HTML output
     # when the file is opened, with no kernel and nothing served.
     nb = {"cells": [
@@ -1243,7 +1251,7 @@ def main() -> None:
                "outputs": [{"output_type": "display_data", "metadata": {},
                             "data": {"text/html": [fragment], "text/plain": ["schemer-axis status page (HTML output)"]}}]}],
           "metadata": {"language_info": {"name": "python"}}, "nbformat": 4, "nbformat_minor": 5}
-    out.with_suffix(".ipynb").write_text(json.dumps(nb))
+    _write_whole(out.with_suffix(".ipynb"), json.dumps(nb))
     print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB): {len(entries)} entries, {len(images)} charts embedded "
           f"({len(used)} tied to entries), {len(items)} in-progress items, queue groups {len(queue) if queue is not None else 'n/a'}; categories {cat_n}")
 
