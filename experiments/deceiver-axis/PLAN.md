@@ -1226,6 +1226,23 @@ own thresholds from 4 unsteered episodes, arms `rand1730_floor_p95` / `rand1730_
 `muse_glimmer/random1730/floor/`. Same rule per rung and per direction. If both directions give usable rungs, both are
 extended and both are reported; neither is dropped after the fact.
 
+**Gemma 31B on H200s: hardware check (user 2026-11-10 ~10:05 am MST: assume cs-3-1 stays out, "let's start with testing
+H200s"; rule written before any result).** cs-3-1, the only B200 node, has been under a health-check reservation since
+2:30 am and 55 Gemma tasks wait on it (floor p95 seeds 14–15, all of p75 and p50, five gfar pilot doses, the gfar p25
+cap). Every Gemma hard108 arm of ours ran on the B200 with `TRITON_ATTN`, so before any arm moves the same lines are
+run on an H200 (m13h, 141 GB against 180 GB; KV cache on the B200 was 138,717 tokens): job `schemer-gemma-h200-check`,
+4 tasks into `gemma4_31b_gi_v2/h200_check/`: `unsteered/seed{0,1}` (the reference arm's recipe, `--concurrency 45`
+as our arms) and `floor_p95_L20-38/seed{0,1}` (the exact settings lines of the B200 tasks 15206804_0 and _1), with
+`ATTN_BACKEND=TRITON_ATTN` so the placements differ in the card only. **Read:** (1) fit: every task loads, finishes
+inside 8 h without out-of-memory errors, and its truncated-turn share is not above the B200 seeds' maximum; (2)
+rates: per H200 seed, honest hidden pass, shown pass, no-code and the proxy column inside the min–max range of the
+B200 seeds of the same arm (16 unsteered, 14 floor p95). If both hold, whole arms move (gfar pilot, gfar p25 cap,
+floor p75 and p50; floor p95 seeds 14–15 stay with the B200) and the write-ups name the hardware per arm. If a column
+falls outside the range, nothing moves without a further look. Two seeds per arm only show a gross shift (a seed
+range is several points wide); that limit goes with the result. The reference unsteered arm is Koby's (share
+`rh/hard108/unsteered`), its hardware and attention backend are not recorded in the files I can read, so the floor
+p95 pair, same code and same line on both cards, is the like-for-like comparison.
+
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
 
 **Question.** What share q of random directions shaped like the persona covariance raise reward hacking at least as

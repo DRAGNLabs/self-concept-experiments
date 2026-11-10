@@ -39,6 +39,9 @@ nvidia-smi
 # Not a pipe: under `set -o pipefail` `nvidia-smi -L | grep -q B200` can fail on SIGPIPE and silently skip (15043511 task 5, 2026-11-04).
 ENGINE_KWARGS='{"limit_mm_per_prompt":{"image":0,"video":0,"audio":0}}'
 case "$(nvidia-smi -L 2>/dev/null)" in *B200*) ENGINE_KWARGS='{"limit_mm_per_prompt":{"image":0,"video":0,"audio":0},"attention_backend":"TRITON_ATTN"}';; esac
+# ATTN_BACKEND=<name> pins the backend on any GPU (2026-11-10, H200 hardware check: TRITON_ATTN there as on the B200, so the two
+# placements differ in the card only, not in the attention kernels).
+if [ -n "${ATTN_BACKEND:-}" ]; then ENGINE_KWARGS='{"limit_mm_per_prompt":{"image":0,"video":0,"audio":0},"attention_backend":"'"$ATTN_BACKEND"'"}'; fi
 echo "engine kwargs: $ENGINE_KWARGS"
 
 MODEL="${MODEL:-google/gemma-4-31B-it}"
