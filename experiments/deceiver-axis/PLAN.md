@@ -1321,10 +1321,13 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   seed count (Gemma 16, Qwen 12); doses outside it are reported from the pilot's capability columns and not extended
   unless the user asks. The choice uses capability columns only, never a hack column.
 - *Capping.* Thresholds are percentiles of the per-token projection on gfar in unsteered episodes
-  (`cap_thresholds.sbatch`, 4 episodes, p5 / p25 / p50 / p75 / p95; jobs 15213667-70, `gfar_vs_gi_v2/steer/thresholds/<model>/`).
+  (`cap_thresholds.sbatch`, 4 episodes, p5 / p25 / p50 / p75 / p95; jobs 15213667-69 and, for Qwen, 15214024 after 15213670 failed at model load on a moved hub cache ref; `gfar_vs_gi_v2/steer/thresholds/<model>/`).
   First arm on every model: the cap at p25 over the gi_v2 band (`--steer-mode cap`), the gi_v2 cap's own setting, on 12
   seeds (Gemma 16), launched when that model's thresholds exist. The rest of the cap ladder and the floor ladder are
   decided with the user after the p25 read.
+  **p25 cap launched for gpt-oss and Muse (2026-11-10 1:52 am MST):** thresholds finished 1:51 am (4 episodes each);
+  arm `gf_cap_p25`, 12 seeds × 45, jobs 15214272 (gpt-oss, band 12–23, `gi_v2/pilot/`) and 15214273 (Muse, band 17–33,
+  `muse_glimmer/gi_v2/pilot/`). Unsteered gfar projections are negative at almost every band layer in both models.
 - *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
   rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
   set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main
