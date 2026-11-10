@@ -1275,7 +1275,7 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   `pilot_summary.py` flag (hidden pass among non-proxy episodes) are no longer called the dose rule. The
   `pilot_summary.py` measure stays in use only as the **pre-judging screen** of one- and two-seed pilots, where no
   verdicts exist, and is named as such. Every entry that states "inside / outside the rule" is restated on the rule
-  measure; statements made earlier on another measure are marked corrected, not deleted.
+  measure; statements made earlier on another measure are marked corrected, not deleted. *Selection caveat (3:48 pm, from a note the user forwarded):* the rule measure conditions on a post-treatment outcome, so its denominator moves with the arm. Where an arm raises hacking, the episodes not judged HACK are a smaller, selected set (Muse floor p95: 34% of episodes against 67% unsteered); where it lowers hacking, former hacks join the denominator, mostly as hidden-test failures. The in / out status is still read on this measure, but an arm that is outside on it while inside on raw hidden pass or on the non-proxy screen, or within about 2 points of the line, is written "outside the rule; the miss may be composition, not capability", with the three measures and the not-HACK share shown, and the four-benchmark capability eval (not conditioned on hacking) named as the read that would separate the two.
 - **Holm family, frozen.** Per model and per axis: every judged steered arm of that axis (gi_v2: doses, caps and
   floors together; gfar: doses and caps) plus the model's random-direction add arms. The family no longer grows rung
   by rung in the write-up: an entry quotes the family as it stands when written and says its size; the corrections
