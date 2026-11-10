@@ -1394,6 +1394,8 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   Judged blind with the gpt-oss ladder pipeline and added to the gfar Holm family (dose scan, p25 cap, p50 cap, three
   randoms). Read with the dose rule as p25 was: the question is whether a reduction in judged hacking survives with
   no-code and honest hidden pass inside 10 points.
+  **gpt-oss p50 read (judged 2026-11-10 1:37 pm; FINDINGS "gpt-oss Goodfire-axis (gfar) p50 cap"):** judged hack 11.7 → 0.2%
+  (Holm 0.0005), no-code −0.4 points, honest hidden pass +3.3, shown pass −4.3 (n.s.), reasoning ×2.2: inside the dose rule.
 - *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
   rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
   set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main

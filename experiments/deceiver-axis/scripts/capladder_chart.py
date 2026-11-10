@@ -61,7 +61,7 @@ SIDE = CAPS + FLOORS  # side points beside the dose scan, caps then floors, a do
 PREFIX, AXIS_NAME = "gi_", "gi_v2 vector"
 GFAR = {  # --axis gfar: per-model summary file and job line; verdict detail files are the reference ones plus verdicts_gf*/
     "gptoss": dict(summary="summary_gfar.json",
-                   jobs="dose scan 15213661 (judged 2026-11-10), p25 cap 15214272 (judged 2026-11-10); unsteered arm of the gi_v2 main run"),
+                   jobs="dose scan 15213661, p25 cap 15214272, p50 cap 15223509 (all judged 2026-11-10); unsteered arm of the gi_v2 main run"),
     "muse": dict(summary="summary_gfar.json",
                  jobs="p25 cap 15214273 (judged 2026-11-10); the ±0.08 / ±0.16 dose arms are not judged yet; unsteered arm of the gi_v2 main run"),
 }
