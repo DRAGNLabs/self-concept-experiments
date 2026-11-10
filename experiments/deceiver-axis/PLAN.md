@@ -1263,6 +1263,52 @@ and a pass on the H200 supports the H200 only.
 column; floor p95 pair outside on two (seed 1 honest hidden pass 7 of 84 against a B200 minimum of 8 of 91; truncated turns 4 against a
 maximum of 3). Nothing moves to cs2 without a further look; the floor mode line was logged on both ranks.
 
+## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
+
+Three independent adversarial reviews (intervention code, statistics and judging, claims and methods) were run on the
+work of 2026-11-05 to 11-10. No run applied an intervention other than the one written up and no reported number
+failed recomputation; the corrections below concern rules and readings. FINDINGS "Review corrections" holds the tables.
+
+- **Dose rule, one measure.** For a judged arm the 10-point rule is read on **hidden pass among episodes not judged
+  HACK** (`main_analysis.py` outcome `honest_hidden_pass`; the 2026-11-07 amendment in "Capping vs negative steering")
+  and on **no-code**, each within 10 points of unsteered. Raw hidden pass (the cap-ladder text of 2026-11-06) and the
+  `pilot_summary.py` flag (hidden pass among non-proxy episodes) are no longer called the dose rule. The
+  `pilot_summary.py` measure stays in use only as the **pre-judging screen** of one- and two-seed pilots, where no
+  verdicts exist, and is named as such. Every entry that states "inside / outside the rule" is restated on the rule
+  measure; statements made earlier on another measure are marked corrected, not deleted.
+- **Holm family, frozen.** Per model and per axis: every judged steered arm of that axis (gi_v2: doses, caps and
+  floors together; gfar: doses and caps) plus the model's random-direction add arms. The family no longer grows rung
+  by rung in the write-up: an entry quotes the family as it stands when written and says its size; the corrections
+  entry gives every contrast under this rule and under a whole-model family, and an arm whose significance differs
+  between the two is called not robust to the family choice.
+- **Exact p.** Sign-flip p values for rate outcomes are exact (convolution over problems; `main_analysis.py` from
+  commit c490939). Values printed earlier as 0.0005 / 0.0007 / 0.0002 were the resampling floor (1 / 20001) times the
+  family size and are quoted from here on as exact values. `honest_hidden_pass` keeps its resampled swap test (a
+  ratio of means is not on a grid) and is quoted as "<" its floor where it sits on it.
+- **Submission-conditioned rate.** The judged hack rate among episodes that submitted code is reported for every arm
+  whose no-code rate differs from unsteered by more than 10 points, as an exploratory row (it conditions on a
+  post-treatment variable; no claim rests on it alone). An arm outside the rule on no-code is called uninterpretable
+  on the all-episode rate, not "no effect".
+- **What a percentile rung clamps.** Thresholds are percentiles of generated tokens in 4 unsteered `ib_solvhard_s0`
+  episodes at 16,384 new tokens; the clamp acts on every position. `scripts/clamp_shares.py` reports, per arm, the
+  open-loop share of prompt and of generated positions the clamp moves; the rung label alone is not read as "share
+  of tokens clamped". For Gemma (hard108, 32,768 tokens) and Qwen (qwen_hard61, 65,536 tokens) the threshold task set
+  and budget differ from the arm's; this is stated with each cap and floor result.
+- **Unsteered reference recheck (written before submission).** The unsteered references are from 2026-10-12
+  (gpt-oss), 10-21 (Muse) and 11-03 (Qwen, Koby's arm), before several harness changes. Two unsteered seeds per model
+  are rerun at the current code with the reference recipe: gpt-oss and Muse seeds 0 and 1 (45 problems), Qwen seeds 8
+  and 9 (qwen_hard61, Koby's seed numbering), into `<model>/unsteered_recheck/`, never into the reference
+  directories. **Read (`scripts/hardware_check_read.py`):** per recheck seed, honest hidden pass (non-proxy), shown
+  pass, no-code and the proxy column inside the min–max range of the reference arm's 12 seeds, and the truncated-turn
+  share not above the reference maximum. Inside on every column: the reference stands for that model and the entry
+  says so. Outside on any column: every contrast of that model carries "reference not reproduced at the current
+  code" until a full 12-seed unsteered arm is rerun, which is then proposed to the user. The recheck is not judged;
+  it does not address judge drift between the October sets and the headless runner (that would need finished
+  unsteered episodes to be judged again, which the standing no-re-judge rule forbids unless the user allows it).
+  Gemma has its recheck already: the 2×H100 unsteered pair of the hardware check ran at the current code and sits
+  inside Koby's 16-seed range on every column (different hardware; B200 is blocked).
+
+
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
 
 **Question.** What share q of random directions shaped like the persona covariance raise reward hacking at least as
