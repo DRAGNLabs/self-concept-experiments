@@ -1242,6 +1242,17 @@ falls outside the range, nothing moves without a further look. Two seeds per arm
 range is several points wide); that limit goes with the result. The reference unsteered arm is Koby's (share
 `rh/hard108/unsteered`), its hardware and attention backend are not recorded in the files I can read, so the floor
 p95 pair, same code and same line on both cards, is the like-for-like comparison.
+**Amendment 2026-11-10 ~10:25 am MST (before any check task has started):** the H200 job 15224080 is pending on
+priority with a start estimate of Nov 13 (standby would be later: `sbatch --test-only` put it at Dec 2), so the same
+four lines also run on cs2 with two H100s, tensor-parallel (`TP=2`, `ATTN_BACKEND=TRITON_ATTN`, user go-ahead ~10:22 am),
+into `gemma4_31b_gi_v2/h100x2_check/`. Same read as above, per placement. Two extra points for this placement:
+(a) under tensor-parallel the steering is installed by each worker from a spec file (`steering_worker.py`); that code
+chose "add, else cap", so a floor arm would have run as a cap. Fixed before submission (`transform_factory`, unit
+test in `tests/test_intervene.py`); the fit check for the floor pair includes the worker log line naming the mode
+(`patched ... (floor) for layers [20..38]` on both ranks). Add and cap were verified under tensor-parallel on Gemma
+before, floor was not, so the floor pair is also the first functional test of it. (b) Tensor-parallel is a larger
+change than another single card (two processes, different batching), so a pass here supports moving arms to cs2 only,
+and a pass on the H200 supports the H200 only.
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
 

@@ -214,3 +214,14 @@ def cap_direction(model: nn.Module, thresholds_by_layer: dict[int, float],
                   for layer, threshold in thresholds_by_layer.items()}
     with _hooks(model, transforms):
         yield
+
+
+def transform_factory(mode: str):
+    """The transform constructor for a clamp or add mode by name ("add", "cap", "floor"); raises on anything else.
+
+    For code that rebuilds a transform from a saved spec (the tensor-parallel worker): a two-way "add, else cap" choice
+    there would have run a floor arm as a cap (found 2026-11-10 before any tensor-parallel floor run)."""
+    factories = {"add": add_transform, "cap": cap_transform, "floor": floor_transform}
+    if mode not in factories:
+        raise ValueError(f"no transform for steering mode {mode!r}; expected one of {sorted(factories)}")
+    return factories[mode]
