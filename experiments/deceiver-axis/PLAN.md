@@ -1412,6 +1412,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   cap is read with the dose rule only. The Gemma and Qwen pilots are one and two seeds, so a dose near the 10-point
   line can fall on the wrong side (Koby's Muse pilot did); the full-seed capability columns decide in the write-up.
 
+- **Muse p25 cap judged on its own (2026-11-10, user request ~12:58 pm MST, written before the set is built):** the
+  cap arm `gf_cap_p25` (15214273, complete 12:56 pm) is judged now as blind set `gfcap`, as on gpt-oss and Qwen,
+  instead of waiting for the ±0.08 job 15213662. The ±0.08 arms and Koby's ±0.16 arms stay one later set. Same
+  builder, judges and reading rules; the Holm family is every judged gfar arm of the model and is recomputed when
+  the second set is in, so the cap's adjusted p can change then (the raw contrast and CI do not).
+
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
 ## Qwen3.8-27B capability retention (added 2026-11-10, user request ~11:46 am MST)

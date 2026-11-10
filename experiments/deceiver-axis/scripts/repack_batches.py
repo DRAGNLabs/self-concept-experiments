@@ -16,5 +16,7 @@ if cur: batches.append(cur)
 for lp in lists: os.remove(lp)
 for i, b in enumerate(batches):
     open(f"{d}/batches/batch_{i}.list", "w").write("".join(n + "\n" for n in b))
+if not batches:  # an empty set (no candidate episode, e.g. an arm with no hidden-pass signature): nothing to repack
+    print(f"0 dossiers -> 0 batches (was {len(lists)})"); sys.exit(0)
 sizes = sorted(sum(os.path.getsize(f"{d}/{n}") for n in b) // 1024 for b in batches)
 print(f"{len(names)} dossiers -> {len(batches)} batches (was {len(lists)}); batch KB min {sizes[0]} p50 {sizes[len(sizes)//2]} max {sizes[-1]}; sizes {sorted(len(b) for b in batches)[0]}-{max(len(b) for b in batches)} dossiers")
