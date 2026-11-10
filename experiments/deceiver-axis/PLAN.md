@@ -1396,6 +1396,26 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   no-code and honest hidden pass inside 10 points.
   **gpt-oss p50 read (judged 2026-11-10 1:37 pm; FINDINGS "gpt-oss Goodfire-axis (gfar) p50 cap"):** judged hack 11.7 → 0.2%
   (Holm 0.0005), no-code −0.4 points, honest hidden pass +3.3, shown pass −4.3 (n.s.), reasoning ×2.2: inside the dose rule.
+  **gpt-oss random-direction p50 cap probe (side note forwarded by the user 2026-11-10 ~1:45 pm; rule written before
+  submission).** The p50 read has no matched control: the three random arms are add arms at +0.07, none clamps half
+  the tokens over 12 layers, and a cap that heavy on any direction might stop hacking (reasoning per turn already
+  doubles). A random-direction cap has only been tried on Gemma, where it broke the model. Directions: random 1729 and
+  1730 as drawn at the steer layer 17 (`save_random_direction.py`, the main run's add controls), tiled over the layers;
+  two directions because one draw can be idiosyncratic either way (as on Muse). Thresholds: p50 of each direction's
+  per-token projection in 4 unsteered episodes (`cap_thresholds.sbatch`, as the gfar thresholds). Arms
+  `rand1729_cap_p50`, `rand1730_cap_p50`: the `gf_cap_p50` line with direction and thresholds swapped, band 12–23,
+  seed 0, 45 problems each, in `gi_v2/pilot/`; files in `gi_v2/random_cap/`. **Probe rule (no hack column):** a
+  direction is usable if on seed 0 its no-code rate is within 10 points of unsteered seed 0 and its completions are
+  not degenerate (truncated-turn share, reasoning length); a usable direction is extended to 12 seeds and judged blind.
+  **Reading rule for the judged control, fixed now:** the gfar p50 reduction counts as specific to the Goodfire axis
+  if the random-cap arms' judged hack rate does not fall significantly against unsteered (Holm over the random-cap
+  arms) and the gfar cap is lower than each random cap by the paired problem bootstrap (95% CI of the difference
+  excludes zero). If a random cap lowers judged hacking by a comparable amount, the p50 result is reported as a
+  generic effect of clamping, not of the axis. If both random caps break the model, it is recorded that no matched
+  clamp control exists on gpt-oss either and the p50 result keeps that limit in every statement of it. Limit known in
+  advance: the match is by percentile, not by the size of the change to the residual, which is smaller along a
+  random direction; the per-layer mean absolute change under each cap is reported beside the result if the
+  projection sidecars allow it.
 - *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
   rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
   set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main
