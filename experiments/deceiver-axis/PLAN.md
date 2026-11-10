@@ -1402,67 +1402,13 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   no-code and honest hidden pass inside 10 points.
   **gpt-oss p50 read (judged 2026-11-10 1:37 pm; FINDINGS "gpt-oss Goodfire-axis (gfar) p50 cap"):** judged hack 11.7 → 0.2%
   (Holm 0.0005), no-code −0.4 points, honest hidden pass +3.3, shown pass −4.3 (n.s.), reasoning ×2.2: inside the dose rule.
-  **gpt-oss random-direction p50 cap probe (side note forwarded by the user 2026-11-10 ~1:45 pm; rule written before
-  submission).** The p50 read has no matched control: the three random arms are add arms at +0.07, none clamps half
-  the tokens over 12 layers, and a cap that heavy on any direction might stop hacking (reasoning per turn already
-  doubles). A random-direction cap has only been tried on Gemma, where it broke the model. Directions: random 1729 and
-  1730 as drawn at the steer layer 17 (`save_random_direction.py`, the main run's add controls), tiled over the layers;
-  two directions because one draw can be idiosyncratic either way (as on Muse). Thresholds: p50 of each direction's
-  per-token projection in 4 unsteered episodes (`cap_thresholds.sbatch`, as the gfar thresholds). Arms
-  `rand1729_cap_p50`, `rand1730_cap_p50`: the `gf_cap_p50` line with direction and thresholds swapped, band 12–23,
-  seed 0, 45 problems each, in `gi_v2/pilot/`; files in `gi_v2/random_cap/`. **Probe rule (no hack column):** a
-  direction is usable if on seed 0 its no-code rate is within 10 points of unsteered seed 0 and its completions are
-  not degenerate (truncated-turn share, reasoning length); a usable direction is extended to 12 seeds and judged blind.
-  **Reading rule for the judged control, fixed now:** the gfar p50 reduction counts as specific to the Goodfire axis
-  if the random-cap arms' judged hack rate does not fall significantly against unsteered (Holm over the random-cap
-  arms) and the gfar cap is lower than each random cap by the paired problem bootstrap (95% CI of the difference
-  excludes zero). If a random cap lowers judged hacking by a comparable amount, the p50 result is reported as a
-  generic effect of clamping, not of the axis. If both random caps break the model, it is recorded that no matched
-  clamp control exists on gpt-oss either and the p50 result keeps that limit in every statement of it. Limit known in
-  advance: the match is by percentile, not by the size of the change to the residual, which is smaller along a
-  random direction; the per-layer mean absolute change under each cap is reported beside the result if the
-  projection sidecars allow it.
-  **Size amendment (second side note forwarded by the user 2026-11-10 ~2:25 pm; written before any random-cap job
-  has started; it replaces the reading rule above).** A cap at the same percentile is not a cap of the same size, and
-  the rule above would let a control that barely touches the model certify the result. *Measure:* the open-loop size
-  of a cap at a layer is the mean over unsteered turns of E[max(projection − τ, 0)], the mean amount by which the cap
-  lowers the projection, in residual units (unit directions), read from the per-turn quantiles (every 5th percentile)
-  of the thresholds job's sidecar; `scripts/cap_size_match.py`, test `tests/test_cap_size_match.py`. *Known before
-  any random data:* the gfar p50 cap has size 164 (layer 12) to 936 (layer 23), 2.9–6.9% of the mean token norm
-  (band mean 4.3%; 8 turns). The gfar projection is wide: IQR 588 at layer 17 against 157 for the standard deviation
-  of an isotropic direction (norm / √2880), and the gi_v2 direction's own p50 cap would be 0.31 times the gfar cap's
-  size (0.20–0.40 by layer). A random direction's p50 cap is therefore expected to be several times gentler.
-  *Size rule:* a random cap counts as size-matched only if its open-loop size is within 0.8–1.25 times the gfar p50
-  cap's (band mean of the per-layer ratios). The two p50 arms already queued are kept as percentile-matched controls
-  (same share of tokens clamped) and are labelled with their measured size ratio; outside 0.8–1.25 they cannot
-  support "specific to the Goodfire axis" on their own. *Size-matched arms, queued beside them:*
-  `rand1729_cap_szgf50`, `rand1730_cap_szgf50`, the same two directions with per-layer thresholds chosen so that the
-  open-loop size equals the gfar p50 cap's at every layer of the band (`cap_size_match.py`, run by the probe job
-  itself on the thresholds job's sidecars: `slurm/size_matched_cap_probe.sbatch`, which then runs `main_run.sbatch`
-  unchanged). One seed, same probe rule; usable arms get 12 seeds and blind judging with the percentile-matched ones.
-  *Known in advance:* on a narrow direction the matched threshold lies below most of the distribution, so the
-  size-matched cap moves nearly every token by about the same amount (close to subtracting a fixed vector at each
-  layer), where the gfar cap moves half the tokens by varying amounts. No random control matches both the share of
-  tokens touched and the size; the two kinds bracket the gfar cap. *Reading rule (replaces the one above):*
-  (1) the gfar p50 reduction counts as specific to the Goodfire axis only if at least one size-matched random cap is
-  usable, no usable random cap of either kind lowers judged hacking significantly against unsteered (Holm over all
-  judged random-cap arms), and the gfar cap is lower than each usable random cap by the paired problem bootstrap
-  (95% CI of the difference excludes zero); (2) if a size-matched random cap lowers judged hacking by a comparable
-  amount, the p50 result is reported as a generic effect of moving the residual that far, not of the axis; (3) if
-  only percentile-matched caps are usable and they leave hacking unchanged, the statement is limited to "a gentler
-  clamp of the same percentile on a random direction does not lower hacking" and the p50 result keeps the limit "no
-  size-matched control"; (4) if the size-matched caps fail the probe rule, it is recorded that a change of this size
-  along a random direction breaks gpt-oss while along gfar it does not, which is a fact about tolerance and not a
-  hacking control, and the limit stays; (5) if no random cap of either kind is usable, the earlier wording holds (no
-  matched clamp control on gpt-oss). *Limits of the measure:* it is open-loop (unsteered projections; in the run a
-  clamp at one layer changes the projections the later layers see), it does not see mass beyond the 5th and 95th
-  percentiles, and it rests on 4 unsteered episodes per direction; the vLLM path does not record the applied change.
-  **Withdrawn 2026-11-10 2:47 pm MST (user ~2:45 pm, relaying Koby: random vectors need no cap control on any model;
-  the random steering arms are the control).** The thresholds job 15229240 and both probes (15229325
-  percentile-matched, 15230255 size-matched) were cancelled while pending; nothing ran, so the probe rule, the size
-  rule and both reading rules above are void. The gfar p50 cap is read as the other cap arms are: against the dose
-  rule and the model's random add arms. `scripts/cap_size_match.py`, its test and
-  `slurm/size_matched_cap_probe.sbatch` stay in the repo unused.
+  **gpt-oss random-direction p50 cap control: planned and withdrawn 2026-11-10, nothing ran.** Two side notes forwarded
+  by the user (~1:45 and ~2:25 pm MST) led to a planned cap on random directions 1729 / 1730 over the same band, first
+  at the same percentile, then matched in size to the gfar cap. Withdrawn 2:47 pm (user ~2:45 pm, relaying Koby: random
+  vectors need no cap control on any model; the random steering arms are the control): thresholds job 15229240 and
+  probes 15229325 / 15230255 were cancelled while pending, and the rules, the size-matching script, its test and the
+  job wrapper were removed (~3 pm, at the user's request; the text and files are in git history up to b6f492e). The
+  gfar p50 cap is read as the other cap arms are: against the dose rule and the model's random add arms.
 - *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
   rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
   set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main
