@@ -72,3 +72,71 @@ class PerArmSeeds(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Holm(unittest.TestCase):
+    def test_known_vector_is_step_down_monotone_and_capped(self):
+        adjusted = main_analysis.holm({"a": 0.01, "b": 0.04, "c": 0.03, "d": 0.6})
+        self.assertAlmostEqual(adjusted["a"], 0.04)
+        self.assertAlmostEqual(adjusted["c"], 0.09)
+        self.assertAlmostEqual(adjusted["b"], 0.09)  # 2 * 0.04 = 0.08 is raised to the running maximum
+        self.assertAlmostEqual(adjusted["d"], 0.6)
+        self.assertEqual(main_analysis.holm({"a": 0.9, "b": 0.8})["b"], 1.0)
+
+
+class ExactSignFlip(unittest.TestCase):
+    def test_matches_full_enumeration(self):
+        import itertools
+        import numpy as np
+        diff = np.array([3, -1, 0, 2, 2, -4, 1]) / 12
+        observed = abs(diff.sum())
+        sums = [abs(sum(sign * d for sign, d in zip(signs, diff))) for signs in itertools.product([-1, 1], repeat=len(diff))]
+        enumerated = sum(s >= observed - 1e-12 for s in sums) / len(sums)
+        self.assertAlmostEqual(main_analysis.sign_flip_p_exact(diff, 12), enumerated)
+
+    def test_goes_below_the_resampling_floor_and_handles_edges(self):
+        import numpy as np
+        self.assertAlmostEqual(main_analysis.sign_flip_p_exact(np.full(30, 2 / 12), 12), 2 / 2 ** 30)
+        self.assertEqual(main_analysis.sign_flip_p_exact(np.zeros(5), 12), 1.0)
+        self.assertIsNone(main_analysis.sign_flip_p_exact(np.array([0.1234, 0.2]), 12))  # not on the grid
+        self.assertIsNone(main_analysis.sign_flip_p_exact(np.array([1 / 12, np.nan]), 12))
+
+    def test_analyse_reports_the_exact_p(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_arm(root, "unsteered", [0, 1], set())
+            write_arm(root, "steered", [0, 1], {"p0", "p1", "p2", "p3"})
+            arms = main_analysis.load_root(root, "pilot")
+            result = main_analysis.analyse(arms, "hack_proxy", reps=200, seed=0, contrasts=["steered"])
+            self.assertEqual(result["contrasts"]["steered"]["p_method"], "exact")
+            self.assertAlmostEqual(result["contrasts"]["steered"]["p_raw"], 2 / 2 ** 4)  # four problems, all up
+            self.assertGreaterEqual(result["arms"]["steered"]["p_signflip_resampled"], 1 / 201)
+
+
+class Completeness(unittest.TestCase):
+    def test_arm_without_a_problem_is_an_error_not_the_smallest_p(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_arm(root, "unsteered", [0, 1], {"p0"})
+            write_arm(root, "steered", [0, 1], {"p0"})
+            for seed in (0, 1):  # drop problem p3 from every seed of the steered arm
+                path = root / "steered" / f"seed{seed}" / "pilot_impossible_original.jsonl"
+                path.write_text("".join(line + "\n" for line in path.read_text().splitlines() if '"p3"' not in line))
+            arms = main_analysis.load_root(root, "pilot")
+            with self.assertRaisesRegex(ValueError, "no episode for 1 of 4 problems"):
+                main_analysis.analyse(arms, "hack_proxy", reps=200, seed=0, contrasts=["steered"])
+            with self.assertRaisesRegex(ValueError, "no episode"):
+                main_analysis.analyse(arms, "hack_proxy", reps=200, seed=0, contrasts=["steered"], allow_incomplete=True)
+
+    def test_partly_written_contrast_arm_needs_the_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_arm(root, "unsteered", [0, 1], {"p0"})
+            write_arm(root, "steered", [0, 1], {"p0"})
+            path = root / "steered" / "seed1" / "pilot_impossible_original.jsonl"
+            path.write_text("".join(line + "\n" for line in path.read_text().splitlines()[:2]))
+            arms = main_analysis.load_root(root, "pilot")
+            with self.assertRaisesRegex(ValueError, "lacks 2 of 8 episodes"):
+                main_analysis.analyse(arms, "hack_proxy", reps=200, seed=0, contrasts=["steered"])
+            result = main_analysis.analyse(arms, "hack_proxy", reps=200, seed=0, contrasts=["steered"], allow_incomplete=True)
+            self.assertEqual(result["arms"]["steered"]["episodes"], 6)
