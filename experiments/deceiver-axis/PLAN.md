@@ -1280,7 +1280,7 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   floors together; gfar: doses and caps) plus the model's random-direction add arms. The family no longer grows rung
   by rung in the write-up: an entry quotes the family as it stands when written and says its size; the corrections
   entry gives every contrast under this rule and under a whole-model family, and an arm whose significance differs
-  between the two is called not robust to the family choice.
+  between the two is called not robust to the family choice. *Gemma (clarified 3:45 pm, after the corrections table showed both numbers):* Gemma has eight random and noise add arms (1729 at ±0.01 and ±0.005, 1730, 1731, 1729's top-50-PC part, per-token noise), not three. The rule is read literally: all eight are in the family (19 contrasts with the six doses and five caps, the same as the whole-model family). The 14-contrast value with only the three norm-matched +0.01 seed randoms is quoted beside it. This reading was fixed after seeing that cap p25 is 0.057 under one and 0.043 under the other; the conservative one was taken for that reason.
 - **Exact p.** Sign-flip p values for rate outcomes are exact (convolution over problems; `main_analysis.py` from
   commit c490939). Values printed earlier as 0.0005 / 0.0007 / 0.0002 were the resampling floor (1 / 20001) times the
   family size and are quoted from here on as exact values. `honest_hidden_pass` keeps its resampled swap test (a
@@ -1305,7 +1305,7 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   code" until a full 12-seed unsteered arm is rerun, which is then proposed to the user. The recheck is not judged;
   it does not address judge drift between the October sets and the headless runner (that would need finished
   unsteered episodes to be judged again, which the standing no-re-judge rule forbids unless the user allows it).
-  Gemma has its recheck already: the 2×H100 unsteered pair of the hardware check ran at the current code and sits
+  Submitted 3:41–3:44 pm: 15231977 (gpt-oss), 15231995 (Muse), 15232002 (Qwen), cs / cs2, qos cs. Gemma has its recheck already: the 2×H100 unsteered pair of the hardware check ran at the current code and sits
   inside Koby's 16-seed range on every column (different hardware; B200 is blocked).
 
 

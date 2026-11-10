@@ -348,6 +348,22 @@ def print_table(result: dict) -> None:
               f"{e['problems_up']:3d}/{e['problems_down']:3d}/{e['problems_tied']:3d} {e['p_signflip']:8.4f} {holm_text}")
 
 
+def provenance(args: argparse.Namespace) -> dict:
+    """How this analysis was made: arguments, resolved inputs, code commit, time."""
+    import datetime, subprocess
+    here = Path(__file__).resolve().parent
+    def git(*a: str) -> str:
+        try:
+            return subprocess.run(["git", "-C", str(here), *a], capture_output=True, text=True, timeout=20).stdout.strip()
+        except Exception:  # no git on the node: the record still carries the arguments
+            return ""
+    return {"argv": sys.argv, "root": str(args.root.resolve()), "tag": args.tag, "reps": args.reps, "seed": args.seed,
+            "verdicts": str(args.verdicts.resolve()) if args.verdicts else None, "outcomes": list(args.outcomes),
+            "contrasts": list(args.contrasts), "allow_incomplete": bool(args.allow_incomplete),
+            "git_commit": git("rev-parse", "HEAD"), "git_dirty_scripts": bool(git("status", "--porcelain", "--", str(here))),
+            "written": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("root", type=Path)
@@ -375,6 +391,9 @@ def main() -> None:
         print_table(results[outcome])
     if args.out:
         args.out.write_text(json.dumps(results, indent=1))
+        # Provenance beside the result (review 2026-11-10: a stored analysis did not say how it was made). Not a .json
+        # name, so globs over analysis_*.json do not pick it up.
+        Path(str(args.out) + ".meta").write_text(json.dumps(provenance(args), indent=1))
 
 
 if __name__ == "__main__":

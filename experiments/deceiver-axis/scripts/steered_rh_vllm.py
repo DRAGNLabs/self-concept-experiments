@@ -12,7 +12,8 @@ into reasoning and final by the model family's parser). Per-family facts (decode
 splitter, record label) come from ``selfconcept.measurement.steering_specifics``. No projection sidecar: projections
 are measured offline with the HF capture path. With ``--tensor-parallel-size N`` the engine runs in spawned worker
 processes, which a patch made here never reaches: the steering is written to a spec file and each worker patches its
-own copy of the block class (``steering_worker.SteeredWorker``); add and cap only, on the families in
+own copy of the block class (``steering_worker.SteeredWorker``); add, cap and floor (floor since the 2026-11-10 fix;
+noise is not supported under tensor-parallel), on the families in
 TP_STEERING_VERIFIED_FAMILIES (unsteered TP runs work for any family).
 
     python scripts/steered_rh_vllm.py --model openai/gpt-oss-120b --data <dir> --scenarios ib_solvhard_s0 --out <dir>
