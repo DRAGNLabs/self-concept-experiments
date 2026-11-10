@@ -1225,6 +1225,12 @@ down to the choice of direction. Random 1730, the one whose +0.08 add arm raised
 own thresholds from 4 unsteered episodes, arms `rand1730_floor_p95` / `rand1730_floor_p50`, seed 0, files in
 `muse_glimmer/random1730/floor/`. Same rule per rung and per direction. If both directions give usable rungs, both are
 extended and both are reported; neither is dropped after the fact.
+**Withdrawn 2026-11-10 2:47 pm MST (user ~2:45 pm, relaying Koby: random vectors need no cap or floor control on any
+model; the random steering arms are the control).** The four probe tasks (15223511, 15223583) were cancelled while
+running, at 27 / 32 / 40 / 20 of 45 episodes (1729 p50, 1729 p95, 1730 p50, 1730 p95); the partial files stay in
+`muse_glimmer/gi_v2/pilot/rand17{29,30}_floor_p{50,95}/seed0/`, unread and unjudged, and the rule above is not applied.
+The Muse gi_v2 floor ladder is read as before, against the dose rule and the random add arms. No random-direction cap
+or floor arm is run or proposed on any model from here on, the weaker random floor on Gemma included.
 
 **Gemma 31B on H200s: hardware check (user 2026-11-10 ~10:05 am MST: assume cs-3-1 stays out, "let's start with testing
 H200s"; rule written before any result).** cs-3-1, the only B200 node, has been under a health-check reservation since
@@ -1451,6 +1457,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   matched clamp control on gpt-oss). *Limits of the measure:* it is open-loop (unsteered projections; in the run a
   clamp at one layer changes the projections the later layers see), it does not see mass beyond the 5th and 95th
   percentiles, and it rests on 4 unsteered episodes per direction; the vLLM path does not record the applied change.
+  **Withdrawn 2026-11-10 2:47 pm MST (user ~2:45 pm, relaying Koby: random vectors need no cap control on any model;
+  the random steering arms are the control).** The thresholds job 15229240 and both probes (15229325
+  percentile-matched, 15230255 size-matched) were cancelled while pending; nothing ran, so the probe rule, the size
+  rule and both reading rules above are void. The gfar p50 cap is read as the other cap arms are: against the dose
+  rule and the model's random add arms. `scripts/cap_size_match.py`, its test and
+  `slurm/size_matched_cap_probe.sbatch` stay in the repo unused.
 - *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
   rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
   set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main
