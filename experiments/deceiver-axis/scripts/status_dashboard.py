@@ -11,7 +11,9 @@ The page has five tabs (all sections stay visible, one under the other, where sc
   * In progress: one card per item of dashboard/in_progress.json and the full queue table,
   * Results: every FINDINGS entry as a card grouped by day (headline, full text, the charts it names), filtered
     by model, experiment kind, text search or a click on a matrix cell,
-  * Charts: every indexed chart as a gallery with a viewer (previous / next, the `code <path>` command),
+  * Charts: every indexed chart in a gallery split into groups (main gi_v2 results, Goodfire axis, controls,
+    capability retention, interpretability, ..., earlier versions last; rules in CHART_GROUPS / CHART_RULES),
+    filtered by model or group, with a viewer (previous / next, the `code <path>` command),
   * Status log: the dated paragraphs of the "Current status" section as a collapsible list.
 Light and dark themes (button in the header); colours are the reference palette of the dataviz skill.
 Under a VS Code notebook the editor scrolls the output from outside, so there the page never scrolls itself and
@@ -75,6 +77,69 @@ CATEGORIES = [
 ]
 CAT_ORDER = ["steer", "cap", "floor", "random", "pct", "capability", "probes", "prompt", "gfar", "direction", "pool", "harness", "other"]
 CAT_LABEL = {k: lab for k, lab, _ in CATEGORIES}
+
+# Charts tab: every chart goes into one group, shown as its own section in this order.
+CHART_GROUPS = [
+    ("main", "Main results: gi_v2 steering, cap and floor",
+     "The current judged chart per model for the gi_v2 steering dose response, the cap ladder and the floor ladder."),
+    ("gfar", "Goodfire RH axis (gfar)", "The Goodfire reward-hacking axis: comparison with gi_v2, steering and capping along it."),
+    ("controls", "Random-direction and other controls", "Random-direction arms, the 1729 / 1730 follow-ups and the control sets."),
+    ("capability", "Capability retention", "Benchmark scores under steering: how much capability each dose or control keeps."),
+    ("interp", "Interpretability: lens and direction readouts", "Logit-lens and hack-direction readouts of what a steering vector changes downstream."),
+    ("prompt", "Prompt interventions", "Honesty-prompt arms, judged like the steering arms."),
+    ("methods", "Pipeline and method figures", "Diagrams of the extraction and steering pipeline."),
+    ("other", "Other", "Charts no rule places yet (add a rule to CHART_RULES in scripts/status_dashboard.py)."),
+    ("earlier", "Earlier versions and earlier vector sets",
+     "Charts replaced by a newer version above (fewer arms or seeds), the first gi vector set (17 roles), and the October post figures."),
+]
+# First matching rule wins; the regex is searched in the full chart path. A chart with no match takes the group of the
+# category of the result that names it (CAT_TO_GROUP), else "other". Before the rules, a chart in an analysis_<name><N>
+# folder goes to "earlier" when a sibling folder with the same name and a higher N holds a chart (analysis_all5 / all7 /
+# all8: only all8 stays current).
+CHART_RULES = [
+    ("earlier", r"/gi/pilot/|muse_glimmer/capeval/|/post/figures/|hard108/gemma_hard108_judged_chart\.png|gi_v2/pilot/gi_main_chart\.png"
+                r"|qwen_hard61/analysis_main/"),
+    ("methods", r"pipeline_figure"),
+    ("gfar", r"gfar|[Gg]oodfire|/gf_|gfscan|gfcap"),
+    ("capability", r"capeval"),
+    ("interp", r"lens|randscreen|separation"),
+    ("prompt", r"prompt_rh"),
+    ("controls", r"rand|ctl|sign_pair|problem_seed|1729|1730|1731|antonym"),
+    ("main", r"capladder|floorladder|_floor|judged_chart|main_chart|vs_17role"),
+]
+CAT_TO_GROUP = {"steer": "main", "cap": "main", "floor": "main", "random": "controls", "pct": "controls", "capability": "capability",
+                "probes": "interp", "direction": "interp", "prompt": "prompt", "gfar": "gfar"}
+VERSIONED_RE = re.compile(r"^(.*/analysis_[A-Za-z_]*?)(\d+)/[^/]+$")
+
+
+def chart_groups(paths: list[str], chart_entry: dict) -> dict[str, str]:
+    newest: dict[str, int] = {}
+    for p in paths:
+        m = VERSIONED_RE.match(p)
+        if m:
+            newest[m.group(1)] = max(newest.get(m.group(1), -1), int(m.group(2)))
+    out = {}
+    for p in paths:
+        m = VERSIONED_RE.match(p)
+        if m and int(m.group(2)) < newest[m.group(1)]:
+            out[p] = "earlier"
+            continue
+        g = next((k for k, rx in CHART_RULES if re.search(rx, p)), None)
+        if g is None:
+            e = chart_entry.get(p)
+            g = CAT_TO_GROUP.get(e["cat"], "other") if e else "other"
+        out[p] = g
+    return out
+
+
+MAIN_KIND = ["Steering dose response", "Cap ladder", "Floor ladder"]
+
+
+def main_group_key(path: str) -> tuple[int, int]:
+    """Order inside the main group: steering dose response, then cap ladder, then floor ladder; models in page order."""
+    kind = 1 if "capladder" in path else 2 if "floor" in path else 0
+    order = [m for m, _ in MODELS]
+    return kind, order.index(chart_model(path))
 
 HEAD_RE = re.compile(r"^### (?P<title>.*?) — (?P<date>20\d\d-\d\d-\d\d(?: to [\d-]+)?)\s*:\s*(?P<headline>.*)$")
 PNG_RE = re.compile(r"[A-Za-z0-9_./+-]+\.png")
@@ -168,7 +233,7 @@ def chart_index(cache: Path, rescan: bool, extra: list[str]) -> list[str]:
     if cache.exists() and not rescan:
         paths = [p for p in cache.read_text().splitlines() if p.strip()]
     else:
-        cmd = ["find", str(RUN_ROOT), "-maxdepth", "6", "-name", "*.png", "-not", "-path", "*/dossiers/*"]
+        cmd = ["find", str(RUN_ROOT), "-maxdepth", "6", "-name", "*.png", "-not", "-path", "*/dossiers/*", "-not", "-name", "draft_*"]
         try:
             out = subprocess.run(cmd, capture_output=True, text=True, timeout=300).stdout
             paths = [p for p in out.splitlines() if p.strip()]
@@ -582,6 +647,12 @@ body.dash-page .dash{min-height:100vh}
   .gbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px 0 0}
   .gbar label{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--ink2);cursor:pointer}
   .gbar .count{margin-left:auto;font-size:12.5px;color:var(--ink2)}
+  .gbar2{padding-top:10px}
+  .gsec{margin-top:26px;scroll-margin-top:140px}
+  .gsech{font-size:15px;font-weight:650;color:var(--ink);margin:0;display:flex;gap:10px;align-items:baseline}
+  .gsech::after{content:"";flex:1;height:1px;background:var(--line);align-self:center}
+  .gsech .n{font-size:12.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .gdesc{margin:4px 0 0;font-size:13px;color:var(--ink2);max-width:92ch}
   .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
   .tile{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
   .tile .ph{height:206px;background:var(--paper);display:grid;place-items:center;border-bottom:1px solid var(--line);cursor:zoom-in;padding:8px}
@@ -716,11 +787,14 @@ function openEntry(id){go('results',true);setFilters('','','',false);const el=do
   const d=el.querySelector('details');if(d)d.open=true;if(!managed)el.scrollIntoView({block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1800);}
 
 /* chart gallery filters */
-let gm='';const gt=$('#g-tied'),tiles=$$('.tile');
-function gapply(){let n=0;tiles.forEach(t=>{const ok=(!gm||t.dataset.models.split(' ').includes(gm))&&(!gt.checked||t.dataset.tied==='1');t.hidden=!ok;if(ok)n++;});
+let gm='',gg='';const gt=$('#g-tied'),tiles=$$('.tile');
+function gapply(){let n=0;tiles.forEach(t=>{const ok=(!gm||t.dataset.models.split(' ').includes(gm))&&(!gg||t.dataset.g===gg)&&(!gt.checked||t.dataset.tied==='1');t.hidden=!ok;if(ok)n++;});
+  $$('.gsec').forEach(s=>{const k=$$('.tile',s).filter(t=>!t.hidden).length;s.hidden=!k;$('.gsech .n',s).textContent=k+(k===1?' chart':' charts');});
   $('#g-count').textContent=n+' of '+tiles.length+' charts';
-  $$('.pill[data-m]',$('#g-models')).forEach(p=>p.classList.toggle('on',p.dataset.m===gm));}
+  $$('.pill[data-m]',$('#g-models')).forEach(p=>p.classList.toggle('on',p.dataset.m===gm));
+  $$('.pill[data-g]',$('#g-groups')).forEach(p=>p.classList.toggle('on',p.dataset.g===gg));}
 $$('.pill[data-m]',$('#g-models')).forEach(p=>p.addEventListener('click',()=>{gm=p.dataset.m;gapply();}));
+$$('.pill[data-g]',$('#g-groups')).forEach(p=>p.addEventListener('click',()=>{gg=p.dataset.g;gapply();}));
 gt.addEventListener('change',gapply);
 
 /* lightbox */
@@ -1103,7 +1177,8 @@ def main() -> None:
     tied = [p for e in by_date for p in e["charts"]]
     tied = list(dict.fromkeys(tied))
     rest = sorted((p for p in charts if p not in used), key=os.path.getmtime, reverse=True)
-    T = []
+    group_of = chart_groups(tied + rest, chart_entry)
+    T: dict[str, list[tuple[str, str]]] = {k: [] for k, _, _ in CHART_GROUPS}
     g_models: dict[str, int] = {}
     for p in tied + rest:
         e = chart_entry.get(p)
@@ -1122,15 +1197,29 @@ def main() -> None:
             folder = "/".join(Path(p).parent.parts[-2:])
             when = dt.datetime.fromtimestamp(os.path.getmtime(p)).strftime("%b %-d")
             sub = f"<span>{esc(when)}</span>" + "".join(model_tag(m) for m in models) + f"<span class='mono' title='{esc(p)}'>{esc(folder)}</span>"
-        T.append(f"<figure class='tile' data-models='{' '.join(models)}' data-tied='{1 if e else 0}'><div class='ph'>{tag}</div>"
-                 f"<figcaption><div class='tt'>{title}</div><div class='ts'>{sub}</div></figcaption></figure>")
+        g = group_of[p]
+        if g == "main":  # say which of the three kinds a tile is: result titles and file names do not always
+            sub = f"<span class='chip'>{MAIN_KIND[main_group_key(p)[0]]}</span>" + sub
+        T[g].append((p, f"<figure class='tile' data-models='{' '.join(models)}' data-tied='{1 if e else 0}' data-g='{g}'><div class='ph'>{tag}</div>"
+                        f"<figcaption><div class='tt'>{title}</div><div class='ts'>{sub}</div></figcaption></figure>"))
+    T["main"].sort(key=lambda t: main_group_key(t[0]))
+    n_tiles = sum(len(v) for v in T.values())
     G = ["<section class='panel' data-p='charts'><h2 class='ph'>Charts</h2><div class='gbar'><div class='pills' id='g-models'>"
-         f"<button class='pill on' data-m=''>All models <span class='c'>{len(T)}</span></button>"]
+         f"<button class='pill on' data-m=''>All models <span class='c'>{n_tiles}</span></button>"]
     for m, _lab in MODELS:
         if g_models.get(m):
             G.append(f"<button class='pill' data-m='{m}'><i class='mdot m-{m}'></i>{esc(MODEL_SHORT[m])} <span class='c'>{g_models[m]}</span></button>")
     G.append("</div><label><input type='checkbox' id='g-tied'> only charts named in a result</label><span class='count' id='g-count'></span></div>"
-             "<div class='gallery'>" + "".join(T) + "</div></section>")
+             f"<div class='gbar gbar2'><div class='pills' id='g-groups'><button class='pill on' data-g=''>All groups <span class='c'>{n_tiles}</span></button>")
+    for k, lab, _desc in CHART_GROUPS:
+        if T[k]:
+            G.append(f"<button class='pill' data-g='{k}'>{esc(lab.split(':')[0])} <span class='c'>{len(T[k])}</span></button>")
+    G.append("</div></div>")
+    for k, lab, desc in CHART_GROUPS:
+        if T[k]:
+            G.append(f"<section class='gsec' data-g='{k}'><h3 class='gsech'>{esc(lab)} <span class='n'>{plural(len(T[k]), 'chart')}</span></h3>"
+                     f"<p class='gdesc'>{esc(desc)}</p><div class='gallery'>" + "".join(t for _, t in T[k]) + "</div></section>")
+    G.append("</section>")
     panel_charts = "".join(G)
 
     # ---- status log panel: each dated update of "Current status" becomes one collapsible line
@@ -1174,7 +1263,7 @@ def main() -> None:
         ("progress", "<span class='kg q'>●</span>Queued", *k_pend),
         ("progress", "Work in progress", *k_wip),
         ("results", "Analysed runs recorded", f"{len(entries):,}", "", f"{week} in the last 7 days · latest {short_date(latest_date)}"),
-        ("charts", "Charts", f"{len(T):,}", "", f"{len(tied)} named in a result"),
+        ("charts", "Charts", f"{n_tiles:,}", "", f"{len(tied)} named in a result"),
     ]
     O = ["<section class='panel on' data-p='overview'><h2 class='ph'>Overview</h2><div class='kpis'>"]
     for go_to, label, val, unit, sub in tiles_kpi:
@@ -1215,7 +1304,7 @@ def main() -> None:
 
     # ---- page
     tabs = [("overview", "Overview", ""), ("progress", "In progress", str(len(items))), ("results", "Results", str(len(entries))),
-            ("charts", "Charts", str(len(T))), ("log", "Status log", "")]
+            ("charts", "Charts", str(n_tiles)), ("log", "Status log", "")]
     nav = ("<nav class='tabs' role='tablist' aria-label='Sections'><div class='in'>"
            + "".join(f"<button class='tab{' on' if i == 0 else ''}' role='tab' data-t='{k}'>{esc(lab)}{f'<span class=ct>{ct}</span>' if ct else ''}</button>"
                      for i, (k, lab, ct) in enumerate(tabs)) + "</div></nav>")
