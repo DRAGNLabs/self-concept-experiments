@@ -55,8 +55,16 @@ CAPS: list = []    # cap arms present (side group 1), by percentile
 FLOORS: list = []  # floor arms present (side group 2, the inverse cap), by percentile
 
 
+VECTOR = "gi_v2 vector"  # named in the axis label and title; --axis gfar swaps in the Goodfire axis
+
+
+def core(arm: str) -> str:
+    """Arm name without the Goodfire-axis prefix (gfar_cap_p25_L22-42 -> cap_p25_L22-42)."""
+    return arm.removeprefix("gfar_")
+
+
 def is_side(arm: str) -> bool:
-    return arm.startswith(("cap_p", "floor_p"))
+    return core(arm).startswith(("cap_p", "floor_p"))
 
 
 def pct(arm: str) -> int:
@@ -73,15 +81,15 @@ def set_arms(arms: list) -> None:
     doses = sorted([a for a in arms if not is_side(a)], key=dose)
     ARMS = [(a, "0\nunsteered" if a == "unsteered" else f"{dose(a):+.2f}".replace("-", "−")) for a in doses]
     X = {arm: float(i) for i, (arm, _) in enumerate(ARMS)}
-    CAPS = sorted([a for a in arms if a.startswith("cap_p")], key=pct)
-    FLOORS = sorted([a for a in arms if a.startswith("floor_p")], key=pct)
+    CAPS = sorted([a for a in arms if core(a).startswith("cap_p")], key=pct)
+    FLOORS = sorted([a for a in arms if core(a).startswith("floor_p")], key=pct)
     x = float(len(doses) - 1)
     for group in (CAPS, FLOORS):
         if not group:
             continue
         x += SIDE_GAP + 0.6
         for a in group:
-            kind = "cap" if a.startswith("cap_p") else "floor"
+            kind = "cap" if core(a).startswith("cap_p") else "floor"
             ARMS.append((a, f"{kind} p{pct(a)}\nL22–42"))
             X[a] = x
             x += 1.0
@@ -149,7 +157,7 @@ def style(ax, ylabel: str):
     for group in side_groups():
         ax.axvline(X[group[0]] - SIDE_GAP / 2 - 0.3, color=RULE, lw=0.8, ls=":", zorder=1)
     beside = "cap arm, then floor rungs (inverse cap), both on layers 22–42, beside" if FLOORS else "cap arm beside"
-    ax.set_xlabel(f"dose α at layer 32 (units of the mean residual norm), gi_v2 vector; {beside}", color=INK2, fontsize=8.5, wrap=True)
+    ax.set_xlabel(f"dose α at layer 32 (units of the mean residual norm), {VECTOR}; {beside}", color=INK2, fontsize=8.5, wrap=True)
 
 
 def line(ax, outcome, color, label, marker="o", ls="-", lw=2.0, with_ci=True, dy=1.6):
@@ -188,7 +196,11 @@ def main() -> None:
                     help="verdict .detail.json files relative to --root ('hidden' in the name = hidden-pass sets, signature + supplementary)")
     ap.set_defaults(analysis_dir=None)
     ap.add_argument("--jobs", default="Koby's qwen_hard61 run, settings.tsv", help="run named in the caption")
+    ap.add_argument("--axis", choices=["gi_v2", "gfar"], default="gi_v2",
+                    help="gfar: arms named gfar_L32_a<dose> / gfar_cap_pNN_L22-42 (Goodfire reward-hacking axis); give --analysis-dir and --details")
     args = ap.parse_args()
+    if args.axis == "gfar":
+        globals()["VECTOR"] = "Goodfire reward-hacking axis"
     d = load(args.root, args.analysis_dir or args.root / "analysis_main", args.summary, args.details)
     n_contrasts = len(ARMS) - 1
     J, UP, DOWN, PX = d["all"]["judged_hack"], d["up"]["judged_hack"], d["down"]["judged_hack"], d["proxy"]["judged_hack"]
@@ -289,7 +301,7 @@ def main() -> None:
 
     side = ("the p25 cap and the floor ladder (inverse cap, τ at the unsteered p" + " / p".join(str(pct(a)) for a in FLOORS) + ") over layers 22–42"
             if FLOORS else "and the p25 cap over layers 22–42")
-    head = f"Qwen3.8-27B, qwen_hard61 dose scan at layer 32 (gi_v2 vector), {side}:\n".replace("), and the", ") and the")
+    head = f"Qwen3.8-27B, qwen_hard61 dose scan at layer 32 ({VECTOR}), {side}:\n".replace("), and the", ") and the")
     fig.suptitle(head +
                  "blind Sonnet rubric-v3 judging of every proxy episode, every hidden-pass episode with a hard-code signature\n"
                  "and every lcbhard_57 / lcbhard_81 hidden pass",
@@ -297,7 +309,8 @@ def main() -> None:
     fig.text(0.07, 0.915, f"{args.jobs}; unsteered seeds 8–19, steered{', cap and floor' if FLOORS else ' and cap'} arms seeds 0–11; 732 episodes per arm.\n"
              "Judged rate = HACK (STRONG + WEAK) as judged, no adjudication. CIs: problem bootstrap of the contrast vs unsteered, shifted onto the rate.",
              color=INK2, fontsize=9, va="top")
-    out = args.out or args.root / "analysis_main" / "qwen_hard61_judged_chart.png"
+    out = args.out or (args.root / "analysis_main" / "qwen_hard61_judged_chart.png" if args.axis == "gi_v2"
+                       else (args.analysis_dir or args.root) / "qwen_hard61_gfar_chart.png")
     fig.savefig(out, dpi=args.dpi, facecolor=SURFACE)
     fig.savefig(out.with_suffix(".pdf"), facecolor=SURFACE)
     print(out)
