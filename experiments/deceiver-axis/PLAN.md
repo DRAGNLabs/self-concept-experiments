@@ -1518,7 +1518,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   the run. Arm `gf_cap_p95`: the same line with `thresholds/muse/gfar_p95.json`, seed 0, 45 problems. The same rule is
   applied to each rung separately and without a hack column. If both rungs are usable, both are extended to 12 seeds
   and judged (the heavier one is the stronger intervention, the lighter one the safer); neither is dropped after the
-  fact. If only p95 is usable, only p95 is extended. If neither is, no cap rung on this axis is usable on Muse.
+  fact. If only p95 is usable, only p95 is extended. If neither is, no cap rung on this axis is usable on Muse. **Added 2026-11-10 ~4:00 pm (review side note, before either pilot has
+  finished or been looked at):** the two rungs are not read as "light". Open-loop share of positions moved, prompt /
+  generated: p75 70% / 28%, p95 38% / 5–7% (p25: 94–97% / 77%; `clamp_shares.md`). The pilot read states these shares, and
+  cap arms are described by share of positions moved in the write-up. The usability rule above is unchanged.
 
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
