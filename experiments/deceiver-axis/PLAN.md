@@ -1259,7 +1259,7 @@ test in `tests/test_intervene.py`); the fit check for the floor pair includes th
 before, floor was not, so the floor pair is also the first functional test of it. (b) Tensor-parallel is a larger
 change than another single card (two processes, different batching), so a pass here supports moving arms to cs2 only,
 and a pass on the H200 supports the H200 only.
-**Read 2026-11-10 3:25 pm MST (2×H100, job 15224337; FINDINGS "Gemma 31B on two H100s"):** unsteered pair inside the range on every
+**Read 2026-11-10 3:20 pm MST (2×H100, job 15224337; FINDINGS "Gemma 31B on two H100s"):** unsteered pair inside the range on every
 column; floor p95 pair outside on two (seed 1 honest hidden pass 7 of 84 against a B200 minimum of 8 of 91; truncated turns 4 against a
 maximum of 3). Nothing moves to cs2 without a further look; the floor mode line was logged on both ranks.
 
