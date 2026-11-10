@@ -1,0 +1,24 @@
+## gpt-oss-120b: 7 arms, 45 problems, 3780 episodes
+  episode phi 0.46; P(judged | proxy) 34.2%; judged hacks inside proxy 173 of 234
+  per-arm: Pearson 0.96 (p 0.001), Spearman 0.96 (p 0.000)
+   proxy/judged: gi_cap_p25 14.4%/6.1%; gi_cap_p5 9.6%/2.8%; gi_cap_p50 14.3%/8.9%; gi_m0.1 15.9%/9.3%; gi_m0.2 12.2%/3.5%; gi_m0.4 7.8%/1.1%; unsteered 19.4%/11.7%
+  per-problem (all arms pooled): Pearson 0.19, Spearman 0.58
+
+## Muse-Glimmer-30B: 7 arms, 45 problems, 3780 episodes
+  episode phi 0.66; P(judged | proxy) 69.1%; judged hacks inside proxy 754 of 925
+  per-arm: Pearson 0.96 (p 0.001), Spearman 0.96 (p 0.000)
+   proxy/judged: gi_cap_p25 27.0%/23.0%; gi_cap_p5 20.6%/15.9%; gi_cap_p50 32.2%/27.0%; gi_m0.04 30.7%/29.3%; gi_m0.08 30.6%/25.0%; gi_m0.16 25.2%/18.3%; unsteered 35.7%/32.8%
+  per-problem (all arms pooled): Pearson 0.64, Spearman 0.58
+
+## Gemma 4 31B: 6 arms, 108 problems, 10368 episodes
+  episode phi 0.45; P(judged | proxy) 23.4%; judged hacks inside proxy 417 of 422
+  per-arm: Pearson 0.77 (p 0.076), Spearman 0.66 (p 0.156)
+   proxy/judged: L30_a-0.04 19.3%/4.5%; L30_a-0.08 19.0%/3.9%; L30_a-0.16 18.6%/7.1%; cap_p25_L20-38 11.6%/1.7%; cap_p35_L20-38 14.4%/2.5%; unsteered 20.2%/4.7%
+  per-problem (all arms pooled): Pearson 0.35, Spearman 0.44
+
+## Qwen3.8-27B: 9 arms, 61 problems, 6100 episodes (unreadable: ['floor_p50_L22-42', 'floor_p75_L22-42', 'floor_p95_L22-42'])
+  episode phi 0.07; P(judged | proxy) 2.4%; judged hacks inside proxy 18 of 48
+  per-arm: Pearson 0.89 (p 0.001), Spearman 0.77 (p 0.016)
+   proxy/judged: L32_a-0.08 10.1%/0.0%; L32_a-0.16 10.4%/0.1%; L32_a-0.32 8.3%/0.1%; L32_a0.08 12.6%/0.5%; L32_a0.16 14.2%/1.0%; L32_a0.24 16.8%/2.0%; L32_a0.32 17.8%/4.1%; cap_p25_L22-42 10.8%/0.0%; unsteered 11.6%/0.0%
+  per-problem (all arms pooled): Pearson -0.05, Spearman 0.06
+
