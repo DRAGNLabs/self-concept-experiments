@@ -1429,6 +1429,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   (Holm over every judged gfar arm). If it breaks the model it is recorded as not usable, nothing is extended, and a
   p95 one-seed pilot is the next step, on the user's word. The choice uses no hack column; one seed of 45 problems
   cannot carry a hack-rate read.
+  **Amendment 2026-11-10 ~1:34 pm MST (user: "queue the p95 one-seed pilot too"), before either pilot has started:**
+  the p95 pilot is queued now beside p75 rather than after a p75 failure, because queue waits today are longer than
+  the run. Arm `gf_cap_p95`: the same line with `thresholds/muse/gfar_p95.json`, seed 0, 45 problems. The same rule is
+  applied to each rung separately and without a hack column. If both rungs are usable, both are extended to 12 seeds
+  and judged (the heavier one is the stronger intervention, the lighter one the safer); neither is dropped after the
+  fact. If only p95 is usable, only p95 is extended. If neither is, no cap rung on this axis is usable on Muse.
 
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
