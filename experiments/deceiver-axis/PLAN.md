@@ -1218,6 +1218,13 @@ files in `muse_glimmer/random1729_floor/`. **Rule:** a rung is usable if on seed
 of unsteered seed 0 and its completions are not degenerate (truncated-turn share and repetition as checked on Gemma);
 a usable rung is extended to 12 seeds and judged blind as the floor's control in the Muse floor family; a rung that
 breaks the model is recorded as not usable and nothing is extended. The choice uses no hack column.
+**Amendment 2026-11-10 ~9:50 am MST, before any probe task has started (side note forwarded by the user):** 1729 is the
+random direction already known not to raise hacking on Muse as an add arm, so a flat result from it alone could be put
+down to the choice of direction. Random 1730, the one whose +0.08 add arm raised judged hacking (39.8% against 32.8%,
++7.0), gets the same probe: its layer-26 draw tiled over the layers (cosine with gi_v2 +0.004, gfar +0.005, 1729 −0.011),
+own thresholds from 4 unsteered episodes, arms `rand1730_floor_p95` / `rand1730_floor_p50`, seed 0, files in
+`muse_glimmer/random1730/floor/`. Same rule per rung and per direction. If both directions give usable rungs, both are
+extended and both are reported; neither is dropped after the fact.
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
 
