@@ -1550,6 +1550,9 @@ Qwen is the one model whose gi_v2 arms never went through the four public benchm
   ±0.32 lose capability (hidden pass −32.8 / −20.1 on qwen_hard61), ±0.08 do not. No dose is added or dropped after
   the scores are in. Chart `capeval_chart.py --model qwen_v2`; FINDINGS entry; share copy under
   `qwen38_27b_gi_v2_judging_jansen05/capeval/` (the model's own share directory is Koby's).
+- **Result (2026-11-10 ~4:50 pm, FINDINGS "Qwen3.8-27B capability retention on four public benchmarks"):** clean on all four:
+  ±0.08, +0.16, +0.24, cap p25. Loss: −0.32 (MMLU-Pro −2.7; IFBench −13.0, truncation-limited) and +0.32 (MMLU-Pro −2.1). −0.16: clean
+  on three, IFBench −6.7 with truncated answers 14.3% against 8.0%, so truncation-limited by the rule. The expectation above held.
 
 ## Work order
 
