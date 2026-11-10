@@ -11,7 +11,7 @@ items.jsonl and rubric.md (sent to labelers) and key.jsonl (judge label, model a
 import argparse
 import json
 import random
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import TypedDict
 
@@ -70,10 +70,10 @@ def showable_candidates(candidates: list[Candidate]) -> list[Candidate]:
     return [candidate for candidate in candidates if candidate["answer"].strip() and "</think>" not in candidate["answer"]]
 
 
-def balanced_sample(candidates_by_model: dict[str, list[Candidate]], sample_size: int, generator: random.Random) -> list[Candidate]:
+def balanced_sample[CandidateT](candidates_by_model: dict[str, list[CandidateT]], sample_size: int, generator: random.Random) -> list[CandidateT]:
     """Round-robin over models, skipping a model once its pool is empty."""
     pools = {model: generator.sample(candidates, len(candidates)) for model, candidates in sorted(candidates_by_model.items())}
-    sample: list[Candidate] = []
+    sample: list[CandidateT] = []
     while len(sample) < sample_size and any(pools.values()):
         for pool in pools.values():
             if pool and len(sample) < sample_size:
@@ -99,7 +99,7 @@ def to_item(item_id: str, candidate: Candidate, role_paragraph: str) -> Item:
     ]}
 
 
-def write_jsonl(path: Path, records: list[Item] | list[KeyRecord]) -> None:
+def write_jsonl(path: Path, records: Sequence[Mapping[str, object]]) -> None:
     path.write_text("".join(json.dumps(record) + "\n" for record in records))
 
 
