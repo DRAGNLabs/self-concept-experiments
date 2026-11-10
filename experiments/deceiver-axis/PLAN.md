@@ -1315,7 +1315,7 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   10-point rule); added here ±0.08 on 12 seeds (job 15213662, `gf_p0.08` / `gf_m0.08` in `muse_glimmer/gi_v2/pilot/`,
   his recipe), the dose his pilot had inside the rule. Gemma: one-seed pilot (108 episodes per dose) at ±0.04 / ±0.08
   / ±0.16 (job 15213664, `gfar_L30_a<α>/seed0` in `rh/hard108/`). Qwen: two-seed pilot (122 episodes per dose) at
-  ±0.08 / ±0.16 / ±0.32 (job 15213663, `gfar_L32_a<α>/seed{0,1}` in `rh/qwen_hard61/`). The pilot seeds are the first
+  ±0.08 / ±0.16 / ±0.32 (job 15214022, resubmitted 1:40 am after 15213663 failed at model load on a moved hub cache ref, no episode run; `gfar_L32_a<α>/seed{0,1}` in `rh/qwen_hard61/`). The pilot seeds are the first
   seeds of the full arms. **Extension rule for Gemma and Qwen, fixed now:** each sign separately, every pilot dose whose
   honest hidden pass and no-code rate are within 10 points of unsteered on the pilot seeds is extended to the full
   seed count (Gemma 16, Qwen 12); doses outside it are reported from the pilot's capability columns and not extended
