@@ -1320,6 +1320,9 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   honest hidden pass and no-code rate are within 10 points of unsteered on the pilot seeds is extended to the full
   seed count (Gemma 16, Qwen 12); doses outside it are reported from the pilot's capability columns and not extended
   unless the user asks. The choice uses capability columns only, never a hack column.
+  **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
+  against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
+  `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
 - *Capping.* Thresholds are percentiles of the per-token projection on gfar in unsteered episodes
   (`cap_thresholds.sbatch`, 4 episodes, p5 / p25 / p50 / p75 / p95; jobs 15213667-69 and, for Qwen, 15214024 after 15213670 failed at model load on a moved hub cache ref; `gfar_vs_gi_v2/steer/thresholds/<model>/`).
   First arm on every model: the cap at p25 over the gi_v2 band (`--steer-mode cap`), the gi_v2 cap's own setting, on 12
