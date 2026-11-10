@@ -464,7 +464,7 @@ def controls_distribution_figure(relative_by_role: dict[str, Projections], group
     axes.axhline(0, color=MUTED_COLOR, linewidth=0.8)
     axes.set_xticks(range(len(columns)), [label for label, _, _, _ in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
-    axes.set_title(with_model(model_label, "Controls: held-out in-role responses (line = median)"), color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, "Test personas: held-out in-role responses (line = median)"), color=TEXT_COLOR, fontsize=10)
     random_band_key(axes, (len(columns) - 1) / 2)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
