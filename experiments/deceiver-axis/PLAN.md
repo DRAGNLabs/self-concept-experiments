@@ -1418,6 +1418,18 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   builder, judges and reading rules; the Holm family is every judged gfar arm of the model and is recomputed when
   the second set is in, so the cap's adjusted p can change then (the raw contrast and CI do not).
 
+- **Muse p75 cap, one-seed pilot (2026-11-10, user request ~1:18 pm MST; rule written before submission):** the p25
+  cap stopped Muse from submitting (no-code 98.9%), and the size of that side effect differs too much between models
+  (no-code +14.4 points on gpt-oss, +60.2 on Qwen, +98.9 on Muse at p25) for the gpt-oss p50 arm to say which Muse
+  rung is usable. So a lighter Muse rung is probed directly, one seed first. Arm `gf_cap_p75`: the `gf_cap_p25` line
+  with `thresholds/muse/gfar_p75.json` (same 4 unsteered episodes, same direction, band 17–33), seed 0, 45 problems,
+  in `muse_glimmer/gi_v2/pilot/`. **Rule (as the random floor probe):** the rung is usable if on seed 0 its no-code
+  rate is within 10 points of unsteered seed 0 and its completions are not degenerate (truncated-turn share,
+  reasoning length per turn); a usable rung is extended to seeds 1–11 and judged blind in the Muse gfar family
+  (Holm over every judged gfar arm). If it breaks the model it is recorded as not usable, nothing is extended, and a
+  p95 one-seed pilot is the next step, on the user's word. The choice uses no hack column; one seed of 45 problems
+  cannot carry a hack-rate read.
+
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
 ## Qwen3.8-27B capability retention (added 2026-11-10, user request ~11:46 am MST)
