@@ -1293,9 +1293,10 @@ moving by 0.01-0.02 between runs) and is seeded per layer since the four-model r
 **Status 2026-11-09 evening: first step done on all four models** (FINDINGS "Goodfire reward-hacking axis (gfar) against
 gi_v2, four models"). Cosine at the steer layers −0.02 to +0.09, inside or at the edge of the sign-flip null; no readout
 above the 95th percentile of the antonym controls on both channels (all-response at the 49th / 53rd, 4th / 7th, 8th /
-14th, 32nd / 44th percentile on gpt-oss / Muse / Gemma / Qwen); Muse last-token the one near miss (97th / 89th). Open:
-Gemma's last 8 seeds (15201997 tasks 2-3, pending on cs3; rerun `analysis/run_model.sh gemma`), a per-token control
-null (needs a second extraction pass that projects the controls per token), gpt-oss L35.
+14th, 32nd / 44th percentile on gpt-oss / Muse / Gemma / Qwen); Muse last-token the one near miss (97th / 89th).
+Gemma's last 8 seeds finished 2026-11-09 10:59 pm MST and the 16-seed rerun (1,728 episodes) left every number within
+0.02 in r, the reading unchanged. Open: a per-token control null (needs a second extraction pass that projects the
+controls per token), gpt-oss L35.
 
 **Then (not started; needs a user go-ahead per step):** gfar steering dose pilots per model (act-norm first, the
 dose rule as for gi_v2; Koby already steered Muse along gfar at L26, `steer_muse_goodfire/`), gfar capping, and the
