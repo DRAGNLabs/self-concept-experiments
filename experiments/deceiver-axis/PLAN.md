@@ -1298,10 +1298,52 @@ Gemma's last 8 seeds finished 2026-11-09 10:59 pm MST and the 16-seed rerun (1,7
 0.02 in r, the reading unchanged. Open: a per-token control null (needs a second extraction pass that projects the
 controls per token), gpt-oss L35.
 
-**Then (not started; needs a user go-ahead per step):** gfar steering dose pilots per model (act-norm first, the
-dose rule as for gi_v2; Koby already steered Muse along gfar at L26, `steer_muse_goodfire/`), gfar capping, and the
-matched controls. Outputs: `gfar_vs_gi_v2/` under the schemer-axis root (`acts/<model>/`, `analysis/`, `jobs.txt`,
-picker output).
+**Steering and capping along gfar: go-ahead 2026-11-10 ~1:14 am MST (user: "you have my go-ahead for steering and
+capping along the Goodfire axis"). Design, written before any result of ours:**
+
+- *Direction.* gfar = the all-response readout, contrast `pl_all_families`, one direction per layer (the direction Koby
+  steered on Muse and the one compared with gi_v2 above), unit-normalised by the loader; positive = hack. Steering files
+  `gfar_vs_gi_v2/steer/direction/<model>_goodfire_all_response_pl_all_families.pt`. Steer layers and cap bands are those
+  of gi_v2 (gpt-oss L17, 12-23; Muse L26, 17-33; Gemma L30, 20-38; Qwen L32, 22-42), so the two axes are compared at
+  the same place. Natural size of the difference of means against the mean residual norm at the steer layer: 0.106 /
+  0.055 / 0.026 / 0.061 on gpt-oss / Muse / Gemma / Qwen (gi_v2: 0.125 / 0.114 / 0.032 / 0.086), so each model keeps
+  its gi_v2 alpha grid.
+- *Doses.* gpt-oss ±0.1 / ±0.2 / ±0.4 as a full 12-seed scan with no pilot stage (a seed takes under 40 minutes; job
+  15213661, arms `gf_p0.1` … `gf_m0.4` in `gi_v2/pilot/`). Muse: Koby's one-seed pilot (2026-11-03) and his 12-seed
+  ±0.16 arms exist (`rh_axis_koby/synthetic_rh/steer_muse_goodfire/`; his notes: automatic proxy 36% → 53% at +0.16
+  and 17% at −0.16, but +0.16 lost 14 points of hidden pass on 12 seeds against 7 on the pilot seed, outside the
+  10-point rule); added here ±0.08 on 12 seeds (job 15213662, `gf_p0.08` / `gf_m0.08` in `muse_glimmer/gi_v2/pilot/`,
+  his recipe), the dose his pilot had inside the rule. Gemma: one-seed pilot (108 episodes per dose) at ±0.04 / ±0.08
+  / ±0.16 (job 15213664, `gfar_L30_a<α>/seed0` in `rh/hard108/`). Qwen: two-seed pilot (122 episodes per dose) at
+  ±0.08 / ±0.16 / ±0.32 (job 15213663, `gfar_L32_a<α>/seed{0,1}` in `rh/qwen_hard61/`). The pilot seeds are the first
+  seeds of the full arms. **Extension rule for Gemma and Qwen, fixed now:** each sign separately, every pilot dose whose
+  honest hidden pass and no-code rate are within 10 points of unsteered on the pilot seeds is extended to the full
+  seed count (Gemma 16, Qwen 12); doses outside it are reported from the pilot's capability columns and not extended
+  unless the user asks. The choice uses capability columns only, never a hack column.
+- *Capping.* Thresholds are percentiles of the per-token projection on gfar in unsteered episodes
+  (`cap_thresholds.sbatch`, 4 episodes, p5 / p25 / p50 / p75 / p95; jobs 15213667-70, `gfar_vs_gi_v2/steer/thresholds/<model>/`).
+  First arm on every model: the cap at p25 over the gi_v2 band (`--steer-mode cap`), the gi_v2 cap's own setting, on 12
+  seeds (Gemma 16), launched when that model's thresholds exist. The rest of the cap ladder and the floor ladder are
+  decided with the user after the p25 read.
+- *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
+  rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
+  set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main
+  analysis; the Holm family is the judged gfar arms of the model (doses and caps), kept apart from the gi_v2 family and
+  reported next to it. The dose rule is applied as for gi_v2 (honest hidden pass and no-code within 10 points).
+- *What would count.* gfar is a difference of means between hacking and honest synthetic transcripts, and it does
+  not read out what gi_v2 reads on our episodes (first step above). If it is causally a hack direction on these
+  models, plus doses raise judged hacking and minus doses and the cap lower it, monotone in dose, inside the dose
+  rule, as gi_v2 does. The comparison of interest is at matched capability cost: judged-hack change per point of honest
+  hidden pass lost, gfar against gi_v2 on the same model. A rise that appears only at doses outside the rule is
+  reported as a capability effect, as for gi_v2. Koby's Muse proxies (above) suggest a real effect at ±0.16 with a
+  capability cost on the plus side; the other three models have no prior.
+- *Controls and limits.* The additive arms are read against each model's existing random-direction arms at the gi_v2
+  dose (gpt-oss three seeds, Muse three, Gemma the 1729 family and the null directions); Qwen has none, which is a
+  limit. No random-direction cap exists that leaves a model coherent (Gemma 1729 cap and floor, FINDINGS), so the gfar
+  cap is read with the dose rule only. The Gemma and Qwen pilots are one and two seeds, so a dose near the 10-point
+  line can fall on the wrong side (Koby's Muse pilot did); the full-seed capability columns decide in the write-up.
+
+Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
 ## Work order
 
