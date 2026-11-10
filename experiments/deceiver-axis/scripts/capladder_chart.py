@@ -62,7 +62,8 @@ PREFIX, AXIS_NAME = "gi_", "gi_v2 vector"
 GFAR = {  # --axis gfar: per-model summary file and job line; verdict detail files are the reference ones plus verdicts_gf*/
     "gptoss": dict(summary="summary_gfar.json",
                    jobs="dose scan 15213661 (judged 2026-11-10), p25 cap 15214272 (judged 2026-11-10); unsteered arm of the gi_v2 main run"),
-    "muse": dict(summary="summary_gfar.json", jobs="gfar arms judged 2026-11-10; unsteered arm of the gi_v2 main run"),
+    "muse": dict(summary="summary_gfar.json",
+                 jobs="p25 cap 15214273 (judged 2026-11-10); the ±0.08 / ±0.16 dose arms are not judged yet; unsteered arm of the gi_v2 main run"),
 }
 C_NOCODE = "#8a8985"
 
@@ -127,8 +128,12 @@ def load(root: Path, tag: str, summary: str, details: list, layer: int) -> dict:
         if not (root / name).exists():  # a ladder set not judged yet on this model (the floor ladder before it ran)
             continue
         which = "hidden" if "hidden" in Path(name).name else "proxy"
+        # Muse keeps the reference arms in one file, ref_all (proxy + hidden-pass dossiers); ref_proxy beside it names the proxy ones
+        ref_proxy = root / name.replace("ref_all", "ref_proxy")
+        proxy_keys = set(json.loads(ref_proxy.read_text())) if Path(name).name.startswith("ref_all") and ref_proxy.exists() else None
         for key, obj in json.loads((root / name).read_text()).items():
-            counts[key.split("/")[0]][which][obj["verdict"]] += 1
+            w = which if proxy_keys is None else ("proxy" if key in proxy_keys else "hidden")
+            counts[key.split("/")[0]][w][obj["verdict"]] += 1
     data["counts"] = counts
     set_arms(list(data["all"]["judged_hack"]["arms"]), layer)
     return data
@@ -226,7 +231,8 @@ def main() -> None:
     ax_a.fill_between(xs, [rate(DOWN, a) for a, _ in dose_arms()], [rate(UP, a) for a, _ in dose_arms()], color=C_JUDGED, alpha=0.12, lw=0, zorder=1)
     for a, _ in cap_arms():
         ax_a.plot([X[a], X[a]], [rate(DOWN, a), rate(UP, a)], color=C_JUDGED, alpha=0.25, lw=6, solid_capstyle="butt", zorder=1)
-    line(ax_a, AUTO, C_AUTO, marker="s", ls="--", lw=1.6, with_ci=False)
+    solo = len(dose_arms()) == 1  # a rung judged before any dose arm: two columns, so paired labels go to opposite sides
+    line(ax_a, AUTO, C_AUTO, marker="s", ls="--", lw=1.6, with_ci=False, left=solo)
     line(ax_a, J, C_JUDGED)
     ax_a.set_ylim(0, max(rate(AUTO, a) for a, _ in ARMS) * 1.25)
     ax_a.set_title("(a) Hack rates: judged vs the automatic proxy", loc="left", color=INK, fontsize=11, pad=10)
@@ -238,7 +244,7 @@ def main() -> None:
     style(ax_b, "share of episodes (%)", layer)
     if gfar:
         line(ax_b, NC, C_NOCODE, marker="^", ls="--", lw=1.6, left=True, dy=11)
-    line(ax_b, SP, C_SHOWN, marker="D", ls="-.", lw=1.6)
+    line(ax_b, SP, C_SHOWN, marker="D", ls="-.", lw=1.6, left=solo)
     line(ax_b, HP, C_HIDDEN, marker="o")
     top_b = max([rate(SP, a) for a, _ in ARMS] + ([rate(NC, a) for a, _ in ARMS] if gfar else []))
     ax_b.set_ylim(0, top_b * 1.3)
@@ -315,7 +321,8 @@ def main() -> None:
     if gfar:
         present = [a.split("_")[-1] for a in CAPS + FLOORS if a in X]
         ladder = f"the {' / '.join(present)} cap" if present and not floors else ladder
-    fig.suptitle(f"{M['name']}, {'Goodfire RH axis (gfar)' if gfar else 'gi_v2'} dose scan at layer {layer} and {ladder} over layers {M['band']}:\n"
+    scan = f" dose scan at layer {layer} and {ladder}" if not solo else f": {ladder}"
+    fig.suptitle(f"{M['name']}, {'Goodfire RH axis (gfar)' if gfar else 'gi_v2'}{scan} over layers {M['band']}{',' if solo else ':'}\n"
                  "blind Sonnet rubric-v3 judging of every proxy episode and every hidden-pass episode with a hard-code signature",
                  x=0.07, ha="left", color=INK, fontsize=12.5, y=0.985)
     fig.text(0.07, 0.928, f"{M.get('jobs_floor', M['jobs']) if floors else M['jobs']}; seeds 0–11 on every arm; 540 episodes per arm.\n"
