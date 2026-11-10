@@ -1435,6 +1435,18 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   instead of waiting for the ±0.08 job 15213662. The ±0.08 arms and Koby's ±0.16 arms stay one later set. Same
   builder, judges and reading rules; the Holm family is every judged gfar arm of the model and is recomputed when
   the second set is in, so the cap's adjusted p can change then (the raw contrast and CI do not).
+- **Muse dose set (2026-11-10 3:30 pm MST, written before the set is built; no capability or proxy column of these
+  arms has been looked at):** the ±0.08 job 15213662 finished 3:28 pm (24 of 24 tasks, 45 episodes per seed). Blind set
+  `gfdose` = our `gf_m0.08` / `gf_p0.08` and Koby's `gf_m0.16` / `gf_p0.16` (12 seeds each, same recipe and layer-26
+  coefficient scale; his arm directories are linked read-only into `muse_glimmer/gi_v2/pilot/`), one mixed proxy set
+  and one hidden-signature set, `build_ladder_set.sh muse gfdose mgfdose ...`, headless Sonnet rubric-judge, first pass
+  as judged. Holm family: the five judged gfar arms of the model (four doses, p25 cap) plus the three randoms, as on
+  gpt-oss. **Dose rule, stated now because the 2026-11-10 review found it applied with different measures:** the rule
+  is read on the measure this plan fixed on 2026-11-07, hidden pass among episodes not judged HACK (`main_analysis.py`
+  `honest_hidden_pass`), and on no-code, each within 10 points of unsteered; the `pilot_summary.py` flag (hidden pass
+  among non-proxy episodes) is reported beside it under its own name and does not decide. **Exploratory row, declared
+  now:** the judged hack rate among episodes that submitted code is reported for every arm with the note that it
+  conditions on a post-treatment variable; it does not enter the Holm family and no claim rests on it alone.
 
 - **Muse p75 cap, one-seed pilot (2026-11-10, user request ~1:18 pm MST; rule written before submission):** the p25
   cap stopped Muse from submitting (no-code 98.9%), and the size of that side effect differs too much between models
