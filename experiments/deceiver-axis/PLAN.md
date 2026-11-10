@@ -1331,6 +1331,8 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   **Gemma p25 cap submitted (3:27 am MST):** thresholds 15213669 finished 3:25 am (projection negative at layers 20–27 and 29,
   positive from layer 30 up); arm `gfar_cap_p25_L20-38`, 16 seeds × hard108, job 15216111 on cs3 B200, queued behind the
   pilot and the floor ladder; cs-3-1 is under a hardware health-check reservation since 2:30 am, so none of the three can start new tasks.
+  **Qwen p25 cap submitted (4:42 am MST):** thresholds 15214024 finished 4:41 am (projection negative at every band layer);
+  arm `gfar_cap_p25_L22-42`, 12 seeds × qwen_hard61, job 15217538 on cs / cs2. All four models now have their p25 cap arm queued or running.
 - *Judging and analysis.* Every arm is judged blind by the same rubric-v3 pipeline as the gi_v2 arms (Sonnet
   rubric-judge, headless runner, first pass as judged, no adjudication) against the model's existing unsteered arm, one
   set per model when its arms finish (Muse: Koby's ±0.16 arms and our ±0.08 arms in one set). Statistics as in the main
