@@ -647,7 +647,7 @@ body.dash-page .dash{min-height:100vh}
   .gbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px 0 0}
   .gbar label{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--ink2);cursor:pointer}
   .gbar .count{margin-left:auto;font-size:12.5px;color:var(--ink2)}
-  .gbar2{padding-top:10px}
+  .gbar2{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}  /* faint rule: the model pills and the group pills are two separate filters */
   .gsec{margin-top:26px;scroll-margin-top:140px}
   .gsech{font-size:15px;font-weight:650;color:var(--ink);margin:0;display:flex;gap:10px;align-items:baseline}
   .gsech::after{content:"";flex:1;height:1px;background:var(--line);align-self:center}
