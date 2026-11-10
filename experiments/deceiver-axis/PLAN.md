@@ -1201,7 +1201,7 @@ lower hacking, lifting that tail should raise it; if the floor raises hacking on
 up with hidden pass down, as the +0.2 / +0.4 shifts do), the dose rule says so. Judged blind as one set with the
 cap-ladder recipe (`build_ladder_set.sh gptoss floorladder floor gi_floor_p95 gi_floor_p75 gi_floor_p50`), analysed
 with the three floor rungs added to the Holm family, charted with `capladder_chart.py` extended to show cap and floor
-rungs side by side. **gpt-oss done (judged 2026-11-06, 9:07 pm MST; FINDINGS "gpt-oss gi_v2 floor ladder"):** 11.7 → 12.6% at p50 (n.s.) → 17.8% at p75 (+6.1, Holm 0.013) → 25.0% at p95 (+13.3, Holm 0.0007), hidden pass within 2.8 points and no-code down at every rung, so the floor raises hacking at equal capability: the mirror of the cap ladder, as expected, and the positive control holds. Other models: after this read, with the user. **Qwen3.8-27B launched (2026-11-09 2:57 pm MST, user "let's also start running the inverse-cap on Qwen"):** `floor_p50_L22-42` / `floor_p75_L22-42` / `floor_p95_L22-42`, 12 seeds × qwen_hard61 each, thresholds interpolated from Koby's gi_v2_contrast sidecar on the cap band 22–42 (`floor/thresholds/gi_v2_contrast_p{50,75,95}.json`, p50 equal to his cap file, monotone at every layer), direction and sampling as his cap arm, array 15198076 (cs/cs2 qos cs, 10 h, B200 left out: the hybrid attention backend there is unverified for Qwen3.8; recipe and picker record in `floor/jobids.txt`). Judging waits: user 2026-11-09 "don't start judging them yet though. leave that as a to-do for Wednesday after my weekly limits reset" → to-do Wednesday 2026-11-11; until then only the capability summary (`pilot_summary.py`) is run on the finished arms. Each arm is judged blind by the rubric-judge
+rungs side by side. **gpt-oss done (judged 2026-11-06, 9:07 pm MST; FINDINGS "gpt-oss gi_v2 floor ladder"):** 11.7 → 12.6% at p50 (n.s.) → 17.8% at p75 (+6.1, Holm 0.013) → 25.0% at p95 (+13.3, Holm 0.0007), hidden pass within 2.8 points and no-code down at every rung, so the floor raises hacking at equal capability: the mirror of the cap ladder, as expected, and the positive control holds. Other models: after this read, with the user. **Qwen3.8-27B launched (2026-11-09 2:57 pm MST, user "let's also start running the inverse-cap on Qwen"):** `floor_p50_L22-42` / `floor_p75_L22-42` / `floor_p95_L22-42`, 12 seeds × qwen_hard61 each, thresholds interpolated from Koby's gi_v2_contrast sidecar on the cap band 22–42 (`floor/thresholds/gi_v2_contrast_p{50,75,95}.json`, p50 equal to his cap file, monotone at every layer), direction and sampling as his cap arm, array 15198076 (cs/cs2 qos cs, 10 h, B200 left out: the hybrid attention backend there is unverified for Qwen3.8; recipe and picker record in `floor/jobids.txt`). Judging waits: user 2026-11-09 "don't start judging them yet though. leave that as a to-do for Wednesday after my weekly limits reset" → to-do Wednesday 2026-11-11; lifted the same day at ~3:55 pm MST after the user's limit reset ("I got a limit reset, so we're back in business. We can judge the Qwen inverse capping"): a detached pipeline (`floor_pipeline.sh` in the qwen_hard61 judging dir) waits for the array, builds set `floor` (`build_floor_set.sh`, the main-set recipe), judges it with the headless runner (proxy → hidden-signature → lcbhard_57/81 supplementary) and runs the twelve-arm analysis (`analysis_floor_run.sh`, Holm over eleven contrasts). Each arm is judged blind by the rubric-judge
 agents as the shift arms were and enters that model's FINDINGS entry as a cap-ladder row; capability evals (GSM8K /
 MMLU-Pro / HumanEval / IFBench) per rung as for the doses, optional.
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
@@ -1251,6 +1251,56 @@ Whether the headline intervention is steering or capping waits on the Gemma cap 
 L20–38, 16 seeds; job 15125968): capping becomes the headline only if a cap inside the 10-point capability rule
 significantly lowers the judged hack rate on Gemma (FINDINGS "Capping vs negative steering along gi_v2"). Honest hidden
 pass (hidden pass among episodes not judged HACK) replaces hidden pass as the capability measure and in the dose rule.
+
+## Goodfire reward-hacking axis (gfar) against gi_v2 (added 2026-11-09, user request)
+
+**Goal.** Eventually every experiment we ran along gi_v2 (steering, capping, the controls) also along the Goodfire
+reward-hacking axis, gfar: Koby's hack-minus-honest difference of means on Goodfire's synthetic tool-calling
+conversations (HF `Goodfire/reward-hack-data`, 3123 conversations, thinking off; `goodfire_readout_vectors.py` +
+`goodfire_rh_geometry.py`; headline contrast `pl_all_families`, readouts all-response, tool-call close, last token,
+tool calls, report). **First step, before any steering:** how similar is gfar to gi_v2 on the four main models
+(gpt-oss-120b, Muse Glimmer 30B, Gemma 4 31B, Qwen3.8-27B), as directions and as readouts on unsteered episodes.
+
+**Two measurements.**
+1. *Direction cosine* per layer between each gfar readout's direction and gi_v2, against the per-task sign-flip null
+   of the geometry script (and the isotropic sd 1/sqrt(hidden)). Exists for gpt-oss, Muse and Gemma (Koby's
+   `rh_axis_koby/synthetic_rh/goodfire/<model>/geometry/`); Qwen had no gfar, so it is built here
+   (`qwen38_27b_gi_v2/goodfire/`, Qwen readout support added to `readouts.py`).
+2. *Activation correlation on unsteered episodes.* The main-run unsteered arm of each model (gpt-oss and Muse: 12
+   seeds x 45 problems; Qwen: qwen_hard61 seeds 8-19; Gemma: hard108 seeds 0-15) teacher-forced at every layer
+   (`axis_acts_extract.py`); per episode the token-mean residual of the reasoning tokens and of the answer tokens is
+   projected on both directions and the projections correlated over episodes (`axis_acts_analysis.py`), overall, within
+   problems and between problems; and the same over tokens, from token sums stored at extraction.
+
+**The null for the correlation is not zero.** On the Gemma hack-lens cache (L30-59, 1728 episodes) the gi_v2 projection
+correlates with the projection onto a *random* direction at |r| 0.5-0.8 (95th percentile): episode means share a few
+dominant components, so any two directions correlate. Every r is therefore reported with the random-direction band and
+its percentile in it, with the within-problem r, and with the top principal components removed as a sensitivity. A
+correlation inside the band says nothing about the two axes; only one outside it does.
+
+**Second null, added 2026-11-09 after the first two models: the antonym-control directions.** The random band answers
+"does gfar's readout track gi_v2's more than an arbitrary direction's would"; it does not answer "more than another
+trait direction's would". Each model has 109 isolated antonym-pair persona directions built exactly like gi_v2
+(`<model>/antonym_controls/dirs_isolated`), so `axis_acts_analysis.py --control-dirs <folder>` projects the stored
+episode means on every one of them and reports, per readout and channel, where r(gfar, gi_v2) falls among the 109
+r(control, gi_v2) (episode level, within problems, and with the top 1 / 5 principal components removed), plus the
+|r| among the control pairs themselves. gfar counts as sharing content with gi_v2 only above the 95th percentile of
+the controls on both channels and under the sensitivities. Limits: the token-level correlations have only the 32
+random directions stored at extraction as their null (the controls were not projected per token). The
+principal-component sensitivity uses a randomized `torch.svd_lowrank`; it was unseeded in the first runs (top-5 column
+moving by 0.01-0.02 between runs) and is seeded per layer since the four-model rerun.
+
+**Status 2026-11-09 evening: first step done on all four models** (FINDINGS "Goodfire reward-hacking axis (gfar) against
+gi_v2, four models"). Cosine at the steer layers −0.02 to +0.09, inside or at the edge of the sign-flip null; no readout
+above the 95th percentile of the antonym controls on both channels (all-response at the 49th / 53rd, 4th / 7th, 8th /
+14th, 32nd / 44th percentile on gpt-oss / Muse / Gemma / Qwen); Muse last-token the one near miss (97th / 89th). Open:
+Gemma's last 8 seeds (15201997 tasks 2-3, pending on cs3; rerun `analysis/run_model.sh gemma`), a per-token control
+null (needs a second extraction pass that projects the controls per token), gpt-oss L35.
+
+**Then (not started; needs a user go-ahead per step):** gfar steering dose pilots per model (act-norm first, the
+dose rule as for gi_v2; Koby already steered Muse along gfar at L26, `steer_muse_goodfire/`), gfar capping, and the
+matched controls. Outputs: `gfar_vs_gi_v2/` under the schemer-axis root (`acts/<model>/`, `analysis/`, `jobs.txt`,
+picker output).
 
 ## Work order
 
