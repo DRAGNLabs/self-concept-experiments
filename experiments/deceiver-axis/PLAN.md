@@ -1685,6 +1685,22 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   on a measure whose unsteered seed 0 alone is 46.2% against 39.7% pooled; they are put to the user, not extended on
   my own. No hack column was read for the choice (the pilot summary prints the automatic proxy beside it: 18.5% /
   18.5% at −0.04 / −0.08, 20.4% / 22.2% at +0.04 / +0.08, unsteered 20.2%; not used).
+  **Gemma doses extended on the user's word (2026-11-11 4:41 pm MST request, "go ahead and extend the +0.04 gemma
+  gfar along with +-0.08"; written before submission):** +0.04, −0.08 and +0.08 go to 16 seeds (seeds 1–15,
+  `gfar/settings_gfar_ext2.tsv`, 45 lines in the order +0.04, −0.08, +0.08, each the pilot line with only the sample
+  seed changed; same script, data and B200 placement as the −0.04 extension 15266062). This is the "unless the user
+  asks" branch of the extension rule, not a pass of the screen: on the pilot seed the three doses were outside it by
+  0.6, 0.1 and 9.4 points of honest hidden pass. The request came after the capability table only; no hack column
+  was used. **Read, fixed now:** the four doses (−0.08, −0.04, +0.04, +0.08) are judged blind in one set with
+  Koby's B200 unsteered proxy episodes once all four have 16 seeds, Sonnet rubric-judge, first pass as judged, Holm
+  over the Gemma Goodfire family (these four and any cap rung judged with them), exact sign-flip p. The dose rule is
+  applied per arm on 16 seeds on the 2026-11-07 measure (hidden pass among episodes not judged HACK, and no-code,
+  each within 10 points of unsteered); an arm outside it is reported as outside the rule and its hack difference is
+  not read as an effect of the direction. **Expectations:** if the axis steers hacking on Gemma, judged hacking is
+  ordered −0.08 ≤ −0.04 ≤ unsteered ≤ +0.04 ≤ +0.08. +0.08 is expected to stay outside the dose rule at 16 seeds
+  (−19.4 on the pilot seed); +0.04 and −0.08 can land on either side (unsteered seed 0 alone is 6.5 points above
+  the pooled arm). Host memory for these tasks is 24 GB (`--mem-per-cpu=3G` × 8; the six pilot tasks peaked at
+  4.8–9.0 GB against the script's 128 GB default), and the pending −0.04 array is lowered to the same request.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
