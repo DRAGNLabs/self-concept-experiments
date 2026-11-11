@@ -1628,6 +1628,36 @@ measured only on its own task set. This run adds them. Written before any job wa
   job lines in `steer/jobs.txt`. Full test suite after the code change: 358 pass, 1 skipped.
   The Muse Goodfire-axis array of the amendment: 15234624 (4 tasks, 2 h, `-p cs,cs2 --qos cs`), submitted 5:18 pm after
   commit c2cc1b7.
+- **Note 2026-11-10 ~6:00 pm (side-agent heads-up, forwarded by the user with "make a note of this"): Muse IFBench is
+  read against both unsteered runs.** The Muse `unsteered_rerun` (no steering, the recipe of the 2026-10-29 reference)
+  scored 65.3% on IFBench against 69.0%: −3.7 points, paired CI −7.7 to 0.0, McNemar p 0.099, 13 gains / 24 losses. The
+  other three benchmarks are within 1.2 points (GSM8K +0.3, MMLU-Pro +1.1, HumanEval −1.2). The CI's upper end is exactly
+  0.0, so by the letter of the reference rule above the original stays the reference; but a move of 3.7 points between two
+  unsteered runs is as large as several of the arm differences the 2-point rule would call a loss. Written when the
+  rerun comparison and the first arm tables were already on screen, so this is a correction to the reading, not a
+  pre-result rule. From here on:
+  - every Muse arm's IFBench row is reported against both unsteered runs (`compare_vs_rerun.{json,md}` beside the
+    original comparison), and an arm is called an IFBench loss only if it is outside the retention rule (more than 2
+    points down with a CI excluding zero) against both. Outside against the original only is written "IFBench lower
+    than the 2026-10-29 unsteered run, not lower than the rerun; within the run-to-run spread of unsteered Muse";
+  - this also applies backwards to the Muse IFBench statements already made: gi_v2 −0.16 (−4.3) and +0.16 (−6.7),
+    Goodfire axis −0.16 (−7.0), and the floor rungs p50 / p75 / p95 (−5.7 / −5.3 / −8.3). The entry for this run
+    restates them with both references;
+  - gpt-oss: its rerun is within 1.3 points of the original on every benchmark with every CI covering zero, so the
+    original stays the only reference there. Qwen and Gemma have no rerun; their IFBench rows carry the caveat that
+    one unsteered run is the reference and Muse showed a 3.7-point spread between two.
+  The two unsteered runs are not pooled into a new reference and no extra unsteered run is queued without the user's word.
+- **Result, gpt-oss and Muse (2026-11-10, jobs done 5:46–5:52 pm; FINDINGS "Capability retention for the cap and floor
+  arms, gpt-oss and Muse, and the Muse Goodfire-axis doses").** Reference check: gpt-oss rerun within 1.3 points on every
+  benchmark, all CIs covering zero; Muse rerun as in the note above. gpt-oss: clean on all four are `gi_cap_p5`,
+  `gi_floor_p50`, `gi_floor_p75`, `gi_floor_p95`, `gf_cap_p50` (as expected) and `gf_cap_p25` (expected loss or
+  truncation; GSM8K −1.7 with a CI excluding zero, inside the 2-point line; outside the dose rule on the task set, clean
+  on the benchmarks); `gi_cap_p50` misses on IFBench (−5.3, CI −10.3 to −0.3; expected clean; the p5 and p25 caps do not
+  miss). Muse: `gi_cap_p5` and `gi_cap_p50` clean on all four (p5: outside the dose rule on the task set, clean on the
+  benchmarks); the three floors and the four Goodfire-axis doses keep GSM8K, MMLU-Pro and HumanEval; on IFBench the floors
+  (−5.7 / −5.3 / −8.3) and Goodfire −0.16 (−7.0) are lower than the 2026-10-29 unsteered run, not lower than the rerun
+  (−2.0 / −1.7 / −4.7 and −3.3, CIs covering zero), so none is an IFBench loss under the note. No truncated share above
+  0.7%. No arm changes dose-rule status. Qwen (15234399) and Gemma (15234463) outstanding.
 
 ## Work order
 

@@ -114,6 +114,53 @@ PRESETS = {
             "the cap arm clips the gi projection at the layer-wise p25 over layers 22–42.\n"
             "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "gptoss_v2_clamp": dict(
+        compare=SCRATCH / "gi_v2/capeval/compare_clamp.json",
+        out=SCRATCH / "gi_v2/capeval/capeval_clamp_chart.png",
+        dose_arms=[("gi_cap_p5", "cap\np5"), ("gi_cap_p25", "cap\np25"), ("gi_cap_p50", "cap\np50"), ("unsteered", "none\n(unsteered)"), ("gi_floor_p50", "floor\np50"), ("gi_floor_p75", "floor\np75"), ("gi_floor_p95", "floor\np95")],
+        side_arms=[("gf_cap_p25", "Goodfire\ncap p25"), ("gf_cap_p50", "Goodfire\ncap p50"), ("unsteered_rerun", "rerun")],
+        side_label="Goodfire caps; rerun",
+        tick_fs=8,
+        series_label="gi_v2 cap and floor rungs, Δ with 95% CI",
+        xlabel="gi_v2 clamp rung, layers 12–23",
+        col_labels=["cap p5", "cap p25", "cap p50", "unsteered", "floor p50", "floor p75", "floor p95", "Goodfire p25", "Goodfire p50", "rerun"],
+        title="gpt-oss-120b, cap and floor arms: capability retention",
+        layer="12–23",
+        sub="A cap clips the projection on the axis down to a threshold, a floor lifts it up to it, at every position over layers 12–23; thresholds are percentiles of the unsteered projection.\n"
+            "Share of generated positions the clamp moves on unsteered activations (clamp_shares.md): gi_v2 cap p5 94–96%, p25 75%, p50 53%; floor p50 47%, p75 70%, p95 90–92%;\n"
+            "Goodfire cap p25 77%, p50 56%. Rerun = the unsteered recipe run again today.\n"
+            "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
+    "muse_v2_clamp": dict(
+        compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_clamp.json",
+        out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_clamp_chart.png",
+        dose_arms=[("gi_cap_p5", "cap\np5"), ("gi_cap_p25", "cap\np25"), ("gi_cap_p50", "cap\np50"), ("unsteered", "none\n(unsteered)"), ("gi_floor_p50", "floor\np50"), ("gi_floor_p75", "floor\np75"), ("gi_floor_p95", "floor\np95")],
+        side_arms=[("unsteered_rerun", "unsteered\nrerun")],
+        side_label="unsteered rerun",
+        series_label="gi_v2 cap and floor rungs, Δ with 95% CI",
+        xlabel="gi_v2 clamp rung, layers 17–33",
+        col_labels=["cap p5", "cap p25", "cap p50", "unsteered", "floor p50", "floor p75", "floor p95", "unsteered rerun"],
+        title="Muse-Glimmer-30B, cap and floor arms: capability retention",
+        layer="17–33",
+        sub="A cap clips the projection on the gi_v2 axis down to a threshold, a floor lifts it up to it, at every position over layers 17–33; thresholds are percentiles of the unsteered projection.\n"
+            "Share of generated positions the clamp moves on unsteered activations (clamp_shares.md): cap p5 94–97%, p25 75%, p50 50%; floor p50 50%, p75 75%, p95 94–97%.\n"
+            "Unsteered rerun = the same recipe run again today.\n"
+            "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
+    "muse_gfar": dict(
+        compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_gfar.json",
+        out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_gfar_chart.png",
+        dose_arms=[("gf_m0.16", "−0.16"), ("gf_m0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("gf_p0.08", "+0.08"), ("gf_p0.16", "+0.16")],
+        side_arms=[("unsteered_rerun", "unsteered\nrerun")],
+        side_label="unsteered rerun",
+        series_label="Goodfire-axis dose arms, Δ with 95% CI",
+        col_labels=["Goodfire −0.16", "Goodfire −0.08", "unsteered", "Goodfire +0.08", "Goodfire +0.16", "unsteered rerun"],
+        title="Muse-Glimmer-30B, Goodfire reward-hacking axis: capability retention",
+        layer="26",
+        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 26 in units of the layer's mean residual norm, the doses of the judged task-set arms.\n"
+            "Unsteered rerun = the same recipe run again today.\n"
+            "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
 }
 RULE_POINTS = 2.0
 SIDE_GAP = 1.0
@@ -204,14 +251,14 @@ def main() -> None:
             ax.plot([xpos(a)], [d], marker="D", ms=6.5, color=C_CAP, mec=SURFACE, mew=1.2, ls="none", zorder=3)
             ax.text(xpos(a) + 0.12, d + 0.35, f"{d:+.1f}", fontsize=8, color=C_CAP, ha="left", va="bottom", zorder=5)
         ax.set_xticks([xpos(a) for a in all_arms])
-        ax.set_xticklabels([lab for _, lab in dose_arms] + [lab for _, lab in side_arms], fontsize=9, color=INK)
+        ax.set_xticklabels([lab for _, lab in dose_arms] + [lab for _, lab in side_arms], fontsize=P.get("tick_fs", 9), color=INK)
         ax.set_xlim(-0.6, xpos(all_arms[-1]) + 0.7)
         ax.set_ylim(*ylim)
         ax.set_ylabel("Δ accuracy vs unsteered, points", color=INK2, fontsize=9.5)
-        ax.set_xlabel(f"steering dose α at layer {P['layer']}" + (f"          │  {P.get('side_label', 'cap arm')}" if side_arms else ""), color=INK2, fontsize=9)
+        ax.set_xlabel(P.get("xlabel", f"steering dose α at layer {P['layer']}") + (f"          │  {P.get('side_label', 'cap arm')}" if side_arms else ""), color=INK2, fontsize=9)
         ax.set_title(f"{letters[i]}   {label}: unsteered {base(task):.1f}%  ({n_desc})", fontsize=10.5, color=INK, loc="left", fontweight="bold", pad=6)
         if i == 0:
-            handles = [Line2D([], [], color=C_LINE, marker="o", lw=2.0, label="gi dose arms, Δ with 95% CI")]
+            handles = [Line2D([], [], color=C_LINE, marker="o", lw=2.0, label=P.get("series_label", "gi dose arms, Δ with 95% CI"))]
             if side_arms:
                 handles.append(Line2D([], [], color=C_CAP, marker="D", lw=0, label=P.get("side_label", "cap arm")))
             handles += [plt.Rectangle((0, 0), 1, 1, fc=C_BAND, alpha=0.15, ec="none", label=f"retention rule: within ±{RULE_POINTS:.0f} points")]
