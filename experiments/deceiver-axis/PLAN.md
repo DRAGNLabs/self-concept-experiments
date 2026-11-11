@@ -1342,6 +1342,9 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   `unsteered_rerun` (336 proxy dossiers / 56 batches, 100 hidden-signature dossiers / 18 batches), analysis by
   `gfar_vs_gi_v2/steer/run_gfcap95_analysis.sh` (gfar Holm family without the rerun; rerun against October as one raw
   contrast; the family against the rerun as reference).
+  **Judging paused 12:13 am:** the runner stopped on its own guard (`--stop-util 0.95`, seven-day plan limit at 95%,
+  resets 7:00 am MST) with 18 of 56 proxy and 6 of 18 hidden-signature batches written. Not worked around;
+  `verdicts_gfcap95/resume_after_reset.sh` (detached) reruns the chain at 7:05 am and then the analysis.
 
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
