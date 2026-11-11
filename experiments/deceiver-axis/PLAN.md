@@ -1329,6 +1329,25 @@ then holds is that one pilot dose and the check's unsteered seeds 0–1, floor p
 reported beside the dw +0.08 dose as a single-seed copy with no 16-seed baseline of its own placement and is not
 used for the pilot read.
 
+**B200 is the placement for Gemma again; the dw set is stopped (user ~2:05 pm MST Nov 11, told that cs-3-1 was back
+and that the B200 dose copies would finish first: "yeah, let's just use the B200s for gemma instead"; written before
+any dw or B200 result of these arms was read).** cs-3-1 left its reservation at about 1:43 pm and started the queued
+B200 copies. From here every Gemma arm is the B200 copy, read against Koby's B200 unsteered arm as before the moves:
+Goodfire dose pilot 15213664_[1-5] (+0.08 ran there earlier), Goodfire p25 cap 15216111 (16 seeds), floor p95 seeds
+14–15 with p75 and p50 (15206804_[14-47]), cap benchmarks 15234463. The rule "the dw copy of an arm is the one of
+record" above is withdrawn; it never applied, because no dw arm other than part of the unsteered arm ran. The floor
+ladder is then on one placement, so the placement caveat on ordering p95 against p75 / p50 falls away.
+**dw set:** pending tasks and the three tasks that had just started (unsteered seeds 4–6: 25, 0 and 0 of 108
+episodes) are cancelled; unsteered seeds 2–3 (104 and 101 of 108 at 2:07 pm) are left to finish. What dw then holds
+is unsteered seeds 0–3 on the A100 pair and nothing else. They are no arm's reference. They may be reported once as
+a hardware check like the H100 pair (screen columns against Koby's B200 unsteered arm, descriptive, never pooled,
+corrects nothing); the partial seed 4–6 files are not used. The cs2 single-seed +0.08 pilot dose (15258485_0) stays
+a copy on other hardware, shown beside the B200 +0.08 dose if at all, and not used for the pilot read. To restore
+the dw set: resubmit `settings_a100x2.tsv` lines 4–69 with the stage 2 command.
+**Unchanged:** pilot screen, dose rule, blind judging (the B200 arms with Koby's B200 unsteered proxy episodes in
+the same sets, as for the earlier B200 arms), analysis and benchmark reading rules. The H200 check 15224080 is not
+needed for any placement decision any more; whether to cancel it is put to the user.
+
 **Muse reference of record: the October unsteered arm (user decision 2026-11-11 ~12:50 pm MST: "Use the original
 October run as the reference for Muse").** Every Muse task-set contrast (judged rate, dose rule, pilot screens) is read
 against the October 12-seed unsteered arm (`muse_glimmer/main/unsteered`). (As first written here the rerun stayed in
