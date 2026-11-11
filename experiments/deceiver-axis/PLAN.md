@@ -1318,6 +1318,11 @@ every moved arm together with its baseline, so if the dw set completes, the dw c
 any complete cs2 or B200 copy of the same arm is reported beside it as a replication against its own unsteered arm,
 whatever it shows. A copy is never chosen by its result. The pending cs2 tasks (15258485_[1-67]) stay queued for
 now; whether to cancel them once the dw set is running is put to the user.
+**Submitted Nov 11:** stage 1 job 15259716 (array 0–1, unsteered seeds 0–1) at 11:35 am MST, started at once on
+dw-1-4 and dw-1-2; both logs show two A100-SXM4-80GB cards and `TRITON_ATTN`, the engine loaded on both ranks
+(about 9 minutes from start to first generation) and both tasks were writing episodes at 11:54 am with no errors.
+Stage 2 job 15260132 (array 2–69) at 11:56 am, same placement and settings; the picker showed 6 preemptible A100s
+(three pairs) at that moment, so the remaining tasks start as dw A100s free up.
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
