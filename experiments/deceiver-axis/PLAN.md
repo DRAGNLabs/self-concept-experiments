@@ -1286,6 +1286,10 @@ correct any arm. (4) Fit per task as in the check: loads, finishes inside the ti
 errors, the worker log line names the mode on both ranks; truncated-turn share reported per arm beside its own
 unsteered arm. (5) Judging as for any new arm (Sonnet rubric judge, no adjudication), the cs2 unsteered proxy
 episodes in the same blind sets as the cs2 arms they are compared with; write-ups name the placement per arm.
+**Submitted 11:06 am MST Nov 11:** job 15258485 `schemer-gemma-h100x2` (array 0–67: 0–5 dose pilot, 6–19 unsteered
+seeds 2–15, 20–35 Goodfire p25 cap, 36–51 floor p75, 52–67 floor p50; cs2, two H100s per task, qos cs, 5 h, no
+requeue). Task 0 started at once on cs-2-1 and logged the add patch for layer 30 on both ranks with `TRITON_ATTN`;
+the other 67 wait for H100 pairs (cs2 has 16 H100s, all in use at submission).
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
