@@ -1,12 +1,15 @@
 """Narrow model-specifics protocol for decoding residual-stream directions through a checkpoint's output head
 (logit lens), read straight from the safetensors without building the model."""
-from collections.abc import Callable
 from typing import Protocol
 
 from jaxtyping import Float
 import torch
 
-type CheckpointTensorLoader = Callable[[str], Float[torch.Tensor, "..."]]
+
+class CheckpointTensorLoader(Protocol):
+    def __call__(self, tensor_name: str) -> Float[torch.Tensor, "..."]:
+        """The named tensor from the checkpoint's safetensors, as float32, without building the model."""
+        ...
 
 
 class UnembeddingSpecifics(Protocol):
