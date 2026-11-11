@@ -1290,6 +1290,12 @@ episodes in the same blind sets as the cs2 arms they are compared with; write-up
 seeds 2–15, 20–35 Goodfire p25 cap, 36–51 floor p75, 52–67 floor p50; cs2, two H100s per task, qos cs, 5 h, no
 requeue). Task 0 started at once on cs-2-1 and logged the add patch for layer 30 on both ranks with `TRITON_ATTN`;
 the other 67 wait for H100 pairs (cs2 has 16 H100s, all in use at submission).
+**Amendment 11:20 am, before any B200 copy was cancelled:** task 0 is writing episodes, but only one H100 pair is
+ours so far and the other 67 tasks are pending on resources, so the cs2 path may take days. The B200 copies
+(15213664_[1-5], 15216111, 15206804_[16-47]) therefore stay queued for now instead of being cancelled at first
+episodes: they cannot start while the reservation holds, and if cs-3-1 returns first they give the arms on the
+placement of the existing references. If an arm ends up on both placements, each copy is read against its own
+unsteered arm as above and the two are not pooled. Whether to cancel them is put to the user.
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
