@@ -41,7 +41,7 @@ MAXTOK=8192
 TP="${TP:-1}"  # vLLM tensor parallel size for generation; set it to the GPU count when overriding --gpus-per-node with several smaller GPUs
 MAXLEN=12288
 JUDGE_MAXLEN=32768
-ACT_BATCH=4
+ACT_BATCH="${ACT_BATCH:-4}"  # 1 on 80 GB GPUs: the stacked all-layer activations of a batch of 4 OOM GPU 0
 ROLES="${ROLES:-default neutral_fic schemer_fic deceiver_fic cheater_fic con_artist_fic sycophant_fic spin_doctor_fic infiltrator_fic sandbagger_fic straight_shooter_fic rule_follower_fic transparent_negotiator_fic candid_friend_fic scrupulous_scientist_fic whistleblower_fic loyal_steward_fic conscientious_craftsperson_fic diligent_worker_fic embezzler_fic impostor_fic gaslighter_fic honest_bookkeeper_fic humble_expert_fic accountable_owner_fic}"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
     ROLES="$(echo "$ROLES" | tr ' ' '\n' | awk -v n="$SLURM_ARRAY_TASK_COUNT" -v i="$((SLURM_ARRAY_TASK_ID - SLURM_ARRAY_TASK_MIN))" '(NR - 1) % n == i' | tr '\n' ' ')"

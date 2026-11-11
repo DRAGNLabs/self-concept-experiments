@@ -58,9 +58,9 @@ def load_unembedding(specifics: UnembeddingSpecifics, model_name: str) -> Unembe
     index_path = hf_hub_download(model_name, "model.safetensors.index.json")
     shard_by_tensor: dict[str, str] = json.loads(Path(index_path).read_text())["weight_map"]
 
-    def load_tensor(name: str) -> torch.Tensor:
-        with safe_open(hf_hub_download(model_name, shard_by_tensor[name]), "pt") as shard:
-            return shard.get_tensor(name).float()
+    def load_tensor(tensor_name: str) -> torch.Tensor:
+        with safe_open(hf_hub_download(model_name, shard_by_tensor[tensor_name]), "pt") as shard:
+            return shard.get_tensor(tensor_name).float()
 
     gain_scaled_weight = specifics.gain_scaled_unembedding(load_tensor)
     return {"gain_scaled_weight": gain_scaled_weight, "row_norms": gain_scaled_weight.norm(dim=-1)}
