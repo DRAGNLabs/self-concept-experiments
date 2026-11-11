@@ -135,31 +135,27 @@ PRESETS = {
         compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_clamp.json",
         out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_clamp_chart.png",
         dose_arms=[("gi_cap_p5", "cap\np5"), ("gi_cap_p25", "cap\np25"), ("gi_cap_p50", "cap\np50"), ("unsteered", "none\n(unsteered)"), ("gi_floor_p50", "floor\np50"), ("gi_floor_p75", "floor\np75"), ("gi_floor_p95", "floor\np95")],
-        side_arms=[("unsteered_rerun", "unsteered\nrerun")],
-        side_label="unsteered rerun",
+        side_arms=[],
         series_label="gi_v2 cap and floor rungs, Δ with 95% CI",
         xlabel="gi_v2 clamp rung, layers 17–33",
-        col_labels=["cap p5", "cap p25", "cap p50", "unsteered", "floor p50", "floor p75", "floor p95", "unsteered rerun"],
+        col_labels=["cap p5", "cap p25", "cap p50", "unsteered", "floor p50", "floor p75", "floor p95"],
         title="Muse-Glimmer-30B, cap and floor arms: capability retention",
         layer="17–33",
         sub="A cap clips the projection on the gi_v2 axis down to a threshold, a floor lifts it up to it, at every position over layers 17–33; thresholds are percentiles of the unsteered projection.\n"
             "Share of generated positions the clamp moves on unsteered activations (clamp_shares.md): cap p5 94–97%, p25 75%, p50 50%; floor p50 50%, p75 75%, p95 94–97%.\n"
-            "Unsteered rerun = the same recipe run again today.\n"
-            "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+            "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     "muse_gfar": dict(
         compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_gfar.json",
         out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_gfar_chart.png",
         dose_arms=[("gf_m0.16", "−0.16"), ("gf_m0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("gf_p0.08", "+0.08"), ("gf_p0.16", "+0.16")],
-        side_arms=[("unsteered_rerun", "unsteered\nrerun")],
-        side_label="unsteered rerun",
+        side_arms=[],
         series_label="Goodfire-axis dose arms, Δ with 95% CI",
-        col_labels=["Goodfire −0.16", "Goodfire −0.08", "unsteered", "Goodfire +0.08", "Goodfire +0.16", "unsteered rerun"],
+        col_labels=["Goodfire −0.16", "Goodfire −0.08", "unsteered", "Goodfire +0.08", "Goodfire +0.16"],
         title="Muse-Glimmer-30B, Goodfire reward-hacking axis: capability retention",
         layer="26",
         sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 26 in units of the layer's mean residual norm, the doses of the judged task-set arms.\n"
-            "Unsteered rerun = the same recipe run again today.\n"
-            "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+            "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     "qwen_v2_clamp": dict(
         compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_floor.json",

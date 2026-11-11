@@ -1364,7 +1364,7 @@ choice of convention, not a pre-result rule; no number changes. From here on:
 2. The retention rule itself is unchanged (an arm keeps a benchmark when the paired difference is within 2 points or
    its CI covers zero; truncation-limited if the truncated share is more than 2 points above unsteered). Applied to
    the numbers already recorded, seven Muse arms are IFBench losses: gi_v2 floors p50 / p75 / p95 (−5.7 / −5.3 /
-   −8.3), gi_v2 +0.04 / +0.08 / +0.16 (−6.3 / −7.0 / −6.7, as first reported on 2026-10-29 and 10-30) and Goodfire
+   −8.3), gi_v2 +0.04 / +0.08 / +0.16 (−6.3 / −7.0 / −6.7, as first reported on 2026-10-30) and Goodfire
    −0.16 (−7.0). Not losses: gi_v2 −0.16 (−4.3, CI −9.3 to +0.7), Goodfire −0.08 (−3.7, CI covers zero), Goodfire
    +0.08 / +0.16, the three gi_v2 caps, gi_v2 −0.04 / −0.08. No arm changes status on GSM8K, MMLU-Pro or HumanEval.
    Benchmarks still move no arm inside or outside the dose rule.
