@@ -1524,6 +1524,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   finished or been looked at):** the two rungs are not read as "light". Open-loop share of positions moved, prompt /
   generated: p75 70% / 28%, p95 38% / 5–7% (p25: 94–97% / 77%; `clamp_shares.md`). The pilot read states these shares, and
   cap arms are described by share of positions moved in the write-up. The usability rule above is unchanged.
+  **Pilot read (2026-11-10, both pilots done by 6:15 pm MST; `muse_glimmer/gi_v2/pilot/gfcap_pilot_seed0_links/pilot_summary_seed0.log`, seed 0 against unsteered seed 0, 45 problems each):**
+  - `gf_cap_p75` (moves 70% of prompt and 28% of generated positions): no code 51.1% against 0.0% (+51.1), 13 of 57 turns truncated, reasoning 28,389 characters per turn against 9,154. **Not usable; not extended.**
+  - `gf_cap_p95` (38% / 5–7%): no code 2.2% against 0.0% (+2.2, inside 10 points), 2 of 104 turns truncated (unsteered 0 of 100), reasoning 12,626 characters per turn (1.4 times unsteered), 104 turns against 100, stop reasons 30 passed / 12 attempt limit / 3 stopped against 36 / 9 / 0. **Usable.** Beside the rule, not deciding: hidden pass among non-proxy episodes 59.5% against 69.0% (−9.5), shown pass 66.7% against 80.0%.
+  - Per the rule, only p95 is extended: seeds 1–11 submitted 6:18 pm as 15235801 (`main_run.sbatch`, the pilot's arm line, `NSEEDS=12`, array 1–11, `-p cs,cs2 --qos cs`, 8 h; seed 0 is the pilot). It is judged blind when complete, in the Muse Goodfire family (Holm over every judged Goodfire arm plus the three random-direction add arms). One seed took about 3 h. No hack column was read for the choice.
 
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
