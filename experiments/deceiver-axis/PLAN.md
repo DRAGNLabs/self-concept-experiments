@@ -1609,6 +1609,10 @@ measured only on its own task set. This run adds them. Written before any job wa
   above, Gemma p45 / p50 (−7.9 / −7.8). No rung is added or dropped after the scores are in.
 - **Output.** `<model capeval dir>/<arm>/`; comparison files and charts beside the existing ones; one FINDINGS entry;
   share copies beside the earlier capability data (Qwen under `qwen38_27b_gi_v2_judging_jansen05/capeval/`).
+- **Submitted 2026-11-10 5:05–5:11 pm MST** (after commit fc438df): gpt-oss 15234338 (2 tasks of 4 arms, 3 h), Muse 15234386
+  (6 tasks, 2 h), Qwen 15234399 (3 tasks, 5 h), all `-p cs,cs2 --qos cs`; Gemma 15234463 (5 tasks, 5 h, cs3 B200, pending
+  behind the cs-3-1 health-check reservations). Picker output and placement reasons in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-10.txt`,
+  job lines in `steer/jobs.txt`. Full test suite after the code change: 358 pass, 1 skipped.
 
 ## Work order
 
