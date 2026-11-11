@@ -157,6 +157,18 @@ PRESETS = {
         sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 26 in units of the layer's mean residual norm, the doses of the judged task-set arms.\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "gptoss_gfar": dict(
+        compare=SCRATCH / "gi_v2/capeval/compare_gfar.json",
+        out=SCRATCH / "gi_v2/capeval/capeval_gfar_chart.png",
+        dose_arms=[("gf_m0.4", "−0.4"), ("gf_m0.2", "−0.2"), ("gf_m0.1", "−0.1"), ("unsteered", "0\nunsteered"), ("gf_p0.1", "+0.1"), ("gf_p0.2", "+0.2"), ("gf_p0.4", "+0.4")],
+        side_arms=[],
+        series_label="Goodfire-axis dose arms, Δ with 95% CI",
+        col_labels=["Goodfire −0.4", "Goodfire −0.2", "Goodfire −0.1", "unsteered", "Goodfire +0.1", "Goodfire +0.2", "Goodfire +0.4"],
+        title="gpt-oss-120b, Goodfire reward-hacking axis: capability retention",
+        layer="17",
+        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 17 in units of the layer's mean residual norm, the doses of the judged task-set arms.\n"
+            "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
     "qwen_v2_clamp": dict(
         compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_floor.json",
         out=SCRATCH / "qwen38_27b_gi_v2/capeval/capeval_qwen_clamp_chart.png",
