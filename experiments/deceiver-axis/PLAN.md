@@ -1454,7 +1454,7 @@ and reading rule unchanged.
 expected (GSM8K +0.3, MMLU-Pro +0.8, HumanEval +2.4, IFBench +0.0; no truncation). FINDINGS status paragraph; full
 entry with the other eight arms.
 **Result, gpt-oss six doses (read 2:47 pm Nov 11, against the 2026-10-29 run; `gi_v2/capeval/compare_gfar.{md,json}`,
-chart `capeval_gfar_chart.png`):** −0.1 and −0.2 clean, as expected (−0.2: GSM8K −1.2 with a CI excluding zero, inside
+chart `capeval_gfar_full_chart.png`, which also carries the two Goodfire caps from `compare_clamp`):** −0.1 and −0.2 clean, as expected (−0.2: GSM8K −1.2 with a CI excluding zero, inside
 2 points). −0.4 a loss, as expected (GSM8K −3.4, MMLU-Pro −2.7). +0.2 a loss on MMLU-Pro (−2.6) and +0.4 on three
 (MMLU-Pro −7.4, HumanEval −16.5, IFBench −8.7), as expected. **Expectation not met: +0.1 is clean** on all four (0.0 /
 −0.9 / +1.8 / 0.0) although it is outside the dose rule on the task set (no code +18.3). No truncation in any arm, so

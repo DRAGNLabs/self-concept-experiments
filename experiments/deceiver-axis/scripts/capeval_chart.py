@@ -157,16 +157,37 @@ PRESETS = {
         sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 26 in units of the layer's mean residual norm, the doses of the judged task-set arms.\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
-    "gptoss_gfar": dict(
-        compare=SCRATCH / "gi_v2/capeval/compare_gfar.json",
-        out=SCRATCH / "gi_v2/capeval/capeval_gfar_chart.png",
+    # Goodfire axis, every benchmarked arm per model (doses + caps). compare_gfar_full.json = rows copied from the
+    # existing compare files (doses: compare_gfar; caps: compare_clamp / compare_gfcap95), nothing recomputed.
+    "gptoss_gfar_full": dict(
+        compare=SCRATCH / "gi_v2/capeval/compare_gfar_full.json",
+        out=SCRATCH / "gi_v2/capeval/capeval_gfar_full_chart.png",
         dose_arms=[("gf_m0.4", "−0.4"), ("gf_m0.2", "−0.2"), ("gf_m0.1", "−0.1"), ("unsteered", "0\nunsteered"), ("gf_p0.1", "+0.1"), ("gf_p0.2", "+0.2"), ("gf_p0.4", "+0.4")],
-        side_arms=[],
+        side_arms=[("gf_cap_p25", "cap\np25"), ("gf_cap_p50", "cap\np50")],
+        side_label="caps, layers 12–23",
+        tick_fs=8,
         series_label="Goodfire-axis dose arms, Δ with 95% CI",
-        col_labels=["Goodfire −0.4", "Goodfire −0.2", "Goodfire −0.1", "unsteered", "Goodfire +0.1", "Goodfire +0.2", "Goodfire +0.4"],
-        title="gpt-oss-120b, Goodfire reward-hacking axis: capability retention",
+        col_labels=["dose −0.4", "dose −0.2", "dose −0.1", "unsteered", "dose +0.1", "dose +0.2", "dose +0.4", "cap p25", "cap p50"],
+        title="gpt-oss-120b, Goodfire reward-hacking axis: capability retention, steering doses and caps",
         layer="17",
-        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 17 in units of the layer's mean residual norm, the doses of the judged task-set arms.\n"
+        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Doses: add-steering at layer 17 in units of the layer's mean residual norm.\n"
+            "Caps: the projection on the axis is clipped down to its unsteered 25th / 50th percentile at every position over layers 12–23; on unsteered activations the p25 cap moves 77%\n"
+            "of generated positions and the p50 cap 56%.\n"
+            "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
+    "muse_gfar_full": dict(
+        compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_gfar_full.json",
+        out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_gfar_full_chart.png",
+        dose_arms=[("gf_m0.16", "−0.16"), ("gf_m0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("gf_p0.08", "+0.08"), ("gf_p0.16", "+0.16")],
+        side_arms=[("gf_cap_p95", "cap\np95")],
+        side_label="cap, layers 17–33",
+        series_label="Goodfire-axis dose arms, Δ with 95% CI",
+        col_labels=["dose −0.16", "dose −0.08", "unsteered", "dose +0.08", "dose +0.16", "cap p95"],
+        title="Muse-Glimmer-30B, Goodfire reward-hacking axis: capability retention, steering doses and cap",
+        layer="26",
+        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Doses: add-steering at layer 26 in units of the layer's mean residual norm.\n"
+            "Cap: the projection on the axis is clipped down to its unsteered 95th percentile at every position over layers 17–33; on unsteered activations it moves 37.6% of prompt\n"
+            "positions and 4.7–7.2% of generated positions. The p25 cap has no benchmark run (the model stops submitting code on the task set).\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     "qwen_v2_clamp": dict(
