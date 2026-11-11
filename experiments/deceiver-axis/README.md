@@ -2,7 +2,8 @@
 
 This directory holds the study "does a schemer / deceiver persona direction in a model's residual stream predict or
 cause reward hacking on coding tasks". [PLAN.md](PLAN.md) is the design and the open decisions; [FINDINGS.md](FINDINGS.md)
-is the record of every analyzed run (status table at the top). This file is the operating manual: what each piece is,
+is the record of every analyzed run (status table at the top); [ARCHIVE_muse_unsteered_rerun.md](ARCHIVE_muse_unsteered_rerun.md)
+holds the Muse unsteered rerun entries taken out of the active record on 2026-11-11 (not for reporting). This file is the operating manual: what each piece is,
 the order to run things in, and what has to change for a new model family. Read the recipe for the reward-hacking
 setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_hack_recipe.md) (Koby's clean protocol).
 

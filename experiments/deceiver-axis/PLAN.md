@@ -1331,12 +1331,27 @@ used for the pilot read.
 
 **Muse reference of record: the October unsteered arm (user decision 2026-11-11 ~12:50 pm MST: "Use the original
 October run as the reference for Muse").** Every Muse task-set contrast (judged rate, dose rule, pilot screens) is read
-against the October 12-seed unsteered arm (`muse_glimmer/main/unsteered`). The 12-seed rerun stays in the tables as a
-second column and is not pooled with it. Statuses of record that this settles: Goodfire p95 cap and Goodfire −0.08
+against the October 12-seed unsteered arm (`muse_glimmer/main/unsteered`). (As first written here the rerun stayed in
+the tables as a second column; superseded the same afternoon, next paragraph.) Statuses of record that this settles: Goodfire p95 cap and Goodfire −0.08
 are "outside the dose rule on the rule measure (−10.6 each); the miss may be composition, not capability". The
 decision was made with both columns known, so it is a choice of convention, not a pre-result rule; no number changes.
 The IFBench note of 2026-11-10 (Muse benchmark rows read against both unsteered benchmark runs, a loss only if
 outside against both) is a separate rule about the benchmark runs and stays as written.
+
+**Muse unsteered rerun archived (user decision 2026-11-11 about 1:02 pm MST: "take the rerun out of the tables as the
+second column, let's archive that rerun - keep the data recorded but not in the active tables and stuff we'll be
+reporting").** This replaces the sentence above that kept the rerun as a second column, and the "shown against both
+unsteered arms side by side" consequence of the rerun's read rule. From here on: (1) no active table, chart, entry
+headline or dashboard panel shows the 12-seed Muse rerun, the two-seed Muse recheck before it, a rerun-referenced
+difference, or the rerun-against-October contrast; Muse task-set contrasts are computed and shown against the October
+unsteered arm only. (2) Nothing is deleted: the three FINDINGS entries as they stood are verbatim in
+`ARCHIVE_muse_unsteered_rerun.md`; episodes stay in `muse_glimmer/unsteered_recheck/` with an `ARCHIVED.md` marker;
+verdicts stay in `verdicts_gfcap95/` (the p95 cap arm judged in the same blind set is active); rerun-referenced
+analysis outputs and the two-reference chart move to `archive_unsteered_rerun/` folders, which the dashboard's chart
+scan skips. (3) The rerun is not used to qualify, soften or strengthen any reported Muse statement, in either
+direction. (4) The archive is the place to look if the Muse reference is questioned later; un-archiving is the user's
+decision. (5) Not covered: the unsteered *benchmark* rerun of 2026-11-10 behind the Muse IFBench two-reference rule,
+a different run; whether that rule also goes is asked of the user.
 
 **Benchmarks for the Goodfire-axis arms that have none (user 2026-11-11 ~12:50 pm: "Queue the three missing benchmark
 sets"; written before submission, no score exists).** Nine arms through GSM8K / MMLU-Pro / HumanEval / IFBench with

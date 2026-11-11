@@ -233,7 +233,7 @@ def chart_index(cache: Path, rescan: bool, extra: list[str]) -> list[str]:
     if cache.exists() and not rescan:
         paths = [p for p in cache.read_text().splitlines() if p.strip()]
     else:
-        cmd = ["find", str(RUN_ROOT), "-maxdepth", "6", "-name", "*.png", "-not", "-path", "*/dossiers/*", "-not", "-name", "draft_*"]
+        cmd = ["find", str(RUN_ROOT), "-maxdepth", "6", "-name", "*.png", "-not", "-path", "*/dossiers/*", "-not", "-path", "*/archive_*/*", "-not", "-name", "draft_*"]
         try:
             out = subprocess.run(cmd, capture_output=True, text=True, timeout=300).stdout
             paths = [p for p in out.splitlines() if p.strip()]
