@@ -1779,7 +1779,7 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   measure only); Qwen breaks at p25 and has no base rate; Gemma p25 has not run. Qwen gets no further cap rung.
   1. *gpt-oss `gf_cap_p75` and `gf_cap_p95`, 12 seeds × 45 each.* The `gf_cap_p50` arm line with
      `thresholds/gptoss120b/gfar_p75.json` / `gfar_p95.json` (same 4 unsteered episodes, same direction, band 12–23),
-     `gi_v2/pilot/`, `main_run.sbatch`, array 0–23, 2 h per task (the p50 tasks took 39–52 min), cs / cs2, qos cs. No
+     `gi_v2/pilot/`, `main_run.sbatch`, array 0–23, 2 h per task (the 12 p50 tasks took 33–58 min), cs / cs2, qos cs. No
      one-seed pilot: both heavier rungs left gpt-oss able to submit. Judged blind when complete by the recipe of
      `gfcap50`, analysed in the gpt-oss Goodfire family (Holm over every judged Goodfire arm, now 13 contrasts with
      the randoms), dose rule as defined on Nov 7, benchmarks only on request. **Expected:** judged hacking ordered
@@ -1812,6 +1812,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      larger fall in judged hacking than p95 and a larger miss of the dose rule than p95's 0.6 points; p85 is not
      run (too close to p75, which broke). A rung lighter than p95 needs a new threshold run (the stored grid ends
      at 0.95) and is not part of this step.
+  **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
+  15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
+  cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /
+  cs2, qos cs, 2 h). **15264667** Muse `gf_cap_p90` seed 0 (cs / cs2, qos cs, 5 h); `gfar_p90.json` written at
+  3:10 pm, the same code reproduces the stored p75 and p95 files exactly and p75 < p90 < p95 holds at all 17 layers.
+  The cs / cs2 jobs exclude node cs-2-1 (down, not responding since 1:46 pm).
 
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
