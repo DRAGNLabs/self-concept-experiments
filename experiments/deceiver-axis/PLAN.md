@@ -1297,6 +1297,28 @@ episodes: they cannot start while the reservation holds, and if cs-3-1 returns f
 placement of the existing references. If an arm ends up on both placements, each copy is read against its own
 unsteered arm as above and the two are not pooled. Whether to cancel them is put to the user.
 
+**dw added: the complete set on dw with two A100s per task (user 11:29 am MST Nov 11: "is dw87 an option? we don't
+need to worry too much about artificially avoiding it for fairshare since our fairshare is basically already last
+anyway"; written before submission).** Picker re-run at 11:31 am: row 1 is dw, two A100s, qos dw87, startable now by
+preempting standby jobs (10 preemptible A100s, five pairs; the six usable dw nodes have 47 A100s, all in use;
+dw-2-4 is in maintenance). cs2 now has 2 jobs ahead and no idle pair. The dw A100 pair is an untested placement for
+Gemma 31B; the picker lists the card at 80 GB like the H100, and the card memory is read off the first task's
+`nvidia-smi` block. Root `gemma4_31b_gi_v2/a100x2/`, `settings_a100x2.tsv`, 70 tasks, settings lines copied
+unchanged from `settings_h100x2.tsv` (unsteered seeds 0–1 from the check's settings file, run fresh here): 0–15
+`unsteered` seeds 0–15, 16–21 the six dose-pilot lines, 22–37 `gfar_cap_p25_L20-38`, 38–53 `floor_p75_L20-38`,
+54–69 `floor_p50_L20-38`. `TP=2`, `ATTN_BACKEND=TRITON_ATTN`, 8 CPUs, 64 GB, 8 h limit, no requeue.
+**Staging.** Tasks 0–1 go first. The other 68 are submitted only after one of them has loaded on both cards and is
+writing episodes. If a first task fails to load, nothing more is submitted on dw and the failure is reported.
+**Reads.** The rules of the cs2 move apply with `a100x2` in place of `h100x2`: every arm under `a100x2/` is
+contrasted with `a100x2/unsteered` only; the three placements (B200, cs2 H100 pair, dw A100 pair) are never pooled
+and no contrast crosses them; the placement effect of each new unsteered arm against Koby's B200 arm is descriptive
+only; fit per task and judging as written above, the dw unsteered proxy episodes in the same blind sets as the dw
+arms. **Copies on more than one placement, fixed before any result:** dw is the only placement planned to hold
+every moved arm together with its baseline, so if the dw set completes, the dw copy of an arm is the one of record;
+any complete cs2 or B200 copy of the same arm is reported beside it as a replication against its own unsteered arm,
+whatever it shows. A copy is never chosen by its result. The pending cs2 tasks (15258485_[1-67]) stay queued for
+now; whether to cancel them once the dw set is running is put to the user.
+
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
 Three independent adversarial reviews (intervention code, statistics and judging, claims and methods) were run on the
