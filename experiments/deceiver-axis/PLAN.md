@@ -1323,6 +1323,11 @@ dw-1-4 and dw-1-2; both logs show two A100-SXM4-80GB cards and `TRITON_ATTN`, th
 (about 9 minutes from start to first generation) and both tasks were writing episodes at 11:54 am with no errors.
 Stage 2 job 15260132 (array 2–69) at 11:56 am, same placement and settings; the picker showed 6 preemptible A100s
 (three pairs) at that moment, so the remaining tasks start as dw A100s free up.
+**cs2 pending tasks cancelled 12:04 pm MST Nov 11 (user: "Go ahead and cancel the cs2 pending tasks"):**
+`scancel --state=PENDING 15258485` removed tasks 1–67; task 0 (Goodfire +0.08 pilot dose) keeps running. What cs2
+then holds is that one pilot dose and the check's unsteered seeds 0–1, floor p95 seeds 0–1; the pilot dose is
+reported beside the dw +0.08 dose as a single-seed copy with no 16-seed baseline of its own placement and is not
+used for the pilot read.
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
