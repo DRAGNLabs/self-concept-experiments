@@ -1554,6 +1554,62 @@ Qwen is the one model whose gi_v2 arms never went through the four public benchm
   ±0.08, +0.16, +0.24, cap p25. Loss: −0.32 (MMLU-Pro −2.7; IFBench −13.0, truncation-limited) and +0.32 (MMLU-Pro −2.1). −0.16: clean
   on three, IFBench −6.7 with truncated answers 14.3% against 8.0%, so truncation-limited by the rule. The expectation above held.
 
+## Capability retention for the cap and floor arms (added 2026-11-10, user request ~4:55 pm MST)
+
+The four-benchmark capability eval has been run on the steering (add) arms and on one clamp arm per model, the gi_v2 p25
+cap (gpt-oss, Muse, Qwen; Gemma has no clamp arm in it at all). Every other judged cap or floor rung has capability
+measured only on its own task set. This run adds them. Written before any job was submitted.
+
+- **Arms (20 + 2 reference reruns).** Each line is rebuilt from the steering block of the RH arm's seed-0 summary
+  (direction, mode, layers), and the threshold file is accepted only if its values equal the ones that arm recorded
+  (`gfar_vs_gi_v2/steer/build_clamp_capeval_arms.py`).
+  - gpt-oss (band 12–23, `gi_v2/capeval/arms_clamp.tsv`): `gi_cap_p5`, `gi_cap_p50`, `gi_floor_p50`, `gi_floor_p75`,
+    `gi_floor_p95`, `gf_cap_p25`, `gf_cap_p50` (Goodfire axis), `unsteered_rerun`.
+  - Muse (band 17–33, `muse_glimmer/gi_v2/capeval/arms_clamp.tsv`): `gi_cap_p5`, `gi_cap_p50`, `gi_floor_p50`,
+    `gi_floor_p75`, `gi_floor_p95`, `unsteered_rerun`.
+  - Qwen (band 22–42, `qwen38_27b_gi_v2/capeval/arms_floor.tsv`): `gi_floor_p50`, `gi_floor_p75`, `gi_floor_p95`.
+  - Gemma (band 20–38, `gemma4_31b_gi_v2/capeval/arms_cap.tsv`): `gi_cap_p25`, `gi_cap_p35`, `gi_cap_p45`, `gi_cap_p50`,
+    `gi_cap_p65`. Four of the five RH arms are Koby's and record the direction at a path in his home directory that is
+    not readable here; the share copy (`gemma4_31b_gi_v2/direction/persona_contrast.pt`, the file our p35 arm and the
+    Gemma dose arms of this eval used) stands in for it. Whether the two files are byte-identical is the open sha256 item.
+- **Not in this run, and why.** Muse `gf_cap_p25` and Qwen `gfar_cap_p25_L22-42`: on the task set the model stops
+  submitting (no code 98.9% and 86.1%, most turns truncated), so the benchmarks would be a count of truncated answers
+  at several GPU-hours per arm; added only on request. Muse `gf_cap_p75` / `gf_cap_p95`: one-seed pilots still running;
+  a rung goes in if it is extended to 12 seeds. Gemma `floor_p95_L20-38`: not finished and not judged; added when it is.
+  The Goodfire-axis steering arms are add arms, not clamps, and are a separate open question. No random-direction clamp
+  arm exists on any model (rule of 2026-11-10).
+- **Recipe.** As every earlier capability run of the model: `slurm/capability_eval.sbatch` → `capability_eval_vllm.py`,
+  GSM8K (1,319), MMLU-Pro (1,400), HumanEval (164), IFBench (300), T 1.0, sample seed 0, 16,384 new tokens in a 20,480
+  context, the model's RH sampling and reasoning setting (gpt-oss effort low; Muse top-p 0.95 / top-k 64, strength low;
+  Qwen top-p 0.95 / top-k 20, effort low, `VLLM_MAX_NUM_SEQS=128`; Gemma top-p 0.95 / top-k 64, thinking on, cs3 B200).
+  Two code changes, both needed to run it: `capability_eval_vllm.py` accepts `--steer-mode floor` (it already imports
+  `build_transforms` from the RH harness, which builds the floor; test `test_capability_eval_steer_args.py`), and the
+  sbatch takes `ARMS_PER_TASK` so the gpt-oss arms (about 9 minutes each) share two jobs of four.
+- **Reference.** Each arm is paired per item against the model's existing unsteered benchmark run (gpt-oss and Muse
+  2026-10-29, Gemma 2026-11-02, Qwen today). Because the gpt-oss and Muse references are twelve days old and a rerun
+  costs under half an hour, both are rerun here as `unsteered_rerun` and compared with the original. Reading, fixed
+  now: the original stays the reference (the earlier arms were read against it) if the rerun is within 2 points of it
+  or the paired CI covers zero on every benchmark; otherwise both comparisons are reported for the new arms and the
+  user decides. Gemma's reference is not rerun (83 minutes on a B200, the scarce node).
+- **Reading (the rule of the earlier capability runs, unchanged).** `capability_eval_compare.py`; an arm keeps
+  capability on a benchmark when the paired difference is within 2 points of unsteered or its CI covers zero, and is
+  capability-clean when that holds on all four; an arm whose truncated share exceeds unsteered's by more than 2 points
+  is reported as truncation-limited at this budget, not as a capability loss. Truncated and no-answer shares and
+  completion tokens are reported beside the scores.
+- **What the benchmarks can and cannot change.** The dose rule of record stays the task-set rule (hidden pass among
+  episodes not judged a hack, and no-code, each within 10 points). The benchmarks are the read that separates
+  composition from capability for arms that are outside on the rule measure alone: Muse `gi_cap_p5` (rule measure −11.7,
+  raw hidden pass −0.6), Muse `gi_floor_p75` (−12.1, non-proxy screen −6.1) and `gi_floor_p95` (−10.7, screen −1.3).
+  Such an arm, if clean on all four, is written "outside the dose rule on the task set, clean on the benchmarks"; it is
+  not moved inside. An arm inside the dose rule that loses on a benchmark is reported with both. GSM8K and HumanEval sit
+  near ceiling on these models, so a clean benchmark row does not overrule a task-set loss.
+- **Expected from the task-set columns.** Clean: every gpt-oss gi_v2 rung and `gf_cap_p50` (all inside the dose rule),
+  the three Qwen floors (hidden pass within 3 points of unsteered), Gemma `gi_cap_p65`. Loss or truncation: gpt-oss
+  `gf_cap_p25` (no code +14.4), Gemma `gi_cap_p25` and `gi_cap_p35` (rule measure −14.7 / −12.0). Open: the Muse rungs
+  above, Gemma p45 / p50 (−7.9 / −7.8). No rung is added or dropped after the scores are in.
+- **Output.** `<model capeval dir>/<arm>/`; comparison files and charts beside the existing ones; one FINDINGS entry;
+  share copies beside the earlier capability data (Qwen under `qwen38_27b_gi_v2_judging_jansen05/capeval/`).
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
