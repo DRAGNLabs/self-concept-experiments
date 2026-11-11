@@ -1262,6 +1262,30 @@ and a pass on the H200 supports the H200 only.
 **Read 2026-11-10 3:20 pm MST (2×H100, job 15224337; FINDINGS "Gemma 31B on two H100s"):** unsteered pair inside the range on every
 column; floor p95 pair outside on two (seed 1 honest hidden pass 7 of 84 against a B200 minimum of 8 of 91; truncated turns 4 against a
 maximum of 3). Nothing moves to cs2 without a further look; the floor mode line was logged on both ranks.
+**Move to cs2 with a same-hardware baseline (user decision 2026-11-11 ~11:05 am MST, asked with the near-miss stated;
+written before submission).** cs-3-1 is still under the `dell_amber_light` health-check reservation (since 2:30 am
+Nov 10) and the H200 check 15224080 has 43 jobs ahead. Instead of relying on the two-seed equivalence check, the
+waiting whole arms run on cs2 with two H100s per task (`TP=2`, `ATTN_BACKEND=TRITON_ATTN`, the check's placement)
+together with their own unsteered arm on the same cards, so no contrast crosses hardware. Root
+`gemma4_31b_gi_v2/h100x2/`, one array of 68 tasks from `settings_h100x2.tsv`, the settings lines copied unchanged:
+the six one-seed Goodfire dose-pilot lines (±0.04 / ±0.08 / ±0.16; +0.08 also exists on the B200 and is run again so
+the pilot is on one placement), `unsteered` seeds 2–15 (seeds 0–1 are the check's pair, linked in; generation code
+unchanged since they ran except one docstring), `gfar_cap_p25_L20-38` seeds 0–15, `floor_p75_L20-38` and
+`floor_p50_L20-38` seeds 0–15. Staying on the B200 queue: floor p95 seeds 14–15 (its seeds 0–13 ran there) and the
+cap-arm benchmarks 15234463. The B200 copies of the moved tasks (15213664_[1-5], 15216111, 15206804_[16-47]) are
+cancelled once the first cs2 task of each arm has loaded and is writing episodes.
+**Reads.** (1) Every arm under `h100x2/` is contrasted with the `h100x2/unsteered` arm only (16 seeds, same cards,
+same code); every B200 arm keeps Koby's B200 unsteered arm. No contrast crosses placements and the two unsteered
+arms are never pooled. Dose rule, pilot screen and judged contrasts are otherwise as written for these arms. (2) The
+floor ladder then has p95 on the B200 and p75 / p50 on cs2: each rung is read as its difference from its own
+unsteered arm, and any statement ordering p95 against the other two rungs carries the placement difference as a
+caveat. (3) Placement effect, descriptive: `h100x2/unsteered` against Koby's B200 unsteered arm on the screen
+columns (hidden pass among non-proxy episodes, shown pass, proxy, no code, raw hidden pass), problem-bootstrap 95%
+intervals, one raw contrast per column; it says how far the baseline moves with the placement and is not used to
+correct any arm. (4) Fit per task as in the check: loads, finishes inside the time limit without out-of-memory
+errors, the worker log line names the mode on both ranks; truncated-turn share reported per arm beside its own
+unsteered arm. (5) Judging as for any new arm (Sonnet rubric judge, no adjudication), the cs2 unsteered proxy
+episodes in the same blind sets as the cs2 arms they are compared with; write-ups name the placement per arm.
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
