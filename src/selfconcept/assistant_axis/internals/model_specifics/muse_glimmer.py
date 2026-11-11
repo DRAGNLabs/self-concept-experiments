@@ -10,6 +10,8 @@ spans. ``include_thinking`` selects, for activation pooling, the ``to=self`` cha
 """
 from typing import Any, Iterator, NamedTuple
 
+from jaxtyping import Float
+import torch
 import torch.nn as nn
 
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
@@ -17,6 +19,7 @@ from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
     shortest_suffix_containing,
 )
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.unembedding import CheckpointTensorLoader, UnembeddingSpecifics
 from selfconcept.common.generation.model_specifics.muse_glimmer import (  # noqa: F401  (split re-exported)
     EOM, EOT, MESSAGE, START, MuseGlimmerAssistantTurn, MuseGlimmerGenerationSpecifics, split_muse_glimmer_completion,
 )
@@ -79,7 +82,8 @@ def _muse_glimmer_message_kind(message: MuseGlimmerMessage) -> MessageKind:
     return "response" if message.recipient in (None, "user") else "tool_call"
 
 
-class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecifics, ModelSpecifics[AllRoles, MuseGlimmerAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics):
+class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecifics, ModelSpecifics[AllRoles, MuseGlimmerAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics,
+                                UnembeddingSpecifics):
     def get_response_indices(self, conversation: Conversation, tokenizer: HFTokenizer, *, include_thinking: bool,
                              **apply_chat_template_kwargs: Any) -> list[list[int]]:
         full_ids = configure_apply_chat_template(tokenizer).tokenize(True)(
@@ -122,3 +126,7 @@ class MuseGlimmerModelSpecifics(CoverallLayerGetter, MuseGlimmerGenerationSpecif
     def tool_call_close(self, tokenizer: HFTokenizer, full_ids: list[int], span: MessageSpan) -> range:
         """From the last </atem:invoke> through </atem:function_calls>."""
         return shortest_suffix_containing(tokenizer, full_ids, span.content, "</atem:invoke>")
+
+    def gain_scaled_unembedding(self, load_tensor: CheckpointTensorLoader) -> Float[torch.Tensor, "vocab hidden"]:
+        """The final norm is MuseGlimmerRMSNorm (scales by weight), not the decoder layers' (1 + weight) centered norm."""
+        return load_tensor("lm_head.weight") * load_tensor("model.language_model.norm.weight")

@@ -1,0 +1,15 @@
+"""Narrow model-specifics protocol for decoding residual-stream directions through a checkpoint's output head
+(logit lens), read straight from the safetensors without building the model."""
+from collections.abc import Callable
+from typing import Protocol
+
+from jaxtyping import Float
+import torch
+
+type CheckpointTensorLoader = Callable[[str], Float[torch.Tensor, "..."]]
+
+
+class UnembeddingSpecifics(Protocol):
+    def gain_scaled_unembedding(self, load_tensor: CheckpointTensorLoader) -> Float[torch.Tensor, "vocab hidden"]:
+        """The output head with the final RMSNorm gain folded in: logits = this @ (residual / rms(residual))."""
+        ...

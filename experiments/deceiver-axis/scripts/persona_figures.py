@@ -464,7 +464,7 @@ def controls_distribution_figure(relative_by_role: dict[str, Projections], group
     axes.axhline(0, color=MUTED_COLOR, linewidth=0.8)
     axes.set_xticks(range(len(columns)), [label for label, _, _, _ in columns], rotation=60, ha="right", fontsize=8)
     axes.set_ylabel("projection − default, per response", color=TEXT_COLOR)
-    axes.set_title(with_model(model_label, "Controls: held-out in-role responses (line = median)"), color=TEXT_COLOR, fontsize=10)
+    axes.set_title(with_model(model_label, "Test personas: held-out in-role responses (line = median)"), color=TEXT_COLOR, fontsize=10)
     random_band_key(axes, (len(columns) - 1) / 2)
     figure.savefig(path, dpi=200, bbox_inches="tight", facecolor=SURFACE_COLOR)
     plt.close(figure)
@@ -472,7 +472,7 @@ def controls_distribution_figure(relative_by_role: dict[str, Projections], group
 
 def geometry_figures(root: Path, region: Region, layer: int, sections: list[Section], non_control_sections: list[Section],
                      groups: dict[GroupName, list[str]], pca_path: Path, pc1_path: Path, cosine_path: Path, centered_cosine_path: Path,
-                     non_control_centered_cosine_path: Path, model_label: str) -> None:
+                     non_control_centered_cosine_path: Path, model_label: str) -> "GeometryStatistics":
     """2-D PCA, PC1 of the non-control personas alone, and pairwise cosine of the per-persona vectors (train questions,
     in-role), each minus the default vector; the second cosine plot also subtracts the mean over the plotted personas."""
     vectors_dir = root / f"vectors_{region}"
@@ -516,6 +516,34 @@ def geometry_figures(root: Path, region: Region, layer: int, sections: list[Sect
     non_control_offsets = np.stack([offsets[columns.index(role)] for role in non_control_columns])
     cosine_figure(non_control_offsets - non_control_offsets.mean(axis=0), [persona_label(role, groups) for role in non_control_columns], non_control_spans,
                   with_model(model_label, f"Persona vectors − mean persona vector, layer {layer}"), non_control_centered_cosine_path)
+    return geometry_statistics(non_control_offsets, [honesty_of(role, groups) for role in non_control_columns])
+
+
+class GeometryStatistics(TypedDict):
+    pc1_explained_variance: float
+    pc1_separates_deceptive_from_honest: bool
+    mean_within_class_centered_cosine: float
+    mean_cross_class_centered_cosine: float
+    persona_count: int
+
+
+def geometry_statistics(offsets: Float[np.ndarray, "persona hidden"], honesties: list[Honesty]) -> GeometryStatistics:
+    """PC1 and centered-cosine statistics over the personas (the numbers behind the no-controls PC1 and centered cosine figures)."""
+    centered = offsets - offsets.mean(axis=0)
+    _, singular_values, components = np.linalg.svd(centered, full_matrices=False)
+    coordinates = centered @ components[0]
+    is_deceptive = np.array([honesty == "deceptive" for honesty in honesties])
+    deceptive_coordinates, honest_coordinates = coordinates[is_deceptive], coordinates[~is_deceptive]
+    separates = bool(deceptive_coordinates.min() > honest_coordinates.max() or deceptive_coordinates.max() < honest_coordinates.min())
+    unit_vectors = centered / np.linalg.norm(centered, axis=1, keepdims=True)
+    cosine = unit_vectors @ unit_vectors.T
+    same_class = is_deceptive[:, None] == is_deceptive[None, :]
+    off_diagonal = ~np.eye(len(honesties), dtype=bool)
+    return {"pc1_explained_variance": float(singular_values[0] ** 2 / (singular_values ** 2).sum()),
+            "pc1_separates_deceptive_from_honest": separates,
+            "mean_within_class_centered_cosine": float(cosine[same_class & off_diagonal].mean()),
+            "mean_cross_class_centered_cosine": float(cosine[~same_class].mean()),
+            "persona_count": len(honesties)}
 
 
 def label_without_overlap(axes: Axes, points: Float[np.ndarray, "point 2"], labels: list[str]) -> None:
@@ -727,12 +755,12 @@ def main(run: RunConfig) -> None:
     honest_vs_default_by_question_set = {question_set: {label: auroc_versus_random(relative_with_default, roles, ["default"], run.layer, question_ids[question_set])
                                                         for label, roles in honest_sets.items()}
                                          for question_set in ("heldout", "train")}
-    geometry_figures(run.root, run.region, run.layer, [*split_sections, controls_section], split_sections, groups,
+    geometry = geometry_figures(run.root, run.region, run.layer, [*split_sections, controls_section], split_sections, groups,
                      run.out / f"{prefix}_pca.png", run.out / f"{prefix}_pc1.png", run.out / f"{prefix}_cosine.png", run.out / f"{prefix}_cosine_centered.png",
                      run.out / f"{prefix}_cosine_centered_no_controls.png", model_label)
     (run.out / f"{prefix}_summary.json").write_text(json.dumps(
         {"axis": str(run.axis), "root": str(run.root), "persona": summaries, "group": group_summaries,
-         "honest_vs_default_auroc": honest_vs_default_by_question_set,
+         "honest_vs_default_auroc": honest_vs_default_by_question_set, "geometry": geometry,
          "auroc_by_layer": {label: {"axis": axis.tolist(), "random_mean": random.mean(axis=1).tolist(), "random_sd": random.std(axis=1).tolist()}
                             for label, (axis, random) in aurocs.items()}}, indent=2))
     logger.info(f"figures in {run.out}")

@@ -1,10 +1,14 @@
 from typing import Any, Iterator, NamedTuple
 
+from jaxtyping import Float
+import torch
+
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
     MessageKind, MessageSpan, MessageSpanSpecifics, ToolCallCloseSpecifics, end_token_index_after,
     shortest_suffix_containing,
 )
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.unembedding import CheckpointTensorLoader, UnembeddingSpecifics
 from selfconcept.common.generation.model_specifics import HarmonyAssistantTurn, HarmonyGenerationSpecifics
 from selfconcept.common.hf_strong_types import AllRoles, Conversation, HFTokenizer, configure_apply_chat_template
 
@@ -69,7 +73,8 @@ def _harmony_message_kind(message: HarmonyMessage) -> MessageKind:
     return "reasoning" if message.channel == "analysis" else "response"
 
 
-class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics):
+class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSpecifics[AllRoles, HarmonyAssistantTurn], MessageSpanSpecifics, ToolCallCloseSpecifics,
+                        UnembeddingSpecifics):
     def get_response_indices(
         self,
         conversation: Conversation,
@@ -126,3 +131,7 @@ class GptModelSpecifics(CoverallLayerGetter, HarmonyGenerationSpecifics, ModelSp
     def tool_call_close(self, tokenizer: HFTokenizer, full_ids: list[int], span: MessageSpan) -> range:
         """The closing brace of the JSON arguments."""
         return shortest_suffix_containing(tokenizer, full_ids, span.content, "}")
+
+    def gain_scaled_unembedding(self, load_tensor: CheckpointTensorLoader) -> Float[torch.Tensor, "vocab hidden"]:
+        """GptOssRMSNorm scales by weight."""
+        return load_tensor("lm_head.weight") * load_tensor("model.norm.weight")
