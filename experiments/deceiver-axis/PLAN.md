@@ -1307,6 +1307,30 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   unsteered episodes to be judged again, which the standing no-re-judge rule forbids unless the user allows it).
   Submitted 3:41–3:44 pm: 15231977 (gpt-oss), 15231995 (Muse), 15232002 (Qwen), cs / cs2, qos cs. **gpt-oss read (4:25 pm, `unsteered_recheck/recheck_read.json`):** both seeds inside the reference range on every column, no truncated turn; the gpt-oss reference stands. **Qwen read (6:23 pm, `qwen38_27b_gi_v2/unsteered_recheck/recheck_read.{json,log}`, seeds 8 and 9 against Koby's 12 reference seeds):** both seeds inside the reference range on every column (hidden pass among non-proxy episodes 70.6 / 58.5% against 51.9–75.9%, shown pass 75.4 / 63.9% against 57.4–78.7%, no-code 18.0 / 26.2% against 13.1–36.1%, proxy 16.4 / 13.1% against 4.9–18.0%, truncated-turn share 0.0 / 2.1% against a reference maximum of 3.8%); the Qwen reference stands. **Muse read (about 7:46 pm, `muse_glimmer/unsteered_recheck/recheck_read.{json,log}`):** outside. Hidden pass among non-proxy episodes 57.1 / 60.0% against 66.7–82.8%, shown pass 73.3 / 77.8% against 80.0–88.9%, proxy 37.8 / 44.4% against 31.1–40.0%, no code and truncation 0. By the rule above every Muse contrast carries "reference not reproduced at the current code" until a full 12-seed unsteered Muse arm is rerun; the rerun is proposed to the user and not queued. FINDINGS "Unsteered reference recheck, gpt-oss / Qwen / Muse" (with an exploratory look: steered Muse arms run the same day do not show the drop). Gemma has its recheck already: the 2×H100 unsteered pair of the hardware check ran at the current code and sits
   inside Koby's 16-seed range on every column (different hardware; B200 is blocked).
+- **Muse 12-seed unsteered rerun (user go-ahead 2026-11-10 about 8:00 pm, "let's rerun the full 12-seed unsteered
+  Muse"; written before submission).** Seeds 2–11 with the recheck's recipe, script and placement (`main_run.sbatch`,
+  `muse_glimmer/unsteered_recheck/arms_unsteered.tsv`, `NSEEDS=12`, array 2–11, cs / cs2, qos cs, 8 h), into
+  `muse_glimmer/unsteered_recheck/unsteered/`. Recheck seeds 0 and 1 (15231995) are kept as seeds 0 and 1 of the
+  arm and not run again: the generation code is unchanged since they ran (one docstring line in
+  `steered_rh_vllm.py`), and the seed set 0–11 was fixed before either was seen. The October reference
+  (`muse_glimmer/main/unsteered`, same 12 seeds, same 45 problems) is not touched.
+  **Read 1, reproduction (no judging needed; `scripts/reference_rerun_read.py`, written before the seeds finish):**
+  rerun mean minus October mean on hidden pass among non-proxy episodes, shown pass, the proxy column, no code and raw
+  hidden pass, each with a 95% interval from a bootstrap that resamples the 45 problems (10,000 resamples, both arms
+  on the same resampled problems, all 12 seeds of a problem kept together), plus a permutation p over the 24 seed
+  means as a second look; truncated-turn share and reasoning length per turn beside them. **Reproduced** = the
+  intervals for hidden pass among non-proxy episodes and for shown pass both cover zero: the October reference
+  stands, the "reference not reproduced at the current code" label is dropped, and recheck seeds 0 and 1 are reported
+  as a low draw. **Not reproduced** = either interval excludes zero: every Muse contrast (dose rule, pilot screens,
+  judged rate) is then shown against both unsteered arms side by side, the two are not pooled, and which one is the
+  reference of record is the user's decision; the per-problem table (which problems moved, and whether the steered
+  arms of 2026-11-10 moved on them) goes in the entry as exploratory.
+  **Read 2, judged rate:** the rerun's proxy episodes are new and unjudged, so they are judged like any new arm
+  (Sonnet rubric judge, no adjudication), in one blind set together with the Goodfire p95 cap arm (15235801) so the
+  judge cannot tell the arms apart and both get the same judge on the same day. The rerun's judged rate is reported
+  beside the October unsteered judged rate; a difference between them mixes run-to-run change with judge drift and is
+  not read as either alone. The dose-rule measure for the p95 cap is computed against both unsteered arms. No
+  finished set is judged again.
 
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
