@@ -190,6 +190,19 @@ PRESETS = {
             "positions and 4.7–7.2% of generated positions. The p25 cap has no benchmark run (the model stops submitting code on the task set).\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "qwen_gfar": dict(
+        compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_gfar.json",
+        out=SCRATCH / "qwen38_27b_gi_v2/capeval/capeval_qwen_gfar_chart.png",
+        dose_arms=[("gf_m0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("gf_p0.08", "+0.08")],
+        side_arms=[],
+        series_label="Goodfire-axis dose arms, Δ with 95% CI",
+        col_labels=["dose −0.08", "unsteered", "dose +0.08"],
+        title="Qwen3.8-27B, Goodfire reward-hacking axis: capability retention, steering doses",
+        layer="32",
+        sub="Goodfire reward-hacking axis built for Qwen (hack minus honest; positive = toward hacking). Doses: add-steering at layer 32 in units of the layer's mean residual norm.\n"
+            "The p25 cap has no benchmark run (the model stops submitting code on the task set). One unsteered run (2026-11-10) is the reference.\n"
+            "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
     "qwen_v2_clamp": dict(
         compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_floor.json",
         out=SCRATCH / "qwen38_27b_gi_v2/capeval/capeval_qwen_clamp_chart.png",

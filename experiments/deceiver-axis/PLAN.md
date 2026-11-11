@@ -1459,6 +1459,11 @@ chart `capeval_gfar_full_chart.png`, which also carries the two Goodfire caps fr
 (MMLU-Pro −7.4, HumanEval −16.5, IFBench −8.7), as expected. **Expectation not met: +0.1 is clean** on all four (0.0 /
 −0.9 / +1.8 / 0.0) although it is outside the dose rule on the task set (no code +18.3). No truncation in any arm, so
 none of the losses is truncation-limited. No arm changes dose-rule status.
+**Result, Qwen ±0.08 (read 4:21 pm Nov 11, against the 2026-11-10 run; `qwen38_27b_gi_v2/capeval/compare_gfar.{md,json}`,
+chart `capeval_qwen_gfar_chart.png`):** +0.08 clean, as expected (0.0 / −0.4 / +0.6 / +2.0). −0.08, left open, is
+clean (+0.2 / +0.1 / +0.6 / −0.3); its IFBench truncated share is 10.0% against 8.0%, 2.0 points above and so at the
+line, not over it. All nine arms read: eight expectations met, one not (gpt-oss +0.1). FINDINGS "Benchmarks for the
+nine Goodfire-axis arms that had none".
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
