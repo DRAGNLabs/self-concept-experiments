@@ -1701,6 +1701,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   (−19.4 on the pilot seed); +0.04 and −0.08 can land on either side (unsteered seed 0 alone is 6.5 points above
   the pooled arm). Host memory for these tasks is 24 GB (`--mem-per-cpu=3G` × 8; the six pilot tasks peaked at
   4.8–9.0 GB against the script's 128 GB default), and the pending −0.04 array is lowered to the same request.
+  *Submitted 4:46 pm MST: job 15267210* (array 0–44: tasks 0–14 = +0.04, 15–29 = −0.08, 30–44 = +0.08; cs3 B200, qos
+  cs, no requeue, nice 100 behind the floor array; time limit 4 h for −0.08, whose pilot seed took 2 h 33 min, and
+  2 h 45 min for +0.04 / +0.08, whose pilot seeds took 1 h 34 min / 1 h 33 min). Picker row 1 (two H100s on cs2) not
+  taken: Gemma arms are the B200 copies (`steer/gpu_pick_2026-11-11.txt`). 15266062 lowered to 24 GB at 4:48 pm.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
