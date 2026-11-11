@@ -1626,6 +1626,8 @@ measured only on its own task set. This run adds them. Written before any job wa
   (6 tasks, 2 h), Qwen 15234399 (3 tasks, 5 h), all `-p cs,cs2 --qos cs`; Gemma 15234463 (5 tasks, 5 h, cs3 B200, pending
   behind the cs-3-1 health-check reservations). Picker output and placement reasons in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-10.txt`,
   job lines in `steer/jobs.txt`. Full test suite after the code change: 358 pass, 1 skipped.
+  The Muse Goodfire-axis array of the amendment: 15234624 (4 tasks, 2 h, `-p cs,cs2 --qos cs`), submitted 5:18 pm after
+  commit c2cc1b7.
 
 ## Work order
 
