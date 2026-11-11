@@ -1363,6 +1363,9 @@ gpt-oss −0.1 and −0.2 (inside the dose rule), Qwen +0.08 (task-set columns u
 +0.6, no code +4.6). Loss or truncation: gpt-oss +0.1 / +0.2 / +0.4 (no code +18.3 / +48.1 / +60.0), growing with the
 dose, and −0.4 (no code +12.4). Open: Qwen −0.08 (hidden pass −9.8, no code +9.8, inside by 0.2). No arm is added or
 dropped after the scores are in. Output beside the existing capability data per model; one FINDINGS entry; charts.
+**Submitted 12:54–12:56 pm MST Nov 11** (after commit d1384e6): gpt-oss 15261408 (2 tasks of 3 arms, 3 h), Muse
+15261414 (1 task, 2 h), Qwen 15261422 (2 tasks, 5 h), all `-p cs,cs2 --qos cs`, one untyped 80 GB GPU, no requeue: the
+picker's row 1 (cs2 H100, three idle) and the hardware class of every earlier benchmark run of these models.
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
