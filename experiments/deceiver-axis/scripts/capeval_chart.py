@@ -161,6 +161,20 @@ PRESETS = {
             "Unsteered rerun = the same recipe run again today.\n"
             "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "qwen_v2_clamp": dict(
+        compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_floor.json",
+        out=SCRATCH / "qwen38_27b_gi_v2/capeval/capeval_qwen_clamp_chart.png",
+        dose_arms=[("gi_cap_p25", "cap\np25"), ("unsteered", "none\n(unsteered)"), ("gi_floor_p50", "floor\np50"), ("gi_floor_p75", "floor\np75"), ("gi_floor_p95", "floor\np95")],
+        side_arms=[],
+        series_label="gi_v2 cap and floor rungs, Δ with 95% CI",
+        xlabel="gi_v2 clamp rung, layers 22–42",
+        col_labels=["cap p25", "unsteered", "floor p50", "floor p75", "floor p95"],
+        title="Qwen3.8-27B, cap and floor arms: capability retention",
+        layer="22–42",
+        sub="A cap clips the projection on the gi_v2 axis down to a threshold, a floor lifts it up to it, at every position over layers 22–42; thresholds are percentiles of the unsteered projection.\n"
+            "Share of generated positions the clamp moves on unsteered activations (clamp_shares.md): cap p25 74%; floor p50 50%, p75 75%, p95 94–96%. One unsteered run is the reference (no rerun).\n"
+            "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
 }
 RULE_POINTS = 2.0
 SIDE_GAP = 1.0

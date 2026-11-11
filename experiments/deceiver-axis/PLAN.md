@@ -1662,6 +1662,10 @@ measured only on its own task set. This run adds them. Written before any job wa
   (−5.7 / −5.3 / −8.3) and Goodfire −0.16 (−7.0) are lower than the 2026-10-29 unsteered run, not lower than the rerun
   (−2.0 / −1.7 / −4.7 and −3.3, CIs covering zero), so none is an IFBench loss under the note. No truncated share above
   0.7%. No arm changes dose-rule status. Qwen (15234399) and Gemma (15234463) outstanding.
+- **Result, Qwen (2026-11-10, job done 6:34 pm; FINDINGS "Qwen3.8-27B capability retention for the gi_v2 floor rungs").**
+  `gi_floor_p50`, `gi_floor_p75`, `gi_floor_p95` are clean on all four benchmarks, as expected: every difference within
+  2 points of unsteered (largest IFBench −2.0 at p95, CI −7.3 to +3.0), truncated shares at or below unsteered. One
+  unsteered run is the IFBench reference (caveat of the note above). Gemma (15234463) outstanding.
 
 ## Work order
 
