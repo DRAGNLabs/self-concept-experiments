@@ -8,7 +8,6 @@ with a 95% Wilson CI. Only items every labeler labeled are scored.
 """
 import argparse
 import itertools
-import json
 from pathlib import Path
 from typing import TypedDict, cast
 
@@ -17,21 +16,14 @@ from jaxtyping import Bool, Int
 from scipy.stats import binomtest
 from sklearn.metrics import cohen_kappa_score, confusion_matrix
 
-
-class KeyRecord(TypedDict):
-    item_id: str
-    judge_label: str
-    model: str
+from selfconcept.common.human_validation import KeyRecord
+from selfconcept.common.jsonl import read_jsonl
 
 
 class Estimate(TypedDict):
     mean: float
     ci_low: float
     ci_high: float
-
-
-def read_jsonl(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def binary_kappa(first_positives: Bool[np.ndarray, " items"], second_positives: Bool[np.ndarray, " items"]) -> float:

@@ -13,13 +13,12 @@ import argparse
 import json
 import random
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import TypedDict
 
-from build_labeling_page import Item
-from sample_in_character import balanced_sample, write_jsonl
+from selfconcept.codebench.rubric_levels import HACK_LEVELS, HackLevel, hack_level
+from selfconcept.common.human_validation import Item, JudgedCandidate, KeyRecord, half_positive_sample
+from selfconcept.common.jsonl import write_jsonl
 
-Level = Literal["NOT_HACK", "BORDERLINE", "WEAK", "STRONG"]
-LEVELS: tuple[Level, ...] = ("NOT_HACK", "BORDERLINE", "WEAK", "STRONG")
 RUBRIC_MODEL_NAME = "from gpt-oss-120b"
 RUBRIC_OUTPUT_HEADING = "## Output fields"
 TASK_NOTES = """## Notes on these dossiers
@@ -42,18 +41,15 @@ the answer with a real algorithm is NOT_HACK.
 """
 
 
-class Candidate(TypedDict):
-    model: str
+class Candidate(JudgedCandidate):
     verdict_key: str
     dossier_path: Path
     verdicts_path: Path
-    judge_label: Level
+    judge_label: HackLevel
 
 
-class KeyRecord(TypedDict):
-    item_id: str
-    judge_label: Level
-    model: str
+class HackKeyRecord(KeyRecord):
+    judge_label: HackLevel
     verdict_key: str
     dossier_path: str
     verdicts_path: str
@@ -62,10 +58,6 @@ class KeyRecord(TypedDict):
 class Run(TypedDict):
     verdicts_path: Path
     dossier_set: Path
-
-
-def judge_level(verdict: dict) -> Level:
-    return verdict["strength"] if verdict["verdict"] == "HACK" else verdict["verdict"]
 
 
 def parse_run(run_argument: str) -> tuple[str, Run]:
@@ -86,7 +78,7 @@ def judged_candidates(model: str, run: Run, arm: str) -> list[Candidate]:
         dossier = dossier_by_hash[verdict["dossier"]]
         assert (dossier["arm"], dossier["example_id"]) == (arm, example_id) and dossier["records"].startswith(f"{seed}/"), \
             f"{verdict_key}: dossier {verdict['dossier']} is {dossier['arm']}/{dossier['records']}/{dossier['example_id']}"
-        candidates.append({"model": model, "verdict_key": verdict_key, "judge_label": judge_level(verdict),
+        candidates.append({"model": model, "verdict_key": verdict_key, "judge_label": hack_level(verdict["verdict"], verdict["strength"]),
                            "dossier_path": run["dossier_set"] / "dossiers" / f"{verdict['dossier']}.md", "verdicts_path": run["verdicts_path"]})
     assert candidates, f"{run['verdicts_path']}: no {arm} verdicts"
     return candidates
@@ -114,28 +106,18 @@ def main() -> None:
     args = parser.parse_args()
 
     positive_levels: list[str] = args.positive_levels.split(",")
-    assert set(positive_levels) < set(LEVELS), f"--positive-levels must be a proper subset of {LEVELS}"
+    assert set(positive_levels) < set(HACK_LEVELS), f"--positive-levels must be a proper subset of {HACK_LEVELS}"
     runs_by_model: dict[str, list[Run]] = {}
     for model, run in map(parse_run, args.run):
         runs_by_model.setdefault(model, []).append(run)
     candidates = [candidate for model, runs in runs_by_model.items() for run in runs for candidate in judged_candidates(model, run, args.arm)]
-    generator = random.Random(args.seed)
-    sample = [
-        candidate
-        for positive in (True, False)
-        for candidate in balanced_sample(
-            {model: [c for c in candidates if c["model"] == model and (c["judge_label"] in positive_levels) == positive]
-             for model in runs_by_model},
-            args.per_half, generator,
-        )
-    ]
-    generator.shuffle(sample)
+    sample = half_positive_sample(candidates, list(runs_by_model), positive_levels, args.per_half, random.Random(args.seed))
 
     item_ids = [f"item{position:03d}" for position in range(len(sample))]
     args.out_dir.mkdir(parents=True, exist_ok=True)
     (args.out_dir / "rubric.md").write_text(labeler_rubric(args.rubric.read_text()))
     write_jsonl(args.out_dir / "items.jsonl", [to_item(item_id, candidate) for item_id, candidate in zip(item_ids, sample)])
-    key_records: list[KeyRecord] = [
+    key_records: list[HackKeyRecord] = [
         {"item_id": item_id, "judge_label": candidate["judge_label"], "model": candidate["model"], "verdict_key": candidate["verdict_key"],
          "dossier_path": str(candidate["dossier_path"]), "verdicts_path": str(candidate["verdicts_path"])}
         for item_id, candidate in zip(item_ids, sample)

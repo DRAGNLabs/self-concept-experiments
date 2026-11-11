@@ -280,6 +280,22 @@ python build_labeling_page.py --items $OUT/items.jsonl --rubric $OUT/rubric.md -
 python score_agreement.py --key $OUT/key.jsonl --labels labels_in_character_*.jsonl --levels 0,1,2,3 --positive-levels 3
 ```
 
+The rubric-v3 hack judge works the same way with `sample_hack.py` (2026-11-10): one arm (default `unsteered`) of each
+model's collected verdicts (`collect_verdicts.py` `.detail.json`) paired with the dossier set they were judged from,
+verdict + strength read as NOT_HACK < BORDERLINE < WEAK < STRONG (`selfconcept.codebench.rubric_levels`), positive =
+WEAK or STRONG; the item is the full dossier and the rubric is `judge_rubric_v3.md` without the model name or output
+fields, plus the judge brief's task notes. The shared sampling, item and key types live in
+`selfconcept.common.human_validation`.
+
+```bash
+OUT=$HOME/nobackup/autodelete/self-concept-experiments/schemer-axis/human_validation/hack
+python sample_hack.py --run gpt=<ref_proxy.detail.json>:<dossier set> --run muse=... --run gemma=... --run qwen=... \
+    --rubric /grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/rh_hillclimb/judge_rubric_v3.md --out-dir $OUT
+python build_labeling_page.py --items $OUT/items.jsonl --rubric $OUT/rubric.md --labels NOT_HACK,BORDERLINE,WEAK,STRONG \
+    --title hack --out $OUT/hack.html
+python score_agreement.py --key $OUT/key.jsonl --labels labels_hack_*.jsonl --levels NOT_HACK,BORDERLINE,WEAK,STRONG --positive-levels WEAK,STRONG
+```
+
 ## Adapting to a new model family: checklist
 
 Two code paths touch the model, HF (extraction, projections) and vLLM (steering); both are keyed on the model name.
