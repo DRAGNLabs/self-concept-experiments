@@ -1347,6 +1347,8 @@ the dw set: resubmit `settings_a100x2.tsv` lines 4–69 with the stage 2 command
 **Unchanged:** pilot screen, dose rule, blind judging (the B200 arms with Koby's B200 unsteered proxy episodes in
 the same sets, as for the earlier B200 arms), analysis and benchmark reading rules. The H200 check 15224080 is not
 needed for any placement decision any more; whether to cancel it is put to the user.
+**H200 check cancelled 2:14 pm MST Nov 11 (user: "cancel the h200 hardware check"):** `scancel 15224080`, four
+pending tasks, none had started.
 
 **Muse reference of record: the October unsteered arm (user decision 2026-11-11 ~12:50 pm MST: "Use the original
 October run as the reference for Muse").** Every Muse task-set contrast (judged rate, dose rule, pilot screens) is read
@@ -1448,6 +1450,9 @@ NODE_FAIL at 1:46 pm. Cause known (the node), so one resubmission, 1:53–1:56 p
 first (cs2 H100 row 1, two idle). The benchmark files completed before the freeze (gpt-oss −0.4 GSM8K; +0.4 GSM8K and
 MMLU-Pro) are kept and the script resumes after them; they were checked for whole lines only, not read. Expectations
 and reading rule unchanged.
+**Result, Muse p95 cap (read 2:17 pm Nov 11, against the 2026-10-29 run):** clean on all four benchmarks, as
+expected (GSM8K +0.3, MMLU-Pro +0.8, HumanEval +2.4, IFBench +0.0; no truncation). FINDINGS status paragraph; full
+entry with the other eight arms.
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
