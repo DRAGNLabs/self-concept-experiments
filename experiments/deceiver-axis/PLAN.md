@@ -1609,6 +1609,19 @@ measured only on its own task set. This run adds them. Written before any job wa
   above, Gemma p45 / p50 (−7.9 / −7.8). No rung is added or dropped after the scores are in.
 - **Output.** `<model capeval dir>/<arm>/`; comparison files and charts beside the existing ones; one FINDINGS entry;
   share copies beside the earlier capability data (Qwen under `qwen38_27b_gi_v2_judging_jansen05/capeval/`).
+- **Amendment 2026-11-10 ~5:16 pm (user: "do the benchmark runs on the gfar steering arms for Muse"), written before
+  submission and before any score of this section exists.** The four judged Goodfire-axis add arms of Muse go through the
+  same four benchmarks: `gf_m0.16`, `gf_m0.08`, `gf_p0.08`, `gf_p0.16` (layer 26, the RH arms' layer norm 315.24 and
+  direction; the axis tensor in our direction file equals the one in the share copy of Koby's, `torch.equal` on the
+  52 × 6656 array, while the two files differ in container bytes), arms file
+  `muse_glimmer/gi_v2/capeval/arms_gfar.tsv`, recipe, reference and reading as above. The request named the three arms on
+  which the two dose-rule definitions disagree (−0.16, −0.08, +0.16); +0.08 is added so the dose row is complete (one
+  more task of about 20 minutes). What it is for: at −0.16 and −0.08 the rule measure is outside (−18.1 / −10.6) while
+  raw hidden pass is inside (−2.6 / −0.4); at +0.16 the rule measure is inside (−3.3) and raw hidden pass is outside
+  (−13.5). The benchmarks say which measure tracks capability here, as they did for the two gi_v2 arms at ±0.16
+  (IFBench −4.3 n.s. at −0.16, −6.7 at +0.16). The dose rule of record does not change with the outcome. No
+  Goodfire-axis steering arm of any other model has been through the benchmarks (gpt-oss ±0.1 / ±0.2 / ±0.4, Qwen
+  ±0.08); those are not in this run.
 - **Submitted 2026-11-10 5:05–5:11 pm MST** (after commit fc438df): gpt-oss 15234338 (2 tasks of 4 arms, 3 h), Muse 15234386
   (6 tasks, 2 h), Qwen 15234399 (3 tasks, 5 h), all `-p cs,cs2 --qos cs`; Gemma 15234463 (5 tasks, 5 h, cs3 B200, pending
   behind the cs-3-1 health-check reservations). Picker output and placement reasons in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-10.txt`,
