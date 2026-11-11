@@ -1705,6 +1705,27 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   cs, no requeue, nice 100 behind the floor array; time limit 4 h for −0.08, whose pilot seed took 2 h 33 min, and
   2 h 45 min for +0.04 / +0.08, whose pilot seeds took 1 h 34 min / 1 h 33 min). Picker row 1 (two H100s on cs2) not
   taken: Gemma arms are the B200 copies (`steer/gpu_pick_2026-11-11.txt`). 15266062 lowered to 24 GB at 4:48 pm.
+  **Gemma arms judged one at a time as they arrive (user 2026-11-11 ~4:55 pm MST: "judge each arm as it arrives
+  rather than waiting for all the Gemma arms to complete", unless that adds a judging confound; written before any
+  of these arms is judged).** This replaces "one set once all four have 16 seeds" above and applies to every Gemma
+  arm still to be judged: the four Goodfire doses, any Goodfire cap rung that is extended, and the gi_v2 floor rungs
+  p95 / p75 / p50 (p95 reached 16 seeds at about 4:50 pm). An arm is judged when all 16 seeds are complete, as its
+  own blind set built by `build_ctl_set.sh`, the recipe of every Gemma arm judged since 2026-11-03 (one arm per set;
+  the unsteered verdicts are those of the 2026-11-02 `main` set and are not re-judged). *Checked for confounds
+  before agreeing:* (a) each judge is a fresh Sonnet process on one batch of at most 6 dossiers with the same task
+  text, so nothing carries between batches or sets, and a per-arm set differs from a mixed set only in what follows;
+  (b) the set name sits in the file paths a judge sees, and with one arm per set an arm-derived name could tell a
+  judge the arm, so the new sets get neutral names (`ctl_g01_s0-15`, `g02`, …; map in
+  `gfar_vs_gi_v2/steer/gemma_set_tags.tsv`, outside the judging directory). The earlier single-arm sets carried
+  arm-derived names (`ctl_gicap65_s0-15`, `ctl_a-0.005_s0-7`); that is not undone and is noted where those arms
+  are compared; (c) a batch holds one arm only, so a judge's within-batch sense of what is typical is not shared
+  across arms as it would be in a mixed set. This is true of every Gemma arm since Nov 3, is not measured, and
+  cannot be removed without mixing arms; (d) the unsteered reference was judged on Nov 2 with the pre-runner
+  recipe in either design. *Rules:* recipe frozen across these sets (same templates, rubric copy,
+  `judge_runner.py`, model alias, 6 at once; model and judging time recorded per set); first pass as judged; an
+  interim read is marked provisional and gives the raw p beside the p multiplied by the number of contrasts planned
+  for its family (floor family 3; Goodfire family = 4 doses + extended cap rungs), with Holm computed when the
+  family is complete; no submission, extension or rung choice uses a judged column of an arm read early.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
