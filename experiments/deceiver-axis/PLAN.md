@@ -1772,6 +1772,46 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   - `gf_cap_p75` (moves 70% of prompt and 28% of generated positions): no code 51.1% against 0.0% (+51.1), 13 of 57 turns truncated, reasoning 28,389 characters per turn against 9,154. **Not usable; not extended.**
   - `gf_cap_p95` (38% / 5–7%): no code 2.2% against 0.0% (+2.2, inside 10 points), 2 of 104 turns truncated (unsteered 0 of 100), reasoning 12,626 characters per turn (1.4 times unsteered), 104 turns against 100, stop reasons 30 passed / 12 attempt limit / 3 stopped against 36 / 9 / 0. **Usable.** Beside the rule, not deciding: hidden pass among non-proxy episodes 59.5% against 69.0% (−9.5), shown pass 66.7% against 80.0%.
   - Per the rule, only p95 is extended: seeds 1–11 submitted 6:18 pm as 15235801 (`main_run.sbatch`, the pilot's arm line, `NSEEDS=12`, array 1–11, `-p cs,cs2 --qos cs`, 8 h; seed 0 is the pilot). It is judged blind when complete, in the Muse Goodfire family (Holm over every judged Goodfire arm plus the three random-direction add arms). One seed took about 3 h. No hack column was read for the choice.
+- **Next Goodfire-axis cap rungs on gpt-oss, Gemma and Muse (2026-11-11, user ~3:10 pm MST: "proceed with all of
+  1-3", after my recommendation; written before any of these arms is submitted).** What is known: gpt-oss p25 and
+  p50 both end at 1 judged hack in 540 (p25 outside the dose rule on no code, p50 inside, benchmarks clean); Muse
+  breaks at p25 and p75 and is usable at p95 (17.0% against 32.8%, outside the rule by 0.6 points on the rule
+  measure only); Qwen breaks at p25 and has no base rate; Gemma p25 has not run. Qwen gets no further cap rung.
+  1. *gpt-oss `gf_cap_p75` and `gf_cap_p95`, 12 seeds × 45 each.* The `gf_cap_p50` arm line with
+     `thresholds/gptoss120b/gfar_p75.json` / `gfar_p95.json` (same 4 unsteered episodes, same direction, band 12–23),
+     `gi_v2/pilot/`, `main_run.sbatch`, array 0–23, 2 h per task (the p50 tasks took 39–52 min), cs / cs2, qos cs. No
+     one-seed pilot: both heavier rungs left gpt-oss able to submit. Judged blind when complete by the recipe of
+     `gfcap50`, analysed in the gpt-oss Goodfire family (Holm over every judged Goodfire arm, now 13 contrasts with
+     the randoms), dose rule as defined on Nov 7, benchmarks only on request. **Expected:** judged hacking ordered
+     p50 ≤ p75 ≤ p95 ≤ unsteered (0.2% … 11.7%), both rungs inside the dose rule. A rung is reported as lowering
+     hacking only if its Holm-adjusted contrast against unsteered excludes zero and it is inside the dose rule; a
+     rung at the unsteered rate is reported as the point where the cap stops working, and an out-of-order pair is
+     reported as such, not smoothed. The shares of positions each rung moves are computed with `clamp_shares.py`
+     before the read and stated with it.
+  2. *Gemma: one-seed pilots at p25 / p50 / p75 / p95 before any 16-seed arm.* p25 was outside the rule on the three
+     other models and broke two, and the share of positions moved does not transfer between models (gpt-oss usable
+     at 56% of generated positions, Muse broken at 28%). The queued 16-seed p25 arm 15216111 (never started) is
+     cancelled and replaced by a four-task pilot: `gfar_cap_p{25,50,75,95}_L20-38/seed0` (line 1 of
+     `settings_gfar_cap_p25.tsv` and the same line with the thresholds file swapped; thresholds exist, same 4
+     unsteered episodes), hard108, B200, `dose_pilot_gemma31b.sbatch`, read against seed 0 of Koby's B200 unsteered
+     arm. **Usability rule (the Muse pilot rule, with the second clause made numeric):** a rung is usable if on
+     seed 0 its no-code rate is within 10 points of unsteered seed 0 and its share of turns cut at the token budget
+     is within 10 points of unsteered seed 0; reasoning length per turn is reported beside it. No hack column is
+     read for the choice. Usable rungs are extended to seeds 1–15 and judged blind in the Gemma Goodfire family
+     with Koby's B200 unsteered proxy episodes in the same set; the heaviest usable rung and the next lighter one
+     are extended first, any further usable rung on the user's word (15 B200 tasks of about 1 h 45 min each per
+     rung). If no rung is usable, no Goodfire cap is usable on Gemma at this band and nothing is extended. Restore
+     the full p25 arm: `settings_gfar_cap_p25.tsv` lines 2–16, the 15216111 command with `--array=1-15`.
+  3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
+     projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
+     stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
+     that file, seed 0, 45 problems, band 17–33, `muse_glimmer/gi_v2/pilot/`, 5 h (the p75 and p95 pilots took
+     about 3 h). Same usability rule as the p75 / p95 pilots, with the numeric second clause above, against
+     unsteered seed 0; usable → seeds 1–11 and blind judging in the Muse Goodfire family; not usable → recorded, not
+     extended, and no rung between p75 and p95 is tried further without a new decision. **Expected if usable:** a
+     larger fall in judged hacking than p95 and a larger miss of the dose rule than p95's 0.6 points; p85 is not
+     run (too close to p75, which broke). A rung lighter than p95 needs a new threshold run (the stored grid ends
+     at 0.95) and is not part of this step.
 
 Records: `gfar_vs_gi_v2/steer/jobs.txt`, `gpu_pick_2026-11-10.txt`.
 
