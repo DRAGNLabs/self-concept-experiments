@@ -190,6 +190,20 @@ PRESETS = {
             "positions and 4.7–7.2% of generated positions. The p25 cap has no benchmark run (the model stops submitting code on the task set).\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "gemma_v2_clamp": dict(
+        compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_clamp.json",
+        out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_clamp_chart.png",
+        dose_arms=[("gi_cap_p25", "cap\np25"), ("gi_cap_p35", "cap\np35"), ("gi_cap_p45", "cap\np45"), ("gi_cap_p50", "cap\np50"), ("gi_cap_p65", "cap\np65"), ("unsteered", "none\n(unsteered)")],
+        side_arms=[],
+        series_label="gi_v2 cap rungs, Δ with 95% CI",
+        xlabel="gi_v2 cap rung, layers 20–38",
+        col_labels=["cap p25", "cap p35", "cap p45", "cap p50", "cap p65", "unsteered"],
+        title="Gemma 4 31B, gi_v2 cap ladder: capability retention",
+        layer="20–38",
+        sub="A cap clips the projection on the gi_v2 axis down to a threshold at every position over layers 20–38; thresholds are percentiles of the unsteered projection.\n"
+            "Share of generated positions the cap moves on unsteered activations (clamp_shares.md): p25 75%, p35 64%, p45 55%, p50 50%, p65 36%. One unsteered run (2026-11-02) is the reference.\n"
+            "Δ = arm accuracy minus unsteered on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
     "qwen_gfar": dict(
         compare=SCRATCH / "qwen38_27b_gi_v2/capeval/compare_gfar.json",
         out=SCRATCH / "qwen38_27b_gi_v2/capeval/capeval_qwen_gfar_chart.png",

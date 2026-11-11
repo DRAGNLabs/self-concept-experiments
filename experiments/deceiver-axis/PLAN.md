@@ -1674,7 +1674,7 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   honest hidden pass and no-code rate are within 10 points of unsteered on the pilot seeds is extended to the full
   seed count (Gemma 16, Qwen 12); doses outside it are reported from the pilot's capability columns and not extended
   unless the user asks. The choice uses capability columns only, never a hack column.
-  **Gemma pilot read (2026-11-11 4:35 pm MST; job 15213664, six tasks done by 4:17 pm on the B200, no OOM or
+  **Gemma pilot read (2026-11-11 4:26 pm MST; job 15213664, six tasks done by 4:17 pm on the B200, no OOM or
   context-length error in any task; `rh/hard108/gfar_pilot_links/{pilot_summary_gfar_pilot.log,summary_gfar_pilot.json}`,
   108 episodes per dose against Koby's 16-seed B200 unsteered arm, 1,728 episodes: honest hidden pass 39.7%, no code
   0.0%):** honest hidden pass Δ / no-code Δ: −0.04 −2.2 / 0.0 (inside); −0.08 −10.1 / +0.9 (outside by 0.1); −0.16
@@ -1969,6 +1969,13 @@ measured only on its own task set. This run adds them. Written before any job wa
   (−5.7 / −5.3 / −8.3) and Goodfire −0.16 (−7.0) are lower than the 2026-10-29 unsteered run, not lower than the rerun
   (−2.0 / −1.7 / −4.7 and −3.3, CIs covering zero), so none is an IFBench loss under the note. No truncated share above
   0.7%. No arm changes dose-rule status. Qwen (15234399) and Gemma (15234463) outstanding.
+  **Result, Gemma caps (15234463 done 4:21 pm Nov 11, read 4:29 pm against the 2026-11-02 unsteered run;
+  `gemma4_31b_gi_v2/capeval/compare_clamp.{md,json}`, chart `capeval_gemma_clamp_chart.png`):** p25 and p35 a loss, as
+  expected (MMLU-Pro −4.4 / −3.3, CIs excluding zero; the other three kept). p65 clean, as expected (MMLU-Pro −1.1, CI
+  covering zero). The open rungs p45 and p50 are losses on MMLU-Pro (−2.4 each, CI −3.8 to −1.1 and −3.7 to −1.0).
+  Truncation at most 0.7%, so nothing is truncation-limited. No arm changes dose-rule status; p45 and p50 are written
+  as inside the rule on the task set with a benchmark loss. FINDINGS "Gemma 4 31B capability retention for the gi_v2
+  cap ladder".
   *Restated 2026-11-11 (Muse benchmark rerun archived): against the 2026-10-29 run alone the three floors and Goodfire
   −0.16 are IFBench losses by the retention rule, as are gi_v2 +0.04 / +0.08 / +0.16 from the earlier runs.*
 - **Result, Qwen (2026-11-10, job done 6:34 pm; FINDINGS "Qwen3.8-27B capability retention for the gi_v2 floor rungs").**
