@@ -1329,6 +1329,41 @@ then holds is that one pilot dose and the check's unsteered seeds 0–1, floor p
 reported beside the dw +0.08 dose as a single-seed copy with no 16-seed baseline of its own placement and is not
 used for the pilot read.
 
+**Muse reference of record: the October unsteered arm (user decision 2026-11-11 ~12:50 pm MST: "Use the original
+October run as the reference for Muse").** Every Muse task-set contrast (judged rate, dose rule, pilot screens) is read
+against the October 12-seed unsteered arm (`muse_glimmer/main/unsteered`). The 12-seed rerun stays in the tables as a
+second column and is not pooled with it. Statuses of record that this settles: Goodfire p95 cap and Goodfire −0.08
+are "outside the dose rule on the rule measure (−10.6 each); the miss may be composition, not capability". The
+decision was made with both columns known, so it is a choice of convention, not a pre-result rule; no number changes.
+The IFBench note of 2026-11-10 (Muse benchmark rows read against both unsteered benchmark runs, a loss only if
+outside against both) is a separate rule about the benchmark runs and stays as written.
+
+**Benchmarks for the Goodfire-axis arms that have none (user 2026-11-11 ~12:50 pm: "Queue the three missing benchmark
+sets"; written before submission, no score exists).** Nine arms through GSM8K / MMLU-Pro / HumanEval / IFBench with
+the recipe, reference and reading of "Capability retention for the cap and floor arms" below, unchanged:
+- gpt-oss, the six judged dose arms `gf_m0.4`, `gf_m0.2`, `gf_m0.1`, `gf_p0.4`, `gf_p0.2`, `gf_p0.1` (add at layer 17;
+  `gi_v2/capeval/arms_gfar.tsv`, two jobs of three arms, about 10–15 minutes per arm). Reference: the 2026-10-29
+  unsteered benchmark run.
+- Qwen, the two judged 12-seed arms `gf_m0.08` and `gf_p0.08` (add at layer 32; `qwen38_27b_gi_v2/capeval/arms_gfar.tsv`,
+  `VLLM_MAX_NUM_SEQS=128`, one arm per job, 1.5–2.5 h each by the earlier Qwen arms). Reference: the 2026-11-10
+  unsteered benchmark run.
+- Muse, the judged `gf_cap_p95` (cap over layers 17–33; `muse_glimmer/gi_v2/capeval/arms_gfar_cap_p95.tsv`, one job).
+  Reference: the 2026-10-29 unsteered benchmark run, with the IFBench row also against the rerun (rule above).
+Each line is rebuilt from the steering block of the RH arm's seed-0 summary
+(`gfar_vs_gi_v2/steer/build_gfar_capeval_arms_1111.py`): an add arm is accepted only if the layer-norms file gives the
+layer norm that arm recorded (8085.24 gpt-oss, 75.002 Qwen), the cap only if the threshold file equals the recorded
+thresholds. Not in this run: Muse `gf_cap_p25` and Qwen `gfar_cap_p25_L22-42` (the model stops submitting on the task
+set; reason as written below), the Qwen ±0.16 / ±0.32 pilot doses (two seeds, not judged), every Gemma arm (none
+finished).
+**Reading, fixed now.** The retention rule as written (within 2 points of unsteered or CI covering zero per benchmark;
+clean = all four; a truncated share more than 2 points above unsteered's is reported as truncation-limited, not as a
+capability loss). The dose rule of record stays the task-set rule and no arm changes status with the outcome; an arm
+outside on the task set and clean on the benchmarks is written that way. **Expected from the task-set columns:** clean:
+gpt-oss −0.1 and −0.2 (inside the dose rule), Qwen +0.08 (task-set columns unchanged), Muse p95 cap (raw hidden pass
++0.6, no code +4.6). Loss or truncation: gpt-oss +0.1 / +0.2 / +0.4 (no code +18.3 / +48.1 / +60.0), growing with the
+dose, and −0.4 (no code +12.4). Open: Qwen −0.08 (hidden pass −9.8, no code +9.8, inside by 0.2). No arm is added or
+dropped after the scores are in. Output beside the existing capability data per model; one FINDINGS entry; charts.
+
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
 Three independent adversarial reviews (intervention code, statistics and judging, claims and methods) were run on the
