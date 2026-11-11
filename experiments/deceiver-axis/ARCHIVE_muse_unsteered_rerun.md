@@ -1,4 +1,6 @@
-# Archive: Muse 12-seed unsteered rerun (and the two-seed Muse recheck)
+# Archive: unsteered reruns and rechecks (Muse 12-seed rerun and two-seed recheck; Muse benchmark rerun; gpt-oss and Qwen rechecks; gpt-oss benchmark rerun)
+
+*Parts 1–3 are the Muse reruns; part 4 at the end holds the gpt-oss and Qwen rechecks and the gpt-oss benchmark rerun, archived the same afternoon.*
 
 **Archived 2026-11-11 about 1:02 pm MST by user decision** ("take the rerun out of the tables as the second column, let's archive that rerun - keep the data recorded but not in the active tables and stuff we'll be reporting"). The October 12-seed unsteered arm (`muse_glimmer/main/unsteered`) is the Muse reference of record (user decision of the same day, about 12:50 pm). Nothing below is part of the reported results; it is kept as a record of what was run and read. No number here was changed when it was moved.
 
@@ -208,4 +210,64 @@ Asked by the user about 1:20 pm on 2026-11-11 ("maybe we want to just use both r
 - Judged rate: unsteered 35.6% in the rerun against 32.8%, so every difference shifts by −2.8. Sign and significance are the same under both references for gi_v2 ±0.08 and ±0.16, caps p5 and p25, the three floors and the six Goodfire arms. Changes: gi_v2 +0.04 (+5.7, Holm 0.034 → +3.0, 0.32), −0.04 (−3.5, 0.32 → −6.3, 0.038), cap p50 (−5.7, 0.17 → −8.5, 0.0048), random 1729 (−4.4, 0.32 → −7.2, 0.063), random 1730 (+7.0, 0.05 → +4.3, 0.32), random 1731 (−2.0, 0.32 → −4.8, 0.063).
 - Dose rule: the unsteered level of the rule measure is 56.6% against 63.9%, so every arm is 7.3 points closer. Outside against October and inside against the rerun: gi_v2 −0.16 (−11.3 → −4.0), cap p5 (−11.7 → −4.4), floor p75 (−12.1 → −4.8), floor p95 (−10.7 → −3.3), Goodfire p95 cap and Goodfire −0.08 (−10.6 → −3.3 each). Outside against both: Goodfire −0.16 (−18.1 → −10.8), Goodfire p25 cap (no code).
 - Benchmarks: against the benchmark rerun no Muse arm is outside the retention rule on any benchmark; against the 2026-10-29 run seven are on IFBench (part 2).
+
+---
+
+# Part 4: the gpt-oss and Qwen two-seed rechecks and the gpt-oss unsteered benchmark rerun
+
+**Archived 2026-11-11 about 1:30 pm MST by user decision** ("archive the other unsteered re-runs too"). Both reproduced their references, so nothing in the active record changes except that these checks are no longer cited. Every model's reference is its original unsteered run. Data: `unsteered_recheck/` (gpt-oss) and `qwen38_27b_gi_v2/unsteered_recheck/` with `ARCHIVED.md` markers; `gi_v2/capeval/archive_unsteered_rerun/` (the gpt-oss benchmark rerun, the comparison file and chart as first written). The gpt-oss benchmark rerun's numbers are also in the entry kept verbatim in part 2 (its "Reference runs" paragraph and the last row of the gpt-oss table).
+
+Not treated as reruns and still active: the Gemma hardware checks (unsteered pairs on H100 / H200 placements, run to decide where arms may move) and the 16-seed unsteered arm of the Gemma dw set (the reference for the arms run on the same cards).
+
+## The FINDINGS entry as it stood (verbatim)
+
+### Unsteered reference recheck, gpt-oss / Qwen — 2026-11-10: gpt-oss and Qwen reproduce their unsteered references at the current code (two seeds each, every column inside the range of the 12 reference seeds)
+
+**Question.** PLAN "Unsteered reference recheck" (written before submission): the unsteered references are from 2026-10-12 (gpt-oss) and 11-03 (Qwen, Koby's arm), before several harness changes. Do two unsteered seeds run at the current code fall inside the range of the 12 reference seeds?
+
+**Data.** Two unsteered seeds per model with the reference recipe, into `<model>/unsteered_recheck/unsteered/`, never into the reference directories: gpt-oss seeds 0 and 1 (job 15231977), Qwen seeds 8 and 9 of qwen_hard61 (15232002); cs / cs2, qos cs, submitted 3:41–3:44 pm MST. gpt-oss read 4:25 pm, Qwen 6:23 pm. Not judged (no hack column). Read with `scripts/hardware_check_read.py`: per recheck seed, each column against the min–max of the 12 reference seeds.
+
+**Numbers (per seed, 45 problems; Qwen 61).**
+
+| | gpt-oss reference range | gpt-oss seeds 0 / 1 | Qwen reference range | Qwen seeds 8 / 9 |
+|---|---|---|---|---|
+| hidden pass among non-proxy episodes | 22.9–39.4% | 23.5 / 32.4% | 51.9–75.9% | 70.6 / 58.5% |
+| shown pass | 40.0–55.6% | 42.2 / 44.4% | 57.4–78.7% | 75.4 / 63.9% |
+| no code | 0.0–11.1% | 4.4 / 4.4% | 13.1–36.1% | 18.0 / 26.2% |
+| automatic proxy | 11.1–26.7% | 24.4 / 17.8% | 4.9–18.0% | 16.4 / 13.1% |
+| truncated-turn share | 0.0% | 0.0 / 0.0% | max 3.8% | 0.0 / 2.1% |
+
+**Reading (the pre-written rule).**
+
+- *gpt-oss and Qwen: the reference stands.* Both seeds are inside on every column.
+
+**Limits.** Two seeds per model against a min–max of 12 is a screen, not a test; a seed can fall outside a 12-seed range by chance (about 15% per column per seed, two-sided). The recheck says nothing about judge drift.
+
+**Files.** `unsteered_recheck/` (gpt-oss), `qwen38_27b_gi_v2/unsteered_recheck/`: `unsteered/seed*/`, `arms_unsteered.tsv`, `recheck_read.{json,log}`.
+
+*The Muse part of this recheck (two seeds, job 15231995) is archived with the 12-seed Muse rerun: `ARCHIVE_muse_unsteered_rerun.md`.*
+
+## Other active text removed or rewritten, as it stood (verbatim)
+
+Capability entry, "Reference runs" paragraph (as rewritten at the Muse benchmark step):
+
+**Reference runs.** gpt-oss `unsteered_rerun` (the unsteered recipe run again as a drift check) against the 2026-10-29 unsteered run: GSM8K −0.1, MMLU-Pro −0.9, HumanEval +1.2, IFBench −1.3, every CI covering zero; the original is the reference. Muse: the 2026-10-29 unsteered run is the reference (user decision 2026-11-11; PLAN "Muse benchmark rerun archived"). *An unsteered Muse rerun made in this job and the reading that used it as a second IFBench reference are archived in `ARCHIVE_muse_unsteered_rerun.md`, part 2, with this entry as it first stood; this entry was rewritten on 2026-11-11 and no number was recomputed.*
+
+Capability entry, last row of the gpt-oss table:
+
+| unsteered rerun | | −0.1 (−0.8 to +0.6) | −0.9 (−2.4 to +0.6) | +1.2 (−1.8 to +4.3) | −1.3 (−6.0 to +3.3) | | |
+
+Status paragraph items:
+
+**Unsteered recheck, gpt-oss (15231977, done 4:24 pm):** both recheck seeds are inside the 12-seed reference range on every column (hidden pass among non-proxy episodes 23.5 / 32.4% against 22.9–39.4%, shown pass 42.2 / 44.4% against 40.0–55.6%, no-code 4.4 / 4.4% against 0.0–11.1%, proxy 24.4 / 17.8% against 11.1–26.7%, no truncated turn), so the gpt-oss reference stands; Muse (15231995) and Qwen (15232002) are still running.
+
+**Unsteered recheck, Qwen (15232002, done about 6:20 pm):** both seeds inside the reference range on every column (hidden pass among non-proxy episodes 70.6 / 58.5% against 51.9–75.9%, shown pass 75.4 / 63.9% against 57.4–78.7%, no-code 18.0 / 26.2% against 13.1–36.1%, proxy 16.4 / 13.1% against 4.9–18.0%, truncated-turn share 0.0 / 2.1% against a reference maximum of 3.8%); the Qwen reference stands. **Muse recheck (15231995, done about 7:45 pm; entry "Unsteered reference recheck, gpt-oss / Qwen / Muse" below): the Muse reference is not reproduced at the current code** — hidden pass among non-proxy episodes 57.1 / 60.0% against 66.7–82.8%, shown pass 73.3 / 77.8% against 80.0–88.9%. By the pre-written rule every Muse contrast carries that label until a 12-seed unsteered Muse arm is rerun (user go-ahead about 8:00 pm: seeds 2–11 queued 8:04 pm as job 15238102, to stand beside recheck seeds 0 and 1; PLAN "Muse 12-seed unsteered rerun"). **Rerun read 2026-11-11 12:07 am: reproduced by the rule** (hidden pass among non-proxy episodes −3.6, interval −8.3 to +0.7; shown pass −0.9, −3.5 to +1.5), so the October reference stands and the label is dropped; but the rerun has more proxy episodes (+4.8, +0.9 to +9.3) and fewer hidden passes over all episodes (−5.7, −10.6 to −1.5), so the Muse Goodfire arms are being shown against both unsteered arms (set `gfcap95`, judged 12:10–12:42 am Nov 11: the Goodfire p95 cap has a judged hack rate of 17.0% against 32.8% October / 35.6% rerun, −15.7 and −18.5, both intervals exclude zero; its dose-rule status is outside by 0.6 points against October, possibly composition, and inside against the rerun; the rerun's judged rate is +2.8 against October, CI −1.1 to +6.7; entries "Muse Goodfire p95 cap and the unsteered rerun, judged in one blind set" and "Muse 12-seed unsteered rerun at the current code"). A steered Muse arm of the same day (Goodfire −0.08) is at the October unsteered level on raw hidden pass, so the two unsteered levels are not yet reconciled.
+
+Unsteered reference recheck jobs 15231977 (gpt-oss) / 15231995 (Muse) / 15232002 (Qwen) submitted 3:41 to 3:44 pm, no result yet.
+
+Review entry, "Not done" item:
+
+(3) Unsteered reference recheck at the current code: jobs 15231977 (gpt-oss), 15231995 (Muse) and 15232002 (Qwen) submitted 3:41 to 3:44 pm, two seeds each, read rule in PLAN; read later the same day (gpt-oss and Qwen reproduce; the Muse part is archived, `ARCHIVE_muse_unsteered_rerun.md`).
+
+Qwen Goodfire-axis ±0.08 entry, Limits clause: "the unsteered recheck at the current code (15232002) later reproduced that reference (entry "Unsteered reference recheck, gpt-oss / Qwen")".
 

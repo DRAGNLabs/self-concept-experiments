@@ -1379,6 +1379,18 @@ choice of convention, not a pre-result rule; no number changes. From here on:
    2026-10-29 run only, IFBench included.
 6. Not covered: the gpt-oss `unsteered_rerun` benchmark row (it reproduced the original within 1.3 points and was
    never a second reference); it stays in the gpt-oss table as the drift check it was run as.
+   (Superseded about 1:30 pm, next paragraph.)
+
+**The other unsteered reruns archived (user decision 2026-11-11 about 1:30 pm MST: "archive the other unsteered
+re-runs too").** Read as: every unsteered run that repeated an existing reference. That is (a) the gpt-oss and Qwen
+two-seed rechecks of 2026-11-10 ("Unsteered reference recheck" bullet below; jobs 15231977 and 15232002) and (b) the
+gpt-oss unsteered benchmark rerun of 2026-11-10 (job 15234338). Both reproduced their references, so no number, status
+or reference changes. From here on they are not shown or cited in active tables, charts, entries or the dashboard, and
+are not used to support a statement that a reference reproduces; text goes verbatim to
+`ARCHIVE_muse_unsteered_rerun.md` part 4, data stays (`unsteered_recheck/` folders with `ARCHIVED.md`,
+`gi_v2/capeval/archive_unsteered_rerun/`). Not read as reruns, and unchanged: the Gemma hardware checks on H100 / H200
+placements (they decide where arms may run) and the 16-seed unsteered arm of the Gemma dw set (the reference for the
+arms on the same cards). If the user meant those too, they are archived on their word.
 
 **Benchmarks for the Goodfire-axis arms that have none (user 2026-11-11 ~12:50 pm: "Queue the three missing benchmark
 sets"; written before submission, no score exists).** Nine arms through GSM8K / MMLU-Pro / HumanEval / IFBench with
@@ -1441,7 +1453,7 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   open-loop share of prompt and of generated positions the clamp moves; the rung label alone is not read as "share
   of tokens clamped". For Gemma (hard108, 32,768 tokens) and Qwen (qwen_hard61, 65,536 tokens) the threshold task set
   and budget differ from the arm's; this is stated with each cap and floor result.
-- **Unsteered reference recheck (written before submission).** The unsteered references are from 2026-10-12
+- **Unsteered reference recheck (written before submission).** *Archived 2026-11-11 (user decisions; "Muse unsteered rerun archived" and "The other unsteered reruns archived" in the 2026-11-11 section): the rechecks are out of the active record; this bullet is kept as history.* The unsteered references are from 2026-10-12
   (gpt-oss), 10-21 (Muse) and 11-03 (Qwen, Koby's arm), before several harness changes. Two unsteered seeds per model
   are rerun at the current code with the reference recipe: gpt-oss and Muse seeds 0 and 1 (45 problems), Qwen seeds 8
   and 9 (qwen_hard61, Koby's seed numbering), into `<model>/unsteered_recheck/`, never into the reference

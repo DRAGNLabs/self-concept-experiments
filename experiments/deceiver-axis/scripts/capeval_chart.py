@@ -118,18 +118,18 @@ PRESETS = {
         compare=SCRATCH / "gi_v2/capeval/compare_clamp.json",
         out=SCRATCH / "gi_v2/capeval/capeval_clamp_chart.png",
         dose_arms=[("gi_cap_p5", "cap\np5"), ("gi_cap_p25", "cap\np25"), ("gi_cap_p50", "cap\np50"), ("unsteered", "none\n(unsteered)"), ("gi_floor_p50", "floor\np50"), ("gi_floor_p75", "floor\np75"), ("gi_floor_p95", "floor\np95")],
-        side_arms=[("gf_cap_p25", "Goodfire\ncap p25"), ("gf_cap_p50", "Goodfire\ncap p50"), ("unsteered_rerun", "rerun")],
-        side_label="Goodfire caps; rerun",
+        side_arms=[("gf_cap_p25", "Goodfire\ncap p25"), ("gf_cap_p50", "Goodfire\ncap p50")],
+        side_label="Goodfire caps",
         tick_fs=8,
         series_label="gi_v2 cap and floor rungs, Δ with 95% CI",
         xlabel="gi_v2 clamp rung, layers 12–23",
-        col_labels=["cap p5", "cap p25", "cap p50", "unsteered", "floor p50", "floor p75", "floor p95", "Goodfire p25", "Goodfire p50", "rerun"],
+        col_labels=["cap p5", "cap p25", "cap p50", "unsteered", "floor p50", "floor p75", "floor p95", "Goodfire p25", "Goodfire p50"],
         title="gpt-oss-120b, cap and floor arms: capability retention",
         layer="12–23",
         sub="A cap clips the projection on the axis down to a threshold, a floor lifts it up to it, at every position over layers 12–23; thresholds are percentiles of the unsteered projection.\n"
             "Share of generated positions the clamp moves on unsteered activations (clamp_shares.md): gi_v2 cap p5 94–96%, p25 75%, p50 53%; floor p50 47%, p75 70%, p95 90–92%;\n"
-            "Goodfire cap p25 77%, p50 56%. Rerun = the unsteered recipe run again today.\n"
-            "Δ = arm accuracy minus the original unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+            "Goodfire cap p25 77%, p50 56%.\n"
+            "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     "muse_v2_clamp": dict(
         compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_clamp.json",
