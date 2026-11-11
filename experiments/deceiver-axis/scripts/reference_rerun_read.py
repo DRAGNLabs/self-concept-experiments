@@ -100,10 +100,11 @@ def main() -> None:
             hits += abs(stat) >= abs(observed) - 1e-12
         result["difference"][c] = {"delta": delta, "ci95": [low, high], "covers_zero": low <= 0 <= high,
                                    "seed_mean_delta": observed, "seed_permutation_p": (hits + 1) / (args.resamples + 1)}
-    complete = len(rerun["by_seed"]) == len(reference["by_seed"]) and not result["problems_only_in_one"]
+    complete = (len(rerun["by_seed"]) == len(reference["by_seed"]) and not result["problems_only_in_one"]
+                and all(len(rerun_by_problem[p]) == len(reference_by_problem[p]) for p in problems))
     reproduced = all(result["difference"][c]["covers_zero"] for c in VERDICT_COLUMNS)
     result["complete"] = complete
-    result["verdict"] = ("reproduced" if reproduced else "not reproduced") + ("" if complete else " (PARTIAL: seed sets differ, not the read of record)")
+    result["verdict"] = ("reproduced" if reproduced else "not reproduced") + ("" if complete else " (PARTIAL: seeds or episodes missing, not the read of record)")
     also = {"reference": reference_by_problem, "rerun": rerun_by_problem}
     for pair in args.also:
         name, directory = pair.split("=", 1)

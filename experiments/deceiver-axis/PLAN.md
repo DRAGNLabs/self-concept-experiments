@@ -1334,6 +1334,14 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   **Submitted 8:04 pm MST: job 15238102** (array 2–11, cs / cs2, qos cs, 8 h, no requeue; picker output and
   decision in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-10.txt`). No cs / cs2 GPU was idle (the 11 p95 cap tasks hold
   them); scheduler estimate for the first start about 10:00 pm, about 4 h per seed after that.
+  **Read 1 (2026-11-11 12:07 am, `muse_glimmer/unsteered_recheck/rerun_read.{json,log}`): reproduced.** Hidden pass
+  among non-proxy episodes −3.6 (−8.3 to +0.7), shown pass −0.9 (−3.5 to +1.5); the October reference stands and the
+  label is dropped. Outside the rule's two columns: proxy +4.8 (+0.9 to +9.3) and hidden pass over all episodes −5.7
+  (−10.6 to −1.5) exclude zero, so Read 2 shows the Goodfire arms against both unsteered arms anyway (FINDINGS "Muse
+  12-seed unsteered rerun at the current code"). **Read 2 started 12:10 am:** set `gfcap95` = `gf_cap_p95` +
+  `unsteered_rerun` (336 proxy dossiers / 56 batches, 100 hidden-signature dossiers / 18 batches), analysis by
+  `gfar_vs_gi_v2/steer/run_gfcap95_analysis.sh` (gfar Holm family without the rerun; rerun against October as one raw
+  contrast; the family against the rerun as reference).
 
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
