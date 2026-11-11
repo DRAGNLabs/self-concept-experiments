@@ -1422,6 +1422,14 @@ dropped after the scores are in. Output beside the existing capability data per 
 15261414 (1 task, 2 h), Qwen 15261422 (2 tasks, 5 h), all `-p cs,cs2 --qos cs`, one untyped 80 GB GPU, no requeue: the
 picker's row 1 (cs2 H100, three idle) and the hardware class of every earlier benchmark run of these models.
 
+**Node failure and resubmission, Nov 11:** node cs-2-1 stopped responding at about 1:00 pm MST; the four tasks on it
+(15261408_0, 15261408_1, 15261414_0, 15261422_0) wrote nothing after 12:59–1:00 pm and were ended by the scheduler as
+NODE_FAIL at 1:46 pm. Cause known (the node), so one resubmission, 1:53–1:56 pm, same commands plus
+`--exclude=cs-2-1`: Qwen −0.08 15262697, Muse p95 cap 15262741, gpt-oss 15262751 (2 tasks of 3 arms). Picker rerun
+first (cs2 H100 row 1, two idle). The benchmark files completed before the freeze (gpt-oss −0.4 GSM8K; +0.4 GSM8K and
+MMLU-Pro) are kept and the script resumes after them; they were checked for whole lines only, not read. Expectations
+and reading rule unchanged.
+
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
 Three independent adversarial reviews (intervention code, statistics and judging, claims and methods) were run on the
