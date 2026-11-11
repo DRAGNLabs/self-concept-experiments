@@ -1336,7 +1336,8 @@ the tables as a second column; superseded the same afternoon, next paragraph.) S
 are "outside the dose rule on the rule measure (−10.6 each); the miss may be composition, not capability". The
 decision was made with both columns known, so it is a choice of convention, not a pre-result rule; no number changes.
 The IFBench note of 2026-11-10 (Muse benchmark rows read against both unsteered benchmark runs, a loss only if
-outside against both) is a separate rule about the benchmark runs and stays as written.
+outside against both) is a separate rule about the benchmark runs and stays as written. (Superseded the same
+afternoon: "Muse benchmark rerun archived" below.)
 
 **Muse unsteered rerun archived (user decision 2026-11-11 about 1:02 pm MST: "take the rerun out of the tables as the
 second column, let's archive that rerun - keep the data recorded but not in the active tables and stuff we'll be
@@ -1351,7 +1352,33 @@ analysis outputs and the two-reference chart move to `archive_unsteered_rerun/` 
 scan skips. (3) The rerun is not used to qualify, soften or strengthen any reported Muse statement, in either
 direction. (4) The archive is the place to look if the Muse reference is questioned later; un-archiving is the user's
 decision. (5) Not covered: the unsteered *benchmark* rerun of 2026-11-10 behind the Muse IFBench two-reference rule,
-a different run; whether that rule also goes is asked of the user.
+a different run; whether that rule also goes is asked of the user. (Answered about 1:22 pm: it goes, next paragraph.)
+
+**Muse benchmark rerun archived, October benchmark run is the only Muse reference (user decision 2026-11-11 about
+1:22 pm MST: "let's keep october as the reference, we should do that for the capability re-run too - archive that
+too").** The decision was made with both IFBench columns and the what-if tables for the task set on screen, so it is a
+choice of convention, not a pre-result rule; no number changes. From here on:
+1. Every Muse benchmark arm (GSM8K / MMLU-Pro / HumanEval / IFBench) is compared with the 2026-10-29 unsteered
+   benchmark run only. The note of 2026-11-10 ~6:00 pm ("Muse IFBench is read against both unsteered runs") is
+   withdrawn; its text stays below as history.
+2. The retention rule itself is unchanged (an arm keeps a benchmark when the paired difference is within 2 points or
+   its CI covers zero; truncation-limited if the truncated share is more than 2 points above unsteered). Applied to
+   the numbers already recorded, seven Muse arms are IFBench losses: gi_v2 floors p50 / p75 / p95 (−5.7 / −5.3 /
+   −8.3), gi_v2 +0.04 / +0.08 / +0.16 (−6.3 / −7.0 / −6.7, as first reported on 2026-10-29 and 10-30) and Goodfire
+   −0.16 (−7.0). Not losses: gi_v2 −0.16 (−4.3, CI −9.3 to +0.7), Goodfire −0.08 (−3.7, CI covers zero), Goodfire
+   +0.08 / +0.16, the three gi_v2 caps, gi_v2 −0.04 / −0.08. No arm changes status on GSM8K, MMLU-Pro or HumanEval.
+   Benchmarks still move no arm inside or outside the dose rule.
+3. Archived, nothing deleted: the FINDINGS entry "Capability retention for the cap and floor arms, gpt-oss and Muse,
+   and the Muse Goodfire-axis doses" as it stood goes verbatim into `ARCHIVE_muse_unsteered_rerun.md`; the run
+   directory `muse_glimmer/gi_v2/capeval/unsteered_rerun`, `compare_vs_rerun*` and the as-written `compare_clamp` /
+   `compare_gfar` files (which carry an `unsteered_rerun` row) move to `capeval/archive_unsteered_rerun/`; the active
+   `compare_clamp` / `compare_gfar` files are the same files with that row removed (no number recomputed).
+4. The rerun is not used to qualify, soften or strengthen any reported statement, on Muse or as a spread estimate for
+   another model. The Qwen and Gemma IFBench caveat becomes "one unsteered run; run-to-run spread not measured".
+5. The pending Muse `gf_cap_p95` benchmark run (15261414, not read when this was written) is read against the
+   2026-10-29 run only, IFBench included.
+6. Not covered: the gpt-oss `unsteered_rerun` benchmark row (it reproduced the original within 1.3 points and was
+   never a second reference); it stays in the gpt-oss table as the drift check it was run as.
 
 **Benchmarks for the Goodfire-axis arms that have none (user 2026-11-11 ~12:50 pm: "Queue the three missing benchmark
 sets"; written before submission, no score exists).** Nine arms through GSM8K / MMLU-Pro / HumanEval / IFBench with
@@ -1363,7 +1390,8 @@ the recipe, reference and reading of "Capability retention for the cap and floor
   `VLLM_MAX_NUM_SEQS=128`, one arm per job, 1.5–2.5 h each by the earlier Qwen arms). Reference: the 2026-11-10
   unsteered benchmark run.
 - Muse, the judged `gf_cap_p95` (cap over layers 17–33; `muse_glimmer/gi_v2/capeval/arms_gfar_cap_p95.tsv`, one job).
-  Reference: the 2026-10-29 unsteered benchmark run, with the IFBench row also against the rerun (rule above).
+  Reference: the 2026-10-29 unsteered benchmark run only (amended 2026-11-11 about 1:22 pm, before the run was read:
+  "Muse benchmark rerun archived" above; as submitted, the IFBench row was also to be read against the rerun).
 Each line is rebuilt from the steering block of the RH arm's seed-0 summary
 (`gfar_vs_gi_v2/steer/build_gfar_capeval_arms_1111.py`): an add arm is accepted only if the layer-norms file gives the
 layer norm that arm recorded (8085.24 gpt-oss, 75.002 Qwen), the cap only if the threshold file equals the recorded
@@ -1799,7 +1827,8 @@ measured only on its own task set. This run adds them. Written before any job wa
   The Muse Goodfire-axis array of the amendment: 15234624 (4 tasks, 2 h, `-p cs,cs2 --qos cs`), submitted 5:18 pm after
   commit c2cc1b7.
 - **Note 2026-11-10 ~6:00 pm (side-agent heads-up, forwarded by the user with "make a note of this"): Muse IFBench is
-  read against both unsteered runs.** The Muse `unsteered_rerun` (no steering, the recipe of the 2026-10-29 reference)
+  read against both unsteered runs.** *Withdrawn 2026-11-11 about 1:22 pm (user decision; "Muse benchmark rerun
+  archived" in the 2026-11-11 section): Muse benchmarks are read against the 2026-10-29 run only. Kept as history.* The Muse `unsteered_rerun` (no steering, the recipe of the 2026-10-29 reference)
   scored 65.3% on IFBench against 69.0%: −3.7 points, paired CI −7.7 to 0.0, McNemar p 0.099, 13 gains / 24 losses. The
   other three benchmarks are within 1.2 points (GSM8K +0.3, MMLU-Pro +1.1, HumanEval −1.2). The CI's upper end is exactly
   0.0, so by the letter of the reference rule above the original stays the reference; but a move of 3.7 points between two
@@ -1828,6 +1857,8 @@ measured only on its own task set. This run adds them. Written before any job wa
   (−5.7 / −5.3 / −8.3) and Goodfire −0.16 (−7.0) are lower than the 2026-10-29 unsteered run, not lower than the rerun
   (−2.0 / −1.7 / −4.7 and −3.3, CIs covering zero), so none is an IFBench loss under the note. No truncated share above
   0.7%. No arm changes dose-rule status. Qwen (15234399) and Gemma (15234463) outstanding.
+  *Restated 2026-11-11 (Muse benchmark rerun archived): against the 2026-10-29 run alone the three floors and Goodfire
+  −0.16 are IFBench losses by the retention rule, as are gi_v2 +0.04 / +0.08 / +0.16 from the earlier runs.*
 - **Result, Qwen (2026-11-10, job done 6:34 pm; FINDINGS "Qwen3.8-27B capability retention for the gi_v2 floor rungs").**
   `gi_floor_p50`, `gi_floor_p75`, `gi_floor_p95` are clean on all four benchmarks, as expected: every difference within
   2 points of unsteered (largest IFBench −2.0 at p95, CI −7.3 to +3.0), truncated shares at or below unsteered. One
