@@ -1674,6 +1674,17 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   honest hidden pass and no-code rate are within 10 points of unsteered on the pilot seeds is extended to the full
   seed count (Gemma 16, Qwen 12); doses outside it are reported from the pilot's capability columns and not extended
   unless the user asks. The choice uses capability columns only, never a hack column.
+  **Gemma pilot read (2026-11-11 4:35 pm MST; job 15213664, six tasks done by 4:17 pm on the B200, no OOM or
+  context-length error in any task; `rh/hard108/gfar_pilot_links/{pilot_summary_gfar_pilot.log,summary_gfar_pilot.json}`,
+  108 episodes per dose against Koby's 16-seed B200 unsteered arm, 1,728 episodes: honest hidden pass 39.7%, no code
+  0.0%):** honest hidden pass Δ / no-code Δ: −0.04 −2.2 / 0.0 (inside); −0.08 −10.1 / +0.9 (outside by 0.1); −0.16
+  −39.7 / +100.0 (every turn cut at the token budget, no submission); +0.04 −10.6 / 0.0 (outside by 0.6); +0.08 −19.4 /
+  0.0; +0.16 −38.7 / +2.8. By the rule only **−0.04** is extended to 16 seeds (`gfar/settings_gfar_ext.tsv`,
+  `gfar_L30_a-0.04/seed{1..15}`, pilot line with only the sample seed changed); no positive dose passes, so Gemma has
+  no positive Goodfire arm unless the user asks for one. The two near misses (−0.08, +0.04) are single-seed estimates
+  on a measure whose unsteered seed 0 alone is 46.2% against 39.7% pooled; they are put to the user, not extended on
+  my own. No hack column was read for the choice (the pilot summary prints the automatic proxy beside it: 18.5% /
+  18.5% at −0.04 / −0.08, 20.4% / 22.2% at +0.04 / +0.08, unsteered 20.2%; not used).
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
