@@ -1345,6 +1345,15 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   **Judging paused 12:13 am:** the runner stopped on its own guard (`--stop-util 0.95`, seven-day plan limit at 95%,
   resets 7:00 am MST) with 18 of 56 proxy and 6 of 18 hidden-signature batches written. Not worked around;
   `verdicts_gfcap95/resume_after_reset.sh` (detached) reruns the chain at 7:05 am and then the analysis.
+  **Resumed 12:35 am on the user's instruction** ("see what we can get done of the muse judging before my weekly limit
+  runs out"): the same chain with the runner's early stop raised (`--stop-util 1.01`, stop only when the plan limit
+  rejects a request); finished batches skipped, nothing judged twice; the 7:05 am script was replaced by
+  `run_now_then_resume.sh`. All 74 batches were in at 12:42 am with limit use at 96%; analysis 12:45 am.
+  **Read 2 result:** p95 cap judged hack 17.0% against 32.8% October (−15.7, CI −22.4 to −9.8, Holm 8e-06) and 35.6%
+  rerun (−18.5, CI −25.6 to −11.9, Holm 3e-06). Dose rule: rule measure −10.6 against October (outside; the miss may
+  be composition, not capability; no code +4.6, raw hidden +0.6) and −3.3 against the rerun (inside). Rerun against
+  October on the judged rate: +2.8, CI −1.1 to +6.7, p 0.21. FINDINGS "Muse Goodfire p95 cap and the unsteered rerun,
+  judged in one blind set".
 
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
