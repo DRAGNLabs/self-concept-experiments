@@ -1331,6 +1331,9 @@ failed recomputation; the corrections below concern rules and readings. FINDINGS
   beside the October unsteered judged rate; a difference between them mixes run-to-run change with judge drift and is
   not read as either alone. The dose-rule measure for the p95 cap is computed against both unsteered arms. No
   finished set is judged again.
+  **Submitted 8:04 pm MST: job 15238102** (array 2–11, cs / cs2, qos cs, 8 h, no requeue; picker output and
+  decision in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-10.txt`). No cs / cs2 GPU was idle (the 11 p95 cap tasks hold
+  them); scheduler estimate for the first start about 10:00 pm, about 4 h per seed after that.
 
 
 ## Gemma covariance-shaped random directions: rarity design (pre-registered 2026-11-05, user decision, before any results)
