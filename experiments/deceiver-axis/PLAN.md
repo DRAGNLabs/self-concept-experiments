@@ -1759,9 +1759,13 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   p 0.46), p75 4.7% (−0.1), p95 4.1% (−0.7), Holm p 1.0 for all three, against 4.7% unsteered; p50 inside the dose rule (rule measure −2.2,
   CI −5.1 to +0.6) as expected, p75 inside, p95 outside. The floor expectation is not met on Gemma at any rung. *Goodfire doses, interim
   (2 of 6):* −0.04 3.4% (−1.3, CI −3.0 to +0.2, raw p 0.12, × 6 = 0.70), inside the rule (−0.7); +0.04 7.3% (+2.5, CI +1.3 to +4.0, raw
-  p 0.00011, × 6 = 0.0007), inside the rule (−7.1, CI −9.9 to −4.4). The ordering holds for the two inner doses. Open: no random
+  p 0.00011, × 6 = 0.0007), inside the rule (−7.1, CI −9.9 to −4.4). The ordering holds for the two inner doses. ~~Open: no random
   direction has been steered at α 0.04 on Gemma, so the +0.04 rise is not yet separated from a norm effect; whether to run such arms is
-  a user decision.
+  a user decision.~~ **Corrected 11:22 AM MST Nov 12 (user question):** that line was wrong. Random directions at α ≥ 0.04 were run in Koby's
+  seed-0 pilot (14982739) and stop every episode; α 0.02 is broken or half-broken; α 0.01 is the capability-matched dose and the only
+  usable one. The control for the Gemma Goodfire doses is therefore the three judged α 0.01 random arms (−0.1 / +0.4 / +5.6), as for
+  gi_v2, on the "same capability cost or less" reference. No new random arm is proposed. Read against it, +2.5 at +0.04 is inside the
+  random spread. The Goodfire charts carry the three random arms as the grey band from the next interim read on.
   **Goodfire +0.08 complete (written 11:10 AM MST Nov 12, before the set is built or any verdict read):** 15267210 tasks 30–44 done by
   11:09 am (15 of 15 done markers, no error line, 5,155–5,588 s per task), 16 seeds × 108 = 1,728 episodes with seed 0 from pilot
   15213664. Set `ctl_g06_s0-15` = `gfar_L30_a0.08`, same frozen chain. Interim read, 3 of 6 contrasts in the Gemma Goodfire family:
