@@ -2143,6 +2143,17 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      measure outside by more than p95's 0.6 points, so the arm is expected outside the dose rule; the rung moves 50.7% of prompt and
      12.5% of generated positions. If the 12-seed arm is inside both clauses, it is the heaviest Goodfire cap on Muse that keeps
      capability on the rule and is read as such.
+     **Seeds complete, set build (written 2026-11-12 4:52 PM MST, before the set is built or any p90 episode is read).** All 11
+     extension tasks of 15292495 ended with their done marker between 3:41 and 4:46 pm, inside the 6 h 30 min limit (5 h 4 min to
+     6 h 8 min per seed); no seed was cut, so there is no continuation and no in-flight episode to count. 12 seeds × 45 problems
+     = 540 episodes. Build: `build_ladder_set.sh muse ctl_m01_s0-11 m01_s011 gf_cap_p90` (the builder of the p95 set, this arm
+     alone); judging: `run_chain.sh` copied from `verdicts_gfcap95` by sed (proxy then hidden, Sonnet rubric-judge, 6 at once,
+     detached). Analysis: part (A) of `run_gfcap95_analysis.sh` only (the gfar family against the October unsteered arm; parts
+     (B) and (C) used the archived unsteered rerun and are not run), family = the six judged Goodfire arms + `gf_cap_p90` + the
+     three random-direction add arms = 10 contrasts, as fixed above; `dose_rule_read.py` on hidden pass over all episodes and
+     no code (the measure of 2026-11-11, per "Sets not yet built or read"). The 10-contrast family keeps the three isotropic
+     random add arms because the rule above was written with them; whether they come off the Muse family is an open question
+     to the user and Koby, and this read does not settle it.
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /
