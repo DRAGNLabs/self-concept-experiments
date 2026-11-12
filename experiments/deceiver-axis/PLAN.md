@@ -1726,6 +1726,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   interim read is marked provisional and gives the raw p beside the p multiplied by the number of contrasts planned
   for its family (floor family 3; Goodfire family = 4 doses + extended cap rungs), with Holm computed when the
   family is complete; no submission, extension or rung choice uses a judged column of an arm read early.
+  **Floor p95 result (set `ctl_g01_s0-15`, judged 4:59–5:08 pm MST Nov 11; FINDINGS "Gemma 4 31B gi_v2 floor p95, judged"; interim, 1 of 3
+  floor contrasts):** judged hack 4.1% against 4.7% unsteered (−0.7, CI −3.2 to +1.7, raw p 0.63, × 3 = 1.0); dose rule outside on the rule
+  measure (−21.7, CI −26.7 to −17.0), no-code inside (+0.1). The expectation (floor raises hacking, largest at p95) is not met at this rung,
+  and the arm is not a floor at equal capability. p75 and p50 run as queued; Holm over the three when both are judged.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
@@ -1859,6 +1863,9 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      are extended first, any further usable rung on the user's word (15 B200 tasks of about 1 h 45 min each per
      rung). If no rung is usable, no Goodfire cap is usable on Gemma at this band and nothing is extended. Restore
      the full p25 arm: `settings_gfar_cap_p25.tsv` lines 2–16, the 15216111 command with `--array=1-15`.
+     **p25 pilot read (5:13 pm MST Nov 11, 15264564_0 complete, `analysis_gfcap_pilot/summary_p25_1711.json`):** not usable. No code in
+     108 of 108 episodes and 108 of 108 turns cut at the token budget (unsteered seed 0: 0% and 0 of 334 turns); 100,765 reasoning characters
+     per turn against 23,533. p50 / p75 / p95 are read when their tasks complete; nothing is extended before then.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with

@@ -55,8 +55,12 @@ X: dict = {}
 # Cap arms as side points off the dose axis, in rung order (p25 = Koby's arm; p35 = our lighter rung, array 15104078, 2026-11-06;
 # p45 / p50 / p65 = Koby's cap-ladder run, job 15125968, judged 2026-11-09). Only the arms present in the analysis file are drawn.
 CAPS = [("cap_p25_L20-38", "cap\np25", "cap p25 L20–38"), ("cap_p35_L20-38", "cap\np35", "cap p35 L20–38"), ("cap_p45_L20-38", "cap\np45", "cap p45 L20–38"), ("cap_p50_L20-38", "cap\np50", "cap p50 L20–38"), ("cap_p65_L20-38", "cap\np65", "cap p65 L20–38")]  # (arm, tick, table label); the band is named in the xlabel
-CAP_LABEL = {a: col for a, _, col in CAPS}
+# Floor rungs (the inverse cap: projection clipped from below at tau; our array 15206804, one blind set per rung from 2026-11-11),
+# drawn after the caps behind a second dotted rule.
+FLOORS = [("floor_p50_L20-38", "floor\np50", "floor p50 L20–38"), ("floor_p75_L20-38", "floor\np75", "floor p75 L20–38"), ("floor_p95_L20-38", "floor\np95", "floor p95 L20–38")]
+CAP_LABEL = {a: col for a, _, col in CAPS + FLOORS}  # every side point (caps and floors)
 CAP_ARMS: list = []  # the cap arms present in the analysis file, in rung order (filled by set_arms)
+FLOOR_ARMS: list = []  # the floor arms present, in rung order
 SIDE_GAP = 0.8  # x gap between the last dose and the first side point
 
 
@@ -66,7 +70,7 @@ def dose(arm: str) -> float:
 
 def set_arms(arms: list) -> None:
     """Dose arms in dose order, then the cap arm as a side point off the dose axis."""
-    global ARMS, COL_LABELS, X, CAP_ARMS
+    global ARMS, COL_LABELS, X, CAP_ARMS, FLOOR_ARMS
     doses = sorted([a for a in arms if a not in CAP_LABEL and not is_random(a)], key=dose)  # random arms are not columns: steering ones are the grey band of (a)
     ARMS = [(a, "0\nunsteered" if a == "unsteered" else f"{dose(a):+.2f}".replace("-", "−")) for a in doses]
     X = {arm: float(i) for i, (arm, _) in enumerate(ARMS)}
@@ -74,6 +78,11 @@ def set_arms(arms: list) -> None:
     for i, a in enumerate(CAP_ARMS):
         ARMS.append((a, next(tick for arm, tick, _ in CAPS if arm == a)))
         X[a] = len(doses) - 1 + SIDE_GAP + 0.6 + i
+    FLOOR_ARMS = [a for a, _, _ in FLOORS if a in arms]
+    start = (max(X[a] for a in CAP_ARMS) if CAP_ARMS else len(doses) - 1) + SIDE_GAP + 0.6
+    for i, a in enumerate(FLOOR_ARMS):
+        ARMS.append((a, next(tick for arm, tick, _ in FLOORS if arm == a)))
+        X[a] = start + i
     COL_LABELS = ["unsteered" if a == "unsteered" else CAP_LABEL.get(a, f"L30 {lab}") for a, lab in ARMS]
 
 
@@ -109,15 +118,18 @@ def style(ax, ylabel: str):
     ax.yaxis.grid(True, color=RULE, lw=0.6)
     ax.set_axisbelow(True)
     ax.set_ylabel(ylabel, color=INK2, fontsize=9.5)
-    heaviest = heaviest_rungs(CAP_ARMS, [])
+    heaviest = heaviest_rungs(CAP_ARMS, FLOOR_ARMS)
     ax.set_xticks([X[a] for a, _ in ARMS])
     ax.set_xticklabels([label + ("\nheaviest" if a in heaviest else "") for a, label in ARMS], color=INK, fontsize=9.5)
     ax.set_xlim(-0.5, max(X.values()) + 0.5)
-    if CAP_ARMS:
-        ax.axvline(X[CAP_ARMS[0]] - SIDE_GAP / 2 - 0.3, color=RULE, lw=0.8, ls=":", zorder=1)
+    for group in (CAP_ARMS, FLOOR_ARMS):
+        if group:
+            ax.axvline(X[group[0]] - SIDE_GAP / 2 - 0.3, color=RULE, lw=0.8, ls=":", zorder=1)
     label = "dose α at layer 30 (units of the mean residual norm), gi_v2 vector; doses equally spaced, not to scale"
     if CAP_ARMS:
         label += "; cap rungs beside, τ at the unsteered percentile over layers 20–38 (lower percentile = heavier clamp)"
+    if FLOOR_ARMS:
+        label += "; floor rungs after them, same band (higher percentile = heavier clamp)"
     wrapped_xlabel(ax, label)
 
 
@@ -138,16 +150,16 @@ def main() -> None:
     SP, NC, AUTO = d["all"]["shown_pass"], d["all"]["no_code"], d["all"]["hack_proxy"]
     HP, hp_label, honest = capability(d["all"])  # the dose rule's measure; raw hidden pass only from a file without it
     arms, doses = [a for a, _ in ARMS], [a for a, _ in dose_arms()]
-    groups = [CAP_ARMS] if CAP_ARMS else []
+    groups = [g for g in (CAP_ARMS, FLOOR_ARMS) if g]
     labelled = list(zip(arms, COL_LABELS))
     hollow = fewer_seeds(J, arms + random_arms(J))
-    axis_arms = "steered and cap gi_v2 arms" if CAP_ARMS else "steered gi_v2 arms"
+    axis_arms = "steered, cap and floor gi_v2 arms" if FLOOR_ARMS else "steered and cap gi_v2 arms" if CAP_ARMS else "steered gi_v2 arms"
     n_contrasts = len(J["contrasts"])
 
-    fig_w = 12.4 + 1.2 * max(0, len(CAP_ARMS) - 1)  # a rung wider per extra cap rung
+    fig_w = 12.4 + 1.2 * max(0, len(CAP_ARMS) + len(FLOOR_ARMS) - 1)  # a rung wider per extra cap or floor rung
     rows = table_rows(d, arms, J, UP, DOWN, PX, AUTO, HP, NC, SP, hp_label, honest, f"{n_contrasts} contrasts",
                       hidden_set="hidden-pass set (hard-code signature)", clamp_model="Gemma")
-    notes = chart_notes(J, HP, NC, honest, labelled, hollow, axis_arms, bool(CAP_ARMS), False, width=int(fig_w * 14.2))
+    notes = chart_notes(J, HP, NC, honest, labelled, hollow, axis_arms, bool(CAP_ARMS), bool(FLOOR_ARMS), width=int(fig_w * 14.2))
     fig, ax_a, ax_b, ax_t, fig_h, notes_y = make_figure(fig_w, len(rows), len(notes))
 
     style(ax_a, "share of episodes (%)")
@@ -160,6 +172,8 @@ def main() -> None:
                    loc="left", color=INK, fontsize=10, pad=6)
 
     cap_title = "the p25 cap" if CAP_ARMS == ["cap_p25_L20-38"] else "the cap dose ladder (τ at the unsteered " + " / ".join(a.split("_")[1] for a in CAP_ARMS) + ")"
+    if FLOOR_ARMS:
+        cap_title += " and the floor " + ("rung" if len(FLOOR_ARMS) == 1 else "ladder") + " (" + " / ".join(a.split("_")[1] for a in FLOOR_ARMS) + ")"
     title = fig.suptitle(f"Gemma 4 31B, hard108 dose scan at layer 30 (gi_v2 vector) and {cap_title} over layers 20–38:\n"
                          "blind Sonnet rubric-v3 judging of every proxy episode and every hidden-pass episode with a hard-code signature",
                          x=0.07, ha="left", color=INK, fontsize=12.5, y=1 - 0.17 / fig_h)
