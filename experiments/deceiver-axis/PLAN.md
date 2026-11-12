@@ -1915,6 +1915,18 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   stays there only while its estimate beats dw. Everything else as in the entry above: hardware per seed in `HARDWARE.tsv`, same
   reading, same blind set at 16 seeds; in the per-seed hardware split the H100-pair seeds are listed as their own group beside the
   A100-pair seeds and the B200 pilot seed.
+  **Cap p75 seed 5 after a GPU memory error (written 2026-11-12 3:17 PM MST, before any resubmission or file change):**
+  `15308022_11` (seed 5, dw-1-4) stopped at 3:13:03 pm with `CUDA error: Invalid access of peer GPU memory over nvlink or a hardware
+  error` after 40 of 108 episodes. Cause: the A100 at bus 0A:00.0 of dw-1-4; the `nvidia-smi` banner of the task that got the same
+  pair 17 s later (`15308022_15`, seed 9) shows 2 uncorrectable memory errors on that card where the 1:37 pm banner showed 0. No
+  other task has an error line. A node fault, for ORC (the user's ticket), not a fault of the run. *Seed 5:* the 40 finished
+  episodes are complete records and are kept; the remaining 68 are run by one new task on the same settings line and the same
+  placement (dw, two A100s) with `--exclude=dw-1-4`; the harness resumes by `example_id`. Before that the reasoning records of the
+  26 episodes that were in flight (no episode record) are taken out of the sidecar into a backup file outside the sidecar name
+  pattern, so the sidecar holds finished episodes only. The seed is marked as resumed in `HARDWARE.tsv` and with the result. Our own
+  waiting cap p95 array may be ordered behind this one task so the p75 arm completes first. *Seed 9* stays on the affected pair and
+  is watched (an uncorrectable error ends the process, it does not alter output); if it stops with the same error it is resumed the
+  same way and dw-1-4 is excluded on our waiting arrays. Nothing else changes: same blind set at 16 seeds, same reading.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
