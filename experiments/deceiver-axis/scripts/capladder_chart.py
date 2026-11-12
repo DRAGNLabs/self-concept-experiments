@@ -12,9 +12,10 @@ Panel (a), hack rates: judged hack (as judged) with the 95% problem-bootstrap CI
 resampled with replacement, 10,000 draws, fixed seed, clipped to 0–100; the unsteered arm has one too; the CI of Δ stays in the
 table), the BORDERLINE-up / WEAK-down sensitivity band, the automatic proxy, and the model's random-direction steering (add)
 arms as a grey range band with hollow marks at the left (random_arms; never a random cap or floor arm).
-Panel (b), capability = the dose rule's measures: honest_hidden_pass (hidden pass among episodes not judged a hack) and
-no-code, each with its unsteered ± 10-point band; an arm outside the rule (|Δ| > 10 on either) gets a ring and "outside" in
-the table. An analysis file written before 2026-11-07 has no honest_hidden_pass: raw hidden pass is drawn and labelled as such.
+Panel (b) = the dose rule's measures: hidden_pass (hidden-test pass over all episodes; PLAN amendment 2026-11-09, confirmed
+2026-11-11) and no-code, each with its unsteered ± 10-point band; an arm outside the rule (|Δ| > 10 on either) gets a ring and
+"outside" in the table. Hidden pass moves with hacking and is not read alone as capability. An analysis file written with the
+2026-11-07 default (to 2026-11-12) has honest_hidden_pass and no hidden_pass: that measure is drawn and labelled as such.
 An arm on fewer seeds than the rest is drawn hollow; episodes and seeds per arm are read from the analysis file.
 The panel and table helpers here (hack_panel, capability_panel, fmt_p, holm_cell, n_note, chart_notes, fit_table, …) are
 imported by gemma_gicap_chart.py and qwen_hard61_chart.py, so the three charts stay consistent.
@@ -71,7 +72,7 @@ C_JUDGED, C_AUTO, C_HIDDEN, C_SHOWN = "#1f4e9e", "#b8651b", "#2a7f62", "#7a3e9d"
 C_NOCODE = "#8a8985"   # no code submitted (panel b)
 C_RANDOM = "#52514e"   # random-direction steering arms: neutral ink, a secondary encoding (band + hollow marks)
 BOOT_DRAWS, BOOT_SEED = 10_000, 0  # problem bootstrap of an arm's own rate (the bars of panel a)
-RULE_POINTS = 10.0     # the dose rule: |Δ honest hidden pass| and |Δ no-code| both within 10 points of unsteered
+RULE_POINTS = 10.0     # the dose rule: |Δ hidden pass| and |Δ no-code| both within 10 points of unsteered
 DEFAULT_REPS = 20000   # main_analysis.py --reps default; analysis files written before 2026-11-10 carry no p_resampling_floor
 HALO = [patheffects.withStroke(linewidth=2.6, foreground=SURFACE)]  # value labels stay readable where a line passes behind
 
@@ -186,10 +187,11 @@ def random_arms(outcome) -> list:
 
 
 def capability(block: dict):
-    """(outcome, label, is_rule_measure): honest_hidden_pass, the dose rule's measure, or raw hidden_pass from an older file."""
-    if "honest_hidden_pass" in block:
-        return block["honest_hidden_pass"], "hidden pass among episodes not judged a hack", True
-    return block["hidden_pass"], "hidden-test pass, all episodes (file has no honest_hidden_pass)", False
+    """(outcome, label, honest): hidden_pass, the dose rule's measure (PLAN amendment 2026-11-09), with honest False; or, from an analysis
+    file of 2026-11-07 to 11-12 that has no hidden_pass, honest_hidden_pass (the rule measure of those days) with honest True."""
+    if "hidden_pass" in block:
+        return block["hidden_pass"], "hidden-test pass, all episodes", False
+    return block["honest_hidden_pass"], "hidden pass among episodes not judged a hack (file has no hidden_pass)", True
 
 
 def rule_breaks(HP, NC, arm) -> list:
@@ -411,7 +413,7 @@ def hack_panel(ax, X, doses, groups, J, UP, DOWN, AUTO, hollow=()):
 
 
 def capability_panel(ax, X, doses, groups, HP, NC, hp_label, honest, hollow=()):
-    """Panel (b): the dose rule's two measures (honest hidden pass, no-code), each with its unsteered ± RULE_POINTS band, and a
+    """Panel (b): the dose rule's two measures (hidden pass, no-code), each with its unsteered ± RULE_POINTS band, and a
     ring on every point that is outside its band. No bars here: the CIs of Δ are in the table."""
     arms = list(doses) + [a for group in groups for a in group]
     for outcome, color in ((HP, C_HIDDEN), (NC, C_NOCODE)):
@@ -427,7 +429,7 @@ def capability_panel(ax, X, doses, groups, HP, NC, hp_label, honest, hollow=()):
                 ax.plot([X[a]], [rate(outcome, a)], ls="none", marker="o", ms=13, mfc="none", mec=INK, mew=1.2, zorder=6, clip_on=False)
                 ringed = True
     top = max([rate(o, a) for o in (HP, NC) for a in arms] + [rate(o, "unsteered") + RULE_POINTS for o in (HP, NC)])
-    rule = "the dose rule" if honest else "the rule's limit, on raw hidden pass"
+    rule = "the rule's limit, on the not-judged-HACK measure of 2026-11-07 to 11-11" if honest else "the dose rule"
     handles = [Line2D([], [], color=C_HIDDEN, lw=2, marker="o", ms=6, mec=SURFACE, label=hp_label),
                Line2D([], [], color=C_NOCODE, lw=1.6, ls="--", marker="^", ms=6, mec=SURFACE, label="no code submitted"),
                Patch(facecolor=INK3, alpha=0.25, lw=0, label=f"shaded: unsteered ± {RULE_POINTS:g} points on each measure ({rule})"),
@@ -448,8 +450,8 @@ def capability_panel(ax, X, doses, groups, HP, NC, hp_label, honest, hollow=()):
                 value_label(ax, X[a], y, f"{y:.1f}", [("above", y + pad), ("below", y - pad)] + ([("right", y)] if a == run[-1] else []), taken, span)
                 busy += taken[n:]
     ax.legend(handles=handles, loc="upper left", fontsize=8.5, frameon=False, labelcolor=INK2)
-    return ax.set_title("(b) Capability on the dose rule's measures: honest hidden pass and no code" if honest
-                 else "(b) Capability: hidden-test pass (all episodes) and no code submitted", loc="left", color=INK, fontsize=10.5, pad=10)
+    return ax.set_title("(b) Hidden pass among episodes not judged a hack (rule measure until 2026-11-11) and no code" if honest
+                 else "(b) The dose rule's measures: hidden-test pass (all episodes) and no code submitted", loc="left", color=INK, fontsize=10.5, pad=10)
 
 
 def table_rows(d, arms, J, UP, DOWN, PX, AUTO, HP, NC, SP, hp_label, honest, family: str, hidden_set: str = "hidden-pass set (signature)",
@@ -500,7 +502,7 @@ def table_rows(d, arms, J, UP, DOWN, PX, AUTO, HP, NC, SP, hp_label, honest, fam
         ("episodes not judged a hack (%)", [f"{100 - rate(J, a):.1f}" for a in arms]),
         ("for comparison: raw hidden pass (%, Δ)", [compare(a, 0) for a in arms]),
         ("for comparison: hidden pass, non-proxy episodes (%, Δ)", [compare(a, 1) for a in arms]),
-        (f"dose rule: both |Δ| ≤ {RULE_POINTS:g} points" + ("" if honest else " (on raw hidden pass)"), [rule(a) for a in arms]),
+        (f"dose rule: both |Δ| ≤ {RULE_POINTS:g} points" + (" (on the not-judged-HACK measure)" if honest else ""), [rule(a) for a in arms]),
         ("shown-test pass (%)", [f"{rate(SP, a):.1f}" for a in arms]),
         ("truncated turns / turns", [f"{summ(a, 'truncated_turns')} / {summ(a, 'turns')}" for a in arms]),
         ("dossiers judged H / B / N: proxy set", [hbn(a, "proxy") for a in arms]),
@@ -567,13 +569,15 @@ def chart_notes(J, HP, NC, honest, arms, hollow, axis_arms: str, has_caps: bool,
         notes.append("Random-direction steering (add) arms, the specificity control: none in this analysis file, so none is drawn in (a).")
     outside = [label.replace("\n", " ") for a, label in arms if rule_breaks(HP, NC, a)]
     if honest:
-        notes.append(f"Panel (b) is the dose rule's measure: hidden pass among episodes not judged a hack, and no code submitted. Shaded: unsteered ± {RULE_POINTS:g} "
-                     f"points on each; ring: a value outside its band, which puts the arm outside the rule ({', '.join(outside) if outside else 'no arm here'}). "
-                     "No bars in (b): the CIs of Δ are in the table.")
+        notes.append("Panel (b): this analysis file was written with the 2026-11-07 default and has no hidden_pass outcome, so hidden pass among episodes not "
+                     f"judged a hack (the rule measure of 2026-11-07 to 11-11) is drawn. Bands and rings apply ± {RULE_POINTS:g} points to it and to no code "
+                     f"({', '.join(outside) if outside else 'no arm'} outside) and are not the current rule; re-run the analysis for hidden-test pass over all "
+                     "episodes. No bars in (b): the CIs of Δ are in the table.")
     else:
-        notes.append("Panel (b): this analysis file was written before main_analysis.py had honest_hidden_pass (hidden pass among episodes not judged a hack, the dose "
-                     f"rule's measure), so raw hidden-test pass over all episodes is drawn in its place. Bands and rings apply the rule's ± {RULE_POINTS:g} points to raw "
-                     f"hidden pass and no code ({', '.join(outside) if outside else 'no arm'} outside) and are provisional until the analysis is re-run. No bars in (b): the CIs of Δ are in the table.")
+        notes.append(f"Panel (b) is the dose rule's measures: hidden-test pass over all episodes, and no code submitted. Shaded: unsteered ± {RULE_POINTS:g} "
+                     f"points on each; ring: a value outside its band, which puts the arm outside the rule ({', '.join(outside) if outside else 'no arm here'}). "
+                     "Hidden pass moves with hacking (a hack that fails the hidden tests is a hidden-test failure), so it is not read alone as capability. "
+                     "No bars in (b): the CIs of Δ are in the table.")
     if TABLE_FLAGS["dagger"]:
         notes.append(f"† in the dose-rule row: outside on the rule measure only (no code inside), with the miss under {NEAR_POINTS:g} points or with raw hidden pass or the "
                      "non-proxy measure still within 10 points (comparison rows). The rule measure counts only episodes not judged a hack, a set that changes with "

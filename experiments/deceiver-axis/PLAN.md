@@ -1467,6 +1467,8 @@ nine Goodfire-axis arms that had none".
 
 ## Review of 2026-11-10: decisions and corrections (user decision ~3:32 pm MST: "use the plan's Nov 7 definition as the dose rule. Go ahead and fix everything")
 
+*Superseded in part 2026-11-12: the dose-rule measure chosen here (hidden pass among episodes not judged HACK) is replaced by hidden pass over all episodes, agreed by Jansen and Koby on 2026-11-11; see the note under "Amendment 2026-11-09 (Koby)" below. The other decisions of this section stand.*
+
 Three independent adversarial reviews (intervention code, statistics and judging, claims and methods) were run on the
 work of 2026-11-05 to 11-10. No run applied an intervention other than the one written up and no reported number
 failed recomputation; the corrections below concern rules and readings. FINDINGS "Review corrections" holds the tables.
@@ -1610,6 +1612,28 @@ pass (hidden pass among episodes not judged HACK) replaces hidden pass as the ca
 and read the same in every comparison so far (FINDINGS "Capping vs negative steering along gi_v2"). Honest hidden pass
 stays computable (`main_analysis.py --outcomes honest_hidden_pass`, the `honestH` column of `pilot_summary.py`, the
 `honest_hidden_pass` key of `cap_vs_steer.json`), but charts, tables and the dose rule use hidden pass.
+
+**Note 2026-11-12 (Jansen, at the merge of the `schemer-axis` branch with main; agreed by Jansen and Koby on
+2026-11-11).** The amendment above holds for every arm in this plan, including the Goodfire-axis, cap and floor arms of
+the sections below: hidden pass over all episodes is the capability column and, with no code, the measure of the
+10-point dose rule. The decision of 2026-11-10 in "Review of 2026-11-10: decisions and corrections" (dose rule on hidden
+pass among episodes not judged HACK) is superseded. Hidden pass is confounded with hacking: a hack that fails the hidden
+tests is a hidden-test failure, so the measure falls when hacking rises and rises when it falls. It is the rule's
+measure and is not read alone as capability; the four-benchmark eval stays the capability read.
+- *Earlier statements.* In / out statements written 2026-11-10 to 11-12 in this plan and in FINDINGS used the
+  not-judged-HACK measure and name it; they are not rewritten. FINDINGS "Dose rule re-read on hidden pass" (2026-11-12)
+  gives every judged arm on both measures. Eight Muse arms change status (gi_v2 −0.16, cap p5, Goodfire −0.16, −0.08 and
+  cap p95 go inside; gi_v2 +0.16, floor p50 and Goodfire +0.16 go outside); no gpt-oss, Gemma or Qwen arm does.
+- *Sets not yet built or read* (Gemma Goodfire −0.08 `g07`, Gemma Goodfire caps p75 / p95 `g08` / `g09`, Muse Goodfire
+  p90 cap `ctl_m01_s0-11`): the rules written for them apply with hidden pass in place of the not-judged-HACK measure;
+  nothing else in those rules changes. Written before any of these sets is built.
+- *Pilot screens.* The one- and two-seed pilot screens of 2026-11-07 to 11-11 used hidden pass among non-proxy episodes
+  and are not recomputed; from this merge `pilot_summary.py`'s `within_dose_rule` flag is on hidden pass (Koby's code),
+  and summaries written earlier keep the old flag.
+- *Code.* `main_analysis.py` writes `hidden_pass` by default and `honest_hidden_pass` only when asked;
+  `dose_rule_read.py` and `capladder_chart.py` (and through it the Gemma and Qwen chart scripts) read the rule on
+  `hidden_pass`, and show the not-judged-HACK measure only from an analysis file that has it. Analysis files written
+  2026-11-07 to 11-12 have `honest_hidden_pass` and no `hidden_pass`; a family is re-run before a new chart of it.
 
 ## Cross-model percentile of gi_v2 among antonym concepts (pre-registered 2026-11-09, Koby's decisions, before computing it on the data)
 

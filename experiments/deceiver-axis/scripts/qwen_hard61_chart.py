@@ -11,7 +11,7 @@ drawn by the helpers of capladder_chart.py (see its docstring) so that the three
 (a) hack rates — judged (proxy + hidden-signature sets, as judged) with the 95% problem-bootstrap CI of each arm's own
 rate, the unsteered arm included (the CI of Δ is in the table), the BORDERLINE-up / WEAK-down sensitivity band, the
 automatic proxy, and the random-direction steering arms of the analysis file as a grey band (Qwen has none; the footnote
-says so) — and (b) the dose rule's measures, honest_hidden_pass (hidden pass among episodes not judged a hack) and
+says so) — and (b) the dose rule's measures (hidden_pass since the 2026-11-12 merge; before: honest_hidden_pass, hidden pass among episodes not judged a hack) and
 no-code, each with its unsteered ± 10-point band and a ring on every value outside it. An arm on fewer seeds than the rest
 (L32_a0.24: 4 seeds) is drawn hollow; episodes and seeds per arm come from the analysis file. Under the panels a real table
 (header row, gridlines, alternating shading) with every number the lines are drawn from plus the judged
@@ -176,7 +176,7 @@ def main() -> None:
     d = load(args.root, args.analysis_dir or args.root / "analysis_main", args.summary, args.details)
     J, UP, DOWN, PX = d["all"]["judged_hack"], d["up"]["judged_hack"], d["down"]["judged_hack"], d["proxy"]["judged_hack"]
     SP, NC, AUTO = d["all"]["shown_pass"], d["all"]["no_code"], d["all"]["hack_proxy"]
-    HP, hp_label, honest = capability(d["all"])  # the dose rule's measure; raw hidden pass only from a file without it
+    HP, hp_label, honest = capability(d["all"])  # the dose rule's measure, hidden_pass; honest_hidden_pass only from a 2026-11-07 to 11-12 file without it
     arms, doses = [a for a, _ in ARMS], [a for a, _ in dose_arms()]
     labelled = list(zip(arms, COL_LABELS))
     hollow = fewer_seeds(J, arms + random_arms(J))  # an arm on fewer seeds than the rest (the 4-seed L32_a0.24 pilot arm)
