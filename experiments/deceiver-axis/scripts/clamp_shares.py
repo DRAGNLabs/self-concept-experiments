@@ -32,6 +32,7 @@ SIDE = {
     ("Muse", "gi_v2"): N + "/muse_glimmer/gi_v2/thresholds/gi_contrast",
     ("Muse", "gfar"): GF + "/muse/gfar",
     ("Gemma", "gi_v2"): G + "/gemma4_31b_gi_v2/thresholds/gi_v2_contrast",
+    ("Gemma", "gfar"): GF + "/gemma4_31b/gfar",
     ("Qwen", "gi_v2"): G + "/qwen38_27b_gi_v2/thresholds/gi_v2_contrast",
     ("Qwen", "gfar"): GF + "/qwen38_27b/gfar",
 }
@@ -72,6 +73,10 @@ ARMS = [
     ("Gemma", "gi_v2", "floor", 50, GE + "/floor_p50_L20-38", GEF + "/gi_v2_contrast_p50.json"),
     ("Gemma", "gi_v2", "floor", 75, GE + "/floor_p75_L20-38", GEF + "/gi_v2_contrast_p75.json"),
     ("Gemma", "gi_v2", "floor", 95, GE + "/floor_p95_L20-38", GEF + "/gi_v2_contrast_p95.json"),
+    ("Gemma", "gfar", "cap", 25, GE + "/gfar_cap_p25_L20-38", GF + "/gemma4_31b/gfar_p25.json"),
+    ("Gemma", "gfar", "cap", 50, GE + "/gfar_cap_p50_L20-38", GF + "/gemma4_31b/gfar_p50.json"),
+    ("Gemma", "gfar", "cap", 75, GE + "/gfar_cap_p75_L20-38", GF + "/gemma4_31b/gfar_p75.json"),
+    ("Gemma", "gfar", "cap", 95, GE + "/gfar_cap_p95_L20-38", GF + "/gemma4_31b/gfar_p95.json"),
     ("Qwen", "gi_v2", "cap", 25, G + "/qwen38_27b_gi_v2/rh/qwen_hard61/cap_p25_L22-42", None),
     ("Qwen", "gi_v2", "floor", 50, QW + "/floor_p50_L22-42", None),
     ("Qwen", "gi_v2", "floor", 75, QW + "/floor_p75_L22-42", None),

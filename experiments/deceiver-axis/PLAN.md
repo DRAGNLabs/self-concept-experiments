@@ -1893,6 +1893,11 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      zero and it is inside the dose rule.
      **Submitted 6:15 pm MST:** 15269005 `schemer-gfar-cap-gemma-ext`, array 0–29, cs3 B200 qos cs (picker row 1), 24 GB host memory, 3 h 45 min
      (p75) / 3 h (p95), no requeue, nice 100. FINDINGS "Gemma 4 31B Goodfire-axis (gfar) cap pilot".
+     **Shares of positions moved, written 8:31 pm MST before any blind set of these rungs is built** (`clamp_shares.py`, now with the four
+     Gemma Goodfire rungs; open-loop, on unsteered activations, mean over band layers 20–38; thresholds and quantiles from 4 unsteered
+     `ib_solvhard_s0` episodes at 16,384 tokens, the arms run hard108 at 32,768): p75 moves 27.6–28.1% of prompt and 26.4% of generated
+     positions, p95 11.3–13.3% and 3.6–6.1%; the two unusable pilot rungs, p50 47.5% / 51.7% and p25 70.5% / 75.8%. The per-arm reads
+     state these shares; no rung is called light or heavy from its percentile.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
