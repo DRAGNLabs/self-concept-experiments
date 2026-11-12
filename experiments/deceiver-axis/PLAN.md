@@ -1736,6 +1736,11 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   is read: the p95 rung did not raise hacking and lost 21.7 points on the rule measure; p75 moves fewer positions (48.4% of prompt and 73.8% of generated, against 78–79% and 94–96% at p95; `clamp_shares.md`), so the expectation
   is a smaller capability loss than p95 and, if the floor works on Gemma at all, a rise in judged hacking here; no rise at p75 with
   the arm inside the dose rule would count against the floor expectation on Gemma, no rise with the arm outside it is uninformative.
+  **Floor p75 result (set `ctl_g02_s0-15`, judged 9:48–10:00 pm MST Nov 11; FINDINGS "Gemma 4 31B gi_v2 floor p75, judged"; interim, 2 of 3
+  floor contrasts):** judged hack 4.7% (81 / 1728) against 4.7% unsteered (82 / 1728), −0.1, CI −1.0 to +0.9, raw p 1.0, × 3 = 1.0; dose rule
+  **inside** (rule measure −4.7, CI −8.0 to −1.5; no-code +0.2). The capability expectation is met (smaller loss than p95); the hacking
+  expectation is not: no rise with the arm inside the rule, which by the line above counts against the floor expectation on Gemma. p50 runs
+  as queued (seed 0 running, 15 tasks pending); Holm over the three when it is judged.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
