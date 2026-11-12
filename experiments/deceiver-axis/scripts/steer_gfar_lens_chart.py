@@ -1,12 +1,14 @@
 """Chart of steer_gfar_lens_extract.py output: per-layer percentiles of the per-token gfar projection, unsteered vs gi_v2-steered.
 
 The chart shows all episodes: steered minus unsteered (the same percentile of each), and that difference divided by
-the unsteered p10-p90 width at the layer; the dashed line is the injected vector carried unchanged, coefficient x
-cos(gi_v2 at the steer layer, gfar at the layer). The json also holds the percentiles of judged hacks (verdict HACK =
+the unsteered p10-p90 width at the layer; with --component-lens (the steered_gfar_component arm: only gi_v2's
+component along gfar at the steer layer is added) also that arm's normalised difference and the component arm minus
+the full arm. Each dashed line is the arm's injected vector carried unchanged, coefficient x (injected unit vector .
+gfar at the layer). The json also holds the percentiles of judged hacks (verdict HACK =
 STRONG or WEAK) and the rest (unjudged episodes count as not hack) when --verdicts is given. Each panel's y-axis is
 clipped to the range of its p2-p98 lines. Writes <out>.png and <out>.json; --rechart redraws the png from <out>.json.
 
-    python scripts/steer_gfar_lens_chart.py --lens <dir of seed<N>.pt> --verdicts <as_judged.json> --title "gpt-oss-120b" --out <stem>
+    python scripts/steer_gfar_lens_chart.py --lens <dir of seed<N>.pt> [--component-lens <dir>] --verdicts <as_judged.json> --title "gpt-oss-120b" --out <stem>
     python scripts/steer_gfar_lens_chart.py --rechart --title "gpt-oss-120b" --out <stem>
 """
 import argparse
@@ -28,6 +30,7 @@ from steer_gfar_lens_extract import load_gfar_units
 
 Group = Literal["combined", "hack", "rest"]
 Condition = Literal["unsteered", "steered"]
+Arm = Literal["steered", "steered_gfar_component"]
 CONDITIONS: tuple[Condition, ...] = ("unsteered", "steered")
 PERCENTILES = np.array([*range(0, 10), *range(10, 91, 10), *range(91, 101)])
 DISPLAYED_PERCENTILES = [*range(0, 10, 2), 20, 40, 50, 60, 80, *range(92, 101, 2)]
@@ -39,12 +42,12 @@ UPPER_PERCENTILES = [percentile for percentile in DISPLAYED_PERCENTILES if perce
 
 
 def percentile_color(percentile: int) -> tuple[float, float, float, float]:
-    """Ordinal steps: blues darken toward p0, reds darken toward p100, so neighbouring tail lines stay distinguishable."""
+    """Ordinal steps, darkest next to the (black) median and lightening toward p0 (blues) and p100 (reds)."""
     if percentile < 50:
         rank_from_median = len(LOWER_PERCENTILES) - 1 - LOWER_PERCENTILES.index(percentile)
-        return plt.get_cmap("Blues")(0.35 + 0.6 * rank_from_median / (len(LOWER_PERCENTILES) - 1))
+        return plt.get_cmap("Blues")(0.95 - 0.65 * rank_from_median / (len(LOWER_PERCENTILES) - 1))
     rank_from_median = UPPER_PERCENTILES.index(percentile)
-    return plt.get_cmap("Reds")(0.35 + 0.6 * rank_from_median / (len(UPPER_PERCENTILES) - 1))
+    return plt.get_cmap("Reds")(0.95 - 0.65 * rank_from_median / (len(UPPER_PERCENTILES) - 1))
 
 
 class GroupPercentiles(TypedDict):
@@ -61,12 +64,14 @@ class Lens(TypedDict):
     alpha: float
 
 
-def load_lens(lens_dir: Path) -> Lens:
+def load_lens(lens_dir: Path, arm: Arm) -> Lens:
+    """The unsteered projections and the arm's, the latter under the "steered" condition key."""
     seed_files = sorted(lens_dir.glob("seed*.pt"), key=lambda path: int(path.stem.removeprefix("seed")))
     seeds = [torch.load(path, map_location="cpu", weights_only=False) for path in seed_files]
     episode_counts = np.cumsum([0] + [len(seed["example_id"]) for seed in seeds])
     return {
-        "projections_by_condition": {condition: torch.cat([seed[condition] for seed in seeds], dim=1).numpy() for condition in CONDITIONS},
+        "projections_by_condition": {"unsteered": torch.cat([seed["unsteered"] for seed in seeds], dim=1).numpy(),
+                                     "steered": torch.cat([seed[arm] for seed in seeds], dim=1).numpy()},
         "token_episode": np.concatenate([episode_base + np.repeat(np.arange(len(seed["example_id"])), np.diff(seed["token_offsets"]))
                                          for episode_base, seed in zip(episode_counts, seeds)]),
         "verdict_keys": [key for seed in seeds for key in seed["verdict_key"]],
@@ -116,14 +121,17 @@ def clip_to_inner_percentiles(axis: Axes, panels: list[Float[np.ndarray, "layers
     axis.set_ylim(low - padding, high + padding)
 
 
-def carried_injection_projection(lens_dir: Path) -> Float[np.ndarray, "layers"]:
-    """coefficient * <unit gi_v2 at the steer layer, unit gfar at each layer>; NaN before the steer layer."""
+def carried_injection_projection(lens_dir: Path, arm: Arm) -> Float[np.ndarray, "layers"]:
+    """coefficient * <injected vector, unit gfar at each layer>, the injected vector being unit gi_v2 at the steer layer
+    (steered) or its component along gfar there (steered_gfar_component); NaN before the steer layer."""
     seed = torch.load(next(lens_dir.glob("seed*.pt")), map_location="cpu", weights_only=False)
     gfar_units = load_gfar_units(seed["gfar"], *_artifact_shape(seed["gfar"]))
     num_layers, hidden = gfar_units.shape
     steer_layer = seed["steer_layer"]
     gi_v2_unit = torch.as_tensor(load_unit_axes(Path(seed["gi_v2"]), [steer_layer], num_layers, hidden, seed["model"])[steer_layer]["direction"])
-    projection = (seed["coefficient"] * (gfar_units @ gi_v2_unit)).numpy()
+    gfar_at_steer_layer = gfar_units[steer_layer]
+    injected = gi_v2_unit if arm == "steered" else (gi_v2_unit @ gfar_at_steer_layer) * gfar_at_steer_layer
+    projection = (seed["coefficient"] * (gfar_units @ injected)).numpy()
     projection[:steer_layer] = np.nan
     return projection
 
@@ -134,42 +142,71 @@ def _artifact_shape(gfar_spec: str) -> tuple[int, int]:
     return int(num_layers), int(hidden)
 
 
-def chart(combined: GroupPercentiles, injected: Float[np.ndarray, "layers"], steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
-    unsteered = np.asarray(combined["percentiles_by_condition"]["unsteered"])
-    delta = np.asarray(combined["percentiles_by_condition"]["steered"]) - unsteered
+class ChartRow(TypedDict):
+    values: Float[np.ndarray, "layers percentiles"]
+    injected: Float[np.ndarray, "layers"]
+    label: str
+
+
+def chart(full: GroupPercentiles, component: GroupPercentiles | None, injected_by_arm: dict[Arm, Float[np.ndarray, "layers"]],
+          steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
+    unsteered = np.asarray(full["percentiles_by_condition"]["unsteered"])
     width = percentile_columns(unsteered, [90])[:, 0] - percentile_columns(unsteered, [10])[:, 0]
-    figure, axes = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
-    rows = [(delta, injected, "steered − unsteered\ngfar projection"),
-            (delta / width[:, None], injected / width, "steered − unsteered\n÷ unsteered p10–p90 width")]
-    for axis, (values, injected_row, label) in zip(axes, rows):
-        draw_percentile_lines(axis, values)
-        clip_to_inner_percentiles(axis, [values])
-        axis.plot(np.arange(len(injected_row)), injected_row, color=INJECTION_COLOR, linestyle="--", linewidth=1.8, zorder=4,
+    full_delta = np.asarray(full["percentiles_by_condition"]["steered"]) - unsteered
+    rows: list[ChartRow] = [
+        {"values": full_delta, "injected": injected_by_arm["steered"], "label": "full gi_v2: steered − unsteered\ngfar projection"},
+        {"values": full_delta / width[:, None], "injected": injected_by_arm["steered"] / width,
+         "label": "full gi_v2: steered − unsteered\n÷ unsteered p10–p90 width"},
+    ]
+    if component is not None:
+        component_delta = (np.asarray(component["percentiles_by_condition"]["steered"])
+                           - np.asarray(component["percentiles_by_condition"]["unsteered"]))
+        component_rows: list[ChartRow] = [
+            {"values": component_delta / width[:, None], "injected": injected_by_arm["steered_gfar_component"] / width,
+             "label": "gfar component of gi_v2 only:\nsteered − unsteered ÷ width"},
+            {"values": (component_delta - full_delta) / width[:, None],
+             "injected": (injected_by_arm["steered_gfar_component"] - injected_by_arm["steered"]) / width,
+             "label": "row 3 − row 2\n(component only − full) ÷ width"},
+        ]
+        rows += component_rows
+    figure, axes = plt.subplots(len(rows), 1, figsize=(9, 4.5 * len(rows)), sharex=True, squeeze=False)
+    for axis, row in zip(axes[:, 0], rows):
+        draw_percentile_lines(axis, row["values"])
+        clip_to_inner_percentiles(axis, [row["values"]])
+        axis.plot(np.arange(len(row["injected"])), row["injected"], color=INJECTION_COLOR, linestyle="--", linewidth=1.8, zorder=4,
                   label="injection carried unchanged")
         low, high = axis.get_ylim()
-        axis.set_ylim(min(low, float(np.nanmin(injected_row))), max(high, float(np.nanmax(injected_row))))
+        axis.set_ylim(min(low, float(np.nanmin(row["injected"]))), max(high, float(np.nanmax(row["injected"]))))
         axis.axvline(steer_layer, color="#6b6a66", linestyle=":", linewidth=0.8)
         axis.axhline(0, color="#6b6a66", linewidth=0.8)
         axis.grid(color="#e6e5e1", linewidth=0.5)
         axis.spines[["top", "right"]].set_visible(False)
-        axis.set_ylabel(label)
-    axes[1].set_xlabel("layer")
-    handles, labels = axes[0].get_legend_handles_labels()
+        axis.set_ylabel(row["label"])
+    axes[-1, 0].set_xlabel("layer")
+    handles, labels = axes[0, 0].get_legend_handles_labels()
     order = [labels.index(f"p{percentile}") for percentile in reversed(DISPLAYED_PERCENTILES)] + [labels.index("injection carried unchanged")]
     figure.legend([handles[i] for i in order], [labels[i] for i in order], loc="center left", bbox_to_anchor=(0.98, 0.5), frameon=False,
                   title="percentile over\nresponse tokens")
     figure.suptitle(f"{title}: gi_v2 +{alpha:g} at L{steer_layer} (dotted), effect on the per-token gfar projection\n"
-                    f"all {combined['episodes']} unsteered episodes, {combined['response_tokens']:,} response tokens, teacher-forced; "
-                    f"dashed: coef × cos(gi_v2 at L{steer_layer}, gfar at layer)\n"
-                    f"y-axes clipped to the p{CLIP_LOW_PERCENTILE}–p{CLIP_HIGH_PERCENTILE} range", fontsize=10)
+                    f"all {full['episodes']} unsteered episodes, {full['response_tokens']:,} response tokens, teacher-forced; "
+                    f"dashed: the injected vector carried unchanged\n"
+                    f"width = unsteered p10–p90 width at the layer; y-axes clipped to the p{CLIP_LOW_PERCENTILE}–p{CLIP_HIGH_PERCENTILE} range", fontsize=10)
     figure.tight_layout()
     figure.savefig(out_png, dpi=150, bbox_inches="tight")
     plt.close(figure)
 
 
+def injected_by_arm(lens_dir: Path, component_lens_dir: Path | None) -> dict[Arm, Float[np.ndarray, "layers"]]:
+    injected: dict[Arm, Float[np.ndarray, "layers"]] = {"steered": carried_injection_projection(lens_dir, "steered")}
+    if component_lens_dir is not None:
+        injected["steered_gfar_component"] = carried_injection_projection(component_lens_dir, "steered_gfar_component")
+    return injected
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--lens", type=Path, help="required unless --rechart")
+    parser.add_argument("--component-lens", type=Path, default=None, help="dir of seed<N>.pt holding the steered_gfar_component arm")
     parser.add_argument("--verdicts", type=Path, default=None, help="as_judged.json keyed '<arm>/seed<s>/<example_id>'")
     parser.add_argument("--title", required=True)
     parser.add_argument("--out", type=Path, required=True, help="output stem")
@@ -178,19 +215,28 @@ def main() -> None:
 
     if args.rechart:
         saved = json.loads(args.out.with_suffix(".json").read_text())
-        chart(saved["groups"]["combined"], carried_injection_projection(Path(saved["lens"])), saved["steer_layer"], saved["alpha"], args.title,
-              args.out.with_suffix(".png"))
+        component_lens = Path(saved["component_lens"]) if saved.get("component_lens") else None
+        chart(saved["groups"]["combined"], saved.get("component"), injected_by_arm(Path(saved["lens"]), component_lens), saved["steer_layer"],
+              saved["alpha"], args.title, args.out.with_suffix(".png"))
         return
 
-    lens = load_lens(args.lens)
+    lens = load_lens(args.lens, "steered")
     verdicts_by_key = json.loads(args.verdicts.read_text()) if args.verdicts else None
     percentiles_by_group: dict[Group, GroupPercentiles] = {group: group_percentiles(lens, mask)
                             for group, mask in episode_masks_by_group(lens["verdict_keys"], verdicts_by_key).items() if mask.any()}
+    steer_layer, alpha = lens["steer_layer"], lens["alpha"]
+    del lens
+    component = None
+    if args.component_lens is not None:
+        component_lens = load_lens(args.component_lens, "steered_gfar_component")
+        component = group_percentiles(component_lens, np.ones(len(component_lens["verdict_keys"]), dtype=bool))
+        del component_lens
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.with_suffix(".json").write_text(json.dumps({
-        "lens": str(args.lens), "verdicts": str(args.verdicts), "steer_layer": lens["steer_layer"], "alpha": lens["alpha"],
-        "percentiles": PERCENTILES.tolist(), "groups": percentiles_by_group}, indent=1))
-    chart(percentiles_by_group["combined"], carried_injection_projection(args.lens), lens["steer_layer"], lens["alpha"], args.title, args.out.with_suffix(".png"))
+        "lens": str(args.lens), "component_lens": str(args.component_lens) if args.component_lens else None, "verdicts": str(args.verdicts),
+        "steer_layer": steer_layer, "alpha": alpha,
+        "percentiles": PERCENTILES.tolist(), "groups": percentiles_by_group, "component": component}, indent=1))
+    chart(percentiles_by_group["combined"], component, injected_by_arm(args.lens, args.component_lens), steer_layer, alpha, args.title, args.out.with_suffix(".png"))
 
 
 if __name__ == "__main__":
