@@ -16,6 +16,8 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
+**Hack separation on unsteered episodes 2026-11-11 (user request; FINDINGS "Hack vs non-hack separation on unsteered episodes, gi_v2 and gfar"):** gfar's projection separates judged hacks from non-hacks above the random-direction 95% range on gpt-oss, Muse and Gemma (answer tokens pooled AUROC 0.87 / 0.95 / 0.90 against random 97.5th percentiles 0.84 / 0.90 / 0.84); gi_v2 stays inside the range everywhere (0.50–0.78); Qwen has no unsteered hacks.
+
 **Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), and on gpt-oss put gi_v2 +0.2 above the 97th percentile with no shape assumption (shape-free q ≤ 2.2% proxy, ≤ 2.6% hard-coding). Capping and negative steering give the same hack vs hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Hidden pass is the capability measure again (2026-11-09; honest hidden pass, used 2026-11-07 to 11-09, stays available as a secondary output).
 
 **Gemma random 1729 CPU checks 2026-11-04 (user request; FINDINGS "Gemma random direction 1729: per-seed, per-problem, same-seed divergence and activation-geometry checks"):** the +5.6 is above unsteered on 16 of 16 seeds (seed-bootstrap CI +4.4 to +6.8); per-problem overlap with gi +0.08 (plain r +0.34) is at or below the null-arm floor (the two do-nothing random arms correlate +0.46 with each other through the shared unsteered reference) and vanishes once the reference is removed (split-reference r +0.16); the same-seed prefix shows 1729 disturbs sampling exactly as much as 1730 / 1731 (median 92 / 80 / 86 chars) and as much as gi_v2 at α 0.08 (random unit directions are eight times as disruptive per unit α, norm-matching ≠ disturbance-matching); in layer-30 activation geometry 1729 is an ordinary draw (p17–p74 on every statistic) while gi_v2 lies inside the model's own variation (88% in the top-50 PCs, whitened norm 4 vs 34). Direction-specific, invisible without a forward pass; GPU options (negation / dose, PC-split and per-token noise, causal downstream lens, 20-seed null) are in PLAN.md awaiting a go-ahead. Probe array 15039074 and capeval 15039083 for 1729 are still queued on qos cs.
@@ -64,6 +66,48 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 | 6. Does it replicate on Qwen3.8-27B? (user request 2026-10-27: steering on the hard 45) | extraction done 2026-10-27 (job 14811290, 17 roles + default + neutral_fic, reasoning effort low); answer-region and reasoning-region validation at layer 32 and the answer-region sweep done; raw and cleaned steering artifacts built; harness port and smoke done 2026-10-27; unsteered capability check at the 64k budget done 2026-10-27 (job 14821126: hidden pass 56%, no-code 30%, proxy 4%, no truncation; 16k and 32k truncated too often); concurrent engine mode built, batch check passed (job 14821983) and the concurrent seed-0 run 14821701 reproduces the sequential shards 6–20× faster, so Qwen runs concurrently; **generic + intent axis built 2026-10-27 from Koby's verified 64-question role vectors (`gi/direction/`), pilot submitted 2026-10-28 4:45 pm MDT (job 14863168: unsteered / gi ±0.04 / ±0.08 / ±0.16 / random ±0.16 at layer 32, seeds 0–3, concurrent, 64k); **pilot done 2026-10-29 11:53 am MDT** (standby overnight, the last eight tasks moved to cs / qos cs after repeated preemptions)** | raw 17-role answer-region contrast passes checks 1–3 at layer 32 (split-half 0.98, held-out schemer vs honest 0.99–1.00) and at every layer from 12 up; deception separation equals the cleaned vector's (stratified 0.998 vs 0.999), but 15% of the raw vector is the acting arrow (cosine 0.92 with the cleaned one) and it separates the neutral character (1.00) and the honest characters (0.99) from the plain assistant, where the cleaned one does not (0.54 / 0.46); FINDINGS "Qwen3.8-27B 17-role extraction". **gi dose pilot (FINDINGS "Qwen3.8-27B gi dose pilot"):** proxy 5.0% unsteered (concurrent, 64k) and 5.0–6.7% at ±0.04 / ±0.08 / ±0.16 and random ±0.16, every Holm p = 1.0; hidden pass −6.7 to +5.0, no-code −5.6 to +5.0, nothing significant, every arm inside the dose rule; a 5% base rate with 30–38% no-code leaves the proxy nothing to measure — dose decision / whether to run a Qwen main run with the user (options in FINDINGS); **extra doses +0.32 / +0.64 run and +0.32 judged 2026-10-29** (judged 5.6%, Holm 0.035, outside the dose rule: hidden −11, no-code −16; +0.64 broken); **anecdotes + 25-question probes read 2026-10-29**: yes, more schemer-like on the positive side (concealed fits, "curator" persona), negative side only flatter; main-run decision with the user |
 
 ## Runs
+
+### Hack vs non-hack separation on unsteered episodes, gi_v2 and gfar — 2026-11-11: gfar (Goodfire all-response axis) separates judged-hack from non-hack unsteered episodes above the 97.5th percentile of 1,000 random directions in 10 of 12 cells on gpt-oss, Muse and Gemma (answer tokens pooled AUROC 0.87 / 0.95 / 0.90); gi_v2 stays inside the random 95% range in every cell (best 0.78, gpt-oss answer, 92nd percentile); Qwen has no unsteered hacks and is not tested
+
+Question (user, 2026-11-11): does projecting an unsteered episode on gi_v2 or on gfar separate judged hacks from
+non-hacks better than isotropic random directions do?
+
+Setup. `scripts/hack_separation.py` (CPU, ~75 s per model) on Jansen's cached unsteered activations of 2026-11-09
+(`axis_acts_extract.py`; share `schemer-axis/gfar_vs_gi_v2_jansen05/acts/<model>/`: token means of the reasoning and of
+the answer tokens of every turn, per episode), at each model's steer layer. Labels from the as_judged verdicts (HACK =
+STRONG or WEAK; BORDERLINE, NOT_HACK and unjudged episodes are not hack): gpt-oss `gptoss120b/gi_v2/pilot/verdicts_gfscan/
+variants_gfscan_all/as_judged.json` (63 of 540), Muse `muse_glimmer/gi_v2/pilot/verdicts_gfdose/variants_gfdose_all/`
+(177 of 540), Gemma `gemma4_31b_gi_v2_judging_jansen05/hard108/verdicts_ctl_gicap_s0-15/variants_all16/` (82 of 1,728).
+Directions: gi_v2 `<model>/gi_v2/direction/persona_contrast.pt`; gfar `rh_axis_koby/synthetic_rh/goodfire/<model>/
+geometry/directions_headline.pt:goodfire_all_response_pl_all_families`. The share copies reproduce the projections
+stored in the caches (max relative difference 7e-4, fp16 rounding). Score = projection of the episode mean, higher =
+hack. Pooled AUROC, and within-problem AUROC (only hack/non-hack pairs from the same problem). Null: 1,000 isotropic
+unit directions (`random_directions`, seed 1729, layer-specific), reported as their 2.5–97.5 percentile range.
+
+| Model (layer) | Tokens | gi_v2 pooled | gfar pooled | random 95% | gi_v2 within | gfar within | random 95% |
+|---|---|---|---|---|---|---|---|
+| gpt-oss (L17) | reasoning | 0.654 | **0.817** | 0.247–0.750 | 0.645 | **0.706** | 0.322–0.678 |
+| | answer | 0.779 | **0.874** | 0.167–0.838 | 0.739 | 0.758 | 0.191–0.809 |
+| Muse (L26) | reasoning | 0.496 | **0.834** | 0.253–0.758 | 0.518 | **0.779** | 0.291–0.709 |
+| | answer | 0.522 | **0.945** | 0.102–0.897 | 0.578 | **0.905** | 0.147–0.848 |
+| Gemma (L30) | reasoning | 0.530 | **0.716** | 0.296–0.707 | 0.557 | 0.589 | 0.386–0.614 |
+| | answer | 0.575 | **0.902** | 0.158–0.835 | 0.550 | **0.805** | 0.220–0.774 |
+
+Bold: above the random 97.5th percentile. Excluding BORDERLINE episodes from both classes moves every AUROC by ≤ 0.03
+and changes no bold cell.
+
+Reading. gi_v2's projection does not distinguish hack from non-hack episodes beyond what a random direction does
+on any model (percentile 49–93), so by the writing conventions this is not an association. gfar does, on all three
+models with hacks, with the largest margin on Muse; its two misses are within-problem (gpt-oss answer, Gemma reasoning,
+both 93rd percentile). The random band is wide on answer tokens (up to 0.10–0.90 on Muse) because episode means share
+a few dominant components, so gfar's answer-token margins over the band are only 0.03–0.06.
+
+Limits. gfar was built from Goodfire's synthetic hack/honest conversations, so part of its edge may be closeness of its
+training text to hacking episodes rather than a hacking representation. The null is isotropic and ignores variance
+along the direction (gi_v2 carries 27 × average variance on Gemma); the antonym-control population was not used here.
+One layer per model, no layer sweep. Qwen (0 judged hacks in 732 unsteered episodes) is untestable. The Gemma gi_v2
+answer AUROC differs from the 2026-11-04 PCA entry (0.49 pooled there), which used different activations (final turn,
+teacher-forced) and labels. Outputs `schemer-axis/hack_separation/{gptoss120b,muse,gemma4_31b}.{json,log}` in Koby's scratch.
 
 ### gi_v2 among antonym concepts across the four models (proxy) — 2026-11-09: no antonym concept's average lift over the four models reaches gi_v2's; shape-free q 0–4.2% with all four models, 0–2.8% without Gemma, 0–10.8% without gpt-oss
 
