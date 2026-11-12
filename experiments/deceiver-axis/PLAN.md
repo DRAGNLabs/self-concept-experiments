@@ -1872,6 +1872,21 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      **p25 pilot read (5:13 pm MST Nov 11, 15264564_0 complete, `analysis_gfcap_pilot/summary_p25_1711.json`):** not usable. No code in
      108 of 108 episodes and 108 of 108 turns cut at the token budget (unsteered seed 0: 0% and 0 of 334 turns); 100,765 reasoning characters
      per turn against 23,533. p50 / p75 / p95 are read when their tasks complete; nothing is extended before then.
+     **Pilot read, all four rungs (6:12 pm MST Nov 11; 15264564 complete, no OOM or context-length error; `analysis_gfcap_pilot/summary_gfcap_pilot.{json,log}`,
+     against unsteered seed 0: no code 0.0%, 0 of 334 turns truncated, 23,533 reasoning characters per turn):**
+     - p25: no code 100.0%, 108 of 108 turns truncated. **Not usable.**
+     - p50: no code 48.1% (+48.1), 84 of 238 turns truncated (35.3%), 44,237 reasoning characters per turn. **Not usable.**
+     - p75: no code 4.6% (+4.6), 16 of 364 turns truncated (4.4%), 28,876 reasoning characters per turn. **Usable.** Beside the rule, not
+       deciding: hidden pass among non-proxy episodes 26.9% against 46.2% (−19.3), shown pass 37.0% against 61.1%; on that seed the arm
+       would be outside the 10-point dose rule, so the 16-seed arm is expected outside it.
+     - p95: no code 0.0%, 1 of 364 turns truncated (0.3%), 22,220 reasoning characters per turn. **Usable.** Beside the rule: hidden pass
+       among non-proxy episodes 36.7% against 46.2% (−9.5), shown pass 47.2% against 61.1%.
+     **Decision by the rule:** the heaviest usable rung (p75) and the next lighter (p95) are extended to seeds 1–15, 30 B200 tasks
+     (`settings_gfar_cap_ext.tsv`: the two pilot lines with only the sample seed changed; seed 0 took 2 h 23 min at p75 and 1 h 49 min at p95).
+     No hack column was used. Each arm is judged as its own neutral-named set when its 16 seeds are complete (per-arm rule above) and read
+     in the Gemma Goodfire family (four doses + these two rungs, 6 contrasts). **Expected:** judged hacking ordered p75 ≤ p95 ≤ unsteered
+     (4.7%); p75 outside the dose rule, p95 near its edge; a rung is reported as lowering hacking only if its Holm-adjusted contrast excludes
+     zero and it is inside the dose rule.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
