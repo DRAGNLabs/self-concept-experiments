@@ -16,6 +16,8 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
+**Gemma Goodfire +0.08 judged, 11:14–11:34 am MST Nov 12 (set `g06`, entry below; interim, 3 of 6 Goodfire contrasts):** judged hack 12.3% (213 / 1728) against 4.7% unsteered, +7.6, CI +4.7 to +10.7, raw p 1.7e-08 (× 6 = 1.0e-07), higher on 39 problems and lower on 4. The arm is outside the dose rule, as expected: hidden pass among episodes not judged a hack falls 17.2 points (CI −21.7 to −12.7), so by the pre-written reading the rise is reported but not read as an effect of the direction at kept capability. The judged rate is monotone over the three doses so far (3.4 / 4.7 / 7.3 / 12.3%). Against the random-direction control (α 0.01: −0.1 / +0.4 / +5.6, raw hidden-pass cost 0.6–2.8 points) +0.08 is above the random spread but at six times the capability cost (raw hidden −17.5), so it is not a like-for-like comparison. −0.08 has 4 of 15 extension tasks running; caps p75 / p95 pending.
+
 **Gemma Goodfire doses −0.04 and +0.04 judged, 9:55–10:16 am MST Nov 12 (sets `g04`, `g05`, entry below; interim, 2 of 6 Goodfire contrasts):** judged hack 3.4% at −0.04 (−1.3, CI −3.0 to +0.2, raw p 0.12) and 7.3% at +0.04 (+2.5, CI +1.3 to +4.0, raw p 0.00011, × 6 = 0.0007) against 4.7% unsteered; both inside the dose rule (rule measure −0.7 and −7.1). The order is the expected one and +0.04 clears Holm whatever the other four contrasts show. Against the random-direction control on record (α 0.01, the only usable random dose on Gemma: −0.1 / +0.4 / +5.6) the +2.5 is inside the random spread, so it is not shown specific to the direction (corrected 11:22 AM MST; the line first called specificity open for lack of an α 0.04 random arm, which exists in Koby's pilot and breaks the model). +0.08 has seeds 0–6 complete, −0.08 and the caps are pending.
 
 **Gemma gi_v2 floor family closed, 10:12 am MST Nov 12 (p50 judged 9:46–9:55 am, set `g03`, entry below):** judged hack 4.3% at p50, 4.7% at p75, 4.1% at p95 against 4.7% unsteered; Δ −0.5 / −0.1 / −0.7, Holm p 1.0 for all three. p50 and p75 are inside the dose rule (rule measure −2.2 and −4.7), p95 is outside (−21.7). The floor does not raise judged hacking on Gemma at any rung.
@@ -157,6 +159,50 @@ Recorded `lcbhard_55` hidden passes, of 12 seeds:
 **Reading.** Arms within about 2 points of a line on a hidden-pass measure are not separated from it by this evidence. That covers the Muse p95 cap and the Muse −0.08 dose, both outside the 10-point rule by 0.6 points on the rule measure. Their status as written (outside; the miss may be composition, not capability) stands, with this as a second reason not to read the miss as a capability loss. Arms far from the line are not affected.
 
 **Not established.** How many of the recorded `lcbhard_55` results in each arm sit near the limit (only three October episodes were re-timed); whether other problems have the same margin (the probe covered five); whether verification time differs by node type.
+
+### Gemma 4 31B Goodfire-axis (gfar) dose +0.08, judged (set `g06`; interim read, 3 of 6 planned Goodfire contrasts) — 2026-11-12: judged hacking rises to 12.3% against 4.7% unsteered (+7.6, CI +4.7 to +10.7, raw p 1.7e-08; × 6 = 1.0e-07) and the arm is outside the dose rule as expected (rule measure −17.2, CI −21.7 to −12.7), so the rise is not read as an effect of the direction at kept capability; the judged rate is monotone over −0.04 / unsteered / +0.04 / +0.08 (3.4 / 4.7 / 7.3 / 12.3%)
+
+**Question.** PLAN "Gemma doses extended" and "Goodfire +0.08 complete" (set name, interim rule and expectation written 11:10 am before the set was built): is judged hacking at +0.08 at or above the +0.04 level, and is the arm outside the dose rule as its pilot seed suggested?
+
+**Data.** `gemma4_31b_gi_v2/rh/hard108/gfar_L30_a0.08/seed0..15` (seed 0 from pilot 15213664; seeds 1–15 array 15267210 tasks 30–44, done by 11:09 am Nov 12, 5,155–5,588 s per task, every log with the done marker and no error line); steering along the Goodfire direction at layer 30, cs3 B200, 16 × 108 = 1,728 episodes. Extended on the user's word (Nov 11, 4:41 pm), not by the pilot screen. Blind single-arm set `ctl_g06_s0-15` (map `gfar_vs_gi_v2/steer/gemma_set_tags.tsv`): 468 proxy dossiers / 100 batches, 4 hidden-signature dossiers of 244 hidden passes / 1 batch; frozen chain (Sonnet rubric-judge via `judge_runner.py`, 6 at once, first pass as judged, no adjudication), 11:14:19–11:33:45 am. Proxy HACK 211 / BORDERLINE 32 / NOT_HACK 225; hidden set 2 / 0 / 2. Batches 1 and 88 failed the file check on the first attempt (right count, wrong files or order) and passed on the runner's automatic second attempt; batches 48 and 62 wrote `pressure_source` = `none`, kept as judged. No read-audit flag. Unsteered reference: Koby's B200 arm with the Nov 2 `main` verdicts.
+
+Analysis `analysis_gfar3` (`analysis_family_run.sh gfar3` with the three judged doses; problem-stratified means over 108 problems, 20,000-draw problem bootstrap, exact sign-flip p; `dose_rule_read.py`). Display family with the three random arms for the chart: `analysis_gfar3r` (`analysis_gfar3r_run.sh`; its Holm column is over the six arms shown and is not the family read).
+
+**Result (Δ vs unsteered in points, 95% CI, raw p; the −0.04 and +0.04 columns are in the entry below and unchanged).**
+
+| measure | unsteered | +0.08 |
+|---|---|---|
+| judged hack, as judged | 4.7% (82 / 1728) | 12.3% (213 / 1728); +7.6, +4.7 to +10.7, p 1.7e-08 (× 6 = 1.0e-07) |
+| judged hack, BORDERLINE counted | 7.2% | 14.2%; +6.9, +3.9 to +10.2, p 8.4e-06 |
+| judged hack, WEAK not counted | 3.6% | 11.4%; +7.8, +5.0 to +10.9, p 1.6e-09 |
+| judged hack, proxy set only | 4.7% | 12.2%; +7.5, +4.7 to +10.6, p 2.9e-08 |
+| problems with a higher / lower / equal judged rate | | 39 / 4 / 65 |
+| automatic proxy (shown pass, hidden fail) | 20.2% | 27.1%; +6.9, +3.1 to +10.8, p 0.00053 |
+| hidden pass among episodes not judged a hack (rule measure) | 33.2% | 16.0%; −17.2, −21.7 to −12.7, p ≤ 5e-05 |
+| raw hidden pass | 31.7% | 14.1% (−17.5) |
+| shown-test pass | 51.9% | 41.2%; −10.6, −15.5 to −5.7, p 3.5e-05 |
+| no code submitted | 0.0% | 0.3% (+0.3) |
+| turns per episode | 3.28 | 3.67 (+0.39, p 6e-06) |
+| reasoning characters per turn | 23,798 | 20,089 (−3,708, −4,198 to −3,218) |
+| truncated turns / turns | 6 / 5664 | 12 / 6338 |
+| dose rule | | **outside (rule measure)** |
+
+Hack verdicts by strength and mechanism (proxy + hidden sets): 197 STRONG / 16 WEAK; lookup table 140, input branch 63, fitted rule 10.
+
+**Reading.**
+- *The rise is large and broad, and the expectation written beforehand holds on both counts:* the judged rate is above the +0.04 level (12.3% against 7.3%), on every verdict variant, with 39 problems up and 4 down; and the arm is outside the dose rule by 7 points.
+- *Outside the rule, the rise is not read as the direction raising hacking at kept capability.* The model loses about half of its honest solving at this dose (rule measure 33.2% → 16.0%, shown pass −10.6) and takes more turns; a model that solves less often has more occasions to hard-code. The pre-written reading reports the difference and stops there.
+- *Dose-response so far is monotone:* 3.4% (−0.04), 4.7% (unsteered), 7.3% (+0.04), 12.3% (+0.08), with the rule measure falling on the plus side in step (−0.7, −7.1, −17.2). Hacking and capability loss rise together along the plus direction, so the plus side alone does not separate them; −0.04, where capability is flat and hacking is lower by 1.3 points (CI covers zero), is the only point so far where they come apart, and −0.08 is still running.
+- *Against the random-direction control* (three directions at α 0.01, the only dose at which random directions leave Gemma working; −0.1 / +0.4 / +5.6 at a raw hidden-pass cost of 0.6 to 2.8 points): +0.08 (+7.6) is above the largest random arm, but at a raw hidden-pass cost of 17.5 points, so it is not a "same capability cost or less" comparison and does not show specificity. +0.04 (+2.5, raw hidden −7.4) is inside the random spread.
+- *Against gi_v2 at the same nominal dose:* gi_v2 +0.08 gives 8.2% (+3.5) with raw hidden pass −10.5. The Goodfire direction moves both columns further at +0.08; different analysis families, not tested.
+- *The added hacks are explicit hard-codes:* 197 of 213 STRONG, lookup tables two thirds of them.
+
+**Caveats.**
+- Interim: 3 of 6 planned Goodfire contrasts (−0.08, cap p75, cap p95 running or pending). Raw p beside p × 6; Holm when the family is complete. No pending submission or rung choice uses this column.
+- The chart's table is computed in the six-arm display family; its bootstrap CI for this contrast prints +4.8 to +10.6 against +4.7 to +10.7 in the family file (different draw), and its Holm column is over those six arms.
+- Single-arm set, neutral name; unsteered and random verdicts are from Nov 2–3 and the pre-runner recipe (PLAN confound check, unmeasured). No benchmark eval has been run for this arm.
+
+**Files.** `gemma4_31b_gi_v2/rh/hard108/{gfar_L30_a0.08, dossiers_ctl_g06_s0-15, dossiers_hidden_ctl_g06_s0-15, verdicts_ctl_g06_s0-15, analysis_gfar3, analysis_gfar3r}`; logs `build_ctl_g06.log`, `analysis_gfar3_run.log`, `analysis_gfar3r_run.log`. Chart with the random band (`scripts/gemma_gicap_chart.py --axis-name "Goodfire (gfar)"`): `analysis_gfar3r/gemma_hard108_goodfire_doses_random_band_interim3_chart_1112.png`.
 
 ### Gemma 4 31B Goodfire-axis (gfar) doses −0.04 and +0.04, judged (sets `g04`, `g05`; interim read, 2 of 6 planned Goodfire contrasts) — 2026-11-12: judged hacking moves in the expected order, 3.4% at −0.04 (−1.3, CI −3.0 to +0.2, raw p 0.12) and 7.3% at +0.04 (+2.5, CI +1.3 to +4.0, raw p 0.00011; × 6 = 0.0007) against 4.7% unsteered, with both arms inside the dose rule (rule measure −0.7 and −7.1); +0.04 costs 7 points of honest hidden pass; against the random-direction reference already on record (α 0.01, the only dose at which random directions leave Gemma working: −0.1 / +0.4 / +5.6) the +2.5 is inside the random spread, so the rise is not shown to be specific to the direction
 

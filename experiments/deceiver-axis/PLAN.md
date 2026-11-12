@@ -1773,6 +1773,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   and the arm outside the dose rule (the pilot seed lost 19.5 points of honest hidden pass); outside the rule, its hack difference is
   reported but not read as an effect of the direction at kept capability. No pending submission, extension or rung choice depends on
   this column.
+  **Result (judged 11:14–11:34 am MST Nov 12; FINDINGS "Gemma 4 31B Goodfire-axis (gfar) dose +0.08, judged"; `analysis_gfar3`):** judged
+  hack 12.3% (213 / 1728), +7.6, CI +4.7 to +10.7, raw p 1.7e-08 (× 6 = 1.0e-07), 39 problems up / 4 down; outside the dose rule (rule
+  measure −17.2, CI −21.7 to −12.7; no code +0.3). Both expectations hold. Reported, not read as an effect at kept capability. Monotone
+  so far: 3.4 / 4.7 / 7.3 / 12.3%. Chart with the α 0.01 random band: `analysis_gfar3r/` (display family, six arms).
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
