@@ -42,6 +42,10 @@ CLIP_LOW_PERCENTILE, CLIP_HIGH_PERCENTILE = 2, 98
 NULL_BAND_PERCENTILES = (5, 95)
 MEDIAN_COLOR = "#1f1f1d"
 INJECTION_COLOR = "#6b3fa0"
+HACK_GAP_COLOR = "#8cc5bd"
+HACK_GAP_SEPARATING_COLOR = "#0f5c52"
+HACK_GAP_LABEL = "unsteered hack − non-hack median gap"
+HACK_GAP_ROWS = (0, 1)
 LOWER_PERCENTILES = [percentile for percentile in DISPLAYED_PERCENTILES if percentile < 50]
 UPPER_PERCENTILES = [percentile for percentile in DISPLAYED_PERCENTILES if percentile > 50]
 
@@ -225,8 +229,38 @@ def null_bands_by_row(null: NullMedians | None, null_component: NullMedians | No
     return bands
 
 
+def median_hack_gap(percentiles_by_group: dict[Group, GroupPercentiles]) -> Float[np.ndarray, "layers"] | None:
+    """Unsteered p50 of judged-hack tokens minus p50 of the rest, per layer; None without both groups."""
+    if "hack" not in percentiles_by_group or "rest" not in percentiles_by_group:
+        return None
+    return (percentile_columns(np.asarray(percentiles_by_group["hack"]["percentiles_by_condition"]["unsteered"]), [50])[:, 0]
+            - percentile_columns(np.asarray(percentiles_by_group["rest"]["percentiles_by_condition"]["unsteered"]), [50])[:, 0])
+
+
+def gap_outside_random_band(separation: dict | None, layer_count: int) -> Bool[np.ndarray, "layers"]:
+    """Per layer, whether gfar's within-problem AUROC lies outside the random-direction 2.5-97.5 band (False where not computed)."""
+    outside = np.zeros(layer_count, dtype=bool)
+    for entry in (separation or {}).get("layers", []):
+        outside[entry["layer"]] = entry["outside_random_band"]
+    return outside
+
+
+def draw_hack_gap(axis: Axes, gap: Float[np.ndarray, "layers"], outside: Bool[np.ndarray, "layers"], steer_layer: int) -> None:
+    """From the steer layer on; a segment is dark when gfar separates hacks beyond random directions at both its layers."""
+    labels = {False: f"{HACK_GAP_LABEL}\n(gfar within-problem AUROC inside random 95% band)",
+              True: f"{HACK_GAP_LABEL}\n(gfar within-problem AUROC outside random 95% band)"}
+    labelled: set[bool] = set()
+    for layer in range(steer_layer, len(gap) - 1):
+        separating = bool(outside[layer] and outside[layer + 1])
+        axis.plot([layer, layer + 1], gap[layer:layer + 2], color=HACK_GAP_SEPARATING_COLOR if separating else HACK_GAP_COLOR,
+                  linestyle="-.", linewidth=2.0, zorder=4, label=None if separating in labelled else labels[separating])
+        labelled.add(separating)
+    bottom, top = axis.get_ylim()
+    axis.set_ylim(min(bottom, float(np.nanmin(gap[steer_layer:]))), max(top, float(np.nanmax(gap[steer_layer:]))))
+
+
 def chart(full: GroupPercentiles, component: GroupPercentiles | None, null: NullMedians | None, null_component: NullMedians | None,
-          injected_by_arm: dict[Arm, Float[np.ndarray, "layers"]], steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
+          hack_gap: Float[np.ndarray, "layers"] | None, gap_outside: Bool[np.ndarray, "layers"], injected_by_arm: dict[Arm, Float[np.ndarray, "layers"]], steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
     unsteered = np.asarray(full["percentiles_by_condition"]["unsteered"])
     width = percentile_columns(unsteered, [90])[:, 0] - percentile_columns(unsteered, [10])[:, 0]
     full_delta = np.asarray(full["percentiles_by_condition"]["steered"]) - unsteered
@@ -255,6 +289,8 @@ def chart(full: GroupPercentiles, component: GroupPercentiles | None, null: Null
             draw_null_band(axis, *bands[row_index])
         axis.plot(np.arange(len(row["injected"])), row["injected"], color=INJECTION_COLOR, linestyle="--", linewidth=1.8, zorder=4,
                   label="injection carried unchanged")
+        if hack_gap is not None and row_index in HACK_GAP_ROWS:
+            draw_hack_gap(axis, hack_gap if row_index == 0 else hack_gap / width, gap_outside, steer_layer)
         low, high = axis.get_ylim()
         axis.set_ylim(min(low, float(np.nanmin(row["injected"]))), max(high, float(np.nanmax(row["injected"]))))
         axis.axvline(steer_layer, color="#6b6a66", linestyle=":", linewidth=0.8)
@@ -265,7 +301,7 @@ def chart(full: GroupPercentiles, component: GroupPercentiles | None, null: Null
     axes[-1, 0].set_xlabel("layer")
     handles, labels = axes[0, 0].get_legend_handles_labels()
     order = ([labels.index(f"p{percentile}") for percentile in reversed(DISPLAYED_PERCENTILES)] + [labels.index("injection carried unchanged")]
-             + [index for index, label in enumerate(labels) if label.startswith(("antonym", "gi_v2 median"))])
+             + [index for index, label in enumerate(labels) if label.startswith(("antonym", "gi_v2 median", HACK_GAP_LABEL))])
     figure.legend([handles[i] for i in order], [labels[i] for i in order], loc="center left", bbox_to_anchor=(0.98, 0.5), frameon=False,
                   title="percentile over\nresponse tokens")
     figure.suptitle(f"{title}: gi_v2 +{alpha:g} at L{steer_layer} (dotted), effect on the per-token gfar projection\n"
@@ -293,6 +329,7 @@ def main() -> None:
     parser.add_argument("--verdicts", type=Path, default=None, help="as_judged.json keyed '<arm>/seed<s>/<example_id>'")
     parser.add_argument("--title", required=True)
     parser.add_argument("--out", type=Path, required=True, help="output stem")
+    parser.add_argument("--separation", type=Path, default=None, help="gfar_layer_separation.py json (colours the hack-gap line)")
     parser.add_argument("--rechart", action="store_true", help="redraw <out>.png from <out>.json without reading the lens")
     args = parser.parse_args()
 
@@ -303,8 +340,11 @@ def main() -> None:
         null_component = (null_medians(args.null_component_lens, "steered_gfar_component") if args.null_component_lens is not None
                           else saved.get("null_component"))
         saved["null"], saved["null_component"] = null, null_component
+        if args.separation is not None:
+            saved["gfar_separation"] = json.loads(args.separation.read_text())
         args.out.with_suffix(".json").write_text(json.dumps(saved, indent=1))
-        chart(saved["groups"]["combined"], saved.get("component"), null, null_component, injected_by_arm(Path(saved["lens"]), component_lens), saved["steer_layer"],
+        chart(saved["groups"]["combined"], saved.get("component"), null, null_component, median_hack_gap(saved["groups"]),
+              gap_outside_random_band(saved.get("gfar_separation"), len(saved["groups"]["combined"]["percentiles_by_condition"]["unsteered"])), injected_by_arm(Path(saved["lens"]), component_lens), saved["steer_layer"],
               saved["alpha"], args.title, args.out.with_suffix(".png"))
         return
 
@@ -320,14 +360,16 @@ def main() -> None:
         component = group_percentiles(component_lens, np.ones(len(component_lens["verdict_keys"]), dtype=bool))
         del component_lens
     null = null_medians(args.null_lens, "steered") if args.null_lens is not None else None
+    separation = json.loads(args.separation.read_text()) if args.separation is not None else None
     null_component = null_medians(args.null_component_lens, "steered_gfar_component") if args.null_component_lens is not None else None
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.with_suffix(".json").write_text(json.dumps({
         "lens": str(args.lens), "component_lens": str(args.component_lens) if args.component_lens else None, "verdicts": str(args.verdicts),
         "steer_layer": steer_layer, "alpha": alpha,
         "percentiles": PERCENTILES.tolist(), "groups": percentiles_by_group, "component": component, "null": null,
-        "null_component": null_component}, indent=1))
-    chart(percentiles_by_group["combined"], component, null, null_component, injected_by_arm(args.lens, args.component_lens), steer_layer, alpha, args.title, args.out.with_suffix(".png"))
+        "null_component": null_component, "gfar_separation": separation}, indent=1))
+    chart(percentiles_by_group["combined"], component, null, null_component, median_hack_gap(percentiles_by_group),
+          gap_outside_random_band(separation, len(percentiles_by_group["combined"]["percentiles_by_condition"]["unsteered"])), injected_by_arm(args.lens, args.component_lens), steer_layer, alpha, args.title, args.out.with_suffix(".png"))
 
 
 if __name__ == "__main__":
