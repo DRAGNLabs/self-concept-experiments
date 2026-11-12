@@ -21,7 +21,7 @@ set -euo pipefail
 #   export MODEL=<hf id> DATA=<data dir> TAG=<main|pilot> RUN=<unsteered arm dir> SEEDS="0 1 2 ..." OUT=<dir> \
 #          GI_V2=<persona_contrast.pt> GFAR=<directions_headline.pt>:<key> STEER_LAYER=<int> ALPHA=<float> LAYER_NORMS=<pt> \
 #          CHAT_KWARGS='{"reasoning_effort":"low"}' [MAX_LENGTH=40960] [N=<episodes per seed>] [ARMS="steered steered_gfar_component"]
-#          [NULL_DIRECTIONS="name=path ..." TOKEN_STRIDE=<k>]
+#          [NULL_DIRECTIONS="name=path ..." TOKEN_STRIDE=<k> NULL_MODE=<full|gfar_component>]
 #   sbatch --array=0-3 --export=ALL [-p cs2] experiments/deceiver-axis/slurm/steer_gfar_lens.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -57,5 +57,5 @@ export PYTHONPATH="$PWD/../../src:${PYTHONPATH:-}"
 echo "start $(date): $MODEL seeds ${SEED_LIST[*]} -> $OUT"
 python scripts/steer_gfar_lens_extract.py --model "${MODEL:?}" --data "${DATA:?}" --tag "${TAG:?}" --run "${RUN:?}" --seeds "${SEED_LIST[@]}" \
     --gi-v2 "${GI_V2:?}" --gfar "${GFAR:?}" --steer-layer "${STEER_LAYER:?}" --alpha "${ALPHA:?}" --layer-norms "${LAYER_NORMS:?}" \
-    --arms ${ARMS:-steered} "${NULL_LIST[@]}" --token-stride "${TOKEN_STRIDE:-1}" --max-length "${MAX_LENGTH:-40960}" "${EXTRA[@]}" --out "${OUT:?}"
+    --arms ${ARMS:-steered} "${NULL_LIST[@]}" --null-mode "${NULL_MODE:-full}" --token-stride "${TOKEN_STRIDE:-1}" --max-length "${MAX_LENGTH:-40960}" "${EXTRA[@]}" --out "${OUT:?}"
 echo "=== steer-gfar-lens done $(date): $OUT seeds ${SEED_LIST[*]} ==="

@@ -6,7 +6,8 @@ steer layer and every position, coefficient (alpha x the layer's mean residual n
 - steered: the unit gi_v2 direction, as in the steered runs;
 - steered_gfar_component: only gi_v2's component along the unit gfar direction at the steer layer, (gi_v2 . gfar) gfar;
 - --null-direction NAME=PATH: a control direction's unit vector at the steer layer (same coefficient), stored under
-  null_projections[NAME]. --token-stride K keeps every K-th response token of each turn (for many arms).
+  null_projections[NAME]; with --null-mode gfar_component only its component along gfar at the steer layer.
+  --token-stride K keeps every K-th response token of each turn (for many arms).
 Chart: steer_gfar_lens_chart.py.
 
     SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' python scripts/steer_gfar_lens_extract.py --model openai/gpt-oss-120b \
@@ -47,6 +48,7 @@ FP16_SAFE_ABS = 6e4
 type Transform = Callable[[Tensor], Tensor]
 Arm = Literal["steered", "steered_gfar_component"]
 ARMS: tuple[Arm, ...] = ("steered", "steered_gfar_component")
+NullMode = Literal["full", "gfar_component"]
 type Projections = Float[Tensor, "layers response_tokens"]
 
 
@@ -60,6 +62,7 @@ class SeedLens(TypedDict):
     steered: NotRequired[Projections]
     steered_gfar_component: NotRequired[Projections]
     null_projections: dict[str, Projections]
+    null_mode: NullMode
     token_stride: int
     turn_lengths: list[list[int]]
     oom_truncated: list[list[tuple[int, int]]]
@@ -94,6 +97,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layer-norms", type=Path, required=True)
     parser.add_argument("--arms", nargs="*", choices=ARMS, default=["steered"])
     parser.add_argument("--null-direction", action="append", default=[], help="NAME=PATH of a (layers, hidden) {axis, model} artifact")
+    parser.add_argument("--null-mode", choices=("full", "gfar_component"), default="full")
     parser.add_argument("--token-stride", type=int, default=1, help="keep every K-th response token of each turn")
     parser.add_argument("--max-length", type=int, default=40960, help="per-turn token cap (the tail is dropped)")
     parser.add_argument("--n", type=int, default=None, help="episodes per seed (smoke)")
@@ -147,8 +151,12 @@ def response_projections(model: nn.Module, runner: nn.Module, runner_kwargs: dic
     return torch.stack([projections_by_layer[layer] for layer in range(len(decoder_layers))])
 
 
+def gfar_component(unit: Float[Tensor, "hidden"], gfar_unit: Float[Tensor, "hidden"]) -> Float[Tensor, "hidden"]:
+    return (unit @ gfar_unit) * gfar_unit
+
+
 def arm_vector(arm: Arm, gi_v2_unit: Float[Tensor, "hidden"], gfar_unit: Float[Tensor, "hidden"]) -> Float[Tensor, "hidden"]:
-    return gi_v2_unit if arm == "steered" else (gi_v2_unit @ gfar_unit) * gfar_unit
+    return gi_v2_unit if arm == "steered" else gfar_component(gi_v2_unit, gfar_unit)
 
 
 def turn_projections(model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], ids: list[int],
@@ -211,7 +219,7 @@ def seed_lens(args: argparse.Namespace, seed: int, tokenizer: PreTrainedTokenize
         logger.info("seed %d: %d/%d episodes, %.0f s", seed, episode_index + 1, len(records), time.time() - started)
     lens: SeedLens = {
         "arms": list(args.arms),
-        "null_projections": {}, "token_stride": args.token_stride,
+        "null_projections": {}, "null_mode": args.null_mode, "token_stride": args.token_stride,
         "example_id": [record["example_id"] for record in records],
         "verdict_key": [f"{args.run.name}/seed{seed}/{record['example_id']}" for record in records],
         "token_offsets": np.asarray(token_offsets, dtype=np.int64),
@@ -248,7 +256,8 @@ def main() -> None:
     for spec in args.null_direction:
         name, path = spec.split("=", 1)
         null_unit = torch.as_tensor(load_unit_axes(Path(path), [args.steer_layer], num_layers, hidden, args.model)[args.steer_layer]["direction"]).to(device)
-        steering_by_layer_by_arm[name] = {args.steer_layer: add_transform(null_unit, coefficient)}
+        null_vector = null_unit if args.null_mode == "full" else gfar_component(null_unit, gfar_units[args.steer_layer])
+        steering_by_layer_by_arm[name] = {args.steer_layer: add_transform(null_vector, coefficient)}
     logger.info("gi_v2 at layer %d, alpha %.3f, coefficient %.1f; cos(gi_v2, gfar) there %.4f",
                 args.steer_layer, args.alpha, coefficient, float(gi_v2_unit @ gfar_units[args.steer_layer]))
 
