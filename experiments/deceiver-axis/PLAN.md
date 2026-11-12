@@ -1946,6 +1946,23 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      66.7% against 80.0%, 14,196 reasoning characters per turn against 9,154. Shares moved (`clamp_shares.py`, p90 row added after the
      read): 50.7% of prompt and 12.5% of generated positions. No rung between p75 and p95 is tried further on Muse without a new decision.
      FINDINGS "Muse Goodfire-axis (gfar) p90 cap pilot".
+     **p90 extended on the user's word (2026-11-12, user ~10:30 am MST: "extend the Muse p90 Goodfire cap pilot"; written 10:34 AM MST,
+     before submission).** This is a new decision by the user, not a pass of the screen: on seed 0 the rung is outside the no-code clause
+     by one episode (11.1% against 0.0%) and the arm is carried with that flag. The decision came after the seed-0 capability columns
+     only; the rung has no judged column. Seeds 1–11: `main_run.sbatch`, the pilot's arm line (`arms_gfar_cap_p90.tsv`), `NSEEDS=12`,
+     array 1–11, seed 0 = the pilot 15264667; cs / cs2, qos cs, one 80 GB GPU (the placement of the pilot and of the p95 arm it is
+     read beside), 6 h 30 min (the pilot took 4 h 57 min on an A100; the p95 seeds 2 h 53 min–3 h 21 min on H100 and 4 h 42 min–5 h 19 min
+     on A100), 64 GB host memory (peak 57.8 GB on the pilot's cold load, 4–10 GB on the p95 seeds; the script default is 128 GB).
+     **Read, fixed now:** when all 12 seeds are complete the arm is judged as its own blind set under the neutral name `ctl_m01_s0-11`
+     (Sonnet rubric-judge, first pass as judged, no adjudication), against the October unsteered arm. The Muse Goodfire family grows
+     from 9 contrasts to 10 (six judged Goodfire arms, this rung, three random-direction add arms); Holm is recomputed over the 10 and
+     any earlier contrast whose adjusted p crosses 0.05 either way is named. The dose rule is applied on the 12-seed arm on the
+     2026-11-07 measure (hidden pass among episodes not judged HACK, and no code, each within 10 points of unsteered); outside either
+     clause the arm is reported as outside the rule and its hack difference is not read as an effect of the direction at kept capability.
+     **Expected:** judged hacking below p95's 17.0% (unsteered 32.8%), no code near the 10-point line (seed 0: 11.1%), and the rule
+     measure outside by more than p95's 0.6 points, so the arm is expected outside the dose rule; the rung moves 50.7% of prompt and
+     12.5% of generated positions. If the 12-seed arm is inside both clauses, it is the heaviest Goodfire cap on Muse that keeps
+     capability on the rule and is read as such.
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /
