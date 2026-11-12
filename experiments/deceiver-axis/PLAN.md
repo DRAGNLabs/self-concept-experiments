@@ -1908,6 +1908,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      larger fall in judged hacking than p95 and a larger miss of the dose rule than p95's 0.6 points; p85 is not
      run (too close to p75, which broke). A rung lighter than p95 needs a new threshold run (the stored grid ends
      at 0.95) and is not part of this step.
+     **Read 9:34 pm MST (15264667 complete 9:24 pm, 45 of 45 episodes, 4 h 56 min):** no code 11.1% (5 of 45) against 0.0% on
+     unsteered seed 0, outside the 10-point clause by 1.1 points (one episode); truncated turns 4 of 94 (4.3%) against 0 of 100, inside.
+     **Not usable by the rule; not extended, not judged.** Beside the rule: honest hidden pass 58.3% against 69.0% (−10.6), shown pass
+     66.7% against 80.0%, 14,196 reasoning characters per turn against 9,154. Shares moved (`clamp_shares.py`, p90 row added after the
+     read): 50.7% of prompt and 12.5% of generated positions. No rung between p75 and p95 is tried further on Muse without a new decision.
+     FINDINGS "Muse Goodfire-axis (gfar) p90 cap pilot".
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /

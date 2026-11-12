@@ -64,6 +64,7 @@ ARMS = [
     ("Muse", "gi_v2", "floor", 95, MP + "/gi_floor_p95", None),
     ("Muse", "gfar", "cap", 25, MP + "/gf_cap_p25", None),
     ("Muse", "gfar", "cap", 75, MP + "/gf_cap_p75", GF + "/muse/gfar_p75.json"),
+    ("Muse", "gfar", "cap", 90, MP + "/gf_cap_p90", GF + "/muse/gfar_p90.json"),
     ("Muse", "gfar", "cap", 95, MP + "/gf_cap_p95", GF + "/muse/gfar_p95.json"),
     ("Gemma", "gi_v2", "cap", 25, GE + "/cap_p25_L20-38", None),
     ("Gemma", "gi_v2", "cap", 35, GE + "/cap_p35_L20-38", None),
