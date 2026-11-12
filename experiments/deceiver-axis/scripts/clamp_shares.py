@@ -53,6 +53,8 @@ ARMS = [
     ("gpt-oss", "gi_v2", "floor", 95, GP + "/gi_floor_p95", None),
     ("gpt-oss", "gfar", "cap", 25, GP + "/gf_cap_p25", None),
     ("gpt-oss", "gfar", "cap", 50, GP + "/gf_cap_p50", None),
+    ("gpt-oss", "gfar", "cap", 75, GP + "/gf_cap_p75", None),
+    ("gpt-oss", "gfar", "cap", 95, GP + "/gf_cap_p95", None),
     ("Muse", "gi_v2", "cap", 5, MP + "/gi_cap_p5", None),
     ("Muse", "gi_v2", "cap", 25, MP + "/gi_cap_p25", None),
     ("Muse", "gi_v2", "cap", 50, MP + "/gi_cap_p50", None),

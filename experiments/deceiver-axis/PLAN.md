@@ -1849,6 +1849,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      rung at the unsteered rate is reported as the point where the cap stops working, and an out-of-order pair is
      reported as such, not smoothed. The shares of positions each rung moves are computed with `clamp_shares.py`
      before the read and stated with it.
+     **Complete 6:05 pm MST Nov 11 (24 of 24 tasks, 540 episodes per rung, no error line); written before the set is built:** shares from
+     `clamp_shares.py` (rerun 6:10 pm): p75 moves 44.3% of prompt and 36.1% of generated positions, p95 18.7–18.8% and 9.4–11.9%
+     (p50: 58.9% / 56.0–56.1%; p25: 74.4% / 76.9–77.5%). Both rungs go into one blind set with blind arm keys, built by
+     `build_ladder_set.sh` as `gfcap50` was. The set gets a neutral name, `gfx01`, because the set name sits in the paths a judge
+     sees (the point written for Gemma today; `gfcap50`, `gfcap95` and `gfdose` carried arm-derived names, not undone); the map is in
+     `gfar_vs_gi_v2/steer/gptoss_set_tags.tsv`. Nothing else in the recipe changes.
   2. *Gemma: one-seed pilots at p25 / p50 / p75 / p95 before any 16-seed arm.* p25 was outside the rule on the three
      other models and broke two, and the share of positions moved does not transfer between models (gpt-oss usable
      at 56% of generated positions, Muse broken at 28%). The queued 16-seed p25 arm 15216111 (never started) is
