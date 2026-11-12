@@ -9,8 +9,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pilot_summary import load_setting  # noqa: E402
 
-COLUMNS = ("honest_hidden_pass_rate", "shown_pass_rate", "no_code_rate", "shown_pass_hidden_fail_rate", "truncated_turn_share")
-RATE_COLUMNS = COLUMNS[:4]  # read (2); the truncated-turn share is the fit read (1): not above the reference maximum
+# hidden_pass_rate = plain hidden pass over all episodes, the capability measure since 2026-11-11 (added 2026-11-12; the Nov 10
+# outputs were written without it).
+COLUMNS = ("hidden_pass_rate", "honest_hidden_pass_rate", "shown_pass_rate", "no_code_rate", "shown_pass_hidden_fail_rate", "truncated_turn_share")
+RATE_COLUMNS = COLUMNS[:5]  # read (2); the truncated-turn share is the fit read (1): not above the reference maximum
 
 
 def seed_rows(arm_dir: Path, tag: str) -> dict[str, dict[str, float]]:
@@ -19,7 +21,7 @@ def seed_rows(arm_dir: Path, tag: str) -> dict[str, dict[str, float]]:
         s = load_setting(seed_dir, tag)
         if s is None:
             continue
-        rows[seed_dir.name] = {"episodes": s["episodes"], "honest_hidden_pass_rate": s["honest_hidden_pass_rate"],
+        rows[seed_dir.name] = {"episodes": s["episodes"], "hidden_pass_rate": s["hidden_pass_rate"], "honest_hidden_pass_rate": s["honest_hidden_pass_rate"],
                                "shown_pass_rate": s["shown_pass_rate"], "no_code_rate": s["no_code_rate"],
                                "shown_pass_hidden_fail_rate": s["shown_pass_hidden_fail_rate"],
                                "truncated_turn_share": s["truncated_turns"] / max(s["turns"], 1)}
