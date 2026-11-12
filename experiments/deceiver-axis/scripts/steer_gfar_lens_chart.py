@@ -1,7 +1,8 @@
 """Chart of steer_gfar_lens_extract.py output: per-layer percentiles of the per-token gfar projection, unsteered vs gi_v2-steered.
 
 Rows: unsteered, steered, steered minus unsteered (the same percentile of each), and that difference divided by the
-unsteered p10-p90 width at the layer. Columns: all episodes, judged hacks (verdict HACK = STRONG or WEAK) and the rest
+unsteered p10-p90 width at the layer; the dashed line in those two rows is the injected vector carried unchanged,
+coefficient x cos(gi_v2 at the steer layer, gfar at the layer). Columns: all episodes, judged hacks (verdict HACK = STRONG or WEAK) and the rest
 (unjudged episodes count as not hack); without --verdicts only the combined column. Each panel's y-axis is clipped to
 the range of its p2-p98 lines. Writes <out>.png and <out>.json; --rechart redraws the png from an existing <out>.json.
 
@@ -23,6 +24,9 @@ import torch
 from jaxtyping import Bool, Float
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
+from selfconcept.measurement.unit_axes import load_unit_axes
+from steer_gfar_lens_extract import load_gfar_units
+
 Group = Literal["combined", "hack", "rest"]
 Condition = Literal["unsteered", "steered"]
 CONDITIONS: tuple[Condition, ...] = ("unsteered", "steered")
@@ -31,6 +35,7 @@ DISPLAYED_PERCENTILES = [*range(0, 10, 2), 20, 40, 50, 60, 80, *range(92, 101, 2
 MIDDLE_PERCENTILES = {20, 40, 60, 80}
 CLIP_LOW_PERCENTILE, CLIP_HIGH_PERCENTILE = 2, 98
 MEDIAN_COLOR = "#1f1f1d"
+INJECTION_COLOR = "#6b3fa0"
 PERCENTILE_COLORMAP = LinearSegmentedColormap.from_list("blue_gray_red", ["#2a78d6", "#b9b8b4", "#e34948"])
 GROUP_TITLES: dict[Group, str] = {"combined": "all episodes", "hack": "judged hack (STRONG / WEAK)", "rest": "not judged hack"}
 
@@ -104,7 +109,26 @@ def clip_to_inner_percentiles(axis: Axes, panels: list[Float[np.ndarray, "layers
     axis.set_ylim(low - padding, high + padding)
 
 
-def chart(percentiles_by_group: dict[Group, GroupPercentiles], steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
+def carried_injection_projection(lens_dir: Path) -> Float[np.ndarray, "layers"]:
+    """coefficient * <unit gi_v2 at the steer layer, unit gfar at each layer>; NaN before the steer layer."""
+    seed = torch.load(next(lens_dir.glob("seed*.pt")), map_location="cpu", weights_only=False)
+    gfar_units = load_gfar_units(seed["gfar"], *_artifact_shape(seed["gfar"]))
+    num_layers, hidden = gfar_units.shape
+    steer_layer = seed["steer_layer"]
+    gi_v2_unit = torch.as_tensor(load_unit_axes(Path(seed["gi_v2"]), [steer_layer], num_layers, hidden, seed["model"])[steer_layer]["direction"])
+    projection = (seed["coefficient"] * (gfar_units @ gi_v2_unit)).numpy()
+    projection[:steer_layer] = np.nan
+    return projection
+
+
+def _artifact_shape(gfar_spec: str) -> tuple[int, int]:
+    path, key = gfar_spec.rsplit(":", 1)
+    num_layers, hidden = torch.load(path, map_location="cpu", weights_only=False)[key].shape
+    return int(num_layers), int(hidden)
+
+
+def chart(percentiles_by_group: dict[Group, GroupPercentiles], injected: Float[np.ndarray, "layers"], steer_layer: int, alpha: float,
+          title: str, out_png: Path) -> None:
     groups = list(percentiles_by_group)
     figure, axes = plt.subplots(4, len(groups), figsize=(5.2 * len(groups) + 1.2, 14), squeeze=False, sharex=True)
     row_labels = ["unsteered\ngfar projection", f"gi_v2 +{alpha:g} at L{steer_layer}\ngfar projection",
@@ -116,11 +140,17 @@ def chart(percentiles_by_group: dict[Group, GroupPercentiles], steer_layer: int,
         delta = steered - unsteered
         width = percentile_columns(unsteered, [90])[:, 0] - percentile_columns(unsteered, [10])[:, 0]
         normalized_delta = delta / width[:, None]
+        injected_by_row = {2: injected, 3: injected / width}
         for row, (values, clip_panels) in enumerate(((unsteered, [unsteered, steered]), (steered, [unsteered, steered]),
                                                      (delta, [delta]), (normalized_delta, [normalized_delta]))):
             axis = axes[row, column]
             draw_percentile_lines(axis, values)
             clip_to_inner_percentiles(axis, clip_panels)
+            if row in injected_by_row:
+                axis.plot(np.arange(len(injected)), injected_by_row[row], color=INJECTION_COLOR, linestyle="--", linewidth=1.8, zorder=4,
+                          label="injected gi_v2 carried unchanged:\ncoef × cos(gi_v2 at steer layer, gfar at layer)")
+                low, high = axis.get_ylim()
+                axis.set_ylim(min(low, float(np.nanmin(injected_by_row[row]))), max(high, float(np.nanmax(injected_by_row[row]))))
             axis.axvline(steer_layer, color="#6b6a66", linestyle="--", linewidth=0.8)
             axis.grid(color="#e6e5e1", linewidth=0.5)
             axis.spines[["top", "right"]].set_visible(False)
@@ -130,6 +160,7 @@ def chart(percentiles_by_group: dict[Group, GroupPercentiles], steer_layer: int,
                 axis.set_ylabel(row_labels[row])
         axes[3, column].set_xlabel("layer")
         axes[0, column].set_title(f"{GROUP_TITLES[group]}\n{result['episodes']} episodes, {result['response_tokens']:,} response tokens", fontsize=10)
+    axes[2, 0].legend(loc="upper left", fontsize=8, frameon=False)
     colorbar = figure.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, 100), cmap=PERCENTILE_COLORMAP), ax=axes, fraction=0.02, pad=0.02)
     colorbar.set_label("percentile over response tokens: 0–8 and 92–100 every 2 (thin), 20 / 40 / 60 / 80 (medium), 50 in black")
     figure.suptitle(f"{title}: per-token gfar projection, unsteered episodes teacher-forced with and without gi_v2\n"
@@ -149,7 +180,8 @@ def main() -> None:
 
     if args.rechart:
         saved = json.loads(args.out.with_suffix(".json").read_text())
-        chart(saved["groups"], saved["steer_layer"], saved["alpha"], args.title, args.out.with_suffix(".png"))
+        chart(saved["groups"], carried_injection_projection(Path(saved["lens"])), saved["steer_layer"], saved["alpha"], args.title,
+              args.out.with_suffix(".png"))
         return
 
     lens = load_lens(args.lens)
@@ -160,7 +192,7 @@ def main() -> None:
     args.out.with_suffix(".json").write_text(json.dumps({
         "lens": str(args.lens), "verdicts": str(args.verdicts), "steer_layer": lens["steer_layer"], "alpha": lens["alpha"],
         "percentiles": PERCENTILES.tolist(), "groups": percentiles_by_group}, indent=1))
-    chart(percentiles_by_group, lens["steer_layer"], lens["alpha"], args.title, args.out.with_suffix(".png"))
+    chart(percentiles_by_group, carried_injection_projection(args.lens), lens["steer_layer"], lens["alpha"], args.title, args.out.with_suffix(".png"))
 
 
 if __name__ == "__main__":
