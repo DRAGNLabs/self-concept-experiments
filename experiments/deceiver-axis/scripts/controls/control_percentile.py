@@ -69,30 +69,47 @@ class MeasureSummary(QInterval):
     top: list[tuple[int, str]]
 
 
-def shape_free_interval(likelihood: Likelihood, above: Float[np.ndarray, "grid"]) -> tuple[float, float]:
-    def fit(tail_mass: float | None, start: Float[np.ndarray, "grid"], iterations: int) -> tuple[float, Float[np.ndarray, "grid"]]:
-        weights = np.maximum(start, 1e-9) if tail_mass is not None else start.copy()
-        for _ in range(iterations):
-            responsibilities = likelihood * weights
-            responsibilities /= responsibilities.sum(axis=1, keepdims=True)
-            weights = responsibilities.mean(axis=0)
-            if tail_mass is not None:
-                mass_above, mass_below = weights[above].sum(), weights[~above].sum()
-                weights = np.where(above, weights * tail_mass / max(mass_above, 1e-300), weights * (1 - tail_mass) / max(mass_below, 1e-300))
-        return float(np.log(likelihood @ weights + 1e-300).sum()), weights
+def npmle_fit(likelihood: Likelihood, start: Float[np.ndarray, "grid"], iterations: int,
+              above: Bool[np.ndarray, "grid"] | None = None, tail_mass: float | None = None) -> tuple[float, Float[np.ndarray, "grid"]]:
+    """EM for the mixing weights on the grid (with the mass on `above` held at `tail_mass` when given); returns the
+    log-likelihood and the weights."""
+    weights = np.maximum(start, 1e-9) if tail_mass is not None else start.copy()
+    for _ in range(iterations):
+        responsibilities = likelihood * weights
+        responsibilities /= responsibilities.sum(axis=1, keepdims=True)
+        weights = responsibilities.mean(axis=0)
+        if above is not None and tail_mass is not None:
+            mass_above, mass_below = weights[above].sum(), weights[~above].sum()
+            weights = np.where(above, weights * tail_mass / max(mass_above, 1e-300), weights * (1 - tail_mass) / max(mass_below, 1e-300))
+    return float(np.log(likelihood @ weights + 1e-300).sum()), weights
 
-    peak, weights = fit(None, np.full(len(RATE_GRID), 1 / len(RATE_GRID)), NPMLE_ITERATIONS)
-    estimate = float(weights[above].sum())
 
-    def boundary(inside: float, outside: float) -> float:
-        if peak - fit(outside, weights, PROFILE_ITERATIONS)[0] <= LIKELIHOOD_RATIO_CUTOFF:
-            return outside
-        for _ in range(BISECTION_STEPS):
-            middle = (inside + outside) / 2
-            inside, outside = (middle, outside) if peak - fit(middle, weights, PROFILE_ITERATIONS)[0] <= LIKELIHOOD_RATIO_CUTOFF else (inside, middle)
-        return (inside + outside) / 2
+def unconstrained_npmle(likelihood: Likelihood) -> tuple[float, Float[np.ndarray, "grid"]]:
+    grid_size = likelihood.shape[1]
+    return npmle_fit(likelihood, np.full(grid_size, 1 / grid_size), NPMLE_ITERATIONS)
 
-    return boundary(estimate, 0.0), boundary(estimate, 1.0)
+
+def shape_free_bound(likelihood: Likelihood, above: Bool[np.ndarray, "grid"], side: Literal["low", "high"], cutoff: float,
+                     peak_fit: tuple[float, Float[np.ndarray, "grid"]]) -> float:
+    """The lowest or highest tail mass whose profile log-likelihood is within `cutoff` of the unconstrained peak."""
+    peak, weights = peak_fit
+
+    def within(tail_mass: float) -> bool:
+        return peak - npmle_fit(likelihood, weights, PROFILE_ITERATIONS, above, tail_mass)[0] <= cutoff
+
+    inside, outside = float(weights[above].sum()), 0.0 if side == "low" else 1.0
+    if within(outside):
+        return outside
+    for _ in range(BISECTION_STEPS):
+        middle = (inside + outside) / 2
+        inside, outside = (middle, outside) if within(middle) else (inside, middle)
+    return (inside + outside) / 2
+
+
+def shape_free_interval(likelihood: Likelihood, above: Bool[np.ndarray, "grid"]) -> tuple[float, float]:
+    peak_fit = unconstrained_npmle(likelihood)
+    return (shape_free_bound(likelihood, above, "low", LIKELIHOOD_RATIO_CUTOFF, peak_fit),
+            shape_free_bound(likelihood, above, "high", LIKELIHOOD_RATIO_CUTOFF, peak_fit))
 
 
 def grid_edges(inside: Bool[np.ndarray, "means concentrations"], target_rate: float) -> list[GridEdge]:

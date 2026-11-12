@@ -1,0 +1,10 @@
+[
+ {"name": "gpt-oss-120b", "controls_root": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/antonym_controls/runs", "controls_glob": "antonym_p*",
+  "records_glob": "seed*/main_impossible_original.jsonl", "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/main/unsteered", "target": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gptoss120b/gi_v2/pilot/gi_p0.2"},
+ {"name": "Muse-Glimmer-30B", "controls_root": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/antonym_controls/runs", "controls_glob": "antonym_p*",
+  "records_glob": "seed*/main_impossible_original.jsonl", "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/main/unsteered", "target": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/gi_p0.08"},
+ {"name": "Gemma-4-31B", "controls_root": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2/antonym_controls/runs", "controls_glob": "antonym_p*",
+  "records_glob": "seed*/pilot_impossible_original.jsonl", "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2/rh/hard108/unsteered", "target": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2/rh/hard108/L30_a0.08"},
+ {"name": "Qwen3.8-27B", "controls_root": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/antonym_controls/runs", "controls_glob": "antonym_p*",
+  "records_glob": "seed*/pilot_impossible_original.jsonl", "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/unsteered", "target": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/L32_a0.16"}
+]

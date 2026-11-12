@@ -22,41 +22,17 @@ import sys
 from pathlib import Path
 
 import torch
-from huggingface_hub import hf_hub_download
-from safetensors import safe_open
 from transformers import AutoTokenizer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from logit_lens import Unembedding, lens_direction, random_extreme_z  # noqa: E402
+from logit_lens import lens_direction, load_unembedding, random_extreme_z  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+from selfconcept.assistant_axis.internals.model_specifics.registry import unembedding_specifics_for  # noqa: E402
 from selfconcept.correlation.random_vectors import random_directions  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
-
-NORM_NAMES = ("model.norm.weight", "model.language_model.norm.weight")
-HEAD_NAMES = ("lm_head.weight", "model.embed_tokens.weight", "model.language_model.embed_tokens.weight")  # tied embeddings when no lm_head
-
-
-def load_unembedding(model_name: str) -> Unembedding:
-    index_path = hf_hub_download(model_name, "model.safetensors.index.json")
-    shard_by_tensor: dict[str, str] = json.loads(Path(index_path).read_text())["weight_map"]
-    norm_name = next(n for n in NORM_NAMES if n in shard_by_tensor)
-    head_name = next(n for n in HEAD_NAMES if n in shard_by_tensor)
-    config = json.loads(Path(hf_hub_download(model_name, "config.json")).read_text())
-    gemma_norm = "gemma" in str(config.get("model_type", "")).lower()  # Gemma RMSNorm scales by (1 + weight)
-
-    def load_tensor(name: str) -> torch.Tensor:
-        with safe_open(hf_hub_download(model_name, shard_by_tensor[name]), "pt") as shard:
-            return shard.get_tensor(name).float()
-
-    gain = load_tensor(norm_name)
-    if gemma_norm:
-        gain = 1.0 + gain
-    gain_scaled_weight = load_tensor(head_name) * gain
-    logger.info("unembedding %s from %s, gain %s%s", tuple(gain_scaled_weight.shape), head_name, norm_name, " (1 + w, Gemma)" if gemma_norm else "")
-    return {"gain_scaled_weight": gain_scaled_weight, "row_norms": gain_scaled_weight.norm(dim=-1)}
 
 
 def load_axis(path: Path, layer: int) -> torch.Tensor:
@@ -100,7 +76,7 @@ def main() -> None:
     ap.add_argument("--null-seed", type=int, default=0)
     args = ap.parse_args()
 
-    unembedding = load_unembedding(args.model)
+    unembedding = load_unembedding(unembedding_specifics_for(args.model), args.model)
     hidden = unembedding["gain_scaled_weight"].shape[1]
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 

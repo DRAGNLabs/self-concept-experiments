@@ -13,9 +13,9 @@ import json
 import random
 from collections.abc import Iterator
 from pathlib import Path
-from typing import TypedDict
 
-from build_labeling_page import Item
+from selfconcept.common.human_validation import Item, JudgedCandidate, KeyRecord, half_positive_sample
+from selfconcept.common.jsonl import write_jsonl
 
 LEVELS = ("0", "1", "2", "3")
 QUESTION_PLACEHOLDER = "[Question: shown on the right]"
@@ -23,19 +23,14 @@ ANSWER_PLACEHOLDER = "[Response: shown on the right]"
 GENERIC_ROLE_PARAGRAPH = "You are evaluating whether the model's response displays the role described in the item (shown on the right)."
 
 
-class Candidate(TypedDict):
-    model: str
+class Candidate(JudgedCandidate):
     role: str
     response_key: str
     question: str
     answer: str
-    judge_label: str
 
 
-class KeyRecord(TypedDict):
-    item_id: str
-    judge_label: str
-    model: str
+class InCharacterKeyRecord(KeyRecord):
     role: str
     response_key: str
     run_root: str
@@ -70,18 +65,6 @@ def showable_candidates(candidates: list[Candidate]) -> list[Candidate]:
     return [candidate for candidate in candidates if candidate["answer"].strip() and "</think>" not in candidate["answer"]]
 
 
-def balanced_sample(candidates_by_model: dict[str, list[Candidate]], sample_size: int, generator: random.Random) -> list[Candidate]:
-    """Round-robin over models, skipping a model once its pool is empty."""
-    pools = {model: generator.sample(candidates, len(candidates)) for model, candidates in sorted(candidates_by_model.items())}
-    sample: list[Candidate] = []
-    while len(sample) < sample_size and any(pools.values()):
-        for pool in pools.values():
-            if pool and len(sample) < sample_size:
-                sample.append(pool.pop())
-    assert len(sample) == sample_size, f"only {len(sample)} candidates available"
-    return sample
-
-
 def split_eval_prompt(eval_prompt: str) -> tuple[str, str]:
     role_paragraph, _, shared_rubric = eval_prompt.partition("\n\n")
     return role_paragraph, shared_rubric
@@ -99,10 +82,6 @@ def to_item(item_id: str, candidate: Candidate, role_paragraph: str) -> Item:
     ]}
 
 
-def write_jsonl(path: Path, records: list[Item] | list[KeyRecord]) -> None:
-    path.write_text("".join(json.dumps(record) + "\n" for record in records))
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", action="append", required=True, help="model=run_root (with scores/ and responses/)")
@@ -117,17 +96,7 @@ def main() -> None:
     assert set(positive_levels) < set(LEVELS), f"--positive-levels must be a proper subset of {LEVELS}"
     run_root_by_model = {model: Path(root) for model, root in (run.split("=", 1) for run in args.run)}
     candidates = [candidate for model, root in run_root_by_model.items() for candidate in showable_candidates(list(judged_candidates(model, root)))]
-    generator = random.Random(args.seed)
-    sample = [
-        candidate
-        for positive in (True, False)
-        for candidate in balanced_sample(
-            {model: [c for c in candidates if c["model"] == model and (c["judge_label"] in positive_levels) == positive]
-             for model in run_root_by_model},
-            args.per_half, generator,
-        )
-    ]
-    generator.shuffle(sample)
+    sample = half_positive_sample(candidates, list(run_root_by_model), positive_levels, args.per_half, random.Random(args.seed))
 
     role_paragraph_and_rubric_by_role = {
         role: split_eval_prompt(json.loads((args.roles_dir / f"{role}.json").read_text())["eval_prompt"])
@@ -142,11 +111,12 @@ def main() -> None:
     write_jsonl(args.out_dir / "items.jsonl", [
         to_item(item_id, candidate, role_paragraph_and_rubric_by_role[candidate["role"]][0]) for item_id, candidate in zip(item_ids, sample)
     ])
-    write_jsonl(args.out_dir / "key.jsonl", [
+    key_records: list[InCharacterKeyRecord] = [
         {"item_id": item_id, "judge_label": candidate["judge_label"], "model": candidate["model"], "role": candidate["role"],
          "response_key": candidate["response_key"], "run_root": str(run_root_by_model[candidate["model"]])}
         for item_id, candidate in zip(item_ids, sample)
-    ])
+    ]
+    write_jsonl(args.out_dir / "key.jsonl", key_records)
 
 
 if __name__ == "__main__":

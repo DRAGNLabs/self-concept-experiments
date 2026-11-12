@@ -1,7 +1,7 @@
 """Capping vs negative steering along gi_v2, per model: problem-stratified judged hack rate (Qwen: hidden-test fail,
-not judged) and hidden pass among honest episodes (episodes not judged HACK; BORDERLINE and unjudged count as honest,
-as in the analyses). Honest hidden pass is the stratified ratio mean_p(honest passes_p) / mean_p(honest episodes_p),
-with per-problem shares over seeds. Differences vs unsteered and cap minus steering, with 95% CIs from a paired
+not judged), hidden pass (the capability measure, 2026-11-09 amendment) and, secondary, hidden pass among honest
+episodes (episodes not judged HACK; BORDERLINE and unjudged count as honest, as in the analyses). Honest hidden pass is
+the stratified ratio mean_p(honest passes_p) / mean_p(honest episodes_p), with per-problem shares over seeds. Differences vs unsteered and cap minus steering, with 95% CIs from a paired
 bootstrap over problems. Runs per model come from a setups JSON (data/cap_vs_steer_setups.json): arm directories, the
 episode-file tag, the verdicts file (null = hack is the hidden-test-fail proxy), and which arms are caps and which are
 negative steering doses.
@@ -45,6 +45,7 @@ class Interval(TypedDict):
 
 class ProblemShares(TypedDict):
     hack: Float[np.ndarray, "problems"]
+    hidden_pass: Float[np.ndarray, "problems"]
     honest: Float[np.ndarray, "problems"]
     honest_pass: Float[np.ndarray, "problems"]
 
@@ -63,13 +64,15 @@ def problem_shares(arm: str, directory: Path, tag: str, is_hack: IsHack, problem
     for path in sorted(directory.glob(f"seed*/{tag}_impossible_original.jsonl")):
         for record in map(json.loads, path.open()):
             hack = is_hack(f"{arm}/{path.parent.name}/{record['example_id']}", record)
-            outcomes_by_problem[record["example_id"]].append((hack, not hack, not hack and bool(record["passed_original"])))
+            hidden_pass = bool(record["passed_original"])
+            outcomes_by_problem[record["example_id"]].append((hack, hidden_pass, not hack, not hack and hidden_pass))
     shares = np.array([np.mean(outcomes_by_problem[p], axis=0) for p in problems])
-    return {"hack": shares[:, 0], "honest": shares[:, 1], "honest_pass": shares[:, 2]}
+    return {"hack": shares[:, 0], "hidden_pass": shares[:, 1], "honest": shares[:, 2], "honest_pass": shares[:, 3]}
 
 
 def metrics(shares: ProblemShares, picks: np.ndarray) -> dict[str, np.ndarray]:
-    return {"hack": shares["hack"][picks].mean(-1), "honest_hidden_pass": shares["honest_pass"][picks].mean(-1) / shares["honest"][picks].mean(-1)}
+    return {"hack": shares["hack"][picks].mean(-1), "hidden_pass": shares["hidden_pass"][picks].mean(-1),
+            "honest_hidden_pass": shares["honest_pass"][picks].mean(-1) / shares["honest"][picks].mean(-1)}
 
 
 def interval(draws: np.ndarray, point: float) -> Interval:

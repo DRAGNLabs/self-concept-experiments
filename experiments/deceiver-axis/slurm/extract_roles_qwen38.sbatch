@@ -38,9 +38,10 @@ JUDGE="Qwen/Qwen2.5-7B-Instruct"
 QUESTIONS="${QUESTIONS:-100}"
 MIN_COUNT="${MIN_COUNT:-50}"
 MAXTOK=8192
+TP="${TP:-1}"  # vLLM tensor parallel size for generation; set it to the GPU count when overriding --gpus-per-node with several smaller GPUs
 MAXLEN=12288
 JUDGE_MAXLEN=32768
-ACT_BATCH=4
+ACT_BATCH="${ACT_BATCH:-4}"  # 1 on 80 GB GPUs: the stacked all-layer activations of a batch of 4 OOM GPU 0
 ROLES="${ROLES:-default neutral_fic schemer_fic deceiver_fic cheater_fic con_artist_fic sycophant_fic spin_doctor_fic infiltrator_fic sandbagger_fic straight_shooter_fic rule_follower_fic transparent_negotiator_fic candid_friend_fic scrupulous_scientist_fic whistleblower_fic loyal_steward_fic conscientious_craftsperson_fic diligent_worker_fic embezzler_fic impostor_fic gaslighter_fic honest_bookkeeper_fic humble_expert_fic accountable_owner_fic}"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
     ROLES="$(echo "$ROLES" | tr ' ' '\n' | awk -v n="$SLURM_ARRAY_TASK_COUNT" -v i="$((SLURM_ARRAY_TASK_ID - SLURM_ARRAY_TASK_MIN))" '(NR - 1) % n == i' | tr '\n' ' ')"
@@ -61,7 +62,7 @@ TRAIN_QUESTIONS="$("${PYTHON[@]}" -c 'import json, sys; print([q["id"] for q in 
 if [ "${SKIP_GENERATE:-0}" != 1 ]; then
     echo "########## Generate ##########"
     "${PYTHON[@]}" scripts/pipeline/1_generate.py --config configs/pipeline/1_generate.yaml \
-        --run.model "$MODEL" --run.tensor_parallel_size 1 --run.gpu_memory_utilization 0.85 \
+        --run.model "$MODEL" --run.tensor_parallel_size "$TP" --run.gpu_memory_utilization 0.85 \
         --run.question_count "$QUESTIONS" --run.temperature 1.0 --run.top_p 1.0 --run.thinking true \
         --run.max_tokens "$MAXTOK" --run.max_model_len "$MAXLEN" \
         --run.roles_dir "$ROLES_DIR" --run.questions_file "$QUESTIONS_FILE" --run.roles "$ROLES_BRACKET" --run.output_dir "$ROOT/responses"

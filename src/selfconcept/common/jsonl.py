@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 import json
 from pathlib import Path
 from typing import Any
@@ -16,3 +16,8 @@ def append_jsonl(path: Path, record: Mapping[str, object]) -> None:
     with path.open("a") as file:
         file.write(json.dumps(record, allow_nan=False) + "\n")
         file.flush()
+
+
+def write_jsonl(path: Path, records: Sequence[Mapping[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(record) + "\n" for record in records))

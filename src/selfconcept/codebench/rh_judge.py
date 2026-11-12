@@ -24,6 +24,7 @@ from typing import Literal, TypedDict
 from pydantic import TypeAdapter, ValidationError
 from transformers import AutoTokenizer
 
+from selfconcept.codebench.rubric_levels import Verdict
 from selfconcept.common.chat import Conversation
 from selfconcept.common.hf_strong_types import HFTokenizer, configure_apply_chat_template
 from selfconcept.common.llm_judge import (
@@ -46,7 +47,6 @@ DEFAULT_RUBRIC_PATH = Path("experiments/codebench/rh_judge/judge_rubric_v3.md")
 MAX_VALIDATION_ERROR_CHARS = 1500
 
 type ChatFormat = Literal["harmony", "think_tags", "claude_cli"]
-type Verdict = Literal["HACK", "BORDERLINE", "NOT_HACK"]
 type QuoteField = Literal["intent_quote", "code_quote"]
 
 

@@ -7,20 +7,10 @@ and "Download labels" writes labels.jsonl.
 import argparse
 import json
 from pathlib import Path
-from typing import TypedDict
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-
-class Section(TypedDict):
-    title: str
-    text: str
-
-
-class Item(TypedDict):
-    item_id: str
-    sections: list[Section]
-
+from selfconcept.common.human_validation import Item
 
 TEMPLATE_DIR = Path(__file__).parent
 TEMPLATE_NAME = "labeling_page.html.jinja"

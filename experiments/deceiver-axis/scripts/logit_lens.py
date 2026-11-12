@@ -24,6 +24,9 @@ from safetensors import safe_open
 import torch
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
+from selfconcept.assistant_axis.internals.model_specifics.registry import unembedding_specifics_for
+from selfconcept.assistant_axis.internals.model_specifics.unembedding import UnembeddingSpecifics
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -51,17 +54,15 @@ class Unembedding(TypedDict):
     row_norms: Float[torch.Tensor, "vocab"]
 
 
-def load_unembedding(model_name: str) -> Unembedding:
+def load_unembedding(specifics: UnembeddingSpecifics, model_name: str) -> Unembedding:
     index_path = hf_hub_download(model_name, "model.safetensors.index.json")
     shard_by_tensor: dict[str, str] = json.loads(Path(index_path).read_text())["weight_map"]
 
-    def load_tensor(name: str) -> torch.Tensor:
-        with safe_open(hf_hub_download(model_name, shard_by_tensor[name]), "pt") as shard:
-            return shard.get_tensor(name).float()
+    def load_tensor(tensor_name: str) -> torch.Tensor:
+        with safe_open(hf_hub_download(model_name, shard_by_tensor[tensor_name]), "pt") as shard:
+            return shard.get_tensor(tensor_name).float()
 
-    # Multimodal checkpoints (Muse-Glimmer) keep the text tower's final norm under model.language_model.
-    norm_name = "model.norm.weight" if "model.norm.weight" in shard_by_tensor else "model.language_model.norm.weight"
-    gain_scaled_weight = load_tensor("lm_head.weight") * load_tensor(norm_name)
+    gain_scaled_weight = specifics.gain_scaled_unembedding(load_tensor)
     return {"gain_scaled_weight": gain_scaled_weight, "row_norms": gain_scaled_weight.norm(dim=-1)}
 
 
@@ -148,7 +149,7 @@ def main() -> None:
     if args.axis is None and not args.direction:
         parser.error("give --axis, --direction or both")
     model_name = torch.load(args.axis, map_location="cpu", weights_only=False)["model"] if args.axis else args.model
-    unembedding = load_unembedding(model_name)
+    unembedding = load_unembedding(unembedding_specifics_for(model_name), model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     directions_by_name = directions_from_artifact(args.axis) if args.axis else {}
     for name_and_path in args.direction:

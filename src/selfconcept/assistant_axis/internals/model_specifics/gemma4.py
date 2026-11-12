@@ -9,12 +9,15 @@ thought channel (CoT region) over the final content.
 """
 from typing import Any, Iterator, NamedTuple
 
+from jaxtyping import Float
+import torch
 import torch.nn as nn
 
 from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
     MessageKind, MessageSpan, MessageSpanSpecifics, ToolCallCloseSpecifics, end_token_index_after, shortest_suffix_containing,
 )
 from selfconcept.assistant_axis.internals.model_specifics.types import CoverallLayerGetter, ModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.unembedding import CheckpointTensorLoader, UnembeddingSpecifics
 from selfconcept.common.generation.model_specifics.gemma4 import (  # noqa: F401  (split_gemma4_completion is re-exported)
     THOUGHT_CLOSE, THOUGHT_OPEN, TURN_CLOSE, TURN_OPEN, Gemma4AssistantTurn, Gemma4GenerationSpecifics, split_gemma4_completion,
 )
@@ -117,7 +120,7 @@ def _model_turn_spans(tokenizer: HFTokenizer, full_ids: list[int], content_indic
 
 
 class Gemma4ModelSpecifics(CoverallLayerGetter, Gemma4GenerationSpecifics, ModelSpecifics[AllRoles, Gemma4AssistantTurn],
-                           MessageSpanSpecifics, ToolCallCloseSpecifics):
+                           MessageSpanSpecifics, ToolCallCloseSpecifics, UnembeddingSpecifics):
     def message_spans(self, tokenizer: HFTokenizer, full_ids: list[int]) -> list[MessageSpan]:
         thought_close = {tokenizer.convert_tokens_to_ids(THOUGHT_CLOSE)}
         spans: list[MessageSpan] = []
@@ -162,3 +165,7 @@ class Gemma4ModelSpecifics(CoverallLayerGetter, Gemma4GenerationSpecifics, Model
         except AttributeError:
             pass
         return super().get_layers(model)
+
+    def gain_scaled_unembedding(self, load_tensor: CheckpointTensorLoader) -> Float[torch.Tensor, "vocab hidden"]:
+        """Tied embeddings; Gemma4RMSNorm scales by weight (not Gemma 2/3's 1 + weight)."""
+        return load_tensor("model.language_model.embed_tokens.weight") * load_tensor("model.language_model.norm.weight")

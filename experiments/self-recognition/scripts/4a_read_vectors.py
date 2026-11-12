@@ -15,9 +15,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from itertools import batched
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
-import jsonlines
 import torch
 from jaxtyping import Float
 from torch import Tensor, nn
@@ -29,6 +28,7 @@ from selfconcept.common.activation_extraction.extraction import (
 )
 from selfconcept.common.activation_extraction.model_specifics import ModelSpecifics, get_model_specifics
 from selfconcept.common.hf_strong_types import HFTokenizer
+from selfconcept.common.jsonl import write_jsonl
 from selfconcept.common.span_targeting.span_targeters import ResponseTargeter
 from selfconcept.common.span_targeting.types import PromptCompletion
 from selfconcept.measurement.interface import TokenScorer
@@ -130,13 +130,6 @@ def random_projections(
     random_directions: Float[Tensor, "seed hidden"],
 ) -> list[list[float]]:
     return (pooled_at_layer @ random_directions.T).tolist()
-
-
-def write_jsonl(path: Path, records: Sequence[Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with jsonlines.open(path, "w") as writer:
-        writer.write_all(records)
-    logger.info("wrote %d records to %s", len(records), path)
 
 
 def longest_first[T](items: Sequence[T], length: Callable[[T], int]) -> list[T]:
@@ -241,6 +234,7 @@ def run_judge_reading(
     logger.info("reading A train-chosen best layer: %d", best_layer)
     holdout_records = judge_split_records(examples_by_split["holdout"], "holdout", best_layer, reading_model, run)
     write_jsonl(reading_path(run.run_dir, run.model), [*train_records, *holdout_records])
+    logger.info("wrote %d records to %s", len(train_records) + len(holdout_records), reading_path(run.run_dir, run.model))
 
     layer_norm_by_layer = span_layer_norms(examples_by_split["train"][: run.layer_norm_record_count], reading_model, run)
     logger.info("per-layer mean residual norm: %s", " ".join(f"{norm:.1f}" for norm in layer_norm_by_layer))
@@ -332,6 +326,7 @@ def run_transcript_reading(
     logger.info("reading B train-chosen best layer: %d", best_layer)
     holdout_records = transcript_split_records(examples_by_split["holdout"], best_layer, reading_model, run)
     write_jsonl(transcript_reading_path(run.run_dir, run.model), [*train_records, *holdout_records])
+    logger.info("wrote %d records to %s", len(train_records) + len(holdout_records), transcript_reading_path(run.run_dir, run.model))
 
 
 def main(run: RunConfig) -> None:

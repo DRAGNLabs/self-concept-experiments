@@ -11,9 +11,10 @@ code appends those per model config (see scenarios.SUFFIX_*).
 """
 
 import argparse
-import json
 import random
 from pathlib import Path
+
+from selfconcept.common.jsonl import write_jsonl
 
 from . import vocab
 from .scenarios import LATENT_PROBE_PAIR, SCENARIOS, SCENARIOS_MIRRORED, SOO_TRAINING_PAIRS
@@ -26,13 +27,6 @@ def fix_articles(text: str, values: list[str]) -> str:
         if value[0].lower() in "aeio":
             text = text.replace(f"a {value}", f"an {value}")
     return text
-
-
-def write_jsonl(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as f:
-        for row in rows:
-            f.write(json.dumps(row) + "\n")
 
 
 def gen_train_pairs() -> list[dict]:

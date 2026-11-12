@@ -89,7 +89,10 @@ call a non-significant result evidence of no effect.
 **Gemma random 1729 sign pair, CPU checks 2026-11-04 (user request ~3:40 pm MST; FINDINGS "Gemma random 1729 sign pair: audit, mirror test, reasoning length and hazard by attempt"):** the negated run used the same direction (settings identical except the sign; seed 1729, layer 30, norm 285.0085, coefficient ∓2.8501); none of Koby's 1729 lens / token / probe outputs or the 30-direction `g108-randscreen` (2 of 30 done) are on the share, and a scorer for the screen is ready; the problems −1729 lowers are not the problems +1729 lifts (r(Δ+, Δ−) −0.10 against a null-pair floor of +0.46; inside the 26 baseline-hacking problems the lowered and lifted sets overlap 14 vs 13.2 expected); reasoning length is a side effect, not the path (+1729 and the do-nothing 1731 both lengthen turn-0 reasoning on 99 of 108 problems; predicted Δ from the length shift ≈ 0 for every arm); and +1729's extra hacks arrive at the first submission with no failure behind them (judged-hack hazard at attempt 1 7.8% vs 3.2% unsteered, +4.6, CI +2.9 to +6.6; later attempts +0.5, CI −0.0 to +1.0; the pressure-source mix of its HACK verdicts is unchanged, 56% none_stated), so 1729 is not "pass by any means after failing"; −1729 is mostly a first-attempt effect too (−1.2 at attempt 1) with slightly more giving up (6.7% vs 4.9%). A side note (~4:30 pm MST) points out that −1729's per-problem pattern is null-like and the sign-dependence rests on the borderline aggregate (−1.5, Holm 0.066); reply recorded in the entry: regression to the mean does not lower a pooled rate (the nulls sit at +0.4 / −0.1), an independent-half test puts −1729's trim on baseline hackers at −5.3 pp (CI −11.0 to −0.2) against −1.8 / −2.8 (CIs through zero) for the nulls, so the reduction is small and borderline but not an artefact; the ±0.005 dose arms decide.
 
 **Gemma random 1729 negated, judged 2026-11-04 (user request ~2:25 pm MST; FINDINGS "Gemma random 1729 negated, judged"):** Koby's `L30_rand1729_a-0.01` (job 15010135, synced to the share) judged blind on Sonnet, 326 proxy + 17 hidden-signature dossiers. Judged hack 4.7% → **3.2% (Δ −1.5, CI −3.0 to −0.3, raw p 0.022, Holm 0.066 over the four random contrasts)** against +5.6 for the same direction at +0.01; below unsteered on 12 of 16 seeds (sign p 0.013), 5 problems up / 18 down, 19 problems with a hack vs 26. Hidden pass 29.3% (−2.3, the same as +1729, inside the dose rule), shown pass 48.2% (−3.6), so the reduction is not a capability-loss artefact by the hidden-pass criterion. Sign-dependent: 1729 is a direction, not a disturbance. Chart `analysis_rand11/gemma_hard108_rand_chart.png`. Controls array 15043511 (dose ±0.005, pc50, per-token noise), lens 15043512, probes 15039074 and capeval 15039083 still queued on qos cs.
-**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), and on gpt-oss put gi_v2 +0.2 above the 97th percentile with no shape assumption (shape-free q ≤ 2.2% proxy, ≤ 2.6% hard-coding). Capping and negative steering give the same hack vs honest-hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Honest hidden pass is now the capability measure.
+
+**Hack separation on unsteered episodes 2026-11-11 (user request; FINDINGS "Hack vs non-hack separation on unsteered episodes, gi_v2 and gfar"):** gfar's projection separates judged hacks from non-hacks above the random-direction 95% range on gpt-oss, Muse and Gemma (answer tokens pooled AUROC 0.87 / 0.95 / 0.90 against random 97.5th percentiles 0.84 / 0.90 / 0.84); gi_v2 stays inside the range everywhere (0.50–0.78); Qwen has no unsteered hacks.
+
+**Control directions and capping vs steering 2026-11-05 to 2026-11-07 (Koby; FINDINGS "Control directions for gi_v2's percentile", "Capping vs negative steering along gi_v2", the two covariance-shaped 100 × 1 runs and the Gemma stage 1 scan):** covariance-shaped random directions are retired as the control population (they overlap gi_v2, |cos| 0.21, and Gemma's sit above unsteered as a group); gi_v2's percentile among them is > 95th on gpt-oss and Muse only under the smooth (beta) assumption (shape-free upper bounds 5% and 18%). The new controls are 100 isolated-text antonym contrasts (AISI method; effective dimension 43, no gi_v2 / assistant-axis overlap), and on gpt-oss put gi_v2 +0.2 above the 97th percentile with no shape assumption (shape-free q ≤ 2.2% proxy, ≤ 2.6% hard-coding). Capping and negative steering give the same hack vs hidden-pass trade-off on gpt-oss and Muse; the steering-vs-capping headline waits on the Gemma cap dose pilot (job 15125968). Hidden pass is the capability measure again (2026-11-09; honest hidden pass, used 2026-11-07 to 11-09, stays available as a secondary output).
 
 **Gemma random 1729 CPU checks 2026-11-04 (user request; FINDINGS "Gemma random direction 1729: per-seed, per-problem, same-seed divergence and activation-geometry checks"):** the +5.6 is above unsteered on 16 of 16 seeds (seed-bootstrap CI +4.4 to +6.8); per-problem overlap with gi +0.08 (plain r +0.34) is at or below the null-arm floor (the two do-nothing random arms correlate +0.46 with each other through the shared unsteered reference) and vanishes once the reference is removed (split-reference r +0.16); the same-seed prefix shows 1729 disturbs sampling exactly as much as 1730 / 1731 (median 92 / 80 / 86 chars) and as much as gi_v2 at α 0.08 (random unit directions are eight times as disruptive per unit α, norm-matching ≠ disturbance-matching); in layer-30 activation geometry 1729 is an ordinary draw (p17–p74 on every statistic) while gi_v2 lies inside the model's own variation (88% in the top-50 PCs, whitened norm 4 vs 34). Direction-specific, invisible without a forward pass; GPU options (negation / dose, PC-split and per-token noise, causal downstream lens, 20-seed null) are in PLAN.md awaiting a go-ahead. Probe array 15039074 and capeval 15039083 for 1729 are still queued on qos cs.
 
@@ -1715,6 +1718,77 @@ Sensitivity: BORDERLINE counted 7.2 → 5.1 (−2.1, CI −3.8 to −0.6, Holm 0
 **Limits.** One draw at one dose per sign; 16 seeds. The Holm family is the four random contrasts (the gi arms keep their six-contrast family). The unsteered verdicts come from the first Gemma set (2026-11-02), judged by different Sonnet judges than the negated arm, under the same brief and rubric. Koby's run was executed in his environment (outputs synced to the share); we did not rerun it. The no-op `check()` stub count was not redone for this arm.
 
 **Harness provenance audit, 2026-11-04.** A user-relayed note flagged job 15010135's "newmodels" harness label. The committed November 2 model-specifics refactor (`8139fc3` → `621f28a`) leaves the generator, direction construction, scaling and Gemma patcher unchanged. Executing the extracted functions from both revisions in the current CPU environment produces bitwise-identical seed-1729/layer-30 vectors and exactly opposite shifts in float32 and bfloat16. All 16 paired saved summaries match on recorded settings except sign (including the positive seed 0 from 14982739, the other positive seeds from 14988674, and all negative seeds from 15010135). Thus the refactor itself does not undermine the sign comparison. The exact executed revisions, dependency versions and vector fingerprints are absent from those summaries, so job-level provenance remains unverified; the sign interpretation above is conditional on the jobs using the audited implementation. Full evidence and limits: [investigation §8](results/gemma_random1729_investigation_2026-11-04.md#8-harness-version-audit-2026-11-04), [audit JSON](results/gemma_random1729_harness_audit_2026-11-04.json).
+
+### Hack vs non-hack separation on unsteered episodes, gi_v2 and gfar — 2026-11-11: gfar (Goodfire all-response axis) separates judged-hack from non-hack unsteered episodes above the 97.5th percentile of 1,000 random directions in 10 of 12 cells on gpt-oss, Muse and Gemma (answer tokens pooled AUROC 0.87 / 0.95 / 0.90); gi_v2 stays inside the random 95% range in every cell (best 0.78, gpt-oss answer, 92nd percentile); Qwen has no unsteered hacks and is not tested
+
+Question (user, 2026-11-11): does projecting an unsteered episode on gi_v2 or on gfar separate judged hacks from
+non-hacks better than isotropic random directions do?
+
+Setup. `scripts/hack_separation.py` (CPU, ~75 s per model) on Jansen's cached unsteered activations of 2026-11-09
+(`axis_acts_extract.py`; share `schemer-axis/gfar_vs_gi_v2_jansen05/acts/<model>/`: token means of the reasoning and of
+the answer tokens of every turn, per episode), at each model's steer layer. Labels from the as_judged verdicts (HACK =
+STRONG or WEAK; BORDERLINE, NOT_HACK and unjudged episodes are not hack): gpt-oss `gptoss120b/gi_v2/pilot/verdicts_gfscan/
+variants_gfscan_all/as_judged.json` (63 of 540), Muse `muse_glimmer/gi_v2/pilot/verdicts_gfdose/variants_gfdose_all/`
+(177 of 540), Gemma `gemma4_31b_gi_v2_judging_jansen05/hard108/verdicts_ctl_gicap_s0-15/variants_all16/` (82 of 1,728).
+Directions: gi_v2 `<model>/gi_v2/direction/persona_contrast.pt`; gfar `rh_axis_koby/synthetic_rh/goodfire/<model>/
+geometry/directions_headline.pt:goodfire_all_response_pl_all_families`. The share copies reproduce the projections
+stored in the caches (max relative difference 7e-4, fp16 rounding). Score = projection of the episode mean, higher =
+hack. Pooled AUROC, and within-problem AUROC (only hack/non-hack pairs from the same problem). Null: 1,000 isotropic
+unit directions (`random_directions`, seed 1729, layer-specific), reported as their 2.5–97.5 percentile range.
+
+| Model (layer) | Tokens | gi_v2 pooled | gfar pooled | random 95% | gi_v2 within | gfar within | random 95% |
+|---|---|---|---|---|---|---|---|
+| gpt-oss (L17) | reasoning | 0.654 | **0.817** | 0.247–0.750 | 0.645 | **0.706** | 0.322–0.678 |
+| | answer | 0.779 | **0.874** | 0.167–0.838 | 0.739 | 0.758 | 0.191–0.809 |
+| Muse (L26) | reasoning | 0.496 | **0.834** | 0.253–0.758 | 0.518 | **0.779** | 0.291–0.709 |
+| | answer | 0.522 | **0.945** | 0.102–0.897 | 0.578 | **0.905** | 0.147–0.848 |
+| Gemma (L30) | reasoning | 0.530 | **0.716** | 0.296–0.707 | 0.557 | 0.589 | 0.386–0.614 |
+| | answer | 0.575 | **0.902** | 0.158–0.835 | 0.550 | **0.805** | 0.220–0.774 |
+
+Bold: above the random 97.5th percentile. Excluding BORDERLINE episodes from both classes moves every AUROC by ≤ 0.03
+and changes no bold cell.
+
+Reading. gi_v2's projection does not distinguish hack from non-hack episodes beyond what a random direction does
+on any model (percentile 49–93), so by the writing conventions this is not an association. gfar does, on all three
+models with hacks, with the largest margin on Muse; its two misses are within-problem (gpt-oss answer, Gemma reasoning,
+both 93rd percentile). The random band is wide on answer tokens (up to 0.10–0.90 on Muse) because episode means share
+a few dominant components, so gfar's answer-token margins over the band are only 0.03–0.06.
+
+Limits. gfar was built from Goodfire's synthetic hack/honest conversations, so part of its edge may be closeness of its
+training text to hacking episodes rather than a hacking representation. The null is isotropic and ignores variance
+along the direction (gi_v2 carries 27 × average variance on Gemma); the antonym-control population was not used here.
+One layer per model, no layer sweep. Qwen (0 judged hacks in 732 unsteered episodes) is untestable. The Gemma gi_v2
+answer AUROC differs from the 2026-11-04 PCA entry (0.49 pooled there), which used different activations (final turn,
+teacher-forced) and labels. Outputs `schemer-axis/hack_separation/{gptoss120b,muse,gemma4_31b}.{json,log}` in Koby's scratch.
+
+### gi_v2 among antonym concepts across the four models (proxy) — 2026-11-09: no antonym concept's average lift over the four models reaches gi_v2's; shape-free q 0–4.2% with all four models, 0–2.8% without Gemma, 0–10.8% without gpt-oss
+
+Design: PLAN "Cross-model percentile of gi_v2 among antonym concepts" and its two 2026-11-09 amendments (the claim is
+limited to these four models). Concept j is the same antonym pair on every model; its lift on model m is the logit
+hack rate minus the unsteered logit, averaged over models with equal weights, deconvolved for binomial noise.
+`scripts/controls/cross_model_percentile.py --outcome proxy` (job 15190234; config
+`data/controls/cross_model_models.json`); output `schemer-axis/cross_model/cross_model_proxy.json` in scratch. Coverage
+checked first (jobs 15188510, 15189738): the shape-free upper bound covered in every scenario; the normal fails when a
+minority of concepts have a large effect on one model only.
+
+| models | gi_v2 mean logit lift (sd) | controls' mean lift (noise sd) | concepts at or above gi_v2 (noise-only expectation) | q shape-free | q normal |
+|---|---|---|---|---|---|
+| all four | 0.44 (0.04) | −0.05 (0.17) | 0 (0.24) | 0–4.2% | ≈ 0 (upper < 0.001%) |
+| without gpt-oss | 0.28 (0.05) | −0.01 (0.19) | 5 (6.0) | 0–10.8% | ≈ 0 (upper 0.2%) |
+| without Gemma | 0.53 (0.05) | −0.09 (0.22) | 0 (0.22) | 0–2.8% | ≈ 0 (upper < 0.001%) |
+| without Muse | 0.44 (0.05) | −0.05 (0.21) | 0 (0.85) | 0–4.6% | ≈ 0 |
+| without Qwen | 0.51 (0.05) | −0.03 (0.19) | 0 (0.16) | 0–5.2% | ≈ 0 |
+
+Per-model gi_v2 lifts 0.92 / 0.45 / 0.17 / 0.23 (gpt-oss / Muse / Gemma / Qwen). The closest concept, antonym_p095,
+averages 0.41 (0.32 / 0.37 / 0.65 / 0.32, positive on all four), about what the largest of 100 noise-only draws
+gives (≈ 0.38), and p058 (one of Gemma's two hard-coding spikes) is second at 0.31. Lift correlations between models
+over concepts: mean Spearman 0.03 (shuffle p 0.20; low power, descriptive). Hierarchical model, descriptive: the
+controls' model-specific sd is 0 (95% 0–0.07) while gi_v2's own is 0.43 (Cochran Q 86 on 3 df), so the controls
+are consistently near zero and gi_v2 is positive everywhere with a size that varies about 5× across models (doses were
+set per model). Without gpt-oss the bound is only 11%: gi_v2's average lift there is 0.28, under 1.5 noise sds of a
+single concept. Proxy only: judging the ~6,000 control dossiers was dropped for cost (Koby, 2026-11-09); the script
+still takes `--outcome judged` with per-model `verdicts` if that changes.
+
 ### Qwen3.8-27B isolated antonym controls, 100 × 1 — 2026-11-09: on the proxy, q is 0–16% shape-free and ≈ 0 (upper 1.6%) under the beta fit; 20 controls reach gi_v2 +0.16's count, about the binomial-noise expectation (19.7); the hard-coding scan finds nothing on Qwen in any arm, so it gives no percentile
 
 Same construction and design as the other three models, on Qwen3.8-27B: layer 32, α 0.16 = gi_v2's dose
@@ -1856,24 +1930,27 @@ Limits: the split-half reliability of a 5-pair contrast is modest (0.33), so eac
 that is acceptable for a control population but means two directions from the same pair would differ. The AISI
 `control_spacing` pair is left out (the post does not give its passages).
 
-### Capping vs negative steering along gi_v2 — 2026-11-07: on gpt-oss and Muse the band cap and negative steering trace the same hack-rate vs honest-hidden-pass frontier (no cap beats the steering dose it is compared with); on Gemma the caps lower hacking only beyond the 10-point capability rule; on Qwen nothing lowers it
+### Capping vs negative steering along gi_v2 — 2026-11-07: on gpt-oss and Muse the band cap and negative steering trace the same hack-rate vs hidden-pass frontier (no cap beats the steering dose it is compared with); on Gemma the caps lower hacking only beyond the 10-point capability rule; on Qwen nothing lowers it
 
 Question (Koby, 2026-11-07): another team member proposed capping as the headline intervention because it looked
-better; is capping better at lowering reward hacking at equal capability? Capability = honest hidden pass (hidden
-pass among episodes not judged HACK; BORDERLINE and unjudged count as honest), the problem-stratified ratio
-mean_p(honest passes) / mean_p(honest episodes); hack = judged rate (Qwen: hidden-test-fail proxy, not judged).
+better; is capping better at lowering reward hacking at equal capability? Capability = hidden pass, problem-stratified
+(2026-11-09; this section first used honest hidden pass, the hidden pass among episodes not judged HACK, which is still
+in `cap_vs_steer.json` and gives the same reading); hack = judged rate (Qwen: hidden-test-fail proxy, not judged).
 Paired bootstrap over problems for every difference (`scripts/cap_vs_steer.py`, runs in `data/cap_vs_steer_setups.json`;
 chart `scripts/cap_vs_steer_chart.py`, scratch `schemer-axis/notes/cap_vs_steer_chart.png`).
 
-| model (unsteered hack / honest HP) | negative steering: Δ hack / Δ honest HP | caps: Δ hack / Δ honest HP |
+| model (unsteered hack / HP) | negative steering: Δ hack / Δ HP | caps: Δ hack / Δ HP |
 |---|---|---|
-| gpt-oss (11.7 / 26.0) | −0.1: −2.4 / +2.8; −0.2: −8.1 / +1.5; −0.4: −10.6 / −1.5 | p50: −2.8 / +6.5; p25: −5.6 / +3.6; p5: −8.9 / +3.3 |
-| Muse (32.8 / 63.9) | −0.04: −3.5 / −2.1; −0.08: −7.8 / −5.9; −0.16: −14.4 / −11.3 | p50: −5.7 / −5.5; p25: −9.8 / −7.4; p5: −16.9 / −11.7 |
-| Gemma 4 31B (4.7 / 33.2) | −0.04: −0.3 / −2.0; −0.08: −0.8 / −8.4; −0.16: +2.3 / −26.5 | p35: −2.2 / −12.0; p25: −3.1 / −14.7 |
-| Qwen3.8 (proxy 11.6 / 60.7) | −0.08: −1.5 / −5.4; −0.16: −1.2 / −10.6; −0.32: −3.3 / −37.9 | p25: −0.8 / −8.2 |
+| gpt-oss (11.7 / 25.0) | −0.1: −2.4 / +3.9; −0.2: −8.1 / +2.6; −0.4: −10.6 / 0.0 | p50: −2.8 / +6.9; p25: −5.6 / +3.9; p5: −8.9 / +4.8 |
+| Muse (32.8 / 48.0) | −0.04: −3.5 / +1.5; −0.08: −7.8 / −0.4; −0.16: −14.4 / −1.7 | p50: −5.7 / −0.4; p25: −9.8 / +0.6; p5: −16.9 / −0.6 |
+| Gemma 4 31B (4.7 / 31.7) | −0.04: −0.3 / −1.9; −0.08: −0.8 / −7.8; −0.16: +2.3 / −25.3 | p35: −2.2 / −11.1; p25: −3.1 / −13.4 |
+| Qwen3.8 (proxy 11.6 / 53.7) | −0.08: −1.5 / −4.0; −0.16: −1.2 / −8.7; −0.32: −3.3 / −32.8 | p25: −0.8 / −6.8 |
+
+On Muse, honest hidden pass fell 6–12 points with either intervention while plain hidden pass held within 2: removing
+hacks leaves more honest-but-failing episodes in the honest denominator.
 
 Direct comparisons at matched hack reduction are not significant: gpt-oss cap p5 vs −0.2: hack −0.7 [−3.0, +1.5],
-honest HP +1.9 [−2.6, +6.7]; Muse cap p5 vs −0.16: −2.4 / −0.4, n.s. Benchmarks exist only for cap p25 (gpt-oss
+HP +2.2 [−2.2, +7.2]; Muse cap p5 vs −0.16: −2.4 / +1.1, n.s. Benchmarks exist only for cap p25 (gpt-oss
 MMLU-Pro −1.5, significant; Muse IFBench −1.7). Read: capping does not change the story negative steering tells, and
 steering has more data. The one result that could change the choice is a Gemma cap inside the capability rule that
 significantly lowers judged hacking; the cap dose pilot for that (p45 / p50 / p65, 16 seeds, job 15125968) is running.
