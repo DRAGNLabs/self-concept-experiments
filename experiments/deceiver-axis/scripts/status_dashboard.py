@@ -4,11 +4,14 @@
 The page is a static file (no server, nothing listening on the cluster): download status.html and open it in a
 browser, or open status.ipynb in VS Code, which holds the same page as the saved output of one cell.
 The page has five tabs (all sections stay visible, one under the other, where scripts do not run):
-  * Overview: stat tiles (tasks running and queued, work in progress, runs recorded, charts), the in-progress
-    items with file-based progress, the user's Slurm queue (one squeue call), the six latest results, and a
-    model x experiment matrix built from the "### <title> — <date>: <headline>" entries of FINDINGS.md (every
-    analysed run is recorded there, so the page follows the log with no second registry),
-  * In progress: one card per item of dashboard/in_progress.json and the full queue table,
+  * Overview: three columns side by side, then two full-width cards. Columns: the in-progress items (file-based
+    progress, and for each item the nodes its tasks run on with the GPU model and cards per task), the user's
+    Slurm queue (one squeue call), and "Recently completed": arrays with tasks that ended in the last 24 h
+    (--completed-hours), read from slurm-logs/ (done marker, time limit, cancelled, error) with end time, task
+    durations and where they ran. Below: the six latest results and a model x experiment matrix built from the
+    "### <title> — <date>: <headline>" entries of FINDINGS.md (every analysed run is recorded there, so the page
+    follows the log with no second registry),
+  * In progress: one card per item of dashboard/in_progress.json (same node / GPU block) and the full queue table,
   * Results: every FINDINGS entry as a card grouped by day (headline, full text, the charts it names), filtered
     by model, experiment kind, text search or a click on a matrix cell,
   * Charts: every indexed chart in a gallery split into groups (main gi_v2 results, Goodfire axis, controls,
@@ -19,9 +22,15 @@ Light and dark themes (button in the header); colours are the reference palette 
 Under a VS Code notebook the editor scrolls the output from outside, so there the page never scrolls itself and
 the chart viewer opens in place instead of as a viewport overlay.
 
+Where tasks run: node and GPU request come from the queue listing, the GPU model from the nvidia-smi banner at
+the top of the task's log (the request on cs / cs3 is untyped). Both are kept per task in
+dashboard/task_ledger.json, because squeue forgets a task when it ends; the ledger is what gives a finished
+task its node. No scheduler call beyond the one squeue is made (GPU indices on the node would need one
+`scontrol show job -d` per array, so they are not shown).
+
 Usage (repo root):
   OPENSSL_CONF=/dev/null .venv-313/bin/python experiments/deceiver-axis/scripts/status_dashboard.py
-      [--out experiments/deceiver-axis/dashboard/status.html] [--rescan-charts] [--no-squeue]
+      [--out experiments/deceiver-axis/dashboard/status.html] [--rescan-charts] [--no-squeue] [--completed-hours 24]
 
 Charts: the list of PNG files is cached in dashboard/charts_index.txt (a bounded find under the run tree and
 post/figures); --rescan-charts rebuilds it, and a chart path named in in_progress.json or passed with
@@ -330,22 +339,23 @@ QUEUE_CACHE = Path.home() / "nobackup/autodelete/self-concept-experiments/scheme
 
 
 def read_queue(skip: bool):
+    """Queue grouped by array: (groups, error text, time of the listing in epoch seconds)."""
     if skip:
-        return None, "queue not read (--no-squeue)"
+        return None, "queue not read (--no-squeue)", 0.0
     fmt = "%i|%F|%P|%q|%j|%T|%M|%l|%S|%R|%b"
     # A running job monitor already polls the scheduler every 120 s and leaves the listing (same format) in QUEUE_CACHE;
     # use it while it is fresh so a rebuild adds no scheduler call (ORC rule: status checks at least 60 s apart).
     if QUEUE_CACHE.is_file() and time.time() - QUEUE_CACHE.stat().st_mtime < 150:
-        listing = QUEUE_CACHE.read_text()
+        listing, stamp = QUEUE_CACHE.read_text(), QUEUE_CACHE.stat().st_mtime
     else:
         try:
             r = subprocess.run(["squeue", "-u", os.environ.get("USER", ""), "-h", "-o", fmt],
                                capture_output=True, text=True, timeout=45)
         except Exception as exc:  # noqa: BLE001
-            return None, f"squeue failed: {exc}"
+            return None, f"squeue failed: {exc}", 0.0
         if r.returncode != 0:
-            return None, f"squeue failed: {r.stderr.strip()[:200]}"
-        listing = r.stdout
+            return None, f"squeue failed: {r.stderr.strip()[:200]}", 0.0
+        listing, stamp = r.stdout, time.time()
     groups: dict[str, dict] = {}
     for line in listing.splitlines():
         f = [x.strip() for x in line.split("|")]
@@ -354,11 +364,12 @@ def read_queue(skip: bool):
         jid, arr, part, qos, name, state, elapsed, limit, start, reason, gres = f[:11]
         g = groups.setdefault(arr, {"id": arr, "name": name, "parts": set(), "qos": qos, "limit": limit,
                                     "running": 0, "pending": 0, "other": {}, "elapsed": "", "reasons": set(),
-                                    "nodes": set(), "start": "", "gres": gres})
+                                    "nodes": set(), "start": "", "gres": gres, "tasks": []})
         g["parts"].update(part.split(","))
         if state == "RUNNING":
             g["running"] += 1
             g["nodes"].add(reason)
+            g["tasks"].append({"id": jid, "node": reason, "gres": gres})
             if elapsed_seconds(elapsed) > elapsed_seconds(g["elapsed"]):
                 g["elapsed"] = elapsed
         elif state == "PENDING":
@@ -368,7 +379,7 @@ def read_queue(skip: bool):
                 g["start"] = start
         else:
             g["other"][state] = g["other"].get(state, 0) + 1
-    return list(groups.values()), ""
+    return list(groups.values()), "", stamp
 
 
 def fmt_start(s: str) -> str:
@@ -377,6 +388,160 @@ def fmt_start(s: str) -> str:
     except ValueError:
         return ""
     return t.strftime("%b %-d %-I:%M %p")
+
+
+# ---------------------------------------------------------------- where tasks run, and what has ended
+LOG_DIR = EXP / "slurm-logs"
+LOG_RE = re.compile(r"(?P<name>.+)-(?P<job>\d+)(?:_(?P<task>\d+))?\.out$")
+SMI_ROW_RE = re.compile(r"^\|\s+\d+\s+(.+?)\s+(?:On|Off)\s+\|", re.M)
+DONE_RE = re.compile(r"^=== \S+ done", re.M)
+STEPD_NODE_RE = re.compile(r"\*\*\* (?:JOB|STEP) \S+ ON (\S+) CANCELLED")
+OUTCOMES = ["done", "time limit", "cancelled", "error", "no done marker"]
+
+
+def gres_parse(gres: str) -> tuple[str, int]:
+    """(GPU type or '', GPU count) of a squeue %b string such as gres/gpu:a100:2 or gres/gpu:1."""
+    m = re.search(r"gpu(?::([A-Za-z][\w.-]*))?(?::(\d+))?", gres or "")
+    if not m:
+        return "", 0
+    return (m.group(1) or "").upper(), int(m.group(2) or 1)
+
+
+def gpu_short(name: str) -> str:
+    """'NVIDIA A100-SXM4-80GB' -> 'A100 80GB', 'NVIDIA B200' -> 'B200'."""
+    s = re.sub(r"^(NVIDIA|Tesla)\s+", "", name.strip())
+    words = re.split(r"[-\s]+", s)
+    model = " ".join(words[:2]) if words[0] in ("RTX", "GTX", "Quadro", "GeForce", "TITAN") and len(words) > 1 else words[0]
+    mem = re.search(r"(\d+)\s?GB", s)
+    return model + (f" {mem.group(1)}GB" if mem and mem.group(1) not in model else "")
+
+
+def log_head_info(path: Path) -> tuple[str, float]:
+    """GPU name and start time from the nvidia-smi banner the job scripts print first ('' / 0.0 if absent). On a node
+    without per-job GPU isolation the banner lists every card of the node, so the count comes from the request."""
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(6000).decode("utf-8", "replace")
+    except OSError:
+        return "", 0.0
+    names = SMI_ROW_RE.findall(head)
+    start = 0.0
+    try:
+        start = dt.datetime.strptime(head.split("\n", 1)[0].strip(), "%a %b %d %H:%M:%S %Y").timestamp()
+    except ValueError:
+        pass
+    return (gpu_short(names[0]) if names else ""), start
+
+
+def log_outcome(path: Path, size: int) -> tuple[str, str]:
+    """(outcome, node named by slurmstepd or '') from the end of a job log; '' if no terminal line is there."""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(max(0, size - 8000))
+            tail = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return "", ""
+    node = (STEPD_NODE_RE.findall(tail) or [""])[-1]
+    if DONE_RE.search(tail):
+        return "done", node
+    if "DUE TO TIME LIMIT" in tail:
+        return "time limit", node
+    if "CANCELLED" in tail:
+        return "cancelled", node
+    if re.search(r"Traceback|OutOfMemoryError|CUDA out of memory|Killed|Bus error", tail):
+        return "error", node
+    return "", node
+
+
+def load_ledger(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def update_ledger(path: Path, ledger: dict, queue, stamp: float) -> dict:
+    """Remember node, request and GPU name of every task seen running, so that a task that has left the queue can
+    still be shown with where it ran (squeue forgets it; no extra scheduler call is made for this)."""
+    for g in queue or []:
+        for t in g["tasks"]:
+            rec = ledger.setdefault(t["id"], {})
+            rec.update(node=t["node"], gres=t["gres"], array=g["id"], name=g["name"], part=",".join(sorted(g["parts"])), seen=stamp)
+            if not rec.get("gpu"):
+                rec["gpu"] = log_head_info(LOG_DIR / f"{g['name']}-{t['id']}.out")[0]
+    cutoff = time.time() - 14 * 86400
+    ledger = {k: v for k, v in ledger.items() if v.get("seen", 0) >= cutoff}
+    try:
+        _write_whole(path, json.dumps(ledger, indent=0, sort_keys=True))
+    except OSError as exc:
+        print(f"cannot write {path}: {exc}", file=sys.stderr)
+    return ledger
+
+
+def gpu_label(rec: dict) -> tuple[str, int]:
+    """(GPU name, cards per task) of a ledger record: name from the job's own nvidia-smi banner, else the request."""
+    kind, n = gres_parse(rec.get("gres", ""))
+    return rec.get("gpu") or kind or "GPU", n
+
+
+def placements(job_ids, qmap: dict, ledger: dict) -> list[dict]:
+    """Running tasks of the given arrays grouped by node: [{node, gpu, per, tasks:[ids]}], most tasks first."""
+    rows: dict[tuple, dict] = {}
+    for j in job_ids:
+        for t in (qmap.get(str(j)) or {}).get("tasks", []):
+            gpu, per = gpu_label(ledger.get(t["id"]) or t)
+            rows.setdefault((t["node"], gpu, per), {"node": t["node"], "gpu": gpu, "per": per, "tasks": []})["tasks"].append(t["id"])
+    return sorted(rows.values(), key=lambda r: (-len(r["tasks"]), r["node"]))
+
+
+def finished_tasks(queue, ledger: dict, hours: float) -> list[dict]:
+    """Arrays with tasks that ended in the last `hours`, read from the job logs (one directory listing, the end of
+    each recent log): newest first, each with counts per outcome, end time, task durations, node and GPU where known.
+    A task counts as ended when its log is recent, it is not running in the queue listing, and either the log has a
+    terminal line or its array has left the queue; a log with neither is left out as possibly still starting."""
+    now = time.time()
+    running = {t["id"] for g in queue or [] for t in g["tasks"]}
+    in_queue = {g["id"]: g for g in queue or []}
+    arrays: dict[str, dict] = {}
+    try:
+        entries = list(os.scandir(LOG_DIR))
+    except OSError:
+        return []
+    for e in entries:
+        m = LOG_RE.match(e.name)
+        if not m:
+            continue
+        try:
+            st = e.stat()
+        except OSError:
+            continue
+        if now - st.st_mtime > hours * 3600:
+            continue
+        tid = m["job"] + (f"_{m['task']}" if m["task"] is not None else "")
+        if tid in running:
+            continue
+        outcome, node = log_outcome(Path(e.path), st.st_size)
+        if not outcome:
+            if queue is None or m["job"] in in_queue or now - st.st_mtime < 300:
+                continue
+            outcome = "no done marker"
+        rec = ledger.get(tid, {})
+        gpu_name, start = log_head_info(Path(e.path))
+        kind, per = gres_parse(rec.get("gres", ""))
+        a = arrays.setdefault(m["job"], {"id": m["job"], "name": m["name"], "end": 0.0, "counts": {}, "durs": [], "nodes": {}, "gpus": {}})
+        a["end"] = max(a["end"], st.st_mtime)
+        a["counts"][outcome] = a["counts"].get(outcome, 0) + 1
+        if start and st.st_mtime > start:
+            a["durs"].append(int(st.st_mtime - start))
+        if node or rec.get("node"):
+            a["nodes"][node or rec["node"]] = a["nodes"].get(node or rec["node"], 0) + 1
+        g = (rec.get("gpu") or gpu_name or kind, per)
+        if g[0]:
+            a["gpus"][g] = a["gpus"].get(g, 0) + 1
+    for a in arrays.values():
+        g = in_queue.get(a["id"])
+        a["left"] = (g["running"] + g["pending"]) if g else 0
+    return sorted(arrays.values(), key=lambda a: -a["end"])
 
 
 # ---------------------------------------------------------------- in-progress items
@@ -523,29 +688,36 @@ body.dash-page .dash{min-height:100vh}
   .bar>i{display:block;height:100%;background:var(--accent);border-radius:4px}
 
   /* overview */
-  .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:20px 0 16px}
-  .kpi{appearance:none;text-align:left;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px 12px;box-shadow:var(--shadow);cursor:pointer;min-width:0}
-  .kpi:hover{border-color:var(--line2)}
-  .kpi .l{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:6px}
-  .kpi .kg{font-size:10px;line-height:1}
-  .kpi .kg.run{color:var(--accent)}
-  .kpi .kg.q{color:var(--amber)}
-  .kpi .v{font-size:30px;font-weight:650;line-height:1.2;letter-spacing:-.02em;margin-top:1px;color:var(--ink)}
-  .kpi .v small{font-size:13px;font-weight:500;color:var(--ink2);letter-spacing:0;margin-left:6px}
-  .kpi .s{font-size:12.5px;color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .grid2{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:16px;margin-bottom:16px;align-items:start}
-  .wrow{display:grid;grid-template-columns:minmax(0,1fr) 176px 132px;gap:14px;padding:11px 0;border-top:1px solid var(--line);align-items:center}
-  .wrow:first-child{border-top:0}
-  .wrow .t{font-weight:600;line-height:1.35}
-  .wrow .u{font-size:12.5px;color:var(--ink2);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .wrow .st{justify-self:end}
-  .stack{display:flex;flex-direction:column;gap:16px;min-width:0}
-  .qrow{display:grid;grid-template-columns:minmax(0,1fr) 176px 132px;gap:14px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
-  .qrow:first-child{border-top:0}
-  .qrow .t{font-weight:600;line-height:1.35}
-  .qrow .u{font-size:12.5px;color:var(--ink2)}
-  .qrow .seg{width:auto;margin:0 0 4px}
-  .qrow .el{justify-self:end;text-align:right;font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0 16px;align-items:start}
+  .col>.ch{flex-wrap:wrap;row-gap:0}
+  .col>.ch .hint{order:3;flex-basis:100%}
+  .wrow,.qrow,.crow{padding:12px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:5px;min-width:0}
+  .wrow:first-child,.qrow:first-child,.crow:first-child{border-top:0}
+  .wrow .hd,.crow .hd{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+  .wrow .t,.qrow .t,.crow .t{font-weight:600;line-height:1.35;min-width:0;overflow-wrap:anywhere}
+  .qrow .t.mono,.crow .t.mono{font-size:12.5px}
+  .wrow .badge,.crow .badge{flex:none;margin-top:1px}
+  .wrow .u,.qrow .u,.crow .u{font-size:12.5px;color:var(--ink2);display:flex;gap:2px 10px;flex-wrap:wrap;align-items:center}
+  .crow .u{justify-content:space-between}
+  .qrow .u.two{justify-content:space-between;font-variant-numeric:tabular-nums}
+  .qrow .u.nodes,.crow .u.where{color:var(--muted)}
+  .wrow .prog{margin-top:3px}
+  .qrow .seg{width:auto;margin:3px 0 0}
+  .more{margin:8px 0 0}
+  /* where a run sits: node, one pip per GPU in use (grouped by task), cards per task */
+  .place{display:grid;grid-template-columns:max-content max-content minmax(0,1fr);gap:4px 10px;align-items:center;font-size:12.5px;margin-top:4px}
+  .place .ph2{grid-column:1/-1;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .place .pn{display:contents}
+  .place .nn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);background:var(--soft);border-radius:5px;padding:0 6px;line-height:20px;white-space:nowrap;justify-self:start}
+  .place .pips{display:flex;gap:4px;align-items:center}
+  .place .pg{display:flex;gap:1px}
+  .place .pg i{display:block;width:5px;height:11px;border-radius:1.5px;background:var(--accent)}
+  .place .ng{color:var(--ink2);min-width:0}
+  .place .wait .nn{background:none;color:var(--q-fg);padding:0 6px;font-family:inherit}
+  .place .wait .ng{grid-column:2/-1}
+  .place .none{grid-column:1/-1;color:var(--ink2)}
+  .lgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;align-items:start}
+  .lgrid a.lrow:nth-child(2){border-top:0}
   a.lrow{display:grid;grid-template-columns:50px minmax(0,1fr);gap:2px 12px;padding:10px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}
   a.lrow:first-child{border-top:0}
   .lrow .d{font-size:12.5px;color:var(--ink2);white-space:nowrap;padding-top:1px}
@@ -587,7 +759,7 @@ body.dash-page .dash{min-height:100vh}
   .wcard .hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .wcard h3{font-size:15px;margin:0;font-weight:650;color:var(--ink)}
   .wcard .det{color:var(--ink2);font-size:13px;margin:8px 0 0;max-width:100ch}
-  .wcard .side{display:flex;flex-direction:column;gap:10px;border-left:1px solid var(--line);padding-left:22px}
+  .wcard .side{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--line);padding-left:22px}
   .kv{display:grid;grid-template-columns:66px minmax(0,1fr);gap:4px 10px;font-size:12.5px;margin:0}
   .kv dt{color:var(--ink2)}
   .kv dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
@@ -699,17 +871,15 @@ body.dash-page .dash{min-height:100vh}
   .lb-bot code{background:rgba(255,255,255,.1);color:#f0efec;user-select:all;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding:4px 8px;font-size:12px}
 
   @media (max-width:1080px){
-    .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
     .matrix .lw{display:none}
-    .grid2{grid-template-columns:minmax(0,1fr)}
+    .grid3{grid-template-columns:minmax(0,1fr)}
+    .lgrid{grid-template-columns:minmax(0,1fr)}
+    .lgrid a.lrow:nth-child(2){border-top:1px solid var(--line)}
     .wcard{grid-template-columns:minmax(0,1fr)}
     .wcard .side{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px}
   }
   @media (max-width:720px){
     .in{padding:0 14px}
-    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .wrow{grid-template-columns:minmax(0,1fr)}
-    .wrow .st{justify-self:start}
     .entry .thumb{display:none}
     .logi .body{padding-left:18px}
   }
@@ -927,6 +1097,7 @@ def main() -> None:
     ap.add_argument("--rescan-charts", action="store_true")
     ap.add_argument("--chart", action="append", default=[], help="extra chart PNG to index (repeatable)")
     ap.add_argument("--no-squeue", action="store_true")
+    ap.add_argument("--completed-hours", type=float, default=24.0, help="window of the 'Recently completed' column (default 24)")
     args = ap.parse_args()
 
     from markdown_it import MarkdownIt
@@ -942,8 +1113,13 @@ def main() -> None:
     items = prog_cfg.get("items", [])
     extra = list(args.chart) + [os.path.expandvars(c) for it in items for c in it.get("charts", [])]
     charts = chart_index(out.parent / "charts_index.txt", args.rescan_charts, extra)
-    queue, queue_err = read_queue(args.no_squeue)
+    queue, queue_err, queue_stamp = read_queue(args.no_squeue)
     qmap = {g["id"]: g for g in (queue or [])}
+    ledger_path = out.parent / "task_ledger.json"
+    ledger = load_ledger(ledger_path)
+    if queue is not None:
+        ledger = update_ledger(ledger_path, ledger, queue, queue_stamp)
+    finished = finished_tasks(queue, ledger, args.completed_hours)
 
     # ---- images: stored once in a JSON block, attached by the page script when they scroll into view
     images: dict[str, str] = {}
@@ -988,6 +1164,7 @@ def main() -> None:
             chart_entry.setdefault(p, e)
 
     now = time.strftime("%-I:%M %p %Z")
+    queue_at = time.strftime("%-I:%M %p", time.localtime(queue_stamp)) if queue_stamp else now
     today = dt.date.today()
     now_full = time.strftime("%Y-%m-%d %-I:%M %p %Z")
     try:
@@ -1023,6 +1200,27 @@ def main() -> None:
                 bits.append(f"<span class='mono'>{esc(j)}</span> · no longer in the queue")
         return "<br>".join(bits)
 
+    def place_html(it: dict) -> str:
+        """Where the item's tasks run: one line per node with a pip per GPU in use (grouped by task), then the waiting tasks."""
+        ids = [str(j) for j in it.get("jobs", [])]
+        if not ids or queue is None:
+            return ""
+        rows = []
+        for r in placements(ids, qmap, ledger):
+            n = len(r["tasks"])
+            pips = "".join("<span class='pg'>" + "<i></i>" * min(r["per"], 8) + "</span>" for _ in range(min(n, 12)))
+            what = f"{plural(n, 'task')} · {r['per']} × {r['gpu']}" + (" each" if n > 1 else "")
+            rows.append(f"<div class='pn' title='{esc(', '.join(sorted(r['tasks'])))}'><span class='nn'>{esc(r['node'])}</span>"
+                        f"<span class='pips' aria-hidden='true'>{pips}</span><span class='ng'>{esc(what)}</span></div>")
+        waiting = [(qmap[j]["pending"], ", ".join(sorted(qmap[j]["parts"]))) for j in ids if j in qmap and qmap[j]["pending"]]
+        if waiting:
+            n = sum(w[0] for w in waiting)
+            rows.append(f"<div class='pn wait'><span class='nn'>○</span><span class='ng'>{plural(n, 'task')} waiting for cards on "
+                        f"{esc(', '.join(dict.fromkeys(w[1] for w in waiting)))}</span></div>")
+        if not rows:
+            rows = ["<span class='none'>no task on the cluster</span>"]
+        return f"<div class='place'><div class='ph2'>Running on</div>{''.join(rows)}</div>"
+
     def item_card(it: dict) -> str:
         models = "".join(f"<span class='chip'>{model_tag(m, short=False)}</span>" for m in it.get("models", []))
         cat = it.get("category")
@@ -1039,7 +1237,7 @@ def main() -> None:
         return (f"<div class='card wcard'><div><div class='hd'><h3>{esc(it.get('label', ''))}</h3>{badge(it['_state'])}</div>"
                 f"<div class='chips' style='margin-top:7px'>{models}{cat_chip}</div>"
                 f"<p class='det'>{esc(it.get('detail', ''))}</p></div>"
-                f"<div class='side'>{progress_html(it['_prog'])}<dl class='kv'>{''.join(kv)}</dl></div></div>")
+                f"<div class='side'>{progress_html(it['_prog'])}{place_html(it)}<dl class='kv'>{''.join(kv)}</dl></div></div>")
 
     P: list[str] = []
     P.append("<section class='panel' data-p='progress'><h2 class='ph'>In progress</h2>")
@@ -1055,7 +1253,7 @@ def main() -> None:
     run_tasks = sum(g["running"] for g in queue or [])
     pend_tasks = sum(g["pending"] for g in queue or [])
     P.append("<h2 class='sec'>Slurm queue <span class='n'>"
-             + (esc(queue_err) if queue is None else f"squeue at {esc(now)} · {plural(run_tasks, 'task')} running, {pend_tasks:,} pending") + "</span></h2>")
+             + (esc(queue_err) if queue is None else f"squeue at {esc(queue_at)} · {plural(run_tasks, 'task')} running, {pend_tasks:,} pending") + "</span></h2>")
     if queue:
         labels = {str(j): it.get("label", "") for it in items for j in it.get("jobs", [])}
         P.append("<div class='card tblwrap'><table class='tbl'><tr><th>Job</th><th>For</th><th>Partition / qos</th><th>Tasks</th>"
@@ -1085,7 +1283,7 @@ def main() -> None:
             del n_other
         P.append("</table></div>")
     elif queue is not None:
-        P.append(f"<p class='small'>No jobs in the queue at {esc(now)}.</p>")
+        P.append(f"<p class='small'>No jobs in the queue at {esc(queue_at)}.</p>")
     P.append("</section>")
     panel_progress = "".join(P)
 
@@ -1245,60 +1443,83 @@ def main() -> None:
     L.append("</section>")
     panel_log = "".join(L)
 
-    # ---- overview panel
-    week = sum(1 for e in entries if e["date"][:10] >= (today - dt.timedelta(days=6)).isoformat())
-    latest_date = max((e["date"][:10] for e in entries), default="")
-    if queue is None:
-        k_run = ("–", "", esc(queue_err))
-        k_pend = ("–", "", "")
-    else:
-        longest = max((elapsed_seconds(g["elapsed"]) for g in queue), default=0)
-        k_run = (f"{run_tasks:,}", "tasks", f"in {plural(sum(1 for g in queue if g['running']), 'job')}" + (f" · longest {fmt_dur(longest)}" if longest else ""))
-        starts = sorted(g["start"] for g in queue if g["pending"] and g["start"] and fmt_start(g["start"]))
-        k_pend = (f"{pend_tasks:,}", "tasks", (f"scheduler estimate {fmt_start(starts[0])}" if starts else "nothing waiting" if not pend_tasks else "no start estimate yet"))
-    nxt = next((it.get("eta_short") for it in active if it.get("eta_short")), "")
-    k_wip = (str(len(active)), "active", (f"next {nxt}" if nxt else "") + (f"{' · ' if nxt else ''}{len(parked)} to write up" if parked else ""))
-    tiles_kpi = [
-        ("progress", "<span class='kg run'>●</span>Running on the cluster", *k_run),
-        ("progress", "<span class='kg q'>●</span>Queued", *k_pend),
-        ("progress", "Work in progress", *k_wip),
-        ("results", "Analysed runs recorded", f"{len(entries):,}", "", f"{week} in the last 7 days · latest {short_date(latest_date)}"),
-        ("charts", "Charts", f"{n_tiles:,}", "", f"{len(tied)} named in a result"),
-    ]
-    O = ["<section class='panel on' data-p='overview'><h2 class='ph'>Overview</h2><div class='kpis'>"]
-    for go_to, label, val, unit, sub in tiles_kpi:
-        O.append(f"<button class='kpi' data-go='{go_to}'><div class='l'>{label}</div><div class='v'>{val}{f'<small>{esc(unit)}</small>' if unit else ''}</div>"
-                 f"<div class='s' title='{esc(sub)}'>{esc(sub) or '&nbsp;'}</div></button>")
-    O.append("</div><div class='grid2'><div class='stack'><div class='card'><div class='ch'><h2>In progress</h2>"
-             "<button class='link' data-go='progress'>Details and queue →</button></div><div class='cb'>")
+    # ---- overview panel: three columns (in progress, queue, recently completed), then latest results and the matrix
+    def when_text(t: float) -> str:
+        d = dt.datetime.fromtimestamp(t)
+        return d.strftime("%-I:%M %p").lower() + ("" if d.date() == today else d.strftime(", %b %-d"))
+
+    def dur_range(durs: list[int]) -> str:
+        if not durs:
+            return ""
+        lo, hi = min(durs), max(durs)
+        return fmt_dur(hi) if hi - lo < 120 else f"{fmt_dur(lo)} to {fmt_dur(hi)}"
+
+    O = ["<section class='panel on' data-p='overview'><h2 class='ph'>Overview</h2><div class='grid3'>"]
+    # column 1: in progress
+    O.append(f"<div class='card col'><div class='ch'><h2>In progress</h2><span class='hint'>{plural(len(items), 'item')}</span>"
+             "<button class='link' data-go='progress'>Details →</button></div><div class='cb'>")
     for it in items:
         models = "".join(model_tag(m) for m in it.get("models", []))
         eta = f"<span>{esc(it['eta_short'])}</span>" if it.get("eta_short") else ""
-        O.append(f"<div class='wrow'><div><div class='t'>{esc(it.get('label', ''))}</div><div class='u'>{models}{eta}</div></div>"
-                 f"<div>{progress_html(it['_prog'])}</div><div class='st'>{badge(it['_state'])}</div></div>")
+        O.append(f"<div class='wrow'><div class='hd'><div class='t'>{esc(it.get('label', ''))}</div>{badge(it['_state'])}</div>"
+                 f"<div class='u'>{models}{eta}</div>{progress_html(it['_prog'])}{place_html(it)}</div>")
     if not items:
         O.append("<p class='small'>Nothing listed in in_progress.json.</p>")
-    O.append("</div></div><div class='card'><div class='ch'><h2>Slurm queue</h2><span class='hint'>"
-             + (esc(queue_err) if queue is None else f"squeue at {esc(now)}") + "</span><button class='link' data-go='progress'>Full table →</button></div><div class='cb'>")
-    labels = {str(j): it.get("label", "") for it in items for j in it.get("jobs", [])}
+    # column 2: queue
+    O.append("</div></div><div class='card col'><div class='ch'><h2>Slurm queue</h2><span class='hint'>"
+             + (esc(queue_err) if queue is None else f"{plural(run_tasks, 'task')} running, {pend_tasks:,} pending · squeue at {esc(queue_at)}")
+             + "</span><button class='link' data-go='progress'>Table →</button></div><div class='cb'>")
     for g in sorted(queue or [], key=lambda g: g["id"]):
         seg = "".join(f"<i class='{c}' style='flex:{n}'></i>" for c, n in (("r", g["running"]), ("p", g["pending"])) if n)
         counts = " · ".join(x for x in (f"● {g['running']} running" if g["running"] else "", f"○ {g['pending']} pending" if g["pending"] else "") if x)
         el, lim = elapsed_seconds(g["elapsed"]), limit_seconds(g["limit"])
-        when = (f"{fmt_dur(el)}<br>of {fmt_dur(lim)}" if el and lim else f"est. start<br>{fmt_start(g['start'])}" if fmt_start(g["start"]) else "waiting")
-        O.append(f"<div class='qrow'><div><div class='t' title='{esc(labels.get(g['id'], g['name']))}'>{esc(labels.get(g['id'], '') or g['name'])}</div>"
-                 f"<div class='u'><span class='mono'>{esc(g['id'])}</span> · {esc(', '.join(sorted(g['parts'])))}</div></div>"
-                 f"<div><div class='seg' role='img' aria-label='{g['running']} running, {g['pending']} pending'>{seg}</div><div class='u'>{esc(counts)}</div></div>"
-                 f"<div class='el'>{when}</div></div>")
+        when = [f"longest {fmt_dur(el)} of {fmt_dur(lim)}" if el and lim else f"limit {fmt_dur(lim)}" if lim else ""]
+        if g["pending"]:
+            when.append(f"next start est. {fmt_start(g['start'])}" if fmt_start(g["start"]) else "waiting")
+        node_n: dict[str, int] = {}
+        for t in g["tasks"]:
+            node_n[t["node"]] = node_n.get(t["node"], 0) + 1
+        nodes = ", ".join(f"{n} ×{c}" if c > 1 else n for n, c in sorted(node_n.items()))
+        O.append(f"<div class='qrow'><div class='t mono'>{esc(g['name'])}</div>"
+                 f"<div class='u'><span class='mono'>{esc(g['id'])}</span> · {esc(', '.join(sorted(g['parts'])))} · qos {esc(g['qos'])}</div>"
+                 f"<div class='seg' role='img' aria-label='{g['running']} running, {g['pending']} pending'>{seg}</div>"
+                 f"<div class='u two'><span>{esc(counts)}</span><span>{esc(' · '.join(w for w in when if w))}</span></div>"
+                 + (f"<div class='u mono nodes'>{esc(nodes)}</div>" if nodes else "") + "</div>")
     if queue is not None and not queue:
         O.append("<p class='small'>No jobs in the queue.</p>")
-    O.append("</div></div></div><div class='card'><div class='ch'><h2>Latest results</h2><button class='link' data-go='results'>All "
-             f"{len(entries)} runs →</button></div><div class='cb'>")
+    # column 3: recently completed
+    hrs = f"{args.completed_hours:g}"
+    O.append(f"</div></div><div class='card col'><div class='ch'><h2>Recently completed</h2><span class='hint'>Slurm tasks that ended in the last {hrs} h, from the job logs</span>"
+             "</div><div class='cb'>")
+    max_done = 8
+    for a in finished[:max_done]:
+        c = a["counts"]
+        bad = sum(v for k, v in c.items() if k != "done")
+        parts = [f"{c[k]} {k}" for k in OUTCOMES if c.get(k)]
+        bcls, glyph = ("b-done", "✓") if not bad else ("b-queue", "!")
+        still = f" · {a['left']} still in the queue" if a["left"] else ""
+        dur = dur_range(a["durs"])
+        nodes = ", ".join(f"{n} ×{k}" if k > 1 else n for n, k in sorted(a["nodes"].items()))
+        n_t = sum(c.values())
+        gpus = ", ".join((f"{per} × {name}" + (" each" if n_t > 1 else "") if per else name)
+                         for (name, per), _ in sorted(a["gpus"].items(), key=lambda kv: -kv[1]))
+        where = " · ".join(x for x in (nodes, gpus) if x)
+        O.append(f"<div class='crow'><div class='hd'><div class='t mono'>{esc(a['name'])}</div>"
+                 f"<span class='badge {bcls}'><span class='g'>{glyph}</span>{esc(' · '.join(parts))}</span></div>"
+                 f"<div class='u'><span><span class='mono'>{esc(a['id'])}</span> · {'last task ' if n_t > 1 else ''}ended {esc(when_text(a['end']))}{esc(still)}</span>"
+                 + (f"<span>ran {esc(dur)}{' per task' if n_t > 1 else ''}</span>" if dur else "") + "</div>"
+                 + (f"<div class='u where'>{esc(where)}</div>" if where else "") + "</div>")
+    if len(finished) > max_done:
+        O.append(f"<p class='small more'>and {plural(len(finished) - max_done, 'earlier array')} in this window</p>")
+    if not finished:
+        O.append(f"<p class='small'>No Slurm task of this study ended in the last {hrs} h.</p>")
+    O.append("</div></div></div><div class='card'><div class='ch'><h2>Latest results</h2><span class='hint'>analysed runs recorded in FINDINGS.md</span>"
+             f"<button class='link' data-go='results'>All {len(entries)} runs →</button></div><div class='cb lgrid'>")
     for e in by_date[:6]:
         O.append(f"<a class='lrow jump' href='#{e['id']}' data-e='{e['id']}'><span class='d'>{esc(short_date(e['date']))}</span>"
                  f"<span class='t'>{md.renderInline(e['title'])}</span><span class='s'>{md.renderInline(first_sentences(e['headline'], 230))}</span>"
                  f"<span class='m'>{''.join(model_tag(m) for m in e['models'])}<span>{esc(CAT_LABEL[e['cat']])}</span></span></a>")
-    O.append("</div></div></div><div class='card'><div class='ch'><h2>Results by model and experiment</h2>"
+    O.append("</div></div><div class='card' style='margin-top:16px'><div class='ch'><h2>Results by model and experiment</h2>"
              "<span class='hint'>what has been run where</span></div>" + matrix_html + "</div></section>")
     panel_overview = "".join(O)
 
@@ -1313,7 +1534,7 @@ def main() -> None:
               f"<div class='snap'><span class='stamp'><i class='sd'></i>Snapshot <b>{esc(now)}</b> {esc(today.strftime('%b %-d'))}"
               f"<span id='dash-age' data-gen='{int(time.time())}'></span></span>"
               "<button class='iconbtn' id='dash-theme' title='Switch between light and dark' aria-label='Switch between light and dark'>◐</button></div></header>")
-    footer = ("<div class='foot'><span>Static snapshot built by <code>scripts/status_dashboard.py</code> from FINDINGS.md, the Slurm queue and "
+    footer = ("<div class='foot'><span>Static snapshot built by <code>scripts/status_dashboard.py</code> from FINDINGS.md, the Slurm queue, the job logs and "
               "<code>dashboard/in_progress.json</code>. Rebuild with <code>refreshpage</code>.</span>"
               "<span>Keys: <kbd>1</kbd>–<kbd>5</kbd> switch tabs, <kbd>/</kbd> searches results, <kbd>Esc</kbd> closes a chart.</span></div>")
     lightbox = ("<div class='lb' id='dash-lb' role='dialog' aria-label='Chart viewer'><div class='lb-top'><div class='lb-title' id='dash-lb-title'></div>"
