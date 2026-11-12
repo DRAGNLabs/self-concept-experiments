@@ -1741,6 +1741,11 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   **inside** (rule measure −4.7, CI −8.0 to −1.5; no-code +0.2). The capability expectation is met (smaller loss than p95); the hacking
   expectation is not: no rise with the arm inside the rule, which by the line above counts against the floor expectation on Gemma. p50 runs
   as queued (seed 0 running, 15 tasks pending); Holm over the three when it is judged.
+  **Floor p50, written 12:09 am MST Nov 12 while its last seven seeds run (seeds 0–8 complete; no verdict exists):** p50 moves 27.7–28.8%
+  of prompt and 49.7% of generated positions (`clamp_shares.md`). Expected: inside the dose rule, with a smaller loss on the rule measure
+  than p75's 4.7 points; no rise in judged hacking, given none at p75 or p95. A rise at p50 alone would run against the ordering written
+  before the runs (p50 < p75 < p95) and is reported as such, not as support for the floor. The set is `ctl_g03_s0-15`, same frozen chain;
+  the family read is Holm over the three floor contrasts (exact sign-flip p), and the three-rung read replaces the two interim ones.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
