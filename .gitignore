@@ -23,3 +23,6 @@ benchmarks/codebench/data/
 experiments/*/vllm_dist_*
 experiments/*/torchinductor_*
 experiments/*/tmp??????*/
+
+# generated status page (scripts/status_dashboard.py) and its working files
+experiments/*/dashboard/

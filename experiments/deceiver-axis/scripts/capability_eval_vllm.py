@@ -26,7 +26,7 @@ IFBench (added 2026-10-27, user request) needs the `ifbench` package (constraint
 the `allenai/IFBench_test` dataset in the HF cache; its "pred" is the per-constraint verdict string and "correct" the
 prompt-level loose accuracy.
         [--direction <axis.pt> --layer-norms <pt> --steer-mode add --steer-layer 17 --steer-alpha -0.2]
-        [--steer-mode cap --cap-layers 12 ... --cap-thresholds <json>]
+        [--steer-mode cap|floor --cap-layers 12 ... --cap-thresholds <json>]
 """
 import argparse
 import json
@@ -74,7 +74,8 @@ def parse_args() -> argparse.Namespace:
     # steering, same names as steered_rh_vllm.py so arms.tsv lines apply unchanged
     parser.add_argument("--direction", type=Path)
     parser.add_argument("--layer-norms", type=Path)
-    parser.add_argument("--steer-mode", choices=["none", "add", "cap"], default="none")
+    parser.add_argument("--steer-mode", choices=["none", "add", "cap", "floor"], default="none",
+                        help="floor (2026-11-10): the inverse cap of steered_rh_vllm.py, same --cap-layers / --cap-thresholds")
     parser.add_argument("--steer-layer", type=int, default=17)
     parser.add_argument("--steer-alpha", type=float, default=0.0)
     parser.add_argument("--cap-layers", nargs="+", type=int)
@@ -83,8 +84,8 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.steer_mode == "add" and (args.layer_norms is None or args.steer_alpha == 0):
         parser.error("--steer-mode add needs --layer-norms and a nonzero --steer-alpha")
-    if args.steer_mode == "cap" and (not args.cap_layers or args.cap_thresholds is None):
-        parser.error("--steer-mode cap needs --cap-layers and --cap-thresholds")
+    if args.steer_mode in ("cap", "floor") and (not args.cap_layers or args.cap_thresholds is None):
+        parser.error("--steer-mode cap / floor needs --cap-layers and --cap-thresholds")
     if args.steer_mode != "none" and args.direction is None and args.random_direction_seed is None:
         parser.error("--direction is required for steering")
     return args
@@ -318,7 +319,7 @@ def main() -> None:
     module_name, class_name = specifics.vllm_block
     block_cls = getattr(importlib.import_module(module_name), class_name)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    needed = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *(args.cap_layers or [])})
+    needed = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *((args.cap_layers or []) if args.steer_mode in ("cap", "floor") else [])})
     directions = directions_for(args, needed, device) if needed else {}
     transforms, steering = build_transforms(args, directions)
     steering["family"] = family

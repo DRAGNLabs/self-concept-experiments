@@ -7,6 +7,7 @@ of every forward pass for the duration of the context (prompt and generated toke
   used in the steering experiments is alpha * (mean activation norm at the layer) with a unit direction.
 - ``cap_direction``: h <- h - max(0, <h, u> - threshold) * u, with u the unit direction, at each listed layer.
   The projection onto u is clipped at the threshold from above; nothing changes below it.
+- ``floor_transform``: the mirror, h <- h + max(0, threshold - <h, u>) * u; the projection is clipped from below.
 
 The HF path (``add_direction`` / ``cap_direction``) hooks the decoder layers' outputs. vLLM's gpt-oss block returns
 ``(mlp_output, residual)`` with the residual stream materialized only as their sum in the next layer's fused norm;
@@ -83,6 +84,24 @@ def cap_transform(direction: torch.Tensor, threshold: float):
         projection = hidden.float() @ u_local
         excess = (projection - threshold).clamp_min(0)
         return (hidden.float() - excess.unsqueeze(-1) * u_local).to(hidden.dtype)
+
+    return transform
+
+
+def floor_transform(direction: torch.Tensor, threshold: float):
+    """h <- h + max(0, threshold - <h, u>) * u with u = direction / |direction|: the cap's mirror image (inverse cap).
+
+    The projection onto u is clipped at the threshold from below; nothing changes above it. With the threshold at a
+    high unsteered percentile the tokens that sit lowest on the direction are lifted onto it (2026-11-06, gpt-oss
+    floor ladder)."""
+    u = unit(direction)
+    threshold = float(threshold)
+
+    def transform(hidden):
+        u_local = u.to(hidden.device, torch.float32)
+        projection = hidden.float() @ u_local
+        deficit = (threshold - projection).clamp_min(0)
+        return (hidden.float() + deficit.unsqueeze(-1) * u_local).to(hidden.dtype)
 
     return transform
 
@@ -195,3 +214,14 @@ def cap_direction(model: nn.Module, thresholds_by_layer: dict[int, float],
                   for layer, threshold in thresholds_by_layer.items()}
     with _hooks(model, transforms):
         yield
+
+
+def transform_factory(mode: str):
+    """The transform constructor for a clamp or add mode by name ("add", "cap", "floor"); raises on anything else.
+
+    For code that rebuilds a transform from a saved spec (the tensor-parallel worker): a two-way "add, else cap" choice
+    there would have run a floor arm as a cap (found 2026-11-10 before any tensor-parallel floor run)."""
+    factories = {"add": add_transform, "cap": cap_transform, "floor": floor_transform}
+    if mode not in factories:
+        raise ValueError(f"no transform for steering mode {mode!r}; expected one of {sorted(factories)}")
+    return factories[mode]

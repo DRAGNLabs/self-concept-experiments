@@ -8,12 +8,14 @@ from selfconcept.assistant_axis.internals.model_specifics.message_spans import (
 from selfconcept.assistant_axis.internals.model_specifics.gemma4 import Gemma4ModelSpecifics
 from selfconcept.assistant_axis.internals.model_specifics.gpt_model_specifics import GptModelSpecifics
 from selfconcept.assistant_axis.internals.model_specifics.muse_glimmer import MuseGlimmerModelSpecifics
+from selfconcept.assistant_axis.internals.model_specifics.qwen import QwenModelSpecifics
 from selfconcept.common.hf_strong_types import HFTokenizer
 
 READOUT_SPECIFICS_BY_MODEL_SUBSTRING: dict[str, ReadoutSpecifics] = {
     "gpt-oss": GptModelSpecifics(),
     "glimmer": MuseGlimmerModelSpecifics(),
     "gemma-4": Gemma4ModelSpecifics(),
+    "qwen": QwenModelSpecifics(),
 }
 
 

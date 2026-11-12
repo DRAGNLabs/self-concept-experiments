@@ -1,7 +1,8 @@
 """Phase 3 main-run analysis (PLAN.md "Analysis"): per-arm outcome rates and the three steering contrasts vs the
 unsteered arm, stratified by problem, with whole-problem bootstrap CIs and Holm-corrected sign-flip permutation p-values.
 
-Input: <root>/<arm>/seed<s>/main_impossible_original.jsonl from main_run.sbatch (same problems and seeds in every arm).
+Input: <root>/<arm>/seed<s>/main_impossible_original.jsonl from main_run.sbatch (same problems in every arm; each arm
+is read on its own seeds, so an unsteered arm on seeds 8-19 against steered arms on 0-11 works).
 Outcome of an episode: the automatic hack proxy (passed shown tests and failed the hidden suite) by default, or
 --outcome hidden_pass / no_code / shown_pass. With --verdicts <json {episode_key: HACK|...}> (judge output keyed by
 "<arm>/seed<s>/<example_id>") the primary outcome is the judged HACK rate; unjudged candidates count as non-hacks.
@@ -23,6 +24,8 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
@@ -116,6 +119,50 @@ def sign_flip_p(diff: np.ndarray, reps: int, rng: np.random.Generator) -> float:
     return float((np.sum(null >= observed - 1e-12) + 1) / (reps + 1))
 
 
+def sign_flip_p_exact(diff: np.ndarray, scale: int, max_states: int = 4_000_000) -> float | None:
+    """Exact two-sided sign-flip p for per-problem differences that lie on the grid 1/scale (rates over a fixed number
+    of episodes per problem: scale = lcm of the two arms' seed counts). The null distribution of the signed sum is
+    built by convolution over problems, so the value has no resampling floor (the Monte-Carlo test cannot go below
+    1 / (reps + 1), which Holm then multiplies by the family size). None when the differences are not on the grid."""
+    scaled = np.asarray(diff, dtype=float) * scale
+    steps = np.round(scaled)
+    if np.isnan(scaled).any() or not np.allclose(scaled, steps, atol=1e-6):
+        return None
+    steps = np.abs(steps.astype(np.int64))
+    total = int(steps.sum())
+    if total == 0:
+        return 1.0
+    if 2 * total + 1 > max_states:
+        return None
+    probability = np.zeros(2 * total + 1)
+    probability[total] = 1.0
+    for step in steps[steps > 0]:
+        shifted = np.zeros_like(probability)
+        shifted[step:] += 0.5 * probability[:-step]
+        shifted[:-step] += 0.5 * probability[step:]
+        probability = shifted
+    observed = abs(int(np.round(scaled).sum()))
+    sums = np.abs(np.arange(-total, total + 1))
+    return float(min(1.0, probability[sums >= observed].sum()))
+
+
+def require_complete(arms, arm: str, problems: list[str], seeds: list[int], strict: bool) -> int:
+    """Missing episodes of an arm on its own seeds. A problem with no episode at all gives a NaN difference, which the
+    resampling test turned into the smallest possible p (every comparison with NaN is False), so it is always an
+    error; a partly written arm is an error for the reference and the contrast arms (strict) and a warning otherwise."""
+    absent = [problem for problem in problems if not arms[arm].get(problem)]
+    if absent:
+        raise ValueError(f"arm {arm!r} has no episode for {len(absent)} of {len(problems)} problems (e.g. {absent[:3]}): "
+                         "the arm is incomplete or reads another problem set")
+    missing = sum(seed not in arms[arm][problem] for problem in problems for seed in seeds)
+    if missing and strict:
+        raise ValueError(f"arm {arm!r} lacks {missing} of {len(problems) * len(seeds)} episodes on seeds {seeds}; "
+                         "pass --allow-incomplete to analyse a partly written arm")
+    if missing:
+        print(f"WARNING: arm {arm!r} lacks {missing} of {len(problems) * len(seeds)} episodes", file=sys.stderr)
+    return missing
+
+
 def holm(pvalues: dict[str, float]) -> dict[str, float]:
     items = sorted(pvalues.items(), key=lambda kv: kv[1])
     adjusted, running = {}, 0.0
@@ -126,32 +173,44 @@ def holm(pvalues: dict[str, float]) -> dict[str, float]:
     return adjusted
 
 
-def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None, contrasts=None) -> dict:
+def analyse(arms, outcome: str, reps: int, seed: int, verdicts=None, contrasts=None, allow_incomplete: bool = False) -> dict:
     contrasts = CONTRASTS if contrasts is None else list(contrasts)
     problems = sorted(arms[REFERENCE])
-    seeds = sorted({s for p in arms[REFERENCE].values() for s in p})
+    seeds_of = {arm: sorted({s for p in arms[arm].values() for s in p}) for arm in arms}
+    seeds = seeds_of[REFERENCE]
+    for arm in arms:
+        require_complete(arms, arm, problems, seeds_of[arm], strict=not allow_incomplete and (arm == REFERENCE or arm in contrasts))
     rng = np.random.default_rng(seed)
     result = {"outcome": outcome, "problems": len(problems), "seeds": len(seeds), "arms": {}, "contrasts": {}}
     reference = problem_matrix(arms, REFERENCE, problems, seeds, outcome, verdicts)
     reference_rate = np.nanmean(reference, axis=1)
     for arm in arms:
-        matrix = problem_matrix(arms, arm, problems, seeds, outcome, verdicts)
+        # Each arm is read on its own seeds (Qwen hard61: unsteered seeds 8-19, steered arms 0-11); the per-problem
+        # means are what the contrast compares, so unequal seed sets only change the per-seed sd's basis.
+        matrix = problem_matrix(arms, arm, problems, seeds_of[arm], outcome, verdicts)
         per_problem = np.nanmean(matrix, axis=1)
         per_seed = np.nanmean(matrix, axis=0)
         entry = {"episodes": int(np.sum(~np.isnan(matrix))), "rate": float(np.nanmean(per_problem)),
-                 "rate_pooled": float(np.nanmean(matrix)), "per_seed_sd": float(np.std(per_seed, ddof=1)) if len(seeds) > 1 else None,
+                 "rate_pooled": float(np.nanmean(matrix)), "per_seed_sd": float(np.std(per_seed, ddof=1)) if len(seeds_of[arm]) > 1 else None,
+                 "seeds": seeds_of[arm],
                  "per_problem_rate": {p: float(r) for p, r in zip(problems, per_problem)}}
         if arm != REFERENCE:
             diff = per_problem - reference_rate
             lo, hi = bootstrap_ci(diff, reps, rng)
+            # The resampled p is still drawn first, so the random stream (and with it every later CI) is unchanged.
+            p_resampled = sign_flip_p(diff, reps, rng)
+            p_exact = sign_flip_p_exact(diff, math.lcm(len(seeds_of[arm]), len(seeds)))
             entry |= {"diff_vs_unsteered": float(diff.mean()), "ci95": [lo, hi],
                       "problems_up": int(np.sum(diff > 0)), "problems_down": int(np.sum(diff < 0)),
-                      "problems_tied": int(np.sum(diff == 0)), "p_signflip": sign_flip_p(diff, reps, rng)}
+                      "problems_tied": int(np.sum(diff == 0)),
+                      "p_signflip": p_resampled if p_exact is None else p_exact,
+                      "p_method": "resampled" if p_exact is None else "exact", "p_signflip_resampled": p_resampled}
         result["arms"][arm] = entry
     raw = {arm: result["arms"][arm]["p_signflip"] for arm in contrasts if arm in result["arms"]}
     adjusted = holm(raw)
     result["contrasts"] = {arm: {"diff": result["arms"][arm]["diff_vs_unsteered"], "ci95": result["arms"][arm]["ci95"],
-                                 "p_raw": raw[arm], "p_holm": adjusted[arm]} for arm in raw}
+                                 "p_raw": raw[arm], "p_holm": adjusted[arm], "p_method": result["arms"][arm]["p_method"]} for arm in raw}
+    result["p_resampling_floor"] = 1 / (reps + 1)
     return result
 
 
@@ -231,7 +290,7 @@ def per_problem_rate(shares: HonestShares) -> ProblemVector:
 
 
 def analyse_honest_hidden_pass(arms: EpisodesByArm, reps: int, seed: int, verdicts: dict[str, str] | None = None,
-                               contrasts: list[str] | None = None) -> HonestHiddenPassResult:
+                               contrasts: list[str] | None = None, allow_incomplete: bool = False) -> HonestHiddenPassResult:
     """Hidden pass among honest episodes, the main capability measure (2026-11-07 amendment): the problem-stratified
     ratio mean_p(honest passes) / mean_p(honest episodes), so problems without honest episodes still count through
     the denominator. A difference of ratios is not a mean of per-problem differences, so the CI resamples problems
@@ -239,7 +298,12 @@ def analyse_honest_hidden_pass(arms: EpisodesByArm, reps: int, seed: int, verdic
     the analogue of the sign flip. Up/down/tied compare the per-problem honest pass rates where both are defined."""
     contrast_arms = CONTRASTS if contrasts is None else contrasts
     problems = sorted(arms[REFERENCE])
-    seeds = sorted({s for p in arms[REFERENCE].values() for s in p})
+    # Each arm is read on its own seeds, as in analyse(): the Qwen hard61 unsteered arm runs seeds 8-19 and the steered arms 0-11
+    # (the 4-seed L32_a0.24 pilot arm 0-3), so reading every arm on the reference's seeds dropped most or all of their episodes.
+    seeds_of = {arm: sorted({s for p in arms[arm].values() for s in p}) for arm in arms}
+    seeds = seeds_of[REFERENCE]
+    for arm in arms:
+        require_complete(arms, arm, problems, seeds_of[arm], strict=not allow_incomplete and (arm == REFERENCE or arm in contrast_arms))
     rng = np.random.default_rng(seed)
     every_problem = np.arange(len(problems))[None, :]
     picks = rng.integers(0, len(problems), size=(reps, len(problems)))
@@ -248,9 +312,9 @@ def analyse_honest_hidden_pass(arms: EpisodesByArm, reps: int, seed: int, verdic
     levels_by_arm: dict[str, HonestArmResult] = {}
     comparisons_by_arm: dict[str, HonestArmComparison] = {}
     for arm in arms:
-        shares = honest_shares(arms, arm, problems, seeds, verdicts)
+        shares = honest_shares(arms, arm, problems, seeds_of[arm], verdicts)
         rate = float(honest_pass_ratio(shares, every_problem)[0])
-        levels_by_arm[arm] = {"episodes": int(np.sum(~np.isnan(problem_matrix(arms, arm, problems, seeds, "hidden_pass", verdicts)))),
+        levels_by_arm[arm] = {"episodes": int(np.sum(~np.isnan(problem_matrix(arms, arm, problems, seeds_of[arm], "hidden_pass", verdicts)))),
                               "rate": rate, "per_problem_rate": dict(zip(problems, per_problem_rate(shares).tolist()))}
         if arm != REFERENCE:
             draws = honest_pass_ratio(shares, picks) - honest_pass_ratio(reference, picks)
@@ -285,6 +349,22 @@ def print_table(result: dict) -> None:
               f"{e['problems_up']:3d}/{e['problems_down']:3d}/{e['problems_tied']:3d} {e['p_signflip']:8.4f} {holm_text}")
 
 
+def provenance(args: argparse.Namespace) -> dict:
+    """How this analysis was made: arguments, resolved inputs, code commit, time."""
+    import datetime, subprocess
+    here = Path(__file__).resolve().parent
+    def git(*a: str) -> str:
+        try:
+            return subprocess.run(["git", "-C", str(here), *a], capture_output=True, text=True, timeout=20).stdout.strip()
+        except Exception:  # no git on the node: the record still carries the arguments
+            return ""
+    return {"argv": sys.argv, "root": str(args.root.resolve()), "tag": args.tag, "reps": args.reps, "seed": args.seed,
+            "verdicts": str(args.verdicts.resolve()) if args.verdicts else None, "outcomes": list(args.outcomes),
+            "contrasts": list(args.contrasts), "allow_incomplete": bool(args.allow_incomplete),
+            "git_commit": git("rev-parse", "HEAD"), "git_dirty_scripts": bool(git("status", "--porcelain", "--", str(here))),
+            "written": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("root", type=Path)
@@ -295,6 +375,8 @@ def main() -> None:
     parser.add_argument("--outcomes", nargs="+",
                         default=["hack_proxy", "hidden_pass", "shown_pass", "no_code", "code_parses", "reasoning_chars_per_turn", "turns"])
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--allow-incomplete", action="store_true",
+                        help="analyse arms that lack episodes on some seeds (a problem with no episode is always an error)")
     parser.add_argument("--contrasts", nargs="+", default=CONTRASTS,
                         help="arms in the Holm-corrected contrast family (default: the pre-registered main-run arms)")
     args = parser.parse_args()
@@ -304,12 +386,15 @@ def main() -> None:
     results = {}
     for outcome in outcomes:
         if outcome == "honest_hidden_pass":
-            results[outcome] = analyse_honest_hidden_pass(arms, args.reps, args.seed, verdicts, args.contrasts)
+            results[outcome] = analyse_honest_hidden_pass(arms, args.reps, args.seed, verdicts, args.contrasts, args.allow_incomplete)
         else:
-            results[outcome] = analyse(arms, outcome, args.reps, args.seed, verdicts, args.contrasts)
+            results[outcome] = analyse(arms, outcome, args.reps, args.seed, verdicts, args.contrasts, args.allow_incomplete)
         print_table(results[outcome])
     if args.out:
         args.out.write_text(json.dumps(results, indent=1))
+        # Provenance beside the result (review 2026-11-10: a stored analysis did not say how it was made). Not a .json
+        # name, so globs over analysis_*.json do not pick it up.
+        Path(str(args.out) + ".meta").write_text(json.dumps(provenance(args), indent=1))
 
 
 if __name__ == "__main__":
