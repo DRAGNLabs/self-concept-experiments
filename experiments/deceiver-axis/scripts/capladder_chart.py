@@ -81,7 +81,7 @@ SIDE = CAPS + FLOORS  # side points beside the dose scan, caps then floors, a do
 PREFIX, AXIS_NAME = "gi_", "gi_v2 vector"
 GFAR = {  # --axis gfar: per-model summary file and job line; verdict detail files are the reference ones plus verdicts_gf*/
     "gptoss": dict(summary="summary_gfar.json",
-                   jobs="dose scan 15213661, p25 cap 15214272, p50 cap 15223509 (all judged 2026-11-10); unsteered arm of the gi_v2 main run"),
+                   jobs="dose scan 15213661, p25 cap 15214272, p50 cap 15223509 (judged 2026-11-10), p75 / p95 caps 15264575 (judged 2026-11-11); unsteered arm of the gi_v2 main run"),
     "muse": dict(summary="summary_gfar.json",
                  jobs="±0.08 array 15213662, Koby's ±0.16 arms (job 15022726), p25 cap 15214273 (all judged 2026-11-10); unsteered arm of the gi_v2 main run"),
 }
@@ -89,7 +89,7 @@ GFAR = {  # --axis gfar: per-model summary file and job line; verdict detail fil
 
 def use_gfar() -> None:
     global CAPS, FLOORS, SIDE, PREFIX, AXIS_NAME
-    CAPS = ["gf_cap_p5", "gf_cap_p25", "gf_cap_p50"]
+    CAPS = ["gf_cap_p5", "gf_cap_p25", "gf_cap_p50", "gf_cap_p75", "gf_cap_p90", "gf_cap_p95"]  # p75 / p90 / p95 rungs added 2026-11-11
     FLOORS = ["gf_floor_p50", "gf_floor_p75", "gf_floor_p95"]
     SIDE = CAPS + FLOORS
     PREFIX, AXIS_NAME = "gf_", "Goodfire RH axis (gfar)"

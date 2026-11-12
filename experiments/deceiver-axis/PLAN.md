@@ -1855,6 +1855,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      `build_ladder_set.sh` as `gfcap50` was. The set gets a neutral name, `gfx01`, because the set name sits in the paths a judge
      sees (the point written for Gemma today; `gfcap50`, `gfcap95` and `gfdose` carried arm-derived names, not undone); the map is in
      `gfar_vs_gi_v2/steer/gptoss_set_tags.tsv`. Nothing else in the recipe changes.
+     **Result (judged 6:10–6:15 pm MST Nov 11; FINDINGS "gpt-oss Goodfire-axis (gfar) p75 and p95 caps, judged"):** 1.3% at p75 (−10.4, CI −14.6
+     to −6.3, Holm 2.5e-05 over 13 contrasts) and 11.5% at p95 (−0.2, CI −3.1 to +2.8, p 1.0) against 11.7% unsteered; both inside the dose
+     rule (rule measure +1.8 / +2.7, no-code −6.7 / −6.9). Order as expected (0.2 ≤ 1.3 ≤ 11.5 ≤ 11.7); p95 is the rung where the cap stops
+     working. No benchmarks run for the two rungs (on request).
   2. *Gemma: one-seed pilots at p25 / p50 / p75 / p95 before any 16-seed arm.* p25 was outside the rule on the three
      other models and broke two, and the share of positions moved does not transfer between models (gpt-oss usable
      at 56% of generated positions, Muse broken at 28%). The queued 16-seed p25 arm 15216111 (never started) is
@@ -1887,6 +1891,8 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      in the Gemma Goodfire family (four doses + these two rungs, 6 contrasts). **Expected:** judged hacking ordered p75 ≤ p95 ≤ unsteered
      (4.7%); p75 outside the dose rule, p95 near its edge; a rung is reported as lowering hacking only if its Holm-adjusted contrast excludes
      zero and it is inside the dose rule.
+     **Submitted 6:15 pm MST:** 15269005 `schemer-gfar-cap-gemma-ext`, array 0–29, cs3 B200 qos cs (picker row 1), 24 GB host memory, 3 h 45 min
+     (p75) / 3 h (p95), no requeue, nice 100. FINDINGS "Gemma 4 31B Goodfire-axis (gfar) cap pilot".
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
