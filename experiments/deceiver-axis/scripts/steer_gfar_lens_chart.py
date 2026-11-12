@@ -2,8 +2,8 @@
 
 The chart shows all episodes: steered minus unsteered (the same percentile of each), and that difference divided by
 the unsteered p10-p90 width at the layer; with --component-lens (the steered_gfar_component arm: only gi_v2's
-component along gfar at the steer layer is added) also that arm's normalised difference and the component arm minus
-the full arm. Each dashed line is the arm's injected vector carried unchanged, coefficient x (injected unit vector .
+component along gfar at the steer layer is added) also that arm's normalised difference and the full arm minus
+the component arm. Each dashed line is the arm's injected vector carried unchanged, coefficient x (injected unit vector .
 gfar at the layer). With --null-lens (chunk<i>/seed<N>.pt holding control-direction arms) rows 1-2 add the 10-90
 percentile band of the control directions' median shifts and gi_v2's median shift on the same tokens. The json also holds the percentiles of judged hacks (verdict HACK =
 STRONG or WEAK) and the rest (unjudged episodes count as not hack) when --verdicts is given. Each panel's y-axis is
@@ -218,9 +218,9 @@ def chart(full: GroupPercentiles, component: GroupPercentiles | None, null: Null
         component_rows: list[ChartRow] = [
             {"values": component_delta / width[:, None], "injected": injected_by_arm["steered_gfar_component"] / width,
              "label": "gfar component of gi_v2 only:\nsteered − unsteered ÷ width"},
-            {"values": (component_delta - full_delta) / width[:, None],
-             "injected": (injected_by_arm["steered_gfar_component"] - injected_by_arm["steered"]) / width,
-             "label": "row 3 − row 2\n(component only − full) ÷ width"},
+            {"values": (full_delta - component_delta) / width[:, None],
+             "injected": (injected_by_arm["steered"] - injected_by_arm["steered_gfar_component"]) / width,
+             "label": "row 2 − row 3\n(full − component only) ÷ width"},
         ]
         rows += component_rows
     figure, axes = plt.subplots(len(rows), 1, figsize=(9, 4.5 * len(rows)), sharex=True, squeeze=False)
