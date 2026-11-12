@@ -1904,6 +1904,17 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   user before that arm is stated as a contrast against the B200 reference; nothing is rerun without a decision. *Fit check on the
   first task of each arm:* both cards loaded, the patch line (add / cap) on both ranks, `TRITON_ATTN`, no out-of-memory or
   context-length error. Time limit and host memory from the Nov 11 dw tasks (elapsed 2 h 15–2 h 24 unsteered; sacct MaxRSS).
+  **Up to three waiting cap p75 seeds to cs2, two H100s (written 2026-11-12 2:44 PM MST, before any cancellation or submission; user
+  ~2:34 pm: "check if there's any better option for getting the gemma cap p75 waiting tasks running on a different GPU"):** dw has no
+  idle A100 (24 of its 47 cards are ours), so `15308022_[12-21]` wait for our own running tasks (scheduler estimate 6:36 pm).
+  `sbatch --test-only` at 2:37–2:41 pm: a two-H100 task on cs2 starts at once on cs-2-2 (by displacing standby jobs, the scheduler's
+  own rule); two A100s on cs 5:50 pm; cs3 B200 Nov 14; m13h H200 Nov 17. cs2 has one node up (8 H100s; cs-2-1 is down), so at most
+  three pairs. Seeds 6, 7, 8 (settings lines 12–14) move one at a time: the pending dw copy of a seed is cancelled, the same settings
+  line is submitted on cs2 with `TP=2` and `ATTN_BACKEND=TRITON_ATTN` (the placement of the Nov 10 check 15224337), and the next seed
+  moves only if the one before started and a new test-only start is earlier than the dw estimate. A seed that does not start on cs2
+  stays there only while its estimate beats dw. Everything else as in the entry above: hardware per seed in `HARDWARE.tsv`, same
+  reading, same blind set at 16 seeds; in the per-seed hardware split the H100-pair seeds are listed as their own group beside the
+  A100-pair seeds and the B200 pilot seed.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
