@@ -1927,6 +1927,21 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   waiting cap p95 array may be ordered behind this one task so the p75 arm completes first. *Seed 9* stays on the affected pair and
   is watched (an uncorrectable error ends the process, it does not alter output); if it stops with the same error it is resumed the
   same way and dw-1-4 is excluded on our waiting arrays. Nothing else changes: same blind set at 16 seeds, same reading.
+  **Correction to the seed 5 rule: rerun from the start, not resumed (written 2026-11-12 3:39 PM MST, before the continuation
+  15310222 started; side note relayed by the user about 3:35 pm):** resuming keeps the episodes that had finished by the stop and draws
+  the unfinished ones again. With 45 episodes in flight that is a selection on speed: a quick episode stays, a slow many-attempt
+  one gets a second draw, so a resumed seed leans toward quick outcomes (26 of the 108 episodes of seed 5 were in flight). The
+  stop itself (a memory error) does not depend on the model's output, so running the whole seed again is free of that selection
+  and keeps the pool at 108 problems as in every other seed. Rule: 15310222 is cancelled while pending; the 40 episode records
+  and the sidecar of the stopped task are moved out of the judging root (kept, not used in any table); seed 5 runs all 108
+  problems as one new task (same settings line, dw two A100s, `--exclude=dw-1-4`, 5 h as the other p75 tasks). The same rule holds
+  for any other Gemma task stopped part-way at concurrency 45 (seed 9 on the affected pair included): rerun whole.
+  *Muse p90 (5:07 pm limit):* that run is sequential (one episode at a time, `concurrency` 1), so a task cut by the limit has
+  exactly one episode in flight. The continuation for unfinished seeds stays as planned; for each cut seed the problem in flight
+  and the turns it had reached are recorded before the continuation, and the result states the count of such episodes (at most
+  one per cut seed) as a bound on the tilt. *Earlier runs:* 131 task logs since October show a real resume (requeue after
+  preemption or a resubmission), most of them sequential (one episode each); two families ran at concurrency 45 (Qwen gi_v2
+  pilot, 26 tasks, Oct 29; random-1729 control, 7 tasks, Nov 4, 3-5 episodes kept each). Not re-read here; listed for the user.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
