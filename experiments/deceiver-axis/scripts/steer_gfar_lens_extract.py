@@ -4,7 +4,9 @@ Each turn of each unsteered episode is teacher-forced once as generated and once
 the projection of each reasoning / answer token's residual onto the unit gfar direction is stored. Arms add, at the
 steer layer and every position, coefficient (alpha x the layer's mean residual norm) times
 - steered: the unit gi_v2 direction, as in the steered runs;
-- steered_gfar_component: only gi_v2's component along the unit gfar direction at the steer layer, (gi_v2 . gfar) gfar.
+- steered_gfar_component: only gi_v2's component along the unit gfar direction at the steer layer, (gi_v2 . gfar) gfar;
+- --null-direction NAME=PATH: a control direction's unit vector at the steer layer (same coefficient), stored under
+  null_projections[NAME]. --token-stride K keeps every K-th response token of each turn (for many arms).
 Chart: steer_gfar_lens_chart.py.
 
     SOO_CHAT_KWARGS='{"reasoning_effort":"low"}' python scripts/steer_gfar_lens_extract.py --model openai/gpt-oss-120b \
@@ -57,6 +59,8 @@ class SeedLens(TypedDict):
     unsteered: Projections
     steered: NotRequired[Projections]
     steered_gfar_component: NotRequired[Projections]
+    null_projections: dict[str, Projections]
+    token_stride: int
     turn_lengths: list[list[int]]
     oom_truncated: list[list[tuple[int, int]]]
     missing_reasoning: list[list[int]]
@@ -88,7 +92,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--steer-layer", type=int, required=True)
     parser.add_argument("--alpha", type=float, required=True)
     parser.add_argument("--layer-norms", type=Path, required=True)
-    parser.add_argument("--arms", nargs="+", choices=ARMS, default=["steered"])
+    parser.add_argument("--arms", nargs="*", choices=ARMS, default=["steered"])
+    parser.add_argument("--null-direction", action="append", default=[], help="NAME=PATH of a (layers, hidden) {axis, model} artifact")
+    parser.add_argument("--token-stride", type=int, default=1, help="keep every K-th response token of each turn")
     parser.add_argument("--max-length", type=int, default=40960, help="per-turn token cap (the tail is dropped)")
     parser.add_argument("--n", type=int, default=None, help="episodes per seed (smoke)")
     parser.add_argument("--out", type=Path, required=True)
@@ -147,16 +153,17 @@ def arm_vector(arm: Arm, gi_v2_unit: Float[Tensor, "hidden"], gfar_unit: Float[T
 
 def turn_projections(model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], ids: list[int],
                      segments: Int8[np.ndarray, "tokens"], gfar_units: Float[Tensor, "layers hidden"],
-                     steering_by_layer_by_arm: dict[Arm, dict[int, Transform]]
-                     ) -> tuple[Projections, dict[Arm, Projections], Int8[np.ndarray, "response_tokens"], int]:
+                     steering_by_layer_by_arm: dict[str, dict[int, Transform]], token_stride: int
+                     ) -> tuple[Projections, dict[str, Projections], Int8[np.ndarray, "response_tokens"], int]:
     """(unsteered, per-arm steered, response segments, tokens kept); a turn the GPU cannot hold is cut to its first 80% and retried."""
     kept = len(ids)
     while True:
         is_response = (segments[:kept] == REASONING_SEGMENT) | (segments[:kept] == ANSWER_SEGMENT)
+        is_response[np.flatnonzero(is_response)[np.arange(int(is_response.sum())) % token_stride != 0]] = False
         response_mask = torch.as_tensor(is_response, device=gfar_units.device)
         try:
             unsteered = response_projections(model, runner, runner_kwargs, ids[:kept], response_mask, gfar_units, {})
-            steered_by_arm: dict[Arm, Projections] = {arm: response_projections(model, runner, runner_kwargs, ids[:kept], response_mask, gfar_units, steering_by_layer)
+            steered_by_arm: dict[str, Projections] = {arm: response_projections(model, runner, runner_kwargs, ids[:kept], response_mask, gfar_units, steering_by_layer)
                               for arm, steering_by_layer in steering_by_layer_by_arm.items()}
             return unsteered, steered_by_arm, segments[:kept][is_response], kept
         except torch.OutOfMemoryError:
@@ -173,12 +180,12 @@ def compact(projections: Projections) -> Projections:
 
 def seed_lens(args: argparse.Namespace, seed: int, tokenizer: PreTrainedTokenizerBase, family: Family, chat_kwargs: dict[str, Any],
               model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], gfar_units: Float[Tensor, "layers hidden"],
-              steering_by_layer_by_arm: dict[Arm, dict[int, Transform]], coefficient: float) -> SeedLens:
+              steering_by_layer_by_arm: dict[str, dict[int, Transform]], coefficient: float) -> SeedLens:
     run_dir = args.run / f"seed{seed}"
     records = [json.loads(line) for line in (run_dir / f"{args.tag}_impossible_original.jsonl").open()][: args.n]
     reasoning_by_turn_by_example = load_reasoning_sidecar(run_dir, args.tag)
     unsteered_parts, segment_parts, token_offsets = [], [], [0]
-    steered_parts_by_arm: dict[Arm, list[Projections]] = {arm: [] for arm in steering_by_layer_by_arm}
+    steered_parts_by_arm: dict[str, list[Projections]] = {arm: [] for arm in steering_by_layer_by_arm}
     turn_lengths, oom_truncated, missing_reasoning = [], [], []
     started = time.time()
     for episode_index, record in enumerate(records):
@@ -189,7 +196,7 @@ def seed_lens(args: argparse.Namespace, seed: int, tokenizer: PreTrainedTokenize
         episode_response_tokens = 0
         for ids, segments, turn in turns:
             unsteered, steered_by_arm, response_segments, kept = turn_projections(model, runner, runner_kwargs, ids, segments, gfar_units,
-                                                                                  steering_by_layer_by_arm)
+                                                                                  steering_by_layer_by_arm, args.token_stride)
             if kept < len(ids):
                 truncations.append((turn, kept))
             unsteered_parts.append(unsteered)
@@ -203,7 +210,8 @@ def seed_lens(args: argparse.Namespace, seed: int, tokenizer: PreTrainedTokenize
         missing_reasoning.append(missing)
         logger.info("seed %d: %d/%d episodes, %.0f s", seed, episode_index + 1, len(records), time.time() - started)
     lens: SeedLens = {
-        "arms": list(steering_by_layer_by_arm),
+        "arms": list(args.arms),
+        "null_projections": {}, "token_stride": args.token_stride,
         "example_id": [record["example_id"] for record in records],
         "verdict_key": [f"{args.run.name}/seed{seed}/{record['example_id']}" for record in records],
         "token_offsets": np.asarray(token_offsets, dtype=np.int64),
@@ -215,7 +223,11 @@ def seed_lens(args: argparse.Namespace, seed: int, tokenizer: PreTrainedTokenize
         "max_length": args.max_length, "seconds": time.time() - started,
     }
     for arm, parts in steered_parts_by_arm.items():
-        lens[arm] = compact(torch.cat(parts, dim=1))
+        projections = compact(torch.cat(parts, dim=1))
+        if arm == "steered" or arm == "steered_gfar_component":
+            lens[arm] = projections
+        else:
+            lens["null_projections"][arm] = projections
     return lens
 
 
@@ -231,8 +243,12 @@ def main() -> None:
     gfar_units = load_gfar_units(args.gfar, num_layers, hidden).to(device)
     gi_v2_unit = torch.as_tensor(load_unit_axes(args.gi_v2, [args.steer_layer], num_layers, hidden, args.model)[args.steer_layer]["direction"]).to(device)
     coefficient = steering_coefficient(args.layer_norms, args.steer_layer, args.alpha)
-    steering_by_layer_by_arm: dict[Arm, dict[int, Transform]] = {
+    steering_by_layer_by_arm: dict[str, dict[int, Transform]] = {
         arm: {args.steer_layer: add_transform(arm_vector(arm, gi_v2_unit, gfar_units[args.steer_layer]), coefficient)} for arm in args.arms}
+    for spec in args.null_direction:
+        name, path = spec.split("=", 1)
+        null_unit = torch.as_tensor(load_unit_axes(Path(path), [args.steer_layer], num_layers, hidden, args.model)[args.steer_layer]["direction"]).to(device)
+        steering_by_layer_by_arm[name] = {args.steer_layer: add_transform(null_unit, coefficient)}
     logger.info("gi_v2 at layer %d, alpha %.3f, coefficient %.1f; cos(gi_v2, gfar) there %.4f",
                 args.steer_layer, args.alpha, coefficient, float(gi_v2_unit @ gfar_units[args.steer_layer]))
 

@@ -4,7 +4,8 @@ The chart shows all episodes: steered minus unsteered (the same percentile of ea
 the unsteered p10-p90 width at the layer; with --component-lens (the steered_gfar_component arm: only gi_v2's
 component along gfar at the steer layer is added) also that arm's normalised difference and the component arm minus
 the full arm. Each dashed line is the arm's injected vector carried unchanged, coefficient x (injected unit vector .
-gfar at the layer). The json also holds the percentiles of judged hacks (verdict HACK =
+gfar at the layer). With --null-lens (chunk<i>/seed<N>.pt holding control-direction arms) rows 1-2 add the 10-90
+percentile band of the control directions' median shifts and gi_v2's median shift on the same tokens. The json also holds the percentiles of judged hacks (verdict HACK =
 STRONG or WEAK) and the rest (unjudged episodes count as not hack) when --verdicts is given. Each panel's y-axis is
 clipped to the range of its p2-p98 lines. Writes <out>.png and <out>.json; --rechart redraws the png from <out>.json.
 
@@ -23,6 +24,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import numpy as np
 import torch
+from torch import Tensor
 from jaxtyping import Bool, Float
 
 from selfconcept.measurement.unit_axes import load_unit_axes
@@ -142,14 +144,66 @@ def _artifact_shape(gfar_spec: str) -> tuple[int, int]:
     return int(num_layers), int(hidden)
 
 
+class NullMedians(TypedDict):
+    names: list[str]
+    raw: list[list[float]]
+    normalized: list[list[float]]
+    gi_v2_raw: list[float]
+    gi_v2_normalized: list[float]
+    episodes: int
+    response_tokens: int
+
+
+def layer_medians(projections: Float[Tensor, "layers tokens"]) -> Float[np.ndarray, "layers"]:
+    return np.median(projections.float().numpy(), axis=1)
+
+
+def null_medians(null_lens_dir: Path) -> NullMedians:
+    """Per control direction, p50(steered) - p50(unsteered) per layer, raw and over the chunk's unsteered p10-p90 width."""
+    raw_by_name: dict[str, Float[np.ndarray, "layers"]] = {}
+    normalized_by_name: dict[str, Float[np.ndarray, "layers"]] = {}
+    gi_v2_raw: Float[np.ndarray, "layers"] | None = None
+    gi_v2_normalized: Float[np.ndarray, "layers"] | None = None
+    episodes = response_tokens = 0
+    for chunk_dir in sorted(null_lens_dir.glob("chunk*")):
+        seeds = [torch.load(path, map_location="cpu", weights_only=False) for path in sorted(chunk_dir.glob("seed*.pt"))]
+        unsteered = torch.cat([seed["unsteered"] for seed in seeds], dim=1).float().numpy()
+        unsteered_median = np.median(unsteered, axis=1)
+        low, high = np.percentile(unsteered, [10, 90], axis=1)
+        for name in seeds[0]["null_projections"]:
+            raw = layer_medians(torch.cat([seed["null_projections"][name] for seed in seeds], dim=1)) - unsteered_median
+            raw_by_name[name], normalized_by_name[name] = raw, raw / (high - low)
+        if gi_v2_raw is None:
+            gi_v2_raw = layer_medians(torch.cat([seed["steered"] for seed in seeds], dim=1)) - unsteered_median
+            gi_v2_normalized = gi_v2_raw / (high - low)
+            episodes, response_tokens = sum(len(seed["example_id"]) for seed in seeds), unsteered.shape[1]
+    assert gi_v2_raw is not None and gi_v2_normalized is not None
+    names = sorted(raw_by_name)
+    return {"names": names, "raw": [raw_by_name[name].tolist() for name in names],
+            "normalized": [normalized_by_name[name].tolist() for name in names],
+            "gi_v2_raw": gi_v2_raw.tolist(), "gi_v2_normalized": gi_v2_normalized.tolist(),
+            "episodes": episodes, "response_tokens": response_tokens}
+
+
+def draw_null_band(axis: Axes, medians: Float[np.ndarray, "directions layers"], gi_v2_subset: Float[np.ndarray, "layers"], count: int) -> None:
+    layers = np.arange(medians.shape[1])
+    low, high = np.percentile(medians, [10, 90], axis=0)
+    axis.fill_between(layers, low, high, color="#b9b8b4", alpha=0.45, linewidth=0, zorder=1,
+                      label=f"antonym controls: 10–90% of median shifts (n={count})")
+    axis.plot(layers, gi_v2_subset, color=MEDIAN_COLOR, linestyle=(0, (1, 1.5)), linewidth=1.4, zorder=3,
+              label="gi_v2 median shift on the controls' tokens")
+    bottom, top = axis.get_ylim()
+    axis.set_ylim(min(bottom, float(np.nanmin(low))), max(top, float(np.nanmax(high))))
+
+
 class ChartRow(TypedDict):
     values: Float[np.ndarray, "layers percentiles"]
     injected: Float[np.ndarray, "layers"]
     label: str
 
 
-def chart(full: GroupPercentiles, component: GroupPercentiles | None, injected_by_arm: dict[Arm, Float[np.ndarray, "layers"]],
-          steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
+def chart(full: GroupPercentiles, component: GroupPercentiles | None, null: NullMedians | None,
+          injected_by_arm: dict[Arm, Float[np.ndarray, "layers"]], steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
     unsteered = np.asarray(full["percentiles_by_condition"]["unsteered"])
     width = percentile_columns(unsteered, [90])[:, 0] - percentile_columns(unsteered, [10])[:, 0]
     full_delta = np.asarray(full["percentiles_by_condition"]["steered"]) - unsteered
@@ -170,9 +224,13 @@ def chart(full: GroupPercentiles, component: GroupPercentiles | None, injected_b
         ]
         rows += component_rows
     figure, axes = plt.subplots(len(rows), 1, figsize=(9, 4.5 * len(rows)), sharex=True, squeeze=False)
-    for axis, row in zip(axes[:, 0], rows):
+    null_rows = ([(np.asarray(null["raw"]), np.asarray(null["gi_v2_raw"])), (np.asarray(null["normalized"]), np.asarray(null["gi_v2_normalized"]))]
+                 if null is not None else [])
+    for row_index, (axis, row) in enumerate(zip(axes[:, 0], rows)):
         draw_percentile_lines(axis, row["values"])
         clip_to_inner_percentiles(axis, [row["values"]])
+        if row_index < len(null_rows) and null is not None:
+            draw_null_band(axis, *null_rows[row_index], len(null["names"]))
         axis.plot(np.arange(len(row["injected"])), row["injected"], color=INJECTION_COLOR, linestyle="--", linewidth=1.8, zorder=4,
                   label="injection carried unchanged")
         low, high = axis.get_ylim()
@@ -184,7 +242,8 @@ def chart(full: GroupPercentiles, component: GroupPercentiles | None, injected_b
         axis.set_ylabel(row["label"])
     axes[-1, 0].set_xlabel("layer")
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    order = [labels.index(f"p{percentile}") for percentile in reversed(DISPLAYED_PERCENTILES)] + [labels.index("injection carried unchanged")]
+    order = ([labels.index(f"p{percentile}") for percentile in reversed(DISPLAYED_PERCENTILES)] + [labels.index("injection carried unchanged")]
+             + [index for index, label in enumerate(labels) if label.startswith(("antonym", "gi_v2 median"))])
     figure.legend([handles[i] for i in order], [labels[i] for i in order], loc="center left", bbox_to_anchor=(0.98, 0.5), frameon=False,
                   title="percentile over\nresponse tokens")
     figure.suptitle(f"{title}: gi_v2 +{alpha:g} at L{steer_layer} (dotted), effect on the per-token gfar projection\n"
@@ -207,6 +266,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--lens", type=Path, help="required unless --rechart")
     parser.add_argument("--component-lens", type=Path, default=None, help="dir of seed<N>.pt holding the steered_gfar_component arm")
+    parser.add_argument("--null-lens", type=Path, default=None, help="dir of chunk<i>/seed<N>.pt holding control-direction arms")
     parser.add_argument("--verdicts", type=Path, default=None, help="as_judged.json keyed '<arm>/seed<s>/<example_id>'")
     parser.add_argument("--title", required=True)
     parser.add_argument("--out", type=Path, required=True, help="output stem")
@@ -216,7 +276,11 @@ def main() -> None:
     if args.rechart:
         saved = json.loads(args.out.with_suffix(".json").read_text())
         component_lens = Path(saved["component_lens"]) if saved.get("component_lens") else None
-        chart(saved["groups"]["combined"], saved.get("component"), injected_by_arm(Path(saved["lens"]), component_lens), saved["steer_layer"],
+        null = null_medians(args.null_lens) if args.null_lens is not None else saved.get("null")
+        if null is not None:
+            saved["null"] = null
+            args.out.with_suffix(".json").write_text(json.dumps(saved, indent=1))
+        chart(saved["groups"]["combined"], saved.get("component"), null, injected_by_arm(Path(saved["lens"]), component_lens), saved["steer_layer"],
               saved["alpha"], args.title, args.out.with_suffix(".png"))
         return
 
@@ -231,12 +295,13 @@ def main() -> None:
         component_lens = load_lens(args.component_lens, "steered_gfar_component")
         component = group_percentiles(component_lens, np.ones(len(component_lens["verdict_keys"]), dtype=bool))
         del component_lens
+    null = null_medians(args.null_lens) if args.null_lens is not None else None
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.with_suffix(".json").write_text(json.dumps({
         "lens": str(args.lens), "component_lens": str(args.component_lens) if args.component_lens else None, "verdicts": str(args.verdicts),
         "steer_layer": steer_layer, "alpha": alpha,
-        "percentiles": PERCENTILES.tolist(), "groups": percentiles_by_group, "component": component}, indent=1))
-    chart(percentiles_by_group["combined"], component, injected_by_arm(args.lens, args.component_lens), steer_layer, alpha, args.title, args.out.with_suffix(".png"))
+        "percentiles": PERCENTILES.tolist(), "groups": percentiles_by_group, "component": component, "null": null}, indent=1))
+    chart(percentiles_by_group["combined"], component, null, injected_by_arm(args.lens, args.component_lens), steer_layer, alpha, args.title, args.out.with_suffix(".png"))
 
 
 if __name__ == "__main__":
