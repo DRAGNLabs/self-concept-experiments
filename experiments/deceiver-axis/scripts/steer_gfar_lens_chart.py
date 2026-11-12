@@ -1,10 +1,12 @@
 """Chart of steer_gfar_lens_extract.py output: per-layer percentiles of the per-token gfar projection, unsteered vs gi_v2-steered.
 
-Rows: unsteered, steered, steered minus unsteered (the same percentile of each). Columns: all episodes, judged hacks
-(verdict HACK = STRONG or WEAK) and the rest (unjudged episodes count as not hack); without --verdicts only the
-combined column. Writes <out>.png and <out>.json.
+Rows: unsteered, steered, steered minus unsteered (the same percentile of each), and that difference divided by the
+unsteered p10-p90 width at the layer. Columns: all episodes, judged hacks (verdict HACK = STRONG or WEAK) and the rest
+(unjudged episodes count as not hack); without --verdicts only the combined column. Each panel's y-axis is clipped to
+the range of its p2-p98 lines. Writes <out>.png and <out>.json; --rechart redraws the png from an existing <out>.json.
 
     python scripts/steer_gfar_lens_chart.py --lens <dir of seed<N>.pt> --verdicts <as_judged.json> --title "gpt-oss-120b" --out <stem>
+    python scripts/steer_gfar_lens_chart.py --rechart --title "gpt-oss-120b" --out <stem>
 """
 import argparse
 import json
@@ -25,7 +27,10 @@ Group = Literal["combined", "hack", "rest"]
 Condition = Literal["unsteered", "steered"]
 CONDITIONS: tuple[Condition, ...] = ("unsteered", "steered")
 PERCENTILES = np.array([*range(0, 10), *range(10, 91, 10), *range(91, 101)])
-DECILES = set(range(10, 91, 10))
+DISPLAYED_PERCENTILES = [*range(0, 10, 2), 20, 40, 50, 60, 80, *range(92, 101, 2)]
+MIDDLE_PERCENTILES = {20, 40, 60, 80}
+CLIP_LOW_PERCENTILE, CLIP_HIGH_PERCENTILE = 2, 98
+MEDIAN_COLOR = "#1f1f1d"
 PERCENTILE_COLORMAP = LinearSegmentedColormap.from_list("blue_gray_red", ["#2a78d6", "#b9b8b4", "#e34948"])
 GROUP_TITLES: dict[Group, str] = {"combined": "all episodes", "hack": "judged hack (STRONG / WEAK)", "rest": "not judged hack"}
 
@@ -78,48 +83,74 @@ def group_percentiles(lens: Lens, episode_mask: Bool[np.ndarray, "episodes"]) ->
     }
 
 
+def percentile_columns(values: Float[np.ndarray, "layers percentiles"], percentiles: list[int]) -> Float[np.ndarray, "layers shown"]:
+    return values[:, [PERCENTILES.tolist().index(percentile) for percentile in percentiles]]
+
+
 def draw_percentile_lines(axis: Axes, values: Float[np.ndarray, "layers percentiles"]) -> None:
     layers = np.arange(values.shape[0])
-    for column, percentile in enumerate(PERCENTILES):
-        axis.plot(layers, values[:, column], color=PERCENTILE_COLORMAP(percentile / 100),
-                  linewidth=1.6 if percentile in DECILES or percentile in (0, 100) else 0.6)
+    for percentile in DISPLAYED_PERCENTILES:
+        line = percentile_columns(values, [percentile])[:, 0]
+        if percentile == 50:
+            axis.plot(layers, line, color=MEDIAN_COLOR, linewidth=2.4, zorder=3)
+        else:
+            axis.plot(layers, line, color=PERCENTILE_COLORMAP(percentile / 100), linewidth=1.3 if percentile in MIDDLE_PERCENTILES else 0.8)
+
+
+def clip_to_inner_percentiles(axis: Axes, panels: list[Float[np.ndarray, "layers percentiles"]]) -> None:
+    inner = np.concatenate([percentile_columns(values, [CLIP_LOW_PERCENTILE, CLIP_HIGH_PERCENTILE]) for values in panels])
+    low, high = float(np.nanmin(inner)), float(np.nanmax(inner))
+    padding = 0.05 * (high - low) or 1.0
+    axis.set_ylim(low - padding, high + padding)
 
 
 def chart(percentiles_by_group: dict[Group, GroupPercentiles], steer_layer: int, alpha: float, title: str, out_png: Path) -> None:
     groups = list(percentiles_by_group)
-    figure, axes = plt.subplots(3, len(groups), figsize=(5.2 * len(groups) + 1.2, 11), squeeze=False, sharex=True)
-    row_labels = ["unsteered", f"gi_v2 +{alpha:g} at L{steer_layer}", "steered − unsteered"]
+    figure, axes = plt.subplots(4, len(groups), figsize=(5.2 * len(groups) + 1.2, 14), squeeze=False, sharex=True)
+    row_labels = ["unsteered\ngfar projection", f"gi_v2 +{alpha:g} at L{steer_layer}\ngfar projection",
+                  "steered − unsteered\ngfar projection", "steered − unsteered\n÷ unsteered p10–p90 width"]
     for column, group in enumerate(groups):
         result = percentiles_by_group[group]
         unsteered = np.asarray(result["percentiles_by_condition"]["unsteered"])
         steered = np.asarray(result["percentiles_by_condition"]["steered"])
-        for row, values in enumerate((unsteered, steered, steered - unsteered)):
+        delta = steered - unsteered
+        width = percentile_columns(unsteered, [90])[:, 0] - percentile_columns(unsteered, [10])[:, 0]
+        normalized_delta = delta / width[:, None]
+        for row, (values, clip_panels) in enumerate(((unsteered, [unsteered, steered]), (steered, [unsteered, steered]),
+                                                     (delta, [delta]), (normalized_delta, [normalized_delta]))):
             axis = axes[row, column]
             draw_percentile_lines(axis, values)
+            clip_to_inner_percentiles(axis, clip_panels)
             axis.axvline(steer_layer, color="#6b6a66", linestyle="--", linewidth=0.8)
             axis.grid(color="#e6e5e1", linewidth=0.5)
             axis.spines[["top", "right"]].set_visible(False)
+            if row >= 2:
+                axis.axhline(0, color="#6b6a66", linewidth=0.8)
             if column == 0:
-                axis.set_ylabel(f"{row_labels[row]}\ngfar projection")
-        axes[2, column].axhline(0, color="#6b6a66", linewidth=0.8)
-        axes[2, column].set_xlabel("layer")
+                axis.set_ylabel(row_labels[row])
+        axes[3, column].set_xlabel("layer")
         axes[0, column].set_title(f"{GROUP_TITLES[group]}\n{result['episodes']} episodes, {result['response_tokens']:,} response tokens", fontsize=10)
-    for column in range(len(groups)):
-        axes[1, column].sharey(axes[0, column])
     colorbar = figure.colorbar(plt.cm.ScalarMappable(norm=Normalize(0, 100), cmap=PERCENTILE_COLORMAP), ax=axes, fraction=0.02, pad=0.02)
-    colorbar.set_label("percentile over response tokens (thick: 0, 10, 20 … 90, 100; thin: 1–9, 91–99)")
-    figure.suptitle(f"{title}: per-token gfar projection, unsteered episodes teacher-forced with and without gi_v2 (dashed: steer layer)")
+    colorbar.set_label("percentile over response tokens: 0–8 and 92–100 every 2 (thin), 20 / 40 / 60 / 80 (medium), 50 in black")
+    figure.suptitle(f"{title}: per-token gfar projection, unsteered episodes teacher-forced with and without gi_v2\n"
+                    f"(dashed: steer layer; y-axes clipped to the p{CLIP_LOW_PERCENTILE}–p{CLIP_HIGH_PERCENTILE} range, so p0 / p100 can run off-scale)")
     figure.savefig(out_png, dpi=150, bbox_inches="tight")
     plt.close(figure)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--lens", type=Path, required=True)
+    parser.add_argument("--lens", type=Path, help="required unless --rechart")
     parser.add_argument("--verdicts", type=Path, default=None, help="as_judged.json keyed '<arm>/seed<s>/<example_id>'")
     parser.add_argument("--title", required=True)
     parser.add_argument("--out", type=Path, required=True, help="output stem")
+    parser.add_argument("--rechart", action="store_true", help="redraw <out>.png from <out>.json without reading the lens")
     args = parser.parse_args()
+
+    if args.rechart:
+        saved = json.loads(args.out.with_suffix(".json").read_text())
+        chart(saved["groups"], saved["steer_layer"], saved["alpha"], args.title, args.out.with_suffix(".png"))
+        return
 
     lens = load_lens(args.lens)
     verdicts_by_key = json.loads(args.verdicts.read_text()) if args.verdicts else None
