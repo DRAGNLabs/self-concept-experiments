@@ -1762,6 +1762,13 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   p 0.00011, × 6 = 0.0007), inside the rule (−7.1, CI −9.9 to −4.4). The ordering holds for the two inner doses. Open: no random
   direction has been steered at α 0.04 on Gemma, so the +0.04 rise is not yet separated from a norm effect; whether to run such arms is
   a user decision.
+  **Goodfire +0.08 complete (written 11:10 AM MST Nov 12, before the set is built or any verdict read):** 15267210 tasks 30–44 done by
+  11:09 am (15 of 15 done markers, no error line, 5,155–5,588 s per task), 16 seeds × 108 = 1,728 episodes with seed 0 from pilot
+  15213664. Set `ctl_g06_s0-15` = `gfar_L30_a0.08`, same frozen chain. Interim read, 3 of 6 contrasts in the Gemma Goodfire family:
+  raw p beside p × 6, Holm at family completion. **Expected** (as written Nov 11): judged hacking at or above the +0.04 level (7.3%)
+  and the arm outside the dose rule (the pilot seed lost 19.5 points of honest hidden pass); outside the rule, its hack difference is
+  reported but not read as an effect of the direction at kept capability. No pending submission, extension or rung choice depends on
+  this column.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
