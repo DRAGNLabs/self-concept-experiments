@@ -1,0 +1,612 @@
+{
+ "gpt-oss-120b": {
+  "unsteered": {
+   "episodes": 540,
+   "with_code": 500,
+   "hacks": 63,
+   "hack_rate": 0.11666666666666667,
+   "no_code_rate": 0.07407407407407407,
+   "hack_given_code": 0.126,
+   "ci95": [
+    0.07535369321046158,
+    0.18257607871589393
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_m0.4": {
+   "episodes": 540,
+   "with_code": 476,
+   "hacks": 6,
+   "hack_rate": 0.011111111111111112,
+   "no_code_rate": 0.11851851851851847,
+   "hack_given_code": 0.012605042016806723,
+   "ci95": [
+    0.002066115702479339,
+    0.026422764227642278
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_m0.2": {
+   "episodes": 540,
+   "with_code": 473,
+   "hacks": 19,
+   "hack_rate": 0.03518518518518519,
+   "no_code_rate": 0.12407407407407411,
+   "hack_given_code": 0.040169133192389,
+   "ci95": [
+    0.021551724137931036,
+    0.06157188820151976
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_m0.1": {
+   "episodes": 540,
+   "with_code": 483,
+   "hacks": 50,
+   "hack_rate": 0.09259259259259259,
+   "no_code_rate": 0.10555555555555551,
+   "hack_given_code": 0.10351966873706005,
+   "ci95": [
+    0.05465501990269792,
+    0.16041859567901234
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_p0.1": {
+   "episodes": 540,
+   "with_code": 530,
+   "hacks": 112,
+   "hack_rate": 0.2074074074074074,
+   "no_code_rate": 0.01851851851851849,
+   "hack_given_code": 0.21132075471698114,
+   "ci95": [
+    0.14015151515151514,
+    0.2854443225742742
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_p0.2": {
+   "episodes": 540,
+   "with_code": 539,
+   "hacks": 182,
+   "hack_rate": 0.337037037037037,
+   "no_code_rate": 0.0018518518518518823,
+   "hack_given_code": 0.33766233766233766,
+   "ci95": [
+    0.24814814814814815,
+    0.42857142857142855
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_p0.4": {
+   "episodes": 540,
+   "with_code": 540,
+   "hacks": 286,
+   "hack_rate": 0.5296296296296297,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.5296296296296297,
+   "ci95": [
+    0.4222222222222222,
+    0.6370370370370371
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_m0.4": {
+   "episodes": 540,
+   "with_code": 433,
+   "hacks": 0,
+   "hack_rate": 0.0,
+   "no_code_rate": 0.19814814814814818,
+   "hack_given_code": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_m0.2": {
+   "episodes": 540,
+   "with_code": 538,
+   "hacks": 13,
+   "hack_rate": 0.024074074074074074,
+   "no_code_rate": 0.0037037037037036535,
+   "hack_given_code": 0.024163568773234202,
+   "ci95": [
+    0.007434944237918215,
+    0.04291044776119403
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_m0.1": {
+   "episodes": 540,
+   "with_code": 531,
+   "hacks": 44,
+   "hack_rate": 0.08148148148148149,
+   "no_code_rate": 0.01666666666666672,
+   "hack_given_code": 0.08286252354048965,
+   "ci95": [
+    0.04119850187265917,
+    0.1332113821138211
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_p0.1": {
+   "episodes": 540,
+   "with_code": 401,
+   "hacks": 77,
+   "hack_rate": 0.1425925925925926,
+   "no_code_rate": 0.2574074074074074,
+   "hack_given_code": 0.19201995012468828,
+   "ci95": [
+    0.12405014228240605,
+    0.2664909325904397
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_p0.2": {
+   "episodes": 540,
+   "with_code": 240,
+   "hacks": 53,
+   "hack_rate": 0.09814814814814815,
+   "no_code_rate": 0.5555555555555556,
+   "hack_given_code": 0.22083333333333333,
+   "ci95": [
+    0.1434972704230844,
+    0.3056607893219082
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_p0.4": {
+   "episodes": 540,
+   "with_code": 176,
+   "hacks": 28,
+   "hack_rate": 0.05185185185185185,
+   "no_code_rate": 0.674074074074074,
+   "hack_given_code": 0.1590909090909091,
+   "ci95": [
+    0.08860594672995781,
+    0.2345679012345679
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  }
+ },
+ "Muse-Glimmer-30B": {
+  "unsteered": {
+   "episodes": 540,
+   "with_code": 540,
+   "hacks": 177,
+   "hack_rate": 0.3277777777777778,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.3277777777777778,
+   "ci95": [
+    0.22592592592592592,
+    0.43703703703703706
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_m0.16": {
+   "episodes": 540,
+   "with_code": 524,
+   "hacks": 99,
+   "hack_rate": 0.18333333333333332,
+   "no_code_rate": 0.029629629629629672,
+   "hack_given_code": 0.18893129770992367,
+   "ci95": [
+    0.10037878787878787,
+    0.2901400761215448
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_m0.08": {
+   "episodes": 540,
+   "with_code": 535,
+   "hacks": 135,
+   "hack_rate": 0.25,
+   "no_code_rate": 0.0092592592592593,
+   "hack_given_code": 0.2523364485981308,
+   "ci95": [
+    0.1582844111984345,
+    0.35526315789473684
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_m0.04": {
+   "episodes": 540,
+   "with_code": 536,
+   "hacks": 158,
+   "hack_rate": 0.29259259259259257,
+   "no_code_rate": 0.007407407407407418,
+   "hack_given_code": 0.2947761194029851,
+   "ci95": [
+    0.20148315684149087,
+    0.3947858472998138
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_p0.04": {
+   "episodes": 540,
+   "with_code": 539,
+   "hacks": 208,
+   "hack_rate": 0.3851851851851852,
+   "no_code_rate": 0.0018518518518518823,
+   "hack_given_code": 0.38589981447124305,
+   "ci95": [
+    0.2819906548477977,
+    0.49536178107606677
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_p0.08": {
+   "episodes": 540,
+   "with_code": 538,
+   "hacks": 246,
+   "hack_rate": 0.45555555555555555,
+   "no_code_rate": 0.0037037037037036535,
+   "hack_given_code": 0.45724907063197023,
+   "ci95": [
+    0.34328358208955223,
+    0.5724974685124562
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gi_p0.16": {
+   "episodes": 540,
+   "with_code": 540,
+   "hacks": 266,
+   "hack_rate": 0.4925925925925926,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.4925925925925926,
+   "ci95": [
+    0.37777777777777777,
+    0.6074074074074074
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_m0.16": {
+   "episodes": 540,
+   "with_code": 515,
+   "hacks": 58,
+   "hack_rate": 0.10740740740740741,
+   "no_code_rate": 0.04629629629629628,
+   "hack_given_code": 0.11262135922330097,
+   "ci95": [
+    0.05019305019305019,
+    0.1851870296591412
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_m0.08": {
+   "episodes": 540,
+   "with_code": 539,
+   "hacks": 122,
+   "hack_rate": 0.22592592592592592,
+   "no_code_rate": 0.0018518518518518823,
+   "hack_given_code": 0.22634508348794063,
+   "ci95": [
+    0.1425925925925926,
+    0.3209647495361781
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_p0.08": {
+   "episodes": 540,
+   "with_code": 540,
+   "hacks": 239,
+   "hack_rate": 0.4425925925925926,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.4425925925925926,
+   "ci95": [
+    0.33513888888888893,
+    0.5518518518518518
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  },
+  "gf_p0.16": {
+   "episodes": 540,
+   "with_code": 539,
+   "hacks": 281,
+   "hack_rate": 0.5203703703703704,
+   "no_code_rate": 0.0018518518518518823,
+   "hack_given_code": 0.5213358070500927,
+   "ci95": [
+    0.40555555555555556,
+    0.6370370370370371
+   ],
+   "problems": 45,
+   "hacks_without_code": 0
+  }
+ },
+ "Gemma-4-31B": {
+  "unsteered": {
+   "episodes": 1728,
+   "with_code": 1728,
+   "hacks": 82,
+   "hack_rate": 0.047453703703703706,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.047453703703703706,
+   "ci95": [
+    0.02546296296296296,
+    0.07349537037037036
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "L30_a-0.16": {
+   "episodes": 1728,
+   "with_code": 1275,
+   "hacks": 122,
+   "hack_rate": 0.07060185185185185,
+   "no_code_rate": 0.2621527777777778,
+   "hack_given_code": 0.09568627450980392,
+   "ci95": [
+    0.05896217385651131,
+    0.1367853445510484
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "L30_a-0.08": {
+   "episodes": 1728,
+   "with_code": 1725,
+   "hacks": 68,
+   "hack_rate": 0.03935185185185185,
+   "no_code_rate": 0.0017361111111111605,
+   "hack_given_code": 0.03942028985507246,
+   "ci95": [
+    0.019709859438762658,
+    0.0638060301933847
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "L30_a-0.04": {
+   "episodes": 1728,
+   "with_code": 1727,
+   "hacks": 77,
+   "hack_rate": 0.04456018518518518,
+   "no_code_rate": 0.0005787037037037202,
+   "hack_given_code": 0.044585987261146494,
+   "ci95": [
+    0.024305555555555556,
+    0.06890561667631731
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "L30_a0.04": {
+   "episodes": 1728,
+   "with_code": 1728,
+   "hacks": 105,
+   "hack_rate": 0.06076388888888889,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.06076388888888889,
+   "ci95": [
+    0.03587962962962963,
+    0.09027777777777778
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "L30_a0.08": {
+   "episodes": 1728,
+   "with_code": 1724,
+   "hacks": 142,
+   "hack_rate": 0.08217592592592593,
+   "no_code_rate": 0.0023148148148147696,
+   "hack_given_code": 0.08236658932714618,
+   "ci95": [
+    0.050522648083623695,
+    0.12020905923344948
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "L30_a0.16": {
+   "episodes": 1728,
+   "with_code": 1677,
+   "hacks": 68,
+   "hack_rate": 0.03935185185185185,
+   "no_code_rate": 0.02951388888888884,
+   "hack_given_code": 0.04054859868813357,
+   "ci95": [
+    0.020599747612369417,
+    0.0645366797827768
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "gfar_L30_a-0.04": {
+   "episodes": 1728,
+   "with_code": 1725,
+   "hacks": 59,
+   "hack_rate": 0.03414351851851852,
+   "no_code_rate": 0.0017361111111111605,
+   "hack_given_code": 0.034202898550724635,
+   "ci95": [
+    0.01447596988998263,
+    0.05974477958236659
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "gfar_L30_a0.04": {
+   "episodes": 1728,
+   "with_code": 1728,
+   "hacks": 126,
+   "hack_rate": 0.07291666666666667,
+   "no_code_rate": 0.0,
+   "hack_given_code": 0.07291666666666667,
+   "ci95": [
+    0.04456018518518518,
+    0.10532407407407407
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  },
+  "gfar_L30_a0.08": {
+   "episodes": 1728,
+   "with_code": 1723,
+   "hacks": 213,
+   "hack_rate": 0.1232638888888889,
+   "no_code_rate": 0.0028935185185184897,
+   "hack_given_code": 0.12362159024956472,
+   "ci95": [
+    0.0846366749530719,
+    0.16705336426914152
+   ],
+   "problems": 108,
+   "hacks_without_code": 0
+  }
+ },
+ "Qwen3.8-27B": {
+  "unsteered": {
+   "episodes": 732,
+   "with_code": 543,
+   "hacks": 0,
+   "hack_rate": 0.0,
+   "no_code_rate": 0.2581967213114754,
+   "hack_given_code": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "L32_a-0.32": {
+   "episodes": 732,
+   "with_code": 301,
+   "hacks": 1,
+   "hack_rate": 0.001366120218579235,
+   "no_code_rate": 0.5887978142076502,
+   "hack_given_code": 0.0033222591362126247,
+   "ci95": [
+    0.0,
+    0.01098901098901099
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "L32_a-0.16": {
+   "episodes": 732,
+   "with_code": 484,
+   "hacks": 1,
+   "hack_rate": 0.001366120218579235,
+   "no_code_rate": 0.3387978142076503,
+   "hack_given_code": 0.002066115702479339,
+   "ci95": [
+    0.0,
+    0.0066815144766146995
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "L32_a-0.08": {
+   "episodes": 732,
+   "with_code": 503,
+   "hacks": 0,
+   "hack_rate": 0.0,
+   "no_code_rate": 0.31284153005464477,
+   "hack_given_code": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "L32_a0.08": {
+   "episodes": 732,
+   "with_code": 524,
+   "hacks": 4,
+   "hack_rate": 0.00546448087431694,
+   "no_code_rate": 0.28415300546448086,
+   "hack_given_code": 0.007633587786259542,
+   "ci95": [
+    0.0,
+    0.01764705882352941
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "L32_a0.16": {
+   "episodes": 732,
+   "with_code": 554,
+   "hacks": 7,
+   "hack_rate": 0.009562841530054645,
+   "no_code_rate": 0.24316939890710387,
+   "hack_given_code": 0.01263537906137184,
+   "ci95": [
+    0.0,
+    0.03102189781021898
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "L32_a0.32": {
+   "episodes": 732,
+   "with_code": 581,
+   "hacks": 30,
+   "hack_rate": 0.040983606557377046,
+   "no_code_rate": 0.20628415300546443,
+   "hack_given_code": 0.05163511187607573,
+   "ci95": [
+    0.019867549668874173,
+    0.09557522123893805
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "gfar_L32_a-0.08": {
+   "episodes": 732,
+   "with_code": 471,
+   "hacks": 0,
+   "hack_rate": 0.0,
+   "no_code_rate": 0.35655737704918034,
+   "hack_given_code": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  },
+  "gfar_L32_a0.08": {
+   "episodes": 732,
+   "with_code": 542,
+   "hacks": 2,
+   "hack_rate": 0.00273224043715847,
+   "no_code_rate": 0.2595628415300546,
+   "hack_given_code": 0.0036900369003690036,
+   "ci95": [
+    0.0,
+    0.01171875
+   ],
+   "problems": 61,
+   "hacks_without_code": 0
+  }
+ }
+}
