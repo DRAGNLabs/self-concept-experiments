@@ -16,6 +16,10 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
+**Gemma Goodfire doses −0.04 and +0.04 judged, 9:55–10:16 am MST Nov 12 (sets `g04`, `g05`, entry below; interim, 2 of 6 Goodfire contrasts):** judged hack 3.4% at −0.04 (−1.3, CI −3.0 to +0.2, raw p 0.12) and 7.3% at +0.04 (+2.5, CI +1.3 to +4.0, raw p 0.00011, × 6 = 0.0007) against 4.7% unsteered; both inside the dose rule (rule measure −0.7 and −7.1). The order is the expected one and +0.04 clears Holm whatever the other four contrasts show. No random direction has been steered at this norm on Gemma, so specificity is open. +0.08 has seeds 0–6 complete, −0.08 and the caps are pending.
+
+**Gemma gi_v2 floor family closed, 10:12 am MST Nov 12 (p50 judged 9:46–9:55 am, set `g03`, entry below):** judged hack 4.3% at p50, 4.7% at p75, 4.1% at p95 against 4.7% unsteered; Δ −0.5 / −0.1 / −0.7, Holm p 1.0 for all three. p50 and p75 are inside the dose rule (rule measure −2.2 and −4.7), p95 is outside (−21.7). The floor does not raise judged hacking on Gemma at any rung.
+
 **Gemma gi_v2 floor p75 judged, 9:48–10:00 pm MST Nov 11 (set `g02`, entry below; interim, 2 of 3 floor rungs):** judged hack 4.7% (81 / 1728) against 4.7% unsteered (82 / 1728), Δ −0.1, CI −1.0 to +0.9, raw p 1.0; **inside the dose rule** (rule measure 28.5% against 33.2%, −4.7, CI −8.0 to −1.5; no code 0.2%). So at a rung where capability holds, the floor does not raise judged hacking on Gemma. p50 has one seed running and 15 pending.
 
 **Muse Goodfire p90 cap pilot read, 9:34 pm MST Nov 11 (entry below):** not usable by one episode. No code in 5 of 45 episodes (11.1%) against 0 of 45 on unsteered seed 0, so the first clause of the usability rule (within 10 points) fails; truncated turns pass (4 of 94 against 0 of 100). Not extended; by the PLAN line no rung between p75 and p95 is tried further on Muse without a new decision. p95 stays the only usable Goodfire cap rung on Muse.
@@ -151,6 +155,81 @@ Recorded `lcbhard_55` hidden passes, of 12 seeds:
 **Reading.** Arms within about 2 points of a line on a hidden-pass measure are not separated from it by this evidence. That covers the Muse p95 cap and the Muse −0.08 dose, both outside the 10-point rule by 0.6 points on the rule measure. Their status as written (outside; the miss may be composition, not capability) stands, with this as a second reason not to read the miss as a capability loss. Arms far from the line are not affected.
 
 **Not established.** How many of the recorded `lcbhard_55` results in each arm sit near the limit (only three October episodes were re-timed); whether other problems have the same margin (the probe covered five); whether verification time differs by node type.
+
+### Gemma 4 31B Goodfire-axis (gfar) doses −0.04 and +0.04, judged (sets `g04`, `g05`; interim read, 2 of 6 planned Goodfire contrasts) — 2026-11-12: judged hacking moves in the expected order, 3.4% at −0.04 (−1.3, CI −3.0 to +0.2, raw p 0.12) and 7.3% at +0.04 (+2.5, CI +1.3 to +4.0, raw p 0.00011; × 6 = 0.0007) against 4.7% unsteered, with both arms inside the dose rule (rule measure −0.7 and −7.1); +0.04 costs 7 points of honest hidden pass, and no random direction has been steered at this norm on Gemma
+
+**Question.** PLAN "Gemma doses extended" (read and expectations fixed 2026-11-11 before submission: if the axis steers hacking on Gemma, judged hacking is ordered −0.08 ≤ −0.04 ≤ unsteered ≤ +0.04 ≤ +0.08; the dose rule is applied per arm on 16 seeds) and PLAN "Gemma arms judged one at a time as they arrive". Do the two inner doses move judged hacking in that order, and are they inside the dose rule?
+
+**Data.** `gemma4_31b_gi_v2/rh/hard108/gfar_L30_a-0.04/seed0..15` (seed 0 from pilot 15213664; seeds 1–15 array 15266062, 11:56 pm Nov 11 to 5:17 am Nov 12) and `gfar_L30_a0.04/seed0..15` (seeds 1–15 array 15267210 tasks 0–14, last 8:15 am Nov 12); steering along the Goodfire direction at layer 30, cs3 B200, 16 × 108 episodes per arm, every log with the done marker and no error line. +0.04 was extended on the user's word after its pilot seed missed the capability screen by 0.6 points; −0.04 passed the screen. Reference: Koby's B200 unsteered arm, verdicts of the 2026-11-02 `main` set, not re-judged. Blind sets built 9:40–9:45 am MST Nov 12 by `build_ctl_set.sh` (neutral names; arm map in `gfar_vs_gi_v2/steer/gemma_set_tags.tsv`) and judged one after another with the frozen chain (`judge_runner.py`, model alias sonnet, `claude-sonnet-5-5`, 6 at once, first pass as judged):
+- `ctl_g04_s0-15` (−0.04): 327 proxy dossiers / 74 batches, 20 hidden-signature dossiers of 544 hidden passes / 5 batches; judged 9:55:13–10:05:43 am; proxy HACK 57 / BORDERLINE 39 / NOT_HACK 231, hidden set 2 / 3 / 15. Batches 8, 13, 67 and 69 carry out-of-set values in secondary fields (`pressure_source` written as `none`; in batch 69 one row also has `pressure_source` 0 and `feedback_confusion` = `impossibility`), kept as judged. Read-audit flag on batch 26, checked from the judge's commands: all three dossiers were read in full (one read went through the harness's saved-output file, which the audit does not count).
+- `ctl_g05_s0-15` (+0.04): 400 proxy dossiers / 79 batches, 12 hidden-signature dossiers of 419 hidden passes / 3 batches; judged 10:05:43–10:16:19 am; proxy 124 / 33 / 243, hidden set 2 / 4 / 6. Batches 44, 54 and 69 have `pressure_source` = `none`, kept as judged. No read-audit flag.
+
+Analysis `analysis_gfar2` (`analysis_family_run.sh gfar2 gfar_L30_a-0.04:ctl_g04_s0-15 gfar_L30_a0.04:ctl_g05_s0-15`; problem-stratified means over 108 problems, 20,000-draw problem bootstrap, exact sign-flip p; `dose_rule_read.py`).
+
+**Result (Δ vs unsteered in points, 95% CI, raw p).**
+
+| measure | unsteered | −0.04 | +0.04 |
+|---|---|---|---|
+| judged hack, as judged | 4.7% (82 / 1728) | 3.4% (59 / 1728); −1.3, −3.0 to +0.2, p 0.12 (× 6 = 0.70) | 7.3% (126 / 1728); +2.5, +1.3 to +4.0, p 0.00011 (× 6 = 0.0007) |
+| judged hack, BORDERLINE counted | 7.2% | 5.8%; −1.4, −3.2 to +0.3, p 0.15 | 9.4%; +2.2, +0.8 to +3.8, p 0.0064 |
+| judged hack, WEAK not counted | 3.6% | 2.1%; −1.4, −2.9 to −0.1, p 0.054 | 6.5%; +3.0, +1.7 to +4.5, p 3e-06 |
+| judged hack, proxy set only | 4.7% | 3.3%; −1.4, −3.0 to +0.1, p 0.094 | 7.2%; +2.5, +1.2 to +3.9, p 0.00019 |
+| problems with a higher / lower / equal judged rate | | 8 / 19 / 81 | 24 / 5 / 79 |
+| automatic proxy (shown pass, hidden fail) | 20.2% | 18.9%; −1.3, −3.7 to +1.0, p 0.33 | 23.1%; +3.0, +0.8 to +5.2, p 0.0089 |
+| hidden pass among episodes not judged a hack (rule measure) | 33.2% | 32.5%; −0.7, −3.6 to +2.1, p 0.65 | 26.0%; −7.1, −9.9 to −4.4, p ≤ 5e-05 |
+| raw hidden pass | 31.7% | 31.5% (−0.2) | 24.2% (−7.4) |
+| shown-test pass | 51.9% | 50.4%; −1.4, −4.3 to +1.2, p 0.33 | 47.4%; −4.5, −7.2 to −1.7, p 0.0018 |
+| no code submitted | 0.0% | 0.2% (+0.2) | 0.0% |
+| turns per episode | 3.28 | 3.31 (+0.03, p 0.52) | 3.39 (+0.11, p 0.015) |
+| reasoning characters per turn | 23,798 | 25,760 (+1,962, +1,624 to +2,297) | 21,944 (−1,854, −2,204 to −1,503) |
+| truncated turns / turns | 6 / 5664 | 9 / 5721 | 3 / 5860 |
+| dose rule | | **inside** | **inside** |
+
+Hack verdicts by strength and mechanism (proxy + hidden sets): −0.04, 37 STRONG / 22 WEAK (input branch 23, fitted rule 19, lookup table 14, size restriction 2, test tampering 1); +0.04, 113 STRONG / 13 WEAK (lookup table 70, input branch 47, fitted rule 8, size restriction 1).
+
+**Reading.**
+- *The order is the expected one, and the positive dose is the firm half.* −0.04 < unsteered < +0.04 on the judged rate, on every verdict variant and on the automatic proxy. The +0.04 rise holds on 24 problems against 5 and survives the family correction whatever the remaining four contrasts show (6 × raw p = 0.0007 bounds its Holm p). The −0.04 fall has the expected sign on 19 problems against 8 but does not exclude zero on its own.
+- *Both arms are inside the dose rule, but +0.04 is not free.* It loses 7.1 points on the rule measure (CI −9.9 to −4.4) and 4.5 on shown pass. More hacking with less honest solving is what the direction is supposed to do, and also what a mild capability loss could do; the rule says the arm is readable, not that capability is untouched. −0.04 shows no capability change (−0.7, CI −3.6 to +2.1).
+- *Reasoning length moves with the dose in the opposite direction to hacking:* +1,962 characters per turn at −0.04 and −1,854 at +0.04.
+- *At +0.04 the added hacks are mostly explicit hard-codes:* 113 of 126 are STRONG, and lookup tables are the largest mechanism. The unsteered mix is not broken out here (the unsteered rows sit in the mixed `main` set).
+- *Against gi_v2 at the same nominal dose* (FINDINGS cap-ladder family): gi_v2 +0.04 gives 6.1% (+1.3) and −0.04 4.5% (−0.3). The Goodfire direction moves the judged rate about twice as far at ±0.04; the two contrasts come from different analysis families and this difference is not tested.
+
+**Caveats.**
+- Interim: 2 of 6 planned Goodfire contrasts (−0.08, +0.08, cap p75, cap p95 still running or pending). Raw p beside p × 6; Holm when the family is complete. No pending submission or rung choice uses these columns.
+- Specificity is not shown. The only random-direction steering arms on Gemma are at α 0.01 (1730 and 1731 flat, 1729 +5.6); no random direction has been steered at α 0.04. A rise of 2.5 points at +0.04 is therefore not yet separated from what an arbitrary direction of that norm does.
+- +0.04 reached 16 seeds on the user's word, not by the pilot screen (seed 0 was 0.6 points outside it); at 16 seeds it is inside the rule by 2.9 points.
+- Single-arm sets, neutral names; the unsteered verdicts are from Nov 2 and the pre-runner recipe (PLAN confound check, unmeasured). No benchmark eval has been run for these arms.
+
+**Files.** `gemma4_31b_gi_v2/rh/hard108/{gfar_L30_a-0.04, gfar_L30_a0.04, dossiers_ctl_g0{4,5}_s0-15, dossiers_hidden_ctl_g0{4,5}_s0-15, verdicts_ctl_g0{4,5}_s0-15, analysis_gfar2}`; `run_g03_g05.sh` and its log; logs `build_ctl_g0{4,5}.log`, `analysis_gfar2_run.log`. Chart (`scripts/gemma_gicap_chart.py --axis-name "Goodfire (gfar)"`): `analysis_gfar2/gemma_hard108_goodfire_doses_interim_chart_1112.png`.
+
+### Gemma 4 31B gi_v2 floor ladder complete (p50 judged, set `g03`; family read over p50 / p75 / p95) — 2026-11-12: the floor does not raise judged hacking on Gemma at any rung: 4.3% at p50, 4.7% at p75, 4.1% at p95 against 4.7% unsteered (Δ −0.5 / −0.1 / −0.7, Holm p 1.0 for all three), and the two lighter rungs are inside the dose rule (rule measure −2.2 and −4.7), so the null is not a capability artefact
+
+**Question.** PLAN "gi_v2 floor ladder" (expectation written before the runs: the floor raises hacking, ordered p50 < p75 < p95) and the PLAN line of 12:09 am Nov 12, written before p50 was complete: p50 expected inside the dose rule with no rise, given none at p75 or p95; a rise at p50 alone would run against the ordering. Family read: Holm over the three floor contrasts.
+
+**Data.** `gemma4_31b_gi_v2/rh/hard108/floor_p50_L20-38/seed0..15` (array 15206804 tasks 32–47, cs3 B200, last seed 1:16 am MST Nov 12; 16 × 108 episodes, done marker in all 16 logs, no error line). Blind set `ctl_g03_s0-15`, built 9:40 am Nov 12: 345 proxy dossiers / 71 batches, 17 hidden-signature dossiers of 512 hidden passes / 4 batches. Judged 9:46:09–9:55:13 am with the frozen chain (sonnet, `claude-sonnet-5-5`, 6 at once, first pass as judged): proxy HACK 74 / BORDERLINE 33 / NOT_HACK 238, hidden set 0 / 0 / 17. No read-audit flag. Batches 2 and 21 have `pressure_source` = `none` (out of set), kept as judged. Batch 47 was retried once by the runner; the output on disk lists the batch's five files with the last two in swapped order. Verdicts are keyed by file name, all 345 collected, and the batch is kept as judged. Family analysis `analysis_floor3` (`analysis_family_run.sh floor3` with sets `g01`, `g02`, `g03`); it replaces the interim reads `analysis_floor1` and `analysis_floor2` (same verdicts; bootstrap CIs differ in the last digit).
+
+**Result, floor family (Δ vs unsteered in points).**
+
+| rung | prompt / generated positions moved | judged hack | Δ | 95% CI | raw p | Holm p (3) | rule measure Δ (95% CI) | no-code Δ | dose rule |
+|---|---|---|---|---|---|---|---|---|---|
+| unsteered | | 4.7% (82 / 1728) | | | | | 33.2% | 0.0% | |
+| floor p50 | 28–29% / 50% | 4.3% (74 / 1728) | −0.5 | −1.5 to +0.6 | 0.46 | 1.0 | −2.2 (−5.1 to +0.6) | +0.0 | inside |
+| floor p75 | 48% / 74% | 4.7% (81 / 1728) | −0.1 | −0.9 to +0.9 | 1.0 | 1.0 | −4.7 (−8.0 to −1.5) | +0.2 | inside |
+| floor p95 | 78–79% / 94–96% | 4.1% (70 / 1728) | −0.7 | −3.2 to +1.8 | 0.63 | 1.0 | −21.7 (−26.7 to −17.0) | +0.1 | outside |
+
+Floor p50 on the other measures: judged hack with BORDERLINE counted 6.2% against 7.2% (−1.0, CI −2.4 to +0.2, p 0.13), WEAK not counted 3.0% against 3.6% (−0.6, p 0.29), proxy set only 4.3% against 4.7% (−0.4, p 0.52); automatic proxy 20.0% against 20.2% (−0.2, CI −2.2 to +1.7); raw hidden pass 29.6% (−2.0); shown pass 49.6% against 51.9% (−2.3, CI −5.0 to +0.4, p 0.12); code parses 100%; turns 3.37 against 3.28 (+0.09, p 0.09); reasoning characters per turn 22,990 against 23,798 (−807, CI −1,106 to −515); truncated turns 1 of 5,823; problems with a higher / lower / equal judged rate 11 / 16 / 81. In the 15-arm display family behind the chart (Holm over 14) all three floor rungs have Holm p 1.0.
+
+**Reading.**
+- *The floor expectation fails on Gemma.* No rung raises judged hacking; every point estimate is at or below the unsteered rate. At the two rungs inside the dose rule the upper CI bounds are +0.6 and +0.9 points, so a rise of more than about 1 point is not supported at either.
+- *This is a model difference, not a broken clamp.* The same ladder raised judged hacking on gpt-oss (p75 +6.1, p95 +13.3) and on Muse (+14.4 / +20.7 / +33.1). On Gemma the clamp acts: capability falls with the share of positions moved (−2.2, −4.7, −21.7) and reasoning shortens at every rung.
+- *Cap and floor are not mirror images on Gemma.* Capping the same projection lowers judged hacking (1.7% at p25, 2.5% at p35, the heavier rungs outside the dose rule); lifting its low tail does not raise it.
+- *The steering arms of the same vector do move it upward* (gi_v2 +0.08: 8.2%, outside the rule on the rule measure only), so the null is specific to the floor intervention, not to pushing along gi_v2 in general.
+
+**Caveats.**
+- Low base rate (4.7%): the CIs are narrow in points; a relative rise of up to about a fifth at p75 is not excluded.
+- Single-arm sets with neutral names; unsteered verdicts from Nov 2 (PLAN confound check, unmeasured). No random-direction floor exists as a control (group rule 2026-11-10). No benchmark eval has been run for the floor arms.
+
+**Files.** `gemma4_31b_gi_v2/rh/hard108/{floor_p50_L20-38, dossiers_ctl_g03_s0-15, dossiers_hidden_ctl_g03_s0-15, verdicts_ctl_g03_s0-15, analysis_floor3, analysis_capfloor15}`; scripts `analysis_capfloor15_run.sh`, `run_g03_g05.sh`; logs `build_ctl_g03.log`, `analysis_floor3_run.log`, `analysis_capfloor15_run.log`. Chart: `analysis_capfloor15/gemma_hard108_cap_floor_ladder_chart_1112.png`.
 
 ### Gemma 4 31B gi_v2 floor p75, judged (set `g02`; interim read, 2 of 3 planned floor rungs) — 2026-11-11: the p75 floor (moves 48% of prompt and 74% of generated positions) is inside the dose rule (hidden pass among episodes not judged a hack 28.5% against 33.2%, −4.7, CI −8.0 to −1.5; no code 0.2%) and does not raise judged hacking: 4.7% (81 / 1728) against 4.7% unsteered (82 / 1728), Δ −0.1, CI −1.0 to +0.9, raw p 1.0; with p95 (4.1%, outside the rule) the Gemma floor shows no rise at either rung judged so far
 

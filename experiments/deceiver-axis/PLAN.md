@@ -1754,6 +1754,14 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   of 6 planned contrasts (four doses + cap p75 / p95): raw p beside p × 6, Holm when the family is complete; expectations as written on
   Nov 11 (ordering −0.08 ≤ −0.04 ≤ unsteered ≤ +0.04 ≤ +0.08; +0.04 can land on either side of the dose rule). No pending submission,
   extension or rung choice depends on these columns.
+  **Results, Nov 12 (judged 9:46–10:16 am MST; FINDINGS "Gemma 4 31B gi_v2 floor ladder complete" and "Gemma 4 31B Goodfire-axis (gfar)
+  doses −0.04 and +0.04, judged"):** *Floor family closed* (`analysis_floor3`, Holm over 3): judged hack p50 4.3% (−0.5, CI −1.5 to +0.6,
+  p 0.46), p75 4.7% (−0.1), p95 4.1% (−0.7), Holm p 1.0 for all three, against 4.7% unsteered; p50 inside the dose rule (rule measure −2.2,
+  CI −5.1 to +0.6) as expected, p75 inside, p95 outside. The floor expectation is not met on Gemma at any rung. *Goodfire doses, interim
+  (2 of 6):* −0.04 3.4% (−1.3, CI −3.0 to +0.2, raw p 0.12, × 6 = 0.70), inside the rule (−0.7); +0.04 7.3% (+2.5, CI +1.3 to +4.0, raw
+  p 0.00011, × 6 = 0.0007), inside the rule (−7.1, CI −9.9 to −4.4). The ordering holds for the two inner doses. Open: no random
+  direction has been steered at α 0.04 on Gemma, so the +0.04 rise is not yet separated from a norm effect; whether to run such arms is
+  a user decision.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.

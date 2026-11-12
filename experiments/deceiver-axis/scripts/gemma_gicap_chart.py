@@ -62,6 +62,7 @@ CAP_LABEL = {a: col for a, _, col in CAPS + FLOORS}  # every side point (caps an
 CAP_ARMS: list = []  # the cap arms present in the analysis file, in rung order (filled by set_arms)
 FLOOR_ARMS: list = []  # the floor arms present, in rung order
 SIDE_GAP = 0.8  # x gap between the last dose and the first side point
+AXIS = "gi_v2"  # name of the steering vector in titles and labels (--axis-name; "Goodfire (gfar)" for the gfar dose arms)
 
 
 def dose(arm: str) -> float:
@@ -125,7 +126,7 @@ def style(ax, ylabel: str):
     for group in (CAP_ARMS, FLOOR_ARMS):
         if group:
             ax.axvline(X[group[0]] - SIDE_GAP / 2 - 0.3, color=RULE, lw=0.8, ls=":", zorder=1)
-    label = "dose α at layer 30 (units of the mean residual norm), gi_v2 vector; doses equally spaced, not to scale"
+    label = f"dose α at layer 30 (units of the mean residual norm), {AXIS} vector; doses equally spaced, not to scale"
     if CAP_ARMS:
         label += "; cap rungs beside, τ at the unsteered percentile over layers 20–38 (lower percentile = heavier clamp)"
     if FLOOR_ARMS:
@@ -144,7 +145,10 @@ def main() -> None:
                     help="verdict .detail.json files relative to --root ('hidden' in the name = hidden-pass sets, signature + supplementary)")
     ap.set_defaults(analysis_dir=None)
     ap.add_argument("--jobs", default="Koby's hard108 gi_v2 runs (share gemma4_31b_gi_v2/rh/hard108; cap thresholds job 14991849; cap p45 / p50 / p65 job 15125968), our cap p35 array 15104078", help="run named in the caption")
+    ap.add_argument("--axis-name", default="gi_v2", help="steering vector named in the title, axis label and notes")
     args = ap.parse_args()
+    global AXIS
+    AXIS = args.axis_name
     d = load(args.root, args.analysis_dir or args.root / "analysis_main", args.summary, args.details)
     J, UP, DOWN, PX = d["all"]["judged_hack"], d["up"]["judged_hack"], d["down"]["judged_hack"], d["proxy"]["judged_hack"]
     SP, NC, AUTO = d["all"]["shown_pass"], d["all"]["no_code"], d["all"]["hack_proxy"]
@@ -153,7 +157,7 @@ def main() -> None:
     groups = [g for g in (CAP_ARMS, FLOOR_ARMS) if g]
     labelled = list(zip(arms, COL_LABELS))
     hollow = fewer_seeds(J, arms + random_arms(J))
-    axis_arms = "steered, cap and floor gi_v2 arms" if FLOOR_ARMS else "steered and cap gi_v2 arms" if CAP_ARMS else "steered gi_v2 arms"
+    axis_arms = f"steered, cap and floor {AXIS} arms" if FLOOR_ARMS else f"steered and cap {AXIS} arms" if CAP_ARMS else f"steered {AXIS} arms"
     n_contrasts = len(J["contrasts"])
 
     fig_w = 12.4 + 1.2 * max(0, len(CAP_ARMS) + len(FLOOR_ARMS) - 1)  # a rung wider per extra cap or floor rung
@@ -174,7 +178,8 @@ def main() -> None:
     cap_title = "the p25 cap" if CAP_ARMS == ["cap_p25_L20-38"] else "the cap dose ladder (τ at the unsteered " + " / ".join(a.split("_")[1] for a in CAP_ARMS) + ")"
     if FLOOR_ARMS:
         cap_title += " and the floor " + ("rung" if len(FLOOR_ARMS) == 1 else "ladder") + " (" + " / ".join(a.split("_")[1] for a in FLOOR_ARMS) + ")"
-    title = fig.suptitle(f"Gemma 4 31B, hard108 dose scan at layer 30 (gi_v2 vector) and {cap_title} over layers 20–38:\n"
+    side_title = f" and {cap_title} over layers 20–38" if (CAP_ARMS or FLOOR_ARMS) else ""
+    title = fig.suptitle(f"Gemma 4 31B, hard108 dose scan at layer 30 ({AXIS} vector){side_title}:\n"
                          "blind Sonnet rubric-v3 judging of every proxy episode and every hidden-pass episode with a hard-code signature",
                          x=0.07, ha="left", color=INK, fontsize=12.5, y=1 - 0.17 / fig_h)
     fig.text(0.07, 1 - 0.82 / fig_h, textwrap.fill(f"{args.jobs}; {n_note(J, labelled + [(a, a) for a in random_arms(J)])}.", int(fig_w * 13.4)) + "\n"
