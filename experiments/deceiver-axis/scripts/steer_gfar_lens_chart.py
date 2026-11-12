@@ -4,7 +4,7 @@ The chart shows all episodes: steered minus unsteered (the same percentile of ea
 the unsteered p10-p90 width at the layer; with --component-lens (the steered_gfar_component arm: only gi_v2's
 component along gfar at the steer layer is added) also that arm's normalised difference and the full arm minus
 the component arm. Each dashed line is the arm's injected vector carried unchanged, coefficient x (injected unit vector .
-gfar at the layer). With --null-lens (chunk<i>/seed<N>.pt holding control-direction arms) rows 1-2 add the 10-90
+gfar at the layer). With --null-lens (chunk<i>/seed<N>.pt holding control-direction arms) rows 1-2 add the 5-95
 percentile band of the control directions' median shifts and gi_v2's median shift on the same tokens; with
 --null-component-lens (the same controls run with --null-mode gfar_component and the steered_gfar_component arm) rows
 3-4 add the same band for the controls' gfar components and for full minus component, matched per control. The json also holds the percentiles of judged hacks (verdict HACK =
@@ -39,6 +39,7 @@ CONDITIONS: tuple[Condition, ...] = ("unsteered", "steered")
 PERCENTILES = np.array([*range(0, 10), *range(10, 91, 10), *range(91, 101)])
 DISPLAYED_PERCENTILES = [*range(0, 10, 2), 20, 40, 50, 60, 80, *range(92, 101, 2)]
 CLIP_LOW_PERCENTILE, CLIP_HIGH_PERCENTILE = 2, 98
+NULL_BAND_PERCENTILES = (5, 95)
 MEDIAN_COLOR = "#1f1f1d"
 INJECTION_COLOR = "#6b3fa0"
 LOWER_PERCENTILES = [percentile for percentile in DISPLAYED_PERCENTILES if percentile < 50]
@@ -189,9 +190,9 @@ def null_medians(null_lens_dir: Path, gi_v2_arm: Arm) -> NullMedians:
 
 def draw_null_band(axis: Axes, medians: Float[np.ndarray, "directions layers"], gi_v2_subset: Float[np.ndarray, "layers"], count: int) -> None:
     layers = np.arange(medians.shape[1])
-    low, high = np.percentile(medians, [10, 90], axis=0)
+    low, high = np.percentile(medians, NULL_BAND_PERCENTILES, axis=0)
     axis.fill_between(layers, low, high, color="#b9b8b4", alpha=0.45, linewidth=0, zorder=1,
-                      label=f"antonym controls: 10–90% of median shifts (n={count})")
+                      label=f"antonym controls: {NULL_BAND_PERCENTILES[0]}–{NULL_BAND_PERCENTILES[1]}% of median shifts (n={count})")
     axis.plot(layers, gi_v2_subset, color=MEDIAN_COLOR, linestyle=(0, (1, 1.5)), linewidth=1.4, zorder=3,
               label="gi_v2 median shift on the controls' tokens")
     bottom, top = axis.get_ylim()
