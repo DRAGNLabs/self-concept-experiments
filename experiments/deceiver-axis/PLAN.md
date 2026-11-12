@@ -1746,6 +1746,14 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   than p75's 4.7 points; no rise in judged hacking, given none at p75 or p95. A rise at p50 alone would run against the ordering written
   before the runs (p50 < p75 < p95) and is reported as such, not as support for the floor. The set is `ctl_g03_s0-15`, same frozen chain;
   the family read is Holm over the three floor contrasts (exact sign-flip p), and the three-rung read replaces the two interim ones.
+  **Three arms complete overnight, written 9:39 am MST Nov 12 before any set is built (session restarted 9:37 am on login01; no
+  instance ran between 12:13 am and 9:37 am):** floor p50 (16 seeds, last 1:16 am), Goodfire −0.04 (15266062, last 5:17 am) and Goodfire
+  +0.04 (15267210 tasks 0–14, last 8:15 am); every task log has the done marker, no error line, 108 episodes per seed. Sets, in order of
+  completion, same frozen chain, one after another: `ctl_g03_s0-15` = floor p50, `ctl_g04_s0-15` = Goodfire −0.04, `ctl_g05_s0-15` =
+  Goodfire +0.04. Floor p50 closes the floor family (Holm over 3). The two Goodfire doses are interim reads in the Gemma Goodfire family
+  of 6 planned contrasts (four doses + cap p75 / p95): raw p beside p × 6, Holm when the family is complete; expectations as written on
+  Nov 11 (ordering −0.08 ≤ −0.04 ≤ unsteered ≤ +0.04 ≤ +0.08; +0.04 can land on either side of the dose rule). No pending submission,
+  extension or rung choice depends on these columns.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
