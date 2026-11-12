@@ -1864,6 +1864,23 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   hack 12.3% (213 / 1728), +7.6, CI +4.7 to +10.7, raw p 1.7e-08 (× 6 = 1.0e-07), 39 problems up / 4 down; outside the dose rule (rule
   measure −17.2, CI −21.7 to −12.7; no code +0.3). Both expectations hold. Reported, not read as an effect at kept capability. Monotone
   so far: 3.4 / 4.7 / 7.3 / 12.3%. Chart with the α 0.01 random band: `analysis_gfar3r/` (display family, six arms).
+  **Isotropic band off the Gemma Goodfire charts; antonym-control read (written 12:53 PM MST Nov 12, before the read; Koby's comment on
+  the interim chart, relayed by the user: "I thought we dropped those since they don't reflect the normal activations of the model"):**
+  the grey band of the Nov 12 charts is the three isotropic random unit directions (seeds 1729 / 1730 / 1731, α 0.01). Koby's
+  requirement of 2026-11-07 for control directions is real activation differences, not isotropic noise (FINDINGS "Control directions
+  for gi_v2's percentile"), so the band comes off the Goodfire dose charts, and the "Corrected 11:22 AM" note above is withdrawn where
+  it names those arms as the control for the Goodfire doses (its statement about α ≥ 0.02 stands). The control population on real
+  activation differences that exists on Gemma is Koby's 100 isolated antonym directions: add at L30, α 0.08, 1 seed each on hard108,
+  B200, same recipe as our Goodfire arms (run summaries compared: only direction and seed differ), not judged (user 2026-11-09:
+  antonym judging forgone for now). Read, judge-free, with his script unchanged: `scripts/controls/control_percentile.py`, target
+  `gfar_L30_a0.08` (16 seeds), unsteered = Koby's B200 arm, measures proxy (shown pass, hidden fail) and hard-code regex, q with the
+  shape-free and the beta interval. Statement rule, as for gi_v2: Goodfire +0.08 is "above the antonym controls" on a measure only
+  if the shape-free upper bound on q is ≤ 5%; otherwise "not distinguished from them". Second row, labelled not dose-matched: target
+  `gfar_L30_a0.04` against the same α 0.08 controls (the controls carry twice the dose). Limits stated with the result: judge-free
+  measures, not the judged rate; +0.08 is outside the dose rule (hidden pass −17.5) while the controls lose about 10 points, so the
+  capability cost is not matched and a higher count for +0.08 is not read as specificity at kept capability; one seed per control.
+  No job, no judging. Expectation: none firm; gi_v2 +0.08 was not distinguished on Gemma (33 of 100 controls at or above it on each
+  measure). A first call of the script stopped on a wrong unsteered path before computing anything; no number was seen.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
