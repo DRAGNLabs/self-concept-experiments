@@ -1881,6 +1881,29 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   capability cost is not matched and a higher count for +0.08 is not read as specificity at kept capability; one seed per control.
   No job, no judging. Expectation: none firm; gi_v2 +0.08 was not distinguished on Gemma (33 of 100 controls at or above it on each
   measure). A first call of the script stopped on a wrong unsteered path before computing anything; no number was seen.
+  **Gemma arms off the B200 (user 2026-11-12 ~1:24 pm MST: "You can move the Gemma arms off the B200 to other GPUs, I don't think it
+  really matters significantly having run it on a B200 instead of an H200. If you really want to double-check with a pilot on the
+  H200 to make sure of that that's fine"; written 1:27 PM MST, before any cancellation, submission or read):** at the 1:17 pm check the
+  pending B200 tasks had scheduler start estimates of Nov 15 (−0.08 seeds 9–15, `15267210_[23-29]`) and Nov 17–18 or none (caps p75 /
+  p95 seeds 1–15, `15269005_[0-29]`), with 22 jobs ahead on cs3. The "B200 only" rule of Nov 11 is lifted by the user for the arms
+  still waiting. *Placement:* dw, two A100-80GB per task, tensor-parallel (`TP=2`, `ATTN_BACKEND=TRITON_ATTN`), the Nov 11 dw
+  placement: it loaded and finished four unsteered seeds there, steering add and cap were verified under tensor-parallel before, and
+  the 1:20 pm picker shows 19 idle cards and no job ahead. Not the H200: this pipeline never ran on one (check 15224080 was cancelled
+  before it started) and m13h has 149 jobs ahead; cs2 (two H100s) has one idle card. *What moves:* the 37 pending tasks above, same
+  settings lines, same ROOT, so the seeds land in the same arm directories; the pending B200 copies are cancelled before the dw
+  submission (no seed queued twice; the environment variable `TP` cannot be changed on a pending job, so not an in-place update).
+  −0.08 seeds 5–8 finish on the B200. Hardware is recorded per seed (`HARDWARE.tsv` in each arm directory). *Reading unchanged:*
+  each arm against Koby's B200 unsteered arm, per-arm blind set at 16 seeds, frozen judge recipe, dose rule on hidden pass and
+  no-code. For the moved seeds the contrast crosses hardware; accepted by the user, stated as a limit with each result.
+  *Hardware checks, descriptive, not a gate (the move is the user's decision):* (a) now, before submission: the four complete dw
+  unsteered seeds of Nov 11 (`a100x2/unsteered` seeds 0–3; the partial seeds 4–6 are not used) against the min–max of Koby's 16
+  B200 unsteered seeds, `hardware_check_read.py` columns plus plain hidden pass over all episodes (added to the reader; the current
+  capability measure). (b) with the −0.08 result: seeds 0–8 (B200) beside seeds 9–15 (A100 pair) on hidden pass, no-code, proxy
+  and judged rate, per-seed ranges, no test; for the caps the B200 side is one seed, so only the A100-pair range is given. A column
+  outside the reference range by more than one episode per seed in (a), or non-overlapping per-seed ranges in (b), is put to the
+  user before that arm is stated as a contrast against the B200 reference; nothing is rerun without a decision. *Fit check on the
+  first task of each arm:* both cards loaded, the patch line (add / cap) on both ranks, `TRITON_ATTN`, no out-of-memory or
+  context-length error. Time limit and host memory from the Nov 11 dw tasks (elapsed 2 h 15–2 h 24 unsteered; sacct MaxRSS).
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
