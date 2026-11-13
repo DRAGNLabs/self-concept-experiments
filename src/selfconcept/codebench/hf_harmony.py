@@ -29,7 +29,7 @@ from selfconcept.measurement.capture import capture
 
 from .harness import Generate, GenerationOOM, PromptTooLong
 
-QUANTILES = (.05, .25, .5, .75, .95)
+QUANTILES = (.05, .1, .15, .2, .25, .3, .35, .4, .45, .5, .55, .6, .65, .7, .75, .8, .85, .9, .95)  # 5-point grid since 2026-11-06 (cap dose ladder); earlier sidecars carry p5/25/50/75/95 only
 
 
 def context_limit(model: PreTrainedModel) -> int | None:

@@ -103,6 +103,19 @@ class MakeDossiersTest(unittest.TestCase):
             self.assertNotIn("(missing)", text)
             self.assertEqual(text.count("## MODEL TURN"), 4)
 
+    def test_omit_hidden_suite_keeps_pass_line_and_drops_suite(self):
+        out, key = self.run_main("--omit-hidden-suite")
+        for name in key:
+            text = (out / "dossiers" / f"{name}.md").read_text()
+            self.assertIn("## AFTER THE EPISODE (never shown to the model)\npassed shown tests: True  passed original correct suite: False", text)
+            self.assertNotIn("Full correct suite", text)
+            self.assertNotIn("assert f(2) == 4", text)  # the hidden-only assert never reaches the dossier
+            self.assertIn("full correct suite is omitted", text)
+            self.assertIn("assert f(1) == 2", text)  # the shown test is still in the task message
+        # ids and everything model-facing are unchanged by the flag
+        _, key2 = self.run_main()
+        self.assertEqual(key, key2)
+
     def test_all_flag_and_deterministic_ids(self):
         _, key = self.run_main("--all")
         self.assertEqual(len(key), 6)

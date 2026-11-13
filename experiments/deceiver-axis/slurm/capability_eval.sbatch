@@ -16,7 +16,7 @@ set -euo pipefail
 # General-capability benchmarks (gsm8k, MMLU-Pro subsample, HumanEval) under the main-run interventions: one array
 # task per line of the ARMS TSV (name <TAB> extra args for capability_eval_vllm.py, empty = unsteered; the main run's
 # arms.tsv works as is). Output $ROOT/<arm>/<task>.jsonl + summary.json; rerunning resumes.
-# Usage: sbatch --array=0-2 --export=ALL,ARMS=<tsv>,ROOT=<dir>[,SEED=0][,VLLM_GPU_MEM=0.95][,EXTRA_ARGS="--n 8"] \
+# Usage: sbatch --array=0-2 --export=ALL,ARMS=<tsv>,ROOT=<dir>[,SEED=0][,VLLM_GPU_MEM=0.95][,EXTRA_ARGS="--n 8"][,ARMS_PER_TASK=1][,TP=1] \
 #            experiments/deceiver-axis/slurm/capability_eval.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -39,7 +39,11 @@ if ! mkdir -p "$TMPDIR" 2>/dev/null || [ ! -w "$TMPDIR" ]; then
     export TMPDIR="$HOME/nobackup/autodelete/tmp/slurm-${SLURM_JOB_ID:-$$}"; mkdir -p "$TMPDIR"; echo "TMPDIR fallback: $TMPDIR"
 fi
 nvidia-smi
-if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
+# TP=<n> (2026-11-12, default 1): split the model over n cards (Gemma 4 31B at the 20,480-token window needs two 80 GB cards);
+# submit with --gpus-per-node=<n>. ENGINE_KWARGS=<json> goes to vllm.LLM, e.g. {"attention_backend":"TRITON_ATTN"}; a JSON value
+# with commas cannot go through sbatch --export=..., export it in the shell and submit with --export=ALL.
+TP="${TP:-1}"
+if [ "$TP" -eq 1 ] && [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
     export CUDA_VISIBLE_DEVICES="$(nvidia-smi --query-gpu=uuid,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | cut -d, -f1)"
     echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 fi
@@ -53,19 +57,26 @@ TASKS="${TASKS:-gsm8k mmlu_pro humaneval ifbench}"
 read -r -a TASK_LIST <<< "$TASKS"
 read -r -a EXTRA_ARGS_LIST <<< "${EXTRA_ARGS:-}"
 
-LINE=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$ARMS")
-NAME=$(printf '%s' "$LINE" | cut -f1)
-EXTRA_STR=$(printf '%s' "$LINE" | cut -f2 -s)
-read -r -a EXTRA <<< "$EXTRA_STR"
-[ -n "$NAME" ] || { echo "no arm at index $SLURM_ARRAY_TASK_ID in $ARMS"; exit 1; }
-echo "########## task $SLURM_ARRAY_TASK_ID: arm $NAME seed $SEED | ${EXTRA[*]:-unsteered} ##########"
-
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
 
-SECONDS=0
-python scripts/capability_eval_vllm.py --model "$MODEL" --out "$ROOT/$NAME" --tasks "${TASK_LIST[@]}" \
-    --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384 --gpu-memory-utilization "$VLLM_GPU_MEM" \
-    "${EXTRA_ARGS_LIST[@]}" "${EXTRA[@]}"
-echo "arm $NAME took ${SECONDS}s"
-echo "=== schemer-capeval done: $ROOT/$NAME ==="
+# ARMS_PER_TASK=k (2026-11-10, default 1): array task i runs arm lines i*k .. i*k+k-1 one after the other, each in its
+# own Python process (the class patch is per process), so arms that take under ten minutes share one job.
+PER_TASK="${ARMS_PER_TASK:-1}"
+N_ARMS=$(grep -c . "$ARMS")
+FIRST=$((SLURM_ARRAY_TASK_ID * PER_TASK))
+[ "$FIRST" -lt "$N_ARMS" ] || { echo "no arm at index $FIRST in $ARMS"; exit 1; }
+for ((INDEX = FIRST; INDEX < FIRST + PER_TASK && INDEX < N_ARMS; INDEX++)); do
+    LINE=$(sed -n "$((INDEX + 1))p" "$ARMS")
+    NAME=$(printf '%s' "$LINE" | cut -f1)
+    EXTRA_STR=$(printf '%s' "$LINE" | cut -f2 -s)
+    read -r -a EXTRA <<< "$EXTRA_STR"
+    [ -n "$NAME" ] || { echo "no arm at index $INDEX in $ARMS"; exit 1; }
+    echo "########## task $SLURM_ARRAY_TASK_ID: arm $NAME (line $INDEX) seed $SEED | ${EXTRA[*]:-unsteered} ##########"
+    SECONDS=0
+    python scripts/capability_eval_vllm.py --model "$MODEL" --out "$ROOT/$NAME" --tasks "${TASK_LIST[@]}" \
+        --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384 --gpu-memory-utilization "$VLLM_GPU_MEM" \
+        --tensor-parallel-size "$TP" --engine-kwargs "${ENGINE_KWARGS:-{\}}" "${EXTRA_ARGS_LIST[@]}" "${EXTRA[@]}"
+    echo "arm $NAME took ${SECONDS}s"
+done
+echo "=== schemer-capeval done: $ROOT/$NAME ==="  # once per task, after its last arm (the monitors count this line)

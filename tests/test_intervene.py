@@ -86,6 +86,26 @@ class InterveneTests(unittest.TestCase):
             self.assertEqual(first, second)
 
 
+class TransformFactoryTest(unittest.TestCase):
+    """The tensor-parallel worker rebuilds its transform from a saved mode name; floor must not fall back to cap."""
+
+    def test_floor_lifts_and_cap_lowers(self):
+        from selfconcept.measurement.intervene import transform_factory
+        direction = torch.zeros(4)
+        direction[0] = 2.0
+        hidden = torch.tensor([[-3.0, 1.0, 0.0, 0.0], [5.0, 1.0, 0.0, 0.0]])
+        floored = transform_factory("floor")(direction, 1.0)(hidden)
+        capped = transform_factory("cap")(direction, 1.0)(hidden)
+        torch.testing.assert_close(floored[:, 0], torch.tensor([1.0, 5.0]))
+        torch.testing.assert_close(capped[:, 0], torch.tensor([-3.0, 1.0]))
+        torch.testing.assert_close(floored[:, 1:], hidden[:, 1:])
+
+    def test_unknown_mode_raises(self):
+        from selfconcept.measurement.intervene import transform_factory
+        with self.assertRaises(ValueError):
+            transform_factory("noise")
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -133,6 +153,26 @@ class VllmTupleHookTest(unittest.TestCase):
             h.remove()
         with self.assertRaises(ValueError):
             register_vllm_transforms(layers, {3: add_transform(direction, 1.0)})
+
+    def test_floor_is_the_mirror_of_cap(self):
+        import torch
+        from selfconcept.measurement.intervene import cap_transform, floor_transform
+
+        torch.manual_seed(1)
+        direction = torch.zeros(8)
+        direction[0] = 2.0  # non-unit on purpose
+        stream = torch.randn(50, 8)
+        threshold = 0.3
+        floored = floor_transform(direction, threshold)(stream)
+        self.assertTrue(torch.all(floored[:, 0] >= threshold - 1e-6))
+        above = stream[:, 0] >= threshold
+        self.assertTrue(above.any() and (~above).any())
+        self.assertTrue(torch.allclose(floored[above], stream[above], atol=1e-6))
+        self.assertTrue(torch.allclose(floored[:, 1:], stream[:, 1:], atol=1e-6))
+        # floor along u at t == cap along -u at -t, reflected
+        capped = cap_transform(-direction, -threshold)(stream)
+        self.assertTrue(torch.allclose(floored, capped, atol=1e-6))
+        self.assertEqual(floored.dtype, stream.dtype)
 
 
 class VllmClassPatchTest(unittest.TestCase):
@@ -247,4 +287,3 @@ class NoiseTransformTests(unittest.TestCase):
         delta = after[1][0] - before[1][0]
         torch.testing.assert_close(delta.norm(dim=-1), torch.full((4,), 0.5))
         self.assertGreater((delta[0] - delta[1]).norm(), 0.1)
-
