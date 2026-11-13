@@ -3,7 +3,8 @@
 Default layout: one panel per (model, steering axis) pair (gi_v2 vector, Goodfire RH axis), colour = kind of intervention.
 --overlay draws every pair on one set of axes instead: colour = the pair (the axis when one model is drawn, the model when
 several are), marker = kind of intervention (circle steering, triangle down cap, triangle up floor), steering lines solid and
-clamp lines dashed. Every arm is one point:
+clamp lines dashed. --per-model draws one panel per model with that model's axes overlaid in the same way (colour = axis, the
+same colour for an axis in every panel). Every arm is one point:
   x = benchmark composite of the arm's benchmark run (capability_eval_vllm.py output, <capeval root>/<arm>/<task>.jsonl) over
       GSM8K, MMLU-Pro, HumanEval and IFBench, in %. --composite pooled (default): the share of all benchmark items answered
       correctly (3,183 items; each benchmark weighted by its item count). --composite mean: the plain mean of the four
@@ -42,6 +43,7 @@ Writes <out>.png, <out>.pdf and <out>.json (every plotted number).
 
     python experiments/deceiver-axis/scripts/pareto_chart.py --model gptoss --out <path>.png [--axes gi_v2 gfar] [--overlay]
     python experiments/deceiver-axis/scripts/pareto_chart.py --model gptoss muse gemma qwen --axes gfar --overlay --out <path>.png
+    python experiments/deceiver-axis/scripts/pareto_chart.py --model gptoss muse gemma qwen --per-model --out <path>.png
 """
 from __future__ import annotations
 
@@ -474,6 +476,7 @@ def main() -> None:
     parser.add_argument("--y", choices=sorted(Y_KEYS), default="points", help="judged hack rate: change in points, or as %% of the unsteered rate")
     parser.add_argument("--y-max", type=float, help="top of the y axis; an arm above it is named at the top edge with its value")
     parser.add_argument("--overlay", action="store_true", help="all (model, axis) pairs on one set of axes, colour = pair")
+    parser.add_argument("--per-model", action="store_true", help="one panel per model with its axes overlaid, colour = axis")
     parser.add_argument("--shared-axes", action="store_true", help="panel layout: one x and y range for all panels (default: own range per panel)")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--offsets", type=Path, help="JSON {pair key: {arm: [dx, dy]}} of label offsets in points (key: axis, or model/axis)")
@@ -486,7 +489,7 @@ def main() -> None:
         for axis_key in args.axes:
             if axis_key not in MODELS[model_key]["axes"]:
                 raise SystemExit(f"{model_key} has no preset for axis {axis_key}")
-            groups.append(dict(key=f"{model_key}/{axis_key}" if multi_model else axis_key, model=MODELS[model_key], axis_key=axis_key,
+            groups.append(dict(key=f"{model_key}/{axis_key}" if multi_model else axis_key, model=MODELS[model_key], model_key=model_key, axis_key=axis_key,
                                preset=MODELS[model_key]["axes"][axis_key], data=load_axis(MODELS[model_key], MODELS[model_key]["axes"][axis_key], combine)))
     drawn = [group for group in groups if group["data"]["arms"] and not (relative and group["data"]["unsteered"]["hack"] == 0)]
     file_offsets = json.loads(args.offsets.read_text()) if args.offsets else {}
@@ -501,10 +504,14 @@ def main() -> None:
     axis_names = " and ".join(dict.fromkeys(AXIS_NAMES[g["axis_key"]] for g in drawn))
     subtitle = ("Each model's unsteered arm is the origin. " if multi_model else f"Unsteered: {levels(drawn[0]['data'])}. ") + label_text
 
+    if args.overlay and args.per_model:
+        raise SystemExit("--overlay and --per-model are two layouts; give one")
+    colored = args.overlay or args.per_model  # colour = the pair (or its axis), marker = kind of intervention
     if args.overlay:
         if len(drawn) > len(GROUP_COLORS):
             raise SystemExit(f"--overlay draws at most {len(GROUP_COLORS)} pairs (validated colours); use the panel layout")
-        width, plot_height, columns, rows = 10.0, 7.6, 1, 1
+        panel_groups = [drawn]
+        width, panel_height, columns = 10.0, 7.6, 1
         title = (f"{axis_names} on {len(drawn)} models: {what} against change in benchmark score" if multi_model
                  else f"{models}, {len(drawn)} steering directions: {what} against change in benchmark score")
         for group, color in zip(drawn, GROUP_COLORS):
@@ -512,53 +519,62 @@ def main() -> None:
         names = [f"{g['model']['name']} (unsteered: {levels(g['data'])})" if multi_model else AXIS_NAMES[g["axis_key"]] for g in drawn]
         group_handles = [Line2D([], [], color=g["color"], marker="o", linewidth=2, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5, label=name)
                          for g, name in zip(drawn, names)]
+    elif args.per_model:
+        palette = dict(zip(args.axes, GROUP_COLORS))  # the colour follows the axis, whichever models draw it
+        for group in drawn:
+            group["color"] = palette[group["axis_key"]]
+        panel_groups = [[g for g in drawn if g["model_key"] == key] for key in dict.fromkeys(g["model_key"] for g in drawn)]
+        columns = len(panel_groups) if len(panel_groups) <= 2 else 2
+        width, panel_height = 7.4 * columns, 6.5
+        on = models if len(panel_groups) <= 2 else f"{('three', 'four')[len(panel_groups) - 3] if len(panel_groups) <= 4 else len(panel_groups)} models"
+        title = f"{axis_names} on {on}: {what} against change in benchmark score"
+        group_handles = [Line2D([], [], color=palette[key], marker="o", linewidth=2, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5,
+                                label=AXIS_NAMES[key]) for key in args.axes if any(g["axis_key"] == key for g in drawn)]
     else:
+        panel_groups = [[group] for group in drawn]
         columns = len(drawn) if len(drawn) <= 3 else 2
-        rows = math.ceil(len(drawn) / columns)
-        width, plot_height = 6.5 * columns, 5.9 * rows
+        width, panel_height = 6.5 * columns, 5.9
         title, group_handles = f"{models}: {what} against change in benchmark score, per intervention", []
+    rows = math.ceil(len(panel_groups) / columns)
+    plot_height = panel_height * rows
     foot = wrap(footnote(groups, score_name, relative, multi_model), 7.8, width - 0.3)
     foot_height = 0.14 * (foot.count("\n") + 1) + 0.2
     # the header height depends only on line counts, so measure it on a scratch figure first
     scratch = plt.figure(figsize=(width, 10))
-    head_height = header(scratch, width, 10, title, subtitle, group_handles, shape_handles(drawn, INK2 if args.overlay else None), None)
+    head_height = header(scratch, width, 10, title, subtitle, group_handles, shape_handles(drawn, INK2 if colored else None), None)
     plt.close(scratch)
     height = head_height + plot_height + foot_height
     shared = args.shared_axes and not args.overlay
     figure, grid = plt.subplots(rows, columns, figsize=(width, height), facecolor=SURFACE, sharex=shared, sharey=shared, squeeze=False)
-    header(figure, width, height, title, subtitle, group_handles, shape_handles(drawn, INK2 if args.overlay else None), INK2 if args.overlay else None)
+    header(figure, width, height, title, subtitle, group_handles, shape_handles(drawn, INK2 if colored else None), INK2 if colored else None)
     figure.text(0.14 / width, 0.1 / height, foot, fontsize=7.8, color=MUTED, ha="left", va="bottom", linespacing=1.3)
     panels = grid.ravel()
     pending = []
-    if args.overlay:
-        axes = panels[0]
+    for axes in panels[len(panel_groups):]:
+        axes.set_visible(False)
+    for axes, members in zip(panels, panel_groups):
         style_axes(axes)
-        labels, polylines = [], []
-        for group in drawn:
-            offsets = {**OVERLAY_OFFSETS.get(tuple(g["key"] for g in drawn), {}).get(group["key"], {}),
+        first = members[0]
+        labels, polylines, unsteered_offset = [], [], None
+        for group in members:
+            preset = group["preset"]
+            offsets = {**(OVERLAY_OFFSETS.get(tuple(g["key"] for g in members), {}).get(group["key"], {}) if colored else preset.get("offsets", {})),
                        **{k: tuple(v) for k, v in file_offsets.get(group["key"], {}).items()}}
-            more_labels, more_lines = draw_arms(axes, group["data"], y_keys, offsets, group["color"], auto=True, y_max=args.y_max)
+            more_labels, more_lines = draw_arms(axes, group["data"], y_keys, offsets, group.get("color"), auto=colored or "offsets" not in preset,
+                                                y_max=args.y_max)
             labels += more_labels
             polylines += more_lines
-        set_x_range(axes, every)
-        axes.set_xlabel(x_label, fontsize=9.5, color=INK2)
-        axes.set_ylabel(y_label, fontsize=9.5, color=INK2)
-        pending.append((axes, labels, polylines, None))
-    else:
-        for axes in panels[len(drawn):]:
-            axes.set_visible(False)
-        for axes, group in zip(panels, drawn):
-            style_axes(axes)
-            preset = group["preset"]
-            offsets = {**preset.get("offsets", {}), **{k: tuple(v) for k, v in file_offsets.get(group["key"], {}).items()}}
-            labels, polylines = draw_arms(axes, group["data"], y_keys, offsets, None, auto="offsets" not in preset, y_max=args.y_max)
-            panel_title = f"{group['model']['name']}, {preset['title']}\nunsteered: {levels(group['data'])}" if multi_model else preset["title"]
+            unsteered_offset = offsets.get("unsteered", (10, 9) if not colored and "offsets" in preset else None)
+        if args.per_model:
+            axes.set_title(f"{first['model']['name']}\nunsteered: {levels(first['data'])}", fontsize=9.6, color=INK, loc="left", pad=8, linespacing=1.35)
+        elif not args.overlay:
+            panel_title = f"{first['model']['name']}, {first['preset']['title']}\nunsteered: {levels(first['data'])}" if multi_model else first["preset"]["title"]
             axes.set_title(panel_title, fontsize=9.4 if multi_model else 10, color=INK, loc="left", pad=8, linespacing=1.35)
-            axes.set_xlabel(x_label, fontsize=9.5, color=INK2)
-            if not shared or axes in grid[:, 0]:
-                axes.set_ylabel(y_label, fontsize=9.5, color=INK2)
-            set_x_range(axes, every if shared else list(group["data"]["arms"].values()))
-            pending.append((axes, labels, polylines, offsets.get("unsteered", (10, 9) if "offsets" in preset else None)))
+        axes.set_xlabel(x_label, fontsize=9.5, color=INK2)
+        if not shared or axes in grid[:, 0]:
+            axes.set_ylabel(y_label, fontsize=9.5, color=INK2)
+        set_x_range(axes, every if shared else [row for group in members for row in group["data"]["arms"].values()])
+        pending.append((axes, labels, polylines, unsteered_offset))
     figure.tight_layout(rect=(0, foot_height / height, 1, 1 - (head_height + 0.05) / height), w_pad=2.5 if not shared else 1.0, h_pad=2.0)
     for axes, labels, polylines, unsteered_offset in pending:
         finish_panel(axes, labels, polylines, unsteered_offset, args.y_max)
@@ -566,7 +582,7 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=SURFACE)
-    record = dict(composite=args.composite, y=args.y, y_max=args.y_max, layout="overlay" if args.overlay else "panels", shared_axes=bool(shared),
+    record = dict(composite=args.composite, y=args.y, y_max=args.y_max, layout="overlay" if args.overlay else "per-model" if args.per_model else "panels", shared_axes=bool(shared),
                   boot_draws=BOOT_DRAWS, boot_seed=BOOT_SEED,
                   groups=[dict(key=g["key"], model=g["model"]["name"], axis=g["axis_key"], title=g["preset"]["title"], drawn=g in drawn,
                                color=g.get("color"), **g["data"]) for g in groups])
