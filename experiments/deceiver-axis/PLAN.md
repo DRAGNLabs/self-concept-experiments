@@ -2007,6 +2007,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   alone. No unsteered two-card benchmark run is in this submission. Reading, expectation and "what it changes" are unchanged.
   *Time limit:* 3 h per task (B200 arms took 71–95 min; on the task set an A100 pair ran about 1.4 times as long as the B200, an H100
   pair about 0.9 times). 8 cores, 48 GB host memory, no requeue.
+  *Submitted 6:34 pm MST Nov 12: job 15314200* (4 tasks; 15313993 cancelled at 6:33 pm with all four tasks pending). All four started
+  at 6:35 pm: `gf_m0.08`, `gf_m0.04`, `gf_p0.04` on A100 pairs (cs-1-3, cs-1-5, cs-1-4), `gf_p0.08` on an H100 pair (cs-2-2);
+  `capeval/HARDWARE.tsv`. Start-up checks (6:41 pm, before any item was scored): both ranks print the patch line for layer 30 in all
+  four logs, `TRITON_ATTN` is in use, and the `gf_m0.08` spec file equals the spec of the seven two-card task-set seeds of
+  `gfar_L30_a-0.08` (direction tensor and coefficient). Unit tests: 324 run, the new argument test passes; four SOO test modules fail
+  to import a sibling module when run from the repo root, unrelated to this change.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.

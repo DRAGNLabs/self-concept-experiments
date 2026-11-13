@@ -27,6 +27,11 @@ the `allenai/IFBench_test` dataset in the HF cache; its "pred" is the per-constr
 prompt-level loose accuracy.
         [--direction <axis.pt> --layer-norms <pt> --steer-mode add --steer-layer 17 --steer-alpha -0.2]
         [--steer-mode cap|floor --cap-layers 12 ... --cap-thresholds <json>]
+
+--tensor-parallel-size N (2026-11-12, for Gemma 4 31B on two 80 GB cards: the 20,480-token window does not fit one) runs the
+engine in spawned worker processes, as in steered_rh_vllm.py: the steering is written to <out>/steering_spec.pt and each
+worker patches its own copy of the block class (steering_worker.SteeredWorker). --engine-kwargs is passed to vllm.LLM
+(e.g. '{"attention_backend":"TRITON_ATTN"}').
 """
 import argparse
 import json
@@ -40,7 +45,7 @@ import torch
 from transformers import AutoTokenizer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from steered_rh_vllm import build_transforms, directions_for  # noqa: E402
+from steered_rh_vllm import TP_STEERING_VERIFIED_FAMILIES, build_transforms, directions_for  # noqa: E402
 
 from selfconcept.codebench import sandbox  # noqa: E402
 from selfconcept.common.chat import chat_template_kwargs  # noqa: E402
@@ -81,6 +86,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cap-layers", nargs="+", type=int)
     parser.add_argument("--cap-thresholds", type=Path)
     parser.add_argument("--random-direction-seed", type=int)
+    parser.add_argument("--tensor-parallel-size", type=int, default=1,
+                        help="GPUs to split the model over; > 1 steers through steering_worker.SteeredWorker (see steered_rh_vllm.py)")
+    parser.add_argument("--engine-kwargs", type=json.loads, default={}, help="JSON object of extra vllm.LLM keyword arguments")
     args = parser.parse_args()
     if args.steer_mode == "add" and (args.layer_norms is None or args.steer_alpha == 0):
         parser.error("--steer-mode add needs --layer-norms and a nonzero --steer-alpha")
@@ -88,6 +96,12 @@ def parse_args() -> argparse.Namespace:
         parser.error("--steer-mode cap / floor needs --cap-layers and --cap-thresholds")
     if args.steer_mode != "none" and args.direction is None and args.random_direction_seed is None:
         parser.error("--direction is required for steering")
+    if args.tensor_parallel_size < 1:
+        parser.error("--tensor-parallel-size must be at least 1")
+    if args.tensor_parallel_size > 1 and args.steer_mode != "none":
+        family = steering_model_specifics(args.model).family
+        if family not in TP_STEERING_VERIFIED_FAMILIES:
+            parser.error(f"tensor-parallel steering is verified on {sorted(TP_STEERING_VERIFIED_FAMILIES)} only, not on {family}")
     return args
 
 
@@ -318,22 +332,41 @@ def main() -> None:
     family = specifics.family
     module_name, class_name = specifics.vllm_block
     block_cls = getattr(importlib.import_module(module_name), class_name)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    tensor_parallel = args.tensor_parallel_size > 1
+    device = torch.device("cuda:0" if torch.cuda.is_available() and not tensor_parallel else "cpu")
     needed = sorted({*([args.steer_layer] if args.steer_mode == "add" else []), *((args.cap_layers or []) if args.steer_mode in ("cap", "floor") else [])})
     directions = directions_for(args, needed, device) if needed else {}
     transforms, steering = build_transforms(args, directions)
     steering["family"] = family
-    if transforms:
+    engine_kwargs = {}
+    if tensor_parallel:
+        # The engine runs in spawned workers, which a patch made here never reaches: same spec file and worker class as
+        # steered_rh_vllm.py (each worker patches its own copy of the block class before the model is loaded).
+        from steering_worker import STEERING_SPEC_ENV, SteeringSpec  # imports vLLM, so after the environment above
+        engine_kwargs = {"worker_cls": "steering_worker.SteeredWorker"}
+        os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
+        os.environ["PYTHONPATH"] = os.pathsep.join([str(Path(__file__).parent), os.environ.get("PYTHONPATH", "")])
+        if transforms:
+            args.out.mkdir(parents=True, exist_ok=True)
+            spec_path = args.out / "steering_spec.pt"
+            scale_by_layer = {args.steer_layer: steering["coefficient"]} if args.steer_mode == "add" else steering["cap_thresholds"]
+            spec: SteeringSpec = {"model": args.model, "mode": args.steer_mode, "direction_by_layer": directions, "scale_by_layer": scale_by_layer}
+            torch.save(spec, spec_path)
+            os.environ[STEERING_SPEC_ENV] = str(spec_path)
+            steering["patched_layers"] = sorted(transforms)
+            print(f"tensor-parallel: steering spec {spec_path} for layers {sorted(transforms)}: {steering}", file=sys.stderr)
+    elif transforms:
         specifics.patch_vllm(block_cls, transforms)
         steering["patched_layers"] = sorted(transforms)
         print(f"patched {class_name}.forward for layers {sorted(transforms)}: {steering}", file=sys.stderr)
-    llm = LLM(model=args.model, tensor_parallel_size=1, max_model_len=args.max_model_len,
-              gpu_memory_utilization=args.gpu_memory_utilization, **max_num_seqs_kwargs())
+    llm = LLM(model=args.model, tensor_parallel_size=args.tensor_parallel_size, max_model_len=args.max_model_len,
+              gpu_memory_utilization=args.gpu_memory_utilization, **{**max_num_seqs_kwargs(), **engine_kwargs, **args.engine_kwargs})
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     args.out.mkdir(parents=True, exist_ok=True)
     meta = {"model": args.model, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k, "sample_seed": args.sample_seed,
             "chat_kwargs": chat_template_kwargs(), "steering": steering, "mmlu_per_category": args.mmlu_per_category, "n": args.n,
+            "tensor_parallel_size": args.tensor_parallel_size, "engine_kwargs": args.engine_kwargs,
             "prompt_prefix": args.prompt_prefix}
     summary_path = args.out / "summary.json"
     summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}

@@ -45,6 +45,20 @@ class SteerArgs(unittest.TestCase):
         self.assertTrue(torch.equal(out["floor"], torch.tensor([[1.0, 5.0], [3.0, 5.0]])))
         self.assertTrue(torch.equal(out["cap"], torch.tensor([[-2.0, 5.0], [1.0, 5.0]])))
 
+    def test_tensor_parallel_args(self):
+        args = parse(self.m)
+        self.assertEqual((args.tensor_parallel_size, args.engine_kwargs), (1, {}))
+        args = parse(self.m, "--tensor-parallel-size", "2", "--engine-kwargs", '{"attention_backend":"TRITON_ATTN"}')
+        self.assertEqual((args.tensor_parallel_size, args.engine_kwargs), (2, {"attention_backend": "TRITON_ATTN"}))
+        steer = ("--direction", "d.pt", "--layer-norms", "n.pt", "--steer-mode", "add", "--steer-layer", "30", "--steer-alpha", "0.04")
+        with mock.patch.object(sys, "argv", ["capability_eval_vllm.py", "--model", "google/gemma-4-31B-it", "--out", "o", "--tensor-parallel-size", "2", *steer]):
+            self.assertEqual(self.m.parse_args().tensor_parallel_size, 2)  # gemma4: tensor-parallel steering verified
+        with mock.patch.object(sys, "argv", ["capability_eval_vllm.py", "--model", "openai/gpt-oss-120b", "--out", "o", "--tensor-parallel-size", "2", *steer]):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                self.m.parse_args()
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            parse(self.m, "--tensor-parallel-size", "0")
+
 
 if __name__ == "__main__":
     unittest.main()

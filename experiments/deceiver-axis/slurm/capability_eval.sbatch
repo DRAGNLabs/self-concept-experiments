@@ -16,7 +16,7 @@ set -euo pipefail
 # General-capability benchmarks (gsm8k, MMLU-Pro subsample, HumanEval) under the main-run interventions: one array
 # task per line of the ARMS TSV (name <TAB> extra args for capability_eval_vllm.py, empty = unsteered; the main run's
 # arms.tsv works as is). Output $ROOT/<arm>/<task>.jsonl + summary.json; rerunning resumes.
-# Usage: sbatch --array=0-2 --export=ALL,ARMS=<tsv>,ROOT=<dir>[,SEED=0][,VLLM_GPU_MEM=0.95][,EXTRA_ARGS="--n 8"][,ARMS_PER_TASK=1] \
+# Usage: sbatch --array=0-2 --export=ALL,ARMS=<tsv>,ROOT=<dir>[,SEED=0][,VLLM_GPU_MEM=0.95][,EXTRA_ARGS="--n 8"][,ARMS_PER_TASK=1][,TP=1] \
 #            experiments/deceiver-axis/slurm/capability_eval.sbatch
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
@@ -39,7 +39,11 @@ if ! mkdir -p "$TMPDIR" 2>/dev/null || [ ! -w "$TMPDIR" ]; then
     export TMPDIR="$HOME/nobackup/autodelete/tmp/slurm-${SLURM_JOB_ID:-$$}"; mkdir -p "$TMPDIR"; echo "TMPDIR fallback: $TMPDIR"
 fi
 nvidia-smi
-if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
+# TP=<n> (2026-11-12, default 1): split the model over n cards (Gemma 4 31B at the 20,480-token window needs two 80 GB cards);
+# submit with --gpus-per-node=<n>. ENGINE_KWARGS=<json> goes to vllm.LLM, e.g. {"attention_backend":"TRITON_ATTN"}; a JSON value
+# with commas cannot go through sbatch --export=..., export it in the shell and submit with --export=ALL.
+TP="${TP:-1}"
+if [ "$TP" -eq 1 ] && [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
     export CUDA_VISIBLE_DEVICES="$(nvidia-smi --query-gpu=uuid,memory.used --format=csv,noheader,nounits | sort -t, -k2 -n | head -1 | cut -d, -f1)"
     echo "several GPUs visible; pinned CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 fi
@@ -72,7 +76,7 @@ for ((INDEX = FIRST; INDEX < FIRST + PER_TASK && INDEX < N_ARMS; INDEX++)); do
     SECONDS=0
     python scripts/capability_eval_vllm.py --model "$MODEL" --out "$ROOT/$NAME" --tasks "${TASK_LIST[@]}" \
         --temperature 1.0 --sample-seed "$SEED" --max-new-tokens 16384 --gpu-memory-utilization "$VLLM_GPU_MEM" \
-        "${EXTRA_ARGS_LIST[@]}" "${EXTRA[@]}"
+        --tensor-parallel-size "$TP" --engine-kwargs "${ENGINE_KWARGS:-{\}}" "${EXTRA_ARGS_LIST[@]}" "${EXTRA[@]}"
     echo "arm $NAME took ${SECONDS}s"
 done
 echo "=== schemer-capeval done: $ROOT/$NAME ==="  # once per task, after its last arm (the monitors count this line)
