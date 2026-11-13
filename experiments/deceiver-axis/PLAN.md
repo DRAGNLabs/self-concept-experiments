@@ -2228,6 +2228,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      pairs) and the 13 A100-pair seeds; groups of one and two seeds cannot be tested, so the read is whether seed 0 and seeds 6–7 fall
      inside the A100 seeds' range on each column; a seed outside it is named with the result. The contrast against Koby's B200
      unsteered arm is across hardware for 15 of 16 seeds and is stated as a limit. Chart: four doses and this rung, new file name.
+     **Result (judged 8:38–8:46 pm, read 8:48 pm MST Nov 12; FINDINGS "Gemma 4 31B Goodfire-axis (gfar) cap p75, judged"):** judged
+     hack 0.3% (5 / 1728) against 4.7%, −4.5, CI −7.1 to −2.3, raw p 3.5e-06 (× 6 = 2.1e-05); hidden pass −11.0 (CI −15.1 to −6.8),
+     no code +3.4: outside the dose rule on hidden pass by 1.0 point. Both expectations met; the fall is reported and not read as an
+     effect at kept capability. Hardware read: seed 0 and seeds 6–7 inside the A100 seeds' range on all four columns, no seed named.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with

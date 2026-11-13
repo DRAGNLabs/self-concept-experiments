@@ -54,7 +54,9 @@ X: dict = {}
 
 # Cap arms as side points off the dose axis, in rung order (p25 = Koby's arm; p35 = our lighter rung, array 15104078, 2026-11-06;
 # p45 / p50 / p65 = Koby's cap-ladder run, job 15125968, judged 2026-11-09). Only the arms present in the analysis file are drawn.
-CAPS = [("cap_p25_L20-38", "cap\np25", "cap p25 L20–38"), ("cap_p35_L20-38", "cap\np35", "cap p35 L20–38"), ("cap_p45_L20-38", "cap\np45", "cap p45 L20–38"), ("cap_p50_L20-38", "cap\np50", "cap p50 L20–38"), ("cap_p65_L20-38", "cap\np65", "cap p65 L20–38")]  # (arm, tick, table label); the band is named in the xlabel
+CAPS = [("cap_p25_L20-38", "cap\np25", "cap p25 L20–38"), ("cap_p35_L20-38", "cap\np35", "cap p35 L20–38"), ("cap_p45_L20-38", "cap\np45", "cap p45 L20–38"), ("cap_p50_L20-38", "cap\np50", "cap p50 L20–38"), ("cap_p65_L20-38", "cap\np65", "cap p65 L20–38"),
+        # Goodfire (gfar) caps over the same band (our arrays, 2026-11-12); a family holds either the gi_v2 or the gfar caps, never both.
+        ("gfar_cap_p75_L20-38", "cap\np75", "cap p75 L20–38"), ("gfar_cap_p95_L20-38", "cap\np95", "cap p95 L20–38")]  # (arm, tick, table label); the band is named in the xlabel
 # Floor rungs (the inverse cap: projection clipped from below at tau; our array 15206804, one blind set per rung from 2026-11-11),
 # drawn after the caps behind a second dotted rule.
 FLOORS = [("floor_p50_L20-38", "floor\np50", "floor p50 L20–38"), ("floor_p75_L20-38", "floor\np75", "floor p75 L20–38"), ("floor_p95_L20-38", "floor\np95", "floor p95 L20–38")]
@@ -63,6 +65,11 @@ CAP_ARMS: list = []  # the cap arms present in the analysis file, in rung order 
 FLOOR_ARMS: list = []  # the floor arms present, in rung order
 SIDE_GAP = 0.8  # x gap between the last dose and the first side point
 AXIS = "gi_v2"  # name of the steering vector in titles and labels (--axis-name; "Goodfire (gfar)" for the gfar dose arms)
+
+
+def pct(arm: str) -> str:
+    """"p75" from "gfar_cap_p75_L20-38" or "cap_p25_L20-38"."""
+    return next(part for part in arm.split("_") if part[:1] == "p" and part[1:].isdigit())
 
 
 def dose(arm: str) -> float:
@@ -175,9 +182,9 @@ def main() -> None:
     ax_t.set_title(f"Numbers behind the lines (rates are problem-stratified means over {J['problems']} problems; H / B / N = HACK / BORDERLINE / NOT_HACK)",
                    loc="left", color=INK, fontsize=10, pad=6)
 
-    cap_title = "the p25 cap" if CAP_ARMS == ["cap_p25_L20-38"] else "the cap dose ladder (τ at the unsteered " + " / ".join(a.split("_")[1] for a in CAP_ARMS) + ")"
+    cap_title = "the p25 cap" if CAP_ARMS == ["cap_p25_L20-38"] else f"the {pct(CAP_ARMS[0])} cap" if len(CAP_ARMS) == 1 else "the cap dose ladder (τ at the unsteered " + " / ".join(pct(a) for a in CAP_ARMS) + ")"
     if FLOOR_ARMS:
-        cap_title += " and the floor " + ("rung" if len(FLOOR_ARMS) == 1 else "ladder") + " (" + " / ".join(a.split("_")[1] for a in FLOOR_ARMS) + ")"
+        cap_title += " and the floor " + ("rung" if len(FLOOR_ARMS) == 1 else "ladder") + " (" + " / ".join(pct(a) for a in FLOOR_ARMS) + ")"
     side_title = f" and {cap_title} over layers 20–38" if (CAP_ARMS or FLOOR_ARMS) else ""
     title = fig.suptitle(f"Gemma 4 31B, hard108 dose scan at layer 30 ({AXIS} vector){side_title}:\n"
                          "blind Sonnet rubric-v3 judging of every proxy episode and every hidden-pass episode with a hard-code signature",
