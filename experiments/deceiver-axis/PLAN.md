@@ -2159,6 +2159,22 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      +6.5), no code +10.6: outside the dose rule on the no-code clause by 0.6 points, as expected, so the fall is not read as an
      effect at kept capability. No earlier contrast's adjusted p crosses 0.05 in the 10-contrast family. Not run: a benchmark
      eval for p90 (on request only).
+     **Benchmark eval for p90 (user 2026-11-12 ~5:10 pm MST: "do a benchmark eval for muse p90"; written 5:16 PM MST, before
+     submission, no score exists).** `gf_cap_p90` through GSM8K / MMLU-Pro / HumanEval / IFBench with the recipe of the p95 cap's
+     benchmark run (15262741; "Benchmarks for the Goodfire-axis arms that have none"): `capability_eval.sbatch`,
+     MODEL=meta-models/Muse-Glimmer-30B, reasoning_strength low, one arm line rebuilt from the steering block of the RH arm's
+     seed-0 summary and accepted only if `thresholds/muse/gfar_p90.json` equals the thresholds that arm recorded
+     (`muse_glimmer/gi_v2/capeval/arms_gfar_cap_p90.tsv`), output `capeval/gf_cap_p90/`. Reference: the 2026-10-29 unsteered
+     benchmark run only. Placement by the picker; one 80 GB GPU, no requeue; 1 h 30 min (p95 took 19 min 35 s on an H100; an
+     A100 is about 1.6 times slower on this model and p90 writes about 1.3 times the reasoning per turn on the task set);
+     64 GB host memory (`--mem-per-cpu=8G`; cold-load peak 57.8 GB on the p90 pilot, 6.4 GB on the warm p95 benchmark run).
+     **Reading, fixed now.** The retention rule as written (within 2 points of unsteered or CI covering zero per benchmark;
+     clean = all four; a truncated share more than 2 points above unsteered's is reported as truncation-limited, not as a
+     capability loss). The dose rule of record stays the task-set rule: p90 stays outside it on no code whatever the scores
+     are, and an arm outside on the task set and clean on the benchmarks is written that way. **Expected:** GSM8K, MMLU-Pro
+     and HumanEval kept, as at p95 (+0.3 / +0.8 / +2.4); IFBench open (p95 +0.0; the Muse arms that lose a benchmark lose
+     this one); a truncated or no-answer share above unsteered's is possible, since 10.6% of task-set episodes end
+     without code. No further rung or arm is added or dropped on the outcome.
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /
