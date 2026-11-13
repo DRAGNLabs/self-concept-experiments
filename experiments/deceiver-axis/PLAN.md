@@ -1942,6 +1942,19 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   one per cut seed) as a bound on the tilt. *Earlier runs:* 131 task logs since October show a real resume (requeue after
   preemption or a resubmission), most of them sequential (one episode each); two families ran at concurrency 45 (Qwen gi_v2
   pilot, 26 tasks, Oct 29; random-1729 control, 7 tasks, Nov 4, 3-5 episodes kept each). Not re-read here; listed for the user.
+  **Goodfire −0.08 complete (written 5:34 PM MST Nov 12, before the set is built or any verdict read):** seeds 0–8 on the B200 (seed 0
+  pilot, 15267210 tasks 15–22, last ended 1:47 pm), seeds 9–15 on dw with two A100s per task (15308014, 7 of 7 done markers, no error
+  line, 12,294–14,212 s per task, last ended about 5:32 pm); 16 seeds × 108 = 1,728 episodes, none stopped part-way, none resumed. Set
+  `ctl_g07_s0-15` = `gfar_L30_a-0.08`, same frozen chain (copied from `verdicts_ctl_g06_s0-15` by sed). Interim read, 4 of 6 contrasts in
+  the Gemma Goodfire family (four doses + caps p75 / p95): raw p beside p × 6, Holm at family completion. **Expected** (as written
+  Nov 11): judged hacking ordered −0.08 ≤ −0.04 ≤ unsteered (3.4% at −0.04, 4.7% unsteered); the arm can land on either side of the dose
+  rule (the pilot seed missed the 10-point line by 0.1 points of honest hidden pass). Inside the rule with a Holm-adjusted fall, it is
+  the first Gemma Goodfire dose that lowers hacking at kept capability; outside it, the difference is reported but not read as an
+  effect at kept capability. *Hardware read (b), as written at 1:27 pm:* seeds 0–8 (B200) beside seeds 9–15 (A100 pair) on hidden
+  pass, no code, automatic proxy and judged rate, per-seed ranges, no test; non-overlapping ranges on a column are put to the user
+  before the arm is stated as a contrast against the B200 reference. The cross-hardware contrast for seeds 9–15 is stated as a limit
+  either way. Chart: the four doses without the isotropic random band (Koby, Nov 12). No pending submission, extension or rung choice
+  depends on this column.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
