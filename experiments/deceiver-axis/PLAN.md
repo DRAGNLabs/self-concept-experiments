@@ -2096,6 +2096,13 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   one job with the same command (the script skips written items), as the continuation rule above allows for benchmark arms; the pace
   after GSM8K is reported to the user for the two cap arms, which may take most of a day of one card each to show that a broken arm
   is broken.
+  **Not run from this account (1:02 PM MST Nov 13):** the user, about 1:00 pm: "Koby actually already queued those six up. we
+  don't need to queue any of those". Nothing was submitted and no dry run was made; the only scheduler calls were two accounting
+  lookups for the memory request and one picker run (`gfar_vs_gi_v2/steer/gpu_pick_2026-11-13.txt`). The three arms files built at
+  12:51 pm (`qwen38_27b_gi_v2/capeval/arms_gfar_cap_p25.tsv`, `muse_glimmer/gi_v2/capeval/arms_gfar_cap_p25.tsv`,
+  `gemma4_31b_gi_v2/capeval/arms_gi_v2_gaps.tsv`; builder `build_capeval_arms_1113_gaps.py`, every line equal to the steering
+  block of all task-set seeds of its arm) are unused and stay in place. The placement and time-limit part above is void; the
+  reference, reading and expectations were written before any item was scored and stay as written for when Koby's runs are read.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
