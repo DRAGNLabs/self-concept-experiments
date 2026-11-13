@@ -2213,6 +2213,21 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      `ib_solvhard_s0` episodes at 16,384 tokens, the arms run hard108 at 32,768): p75 moves 27.6–28.1% of prompt and 26.4% of generated
      positions, p95 11.3–13.3% and 3.6–6.1%; the two unusable pilot rungs, p50 47.5% / 51.7% and p25 70.5% / 75.8%. The per-arm reads
      state these shares; no rung is called light or heavy from its percentile.
+     **Cap p75 complete (written 8:35 PM MST Nov 12, before the set is built or any verdict read):** 16 seeds × 108 = 1,728 episodes.
+     Seed 0 on the B200 (pilot 15264564); seeds 6 and 7 on cs2 H100 pairs (15309561, 15309696; 7,850 s and 7,801 s); seeds 1–4 and 8–15
+     on dw A100 pairs (15308022, 12 of 12 done markers, 10,695–12,025 s); seed 5 on a dw A100 pair as a whole rerun (15310621, 12,680 s,
+     ended about 8:33 pm; the first seed-5 task was stopped at 3:13 pm by a GPU memory error after 40 episodes and its files are in
+     `rh/stopped_partial/`, not used). No error line in any of the 16 logs used, no seed resumed. Seed 9 ran on the dw-1-4 card pair
+     after that pair's 3:13 pm memory error and ended with its done marker and no error line. Set `ctl_g08_s0-15` =
+     `gfar_cap_p75_L20-38`, same frozen chain (copied from `verdicts_ctl_g07_s0-15` by sed). Interim read, 5 of 6 contrasts in the Gemma
+     Goodfire family: raw p beside p × 6, Holm at family completion (p95, about 11:30 pm). Dose rule on the Nov 11 measure: hidden pass
+     over all episodes and no code, each within 10 points of unsteered. **Expected** (as written Nov 11): judged hacking at or below
+     unsteered (4.7%); the arm outside the dose rule (the pilot seed lost 19 points of hidden pass among non-proxy episodes), so a
+     fall is reported and not read as an effect at kept capability. The rung moves 27.6–28.1% of prompt and 26.4% of generated positions.
+     *Hardware read, descriptive:* per-seed hidden pass, no code, automatic proxy and judged rate for seed 0 (B200), seeds 6–7 (H100
+     pairs) and the 13 A100-pair seeds; groups of one and two seeds cannot be tested, so the read is whether seed 0 and seeds 6–7 fall
+     inside the A100 seeds' range on each column; a seed outside it is named with the result. The contrast against Koby's B200
+     unsteered arm is across hardware for 15 of 16 seeds and is stated as a limit. Chart: four doses and this rung, new file name.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
