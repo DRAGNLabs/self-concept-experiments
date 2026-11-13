@@ -1983,6 +1983,11 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   window does not fit an 80 GB card (14982952, Nov 2), so the two-card placements the Gemma task-set arms moved to today are not
   available to this script without a code change; an H200 would fit but the scheduler's dry-run start for one is Nov 29. 8 cores,
   48 GB host memory, 2 h 30 min per task (earlier arms took 71–95 min), no requeue.
+  *Submitted 6:21 pm MST Nov 12: job 15313993* (4 tasks, `-p cs3 --qos cs --gpus-per-node=1 --mem-per-cpu=6G --time 02:30:00
+  --no-requeue`; picker output and three dry runs in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-12.txt`). Scheduler start estimate 1:00 pm
+  Nov 13 for all four tasks. For comparison, a two-card task on cs would start about 8:48 pm tonight by dry run, but needs the
+  tensor-parallel worker path ported from `steered_rh_vllm.py` into the benchmark script and would be read against a B200 reference;
+  not done, put to the user.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
