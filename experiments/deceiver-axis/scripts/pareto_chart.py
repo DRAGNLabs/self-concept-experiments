@@ -16,8 +16,10 @@ pointing down, floor = triangle pointing up) and by their labels, as the two sig
 
 Error bars are 95% CIs of the difference: vertical = the problem-level paired bootstrap CI of the analysis file
 (`contrasts[arm].ci95`); horizontal = an item-paired bootstrap of the composite (items resampled within each benchmark, the
-same draw for arm and unsteered, 10,000 draws, fixed seed). An arm outside the task-set dose rule (share of episodes with no
-code submitted, or hidden-test pass rate, more than 10 points from unsteered) is drawn hollow; the JSON names which of the two.
+same draw for arm and unsteered, 10,000 draws, fixed seed). An arm on which the model stops submitting code (share of episodes
+with no code submitted more than 10 points above unsteered) is drawn hollow. The marker reads no-code alone (user 2026-11-13:
+hidden-test pass is confounded with hacking); the task-set dose rule itself is unchanged and its status per arm
+(`inside_dose_rule`, `outside_on`) stays in the JSON.
 Label offsets (points) per arm come from the preset's `offsets` or --offsets. --separate-axes gives every panel its own x and
 y range (default: both shared across the panels).
 
@@ -45,7 +47,7 @@ from matplotlib.lines import Line2D
 N = Path.home() / "nobackup/autodelete/self-concept-experiments/schemer-axis"
 TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
 BOOT_DRAWS, BOOT_SEED = 10_000, 0
-RULE_POINTS = 10.0  # task-set dose rule: |Δ hidden pass| and |Δ no-code| within 10 points of unsteered
+RULE_POINTS = 10.0  # task-set dose rule: |Δ hidden pass| and |Δ no-code| within 10 points of unsteered; hollow marker: Δ no-code above it
 
 # categorical slots 1-2 of the chart palette (validated). Caps and floors share the clamp colour (user 2026-11-13: the pair is
 # to clamping what the two signs are to steering); marker shape and the direct label tell them apart.
@@ -165,7 +167,7 @@ def load_axis(model: dict, axis: dict, combine) -> dict:
                          hidden_pass_diff=hidden_diff, no_code_diff=no_code_diff,
                          inside_dose_rule=abs(hidden_diff) <= RULE_POINTS and abs(no_code_diff) <= RULE_POINTS,
                          outside_on=[name for name, value in (("no_code", no_code_diff), ("hidden_pass", hidden_diff)) if abs(value) > RULE_POINTS],
-                         **bench)
+                         stops_submitting=no_code_diff > RULE_POINTS, **bench)
     unsteered_composite = {round(row["composite_unsteered"], 9) for row in rows.values()}
     assert len(unsteered_composite) == 1, unsteered_composite
     unsteered = dict(hack=100 * judged["arms"]["unsteered"]["rate"], episodes=judged["arms"]["unsteered"]["episodes"],
@@ -214,8 +216,8 @@ def draw_panel(axes: Axes, data: dict, title: str, offsets: dict[str, tuple[int,
                 axes.errorbar(x, y, xerr=[[x - row["diff_ci"][0]], [row["diff_ci"][1] - x]],
                               yerr=[[y - row["hack_diff_ci"][0]], [row["hack_diff_ci"][1] - y]],
                               fmt="none", ecolor=style["color"], elinewidth=1, alpha=0.4, zorder=2)
-                face = style["color"] if row["inside_dose_rule"] else SURFACE
-                edge = SURFACE if row["inside_dose_rule"] else style["color"]
+                face = SURFACE if row["stops_submitting"] else style["color"]
+                edge = style["color"] if row["stops_submitting"] else SURFACE
                 axes.plot(x, y, style["marker"], markersize=9 if style["marker"] != "o" else 8, color=face, markeredgecolor=edge,
                           markeredgewidth=1.8, zorder=4)
                 annotate(axes, row["label"], x, y, offsets.get(arm, DEFAULT_OFFSETS[series]))
@@ -266,8 +268,8 @@ def main() -> None:
                   handletextpad=0.5, columnspacing=1.6)
     hollow = [Line2D([], [], color=SURFACE, marker=s["marker"], markersize=8, markeredgecolor=s["color"], markeredgewidth=1.8, linewidth=0)
               for s in (SERIES["steering"], SERIES["cap"])]
-    figure.legend(handles=[tuple(hollow)], labels=[f"hollow marker: the share of episodes with no code submitted, or the hidden-test pass rate, "
-                                                   f"is more than {RULE_POINTS:g} points from unsteered"],
+    figure.legend(handles=[tuple(hollow)], labels=[f"hollow marker: the model stops submitting code (share of episodes with no code submitted "
+                                                   f"more than {RULE_POINTS:g} points above unsteered)"],
                   handler_map={tuple: HandlerTuple(ndivide=None, pad=0.6)}, loc="upper left", bbox_to_anchor=(0.012, 0.892), frameon=False,
                   fontsize=9, handletextpad=0.5, handlelength=2.4)
     first = next(iter(data.values()))
