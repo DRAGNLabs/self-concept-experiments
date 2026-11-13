@@ -24,6 +24,7 @@ of the ratio (both rates redrawn). A model whose unsteered rate is zero has no r
 --y-max sets the top of the y axis: an arm above it is not drawn as a marker, its line leaves through the top of the frame and
 its label at the top edge carries the value.
 
+--swap-axes puts the hack rate on the x axis and the benchmark score on the y axis (labels are then always placed by the search).
 --scale symlog draws both axes on a symmetric log scale (differences cross zero, so a plain log axis is not available): linear
 within 0.5 benchmark points / 1 hack-rate point (10 with --y relative) of unsteered, logarithmic beyond, ticks on a 1-2-5 ladder.
 It spreads the arms near the origin and pulls in the far ones; distances from the origin, slopes and error-bar lengths are then
@@ -227,33 +228,40 @@ def relative_change(judged: dict, arm: str) -> dict:
                 hack_rel_draws_undefined=int((~defined).sum()))
 
 
-def load_axis(model: dict, axis: dict, combine) -> dict:
+NO_BENCHMARK = dict(accuracy=None, composite=None, composite_unsteered=None, diff=None, diff_ci=None)
+
+
+def load_axis(model: dict, axis: dict, combine, keep_without_benchmark: bool = False) -> dict:
+    """`keep_without_benchmark`: an arm with no benchmark run keeps its row, with the benchmark fields None (dose_lines_chart.py)."""
     analysis = json.loads(axis["analysis"].read_text())
     judged, no_code = analysis["judged_hack"], analysis["no_code"]
     source_arms = [arm for arm in judged["arms"] if canonical(arm).startswith(axis["prefix"])]
     rows, omitted, hidden_diffs = {}, [], hidden_pass_diffs(analysis, axis, source_arms)
     for source in source_arms:
         arm = canonical(source)
-        if not (model["capeval"] / arm).is_dir():
+        has_run = (model["capeval"] / arm).is_dir()
+        if not has_run:
             omitted.append(arm)
-            continue
-        bench = composite(model["capeval"], arm, combine)
+            if not keep_without_benchmark:
+                continue
+        bench = composite(model["capeval"], arm, combine) if has_run else NO_BENCHMARK
         contrast = judged["contrasts"][source]
         hidden_diff = hidden_diffs[source]
         no_code_diff = 100 * no_code["arms"][source]["diff_vs_unsteered"]
         measures = [("no_code", no_code_diff)] + ([("hidden_pass", hidden_diff)] if hidden_diff is not None else [])
         rows[arm] = dict(kind=kind(arm), label=label(arm), analysis_arm=source, hack=100 * judged["arms"][source]["rate"],
                          hack_diff=100 * contrast["diff"], hack_diff_ci=[100 * contrast["ci95"][0], 100 * contrast["ci95"][1]],
+                         hack_p_holm=contrast.get("p_holm"),
                          episodes=judged["arms"][source]["episodes"], hidden_pass_diff=hidden_diff, no_code_diff=no_code_diff,
                          inside_dose_rule=None if hidden_diff is None else all(abs(value) <= RULE_POINTS for _, value in measures),
                          outside_on=[name for name, value in measures if abs(value) > RULE_POINTS],
                          stops_submitting=no_code_diff > RULE_POINTS, **relative_change(judged, source), **bench)
-    unsteered_composite = {round(row["composite_unsteered"], 9) for row in rows.values()}
+    scored = [row for row in rows.values() if row["composite"] is not None]
+    unsteered_composite = {round(row["composite_unsteered"], 9) for row in scored}
     assert len(unsteered_composite) == 1, unsteered_composite
     unsteered = dict(hack=100 * judged["arms"]["unsteered"]["rate"], episodes=judged["arms"]["unsteered"]["episodes"],
-                     composite=next(iter(rows.values()))["composite_unsteered"],
-                     accuracy={t: next(iter(rows.values()))["accuracy"][t]["unsteered"] for t in TASKS})
-    items = sum(row["n"] for row in next(iter(rows.values()))["accuracy"].values())
+                     composite=scored[0]["composite_unsteered"], accuracy={t: scored[0]["accuracy"][t]["unsteered"] for t in TASKS})
+    items = sum(row["n"] for row in scored[0]["accuracy"].values())
     return dict(unsteered=unsteered, arms=rows, omitted_no_benchmark_run=omitted, analysis=str(axis["analysis"]), problems=judged["problems"],
                 seeds=judged["seeds"], items=items)
 
@@ -351,12 +359,14 @@ def shade(color: str, toward: str = INK, share: float = 0.45) -> tuple[float, ..
 
 
 def draw_arms(axes: Axes, data: dict, y_keys: tuple[str, str], offsets: dict, group_color: str | None, auto: bool,
-              y_max: float | None = None) -> tuple[list[dict], list]:
+              y_max: float | None = None, swap: bool = False) -> tuple[list[dict], list]:
     """The lines, error bars and markers of one (model, axis) pair; returns its label requests and polylines. `group_color` None:
     colour by kind of intervention, all lines solid. Otherwise the pair's colour, steering solid and clamps dashed, and the labels
     in a dark shade of the pair's colour (a dense overlay cannot keep every label next to its marker). An arm above `y_max` is off
-    the scale: its line runs out of the top of the frame and its label, with the value, sits at the top edge."""
+    the scale: its line runs out of the top of the frame and its label, with the value, sits at the top edge. `swap`: the hack
+    rate on the x axis and the benchmark score on the y axis."""
     rows, y_key, ci_key = data["arms"], *y_keys
+    at = (lambda benchmark, hack: (hack, benchmark)) if swap else (lambda benchmark, hack: (benchmark, hack))
     labels, polylines = [], []
     text_color = shade(group_color) if group_color else INK2
     for series, groups in series_order(rows).items():
@@ -365,16 +375,17 @@ def draw_arms(axes: Axes, data: dict, y_keys: tuple[str, str], offsets: dict, gr
         for arms in groups:
             if not arms:
                 continue
-            polyline = [(0.0, 0.0)] + [(rows[a]["diff"], rows[a][y_key]) for a in arms]
+            polyline = [(0.0, 0.0)] + [at(rows[a]["diff"], rows[a][y_key]) for a in arms]
             polylines.append(polyline)
             dashed = group_color is not None and series != "steering"
             axes.plot(*zip(*polyline), color=color, linewidth=1.6 if dashed else 2, zorder=3, solid_capstyle="round", solid_joinstyle="round",
                       linestyle=(0, (3.2, 2.2)) if dashed else "-")
             for arm in arms:
                 row = rows[arm]
-                x, y = row["diff"], row[y_key]
-                axes.errorbar(x, y, xerr=[[x - row["diff_ci"][0]], [row["diff_ci"][1] - x]], yerr=[[y - row[ci_key][0]], [row[ci_key][1] - y]],
-                              fmt="none", ecolor=color, elinewidth=1, alpha=0.4 if group_color is None else 0.32, zorder=2)
+                benchmark, hack = row["diff"], row[y_key]
+                x, y = at(benchmark, hack)
+                xerr, yerr = at([[benchmark - row["diff_ci"][0]], [row["diff_ci"][1] - benchmark]], [[hack - row[ci_key][0]], [row[ci_key][1] - hack]])
+                axes.errorbar(x, y, xerr=xerr, yerr=yerr, fmt="none", ecolor=color, elinewidth=1, alpha=0.4 if group_color is None else 0.32, zorder=2)
                 face, edge = (SURFACE, color) if row["stops_submitting"] else (color, SURFACE)
                 axes.plot(x, y, style["marker"], markersize=9 if style["marker"] != "o" else 8, color=face, markeredgecolor=edge,
                           markeredgewidth=1.8, zorder=4)
@@ -399,9 +410,9 @@ def style_axes(axes: Axes) -> None:
     axes.tick_params(colors=MUTED, labelsize=8.5, labelleft=True)
 
 
-def set_x_range(axes: Axes, rows: list[dict], symlog: bool = False) -> None:
+def set_benchmark_range(axes: Axes, rows: list[dict], symlog: bool = False, swap: bool = False) -> None:
     low, high = min(min(row["diff_ci"][0] for row in rows), 0), max(max(row["diff_ci"][1] for row in rows), 0)
-    axes.set_xlim(*((1.12 * low - 0.15, 1.12 * high + 0.15) if symlog else (low - 0.4, high + 0.4)))
+    (axes.set_ylim if swap else axes.set_xlim)(*((1.12 * low - 0.15, 1.12 * high + 0.15) if symlog else (low - 0.4, high + 0.4)))
 
 
 # --scale symlog: linear within +-threshold, logarithmic beyond; ticks on a 1-2-5 ladder. Differences cross zero, so a plain log
@@ -500,6 +511,7 @@ def main() -> None:
     parser.add_argument("--y-max", type=float, help="top of the y axis; an arm above it is named at the top edge with its value")
     parser.add_argument("--scale", choices=("linear", "symlog"), default="linear",
                         help="symlog: both axes linear near zero (within 0.5 benchmark points / 1 hack-rate point) and logarithmic beyond")
+    parser.add_argument("--swap-axes", action="store_true", help="hack rate on the x axis, benchmark score on the y axis")
     parser.add_argument("--overlay", action="store_true", help="all (model, axis) pairs on one set of axes, colour = pair")
     parser.add_argument("--per-model", action="store_true", help="one panel per model with its axes overlaid, colour = axis")
     parser.add_argument("--shared-axes", action="store_true", help="panel layout: one x and y range for all panels (default: own range per panel)")
@@ -522,12 +534,17 @@ def main() -> None:
     y_label = ("Change in judged hack rate, % of the unsteered rate (−100 = none left; lower = better)" if relative
                else "Δ judged hack rate vs unsteered, points (lower = better)")
     x_label = "Δ benchmark score vs unsteered, points (higher = better)"
-    symlog = args.scale == "symlog"
+    symlog, swap = args.scale == "symlog", args.swap_axes
+    if swap and args.y_max is not None:
+        raise SystemExit("--y-max cuts the hack-rate axis at the top of the frame; it is not available with --swap-axes")
     if symlog:
         x_label += f"; log scale beyond ±{SYMLOG_X['linthresh']:g}"
         y_label += f"; log scale beyond ±{SYMLOG_Y[args.y]['linthresh']:g}"
+    if swap:
+        x_label, y_label = y_label, x_label
     label_text = "Labels: steering dose α (in layer norms) or clamp threshold (percentile of the unsteered projection)."
     what = "relative change in judged reward hacking" if relative else "change in judged reward hacking"
+    against = f"change in benchmark score against {what}" if args.swap_axes else f"{what} against change in benchmark score"
     levels = lambda data: f"judged hack rate {data['unsteered']['hack']:.1f}%, benchmark score {data['unsteered']['composite']:.1f}%"
     models = ", ".join(dict.fromkeys(g["model"]["name"] for g in drawn))
     axis_names = " and ".join(dict.fromkeys(AXIS_NAMES[g["axis_key"]] for g in drawn))
@@ -540,9 +557,9 @@ def main() -> None:
         if len(drawn) > len(GROUP_COLORS):
             raise SystemExit(f"--overlay draws at most {len(GROUP_COLORS)} pairs (validated colours); use the panel layout")
         panel_groups = [drawn]
-        width, panel_height, columns = 10.0, 7.6, 1
-        title = (f"{axis_names} on {COUNT_WORDS.get(len(drawn), len(drawn))} models: {what} against change in benchmark score" if multi_model
-                 else f"{models}, {len(drawn)} steering directions: {what} against change in benchmark score")
+        width, panel_height, columns = (13.0, 6.6, 1) if swap else (10.0, 7.6, 1)  # swapped: the wide hack-rate range runs along the page
+        title = (f"{axis_names} on {COUNT_WORDS.get(len(drawn), len(drawn))} models: {against}" if multi_model
+                 else f"{models}, {len(drawn)} steering directions: {against}")
         for group, color in zip(drawn, GROUP_COLORS):
             group["color"] = color
         names = [f"{g['model']['name']} (unsteered: {levels(g['data'])})" if multi_model else AXIS_NAMES[g["axis_key"]] for g in drawn]
@@ -556,14 +573,14 @@ def main() -> None:
         columns = len(panel_groups) if len(panel_groups) <= 2 else 2
         width, panel_height = 7.4 * columns, 6.5
         on = models if len(panel_groups) <= 2 else f"{COUNT_WORDS.get(len(panel_groups), len(panel_groups))} models"
-        title = f"{axis_names} on {on}: {what} against change in benchmark score"
+        title = f"{axis_names} on {on}: {against}"
         group_handles = [Line2D([], [], color=palette[key], marker="o", linewidth=2, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5,
                                 label=AXIS_NAMES[key]) for key in args.axes if any(g["axis_key"] == key for g in drawn)]
     else:
         panel_groups = [[group] for group in drawn]
         columns = len(drawn) if len(drawn) <= 3 else 2
         width, panel_height = 6.5 * columns, 5.9
-        title, group_handles = f"{models}: {what} against change in benchmark score, per intervention", []
+        title, group_handles = f"{models}: {against}, per intervention", []
     rows = math.ceil(len(panel_groups) / columns)
     plot_height = panel_height * rows
     foot = wrap(footnote(groups, score_name, relative, multi_model), 7.8, width - 0.3)
@@ -584,19 +601,19 @@ def main() -> None:
     for axes, members in zip(panels, panel_groups):
         style_axes(axes)
         if symlog:
-            symlog_axis(axes.xaxis, **SYMLOG_X)
-            symlog_axis(axes.yaxis, **SYMLOG_Y[args.y])
+            symlog_axis(axes.yaxis if swap else axes.xaxis, **SYMLOG_X)
+            symlog_axis(axes.xaxis if swap else axes.yaxis, **SYMLOG_Y[args.y])
         first = members[0]
         labels, polylines, unsteered_offset = [], [], None
         for group in members:
             preset = group["preset"]
-            offsets = {**(OVERLAY_OFFSETS.get(tuple(g["key"] for g in members), {}).get(group["key"], {}) if colored else preset.get("offsets", {})),
+            offsets = {**(OVERLAY_OFFSETS.get(tuple(g["key"] for g in members), {}).get(group["key"], {}) if colored else {} if swap else preset.get("offsets", {})),
                        **{k: tuple(v) for k, v in file_offsets.get(group["key"], {}).items()}}
-            more_labels, more_lines = draw_arms(axes, group["data"], y_keys, offsets, group.get("color"), auto=colored or "offsets" not in preset,
-                                                y_max=args.y_max)
+            more_labels, more_lines = draw_arms(axes, group["data"], y_keys, offsets, group.get("color"), auto=colored or swap or "offsets" not in preset,
+                                                y_max=args.y_max, swap=swap)
             labels += more_labels
             polylines += more_lines
-            unsteered_offset = offsets.get("unsteered", (10, 9) if not colored and "offsets" in preset else None)
+            unsteered_offset = offsets.get("unsteered", (10, 9) if not colored and not swap and "offsets" in preset else None)
         if args.per_model:
             axes.set_title(f"{first['model']['name']}\nunsteered: {levels(first['data'])}", fontsize=9.6, color=INK, loc="left", pad=8, linespacing=1.35)
         elif not args.overlay:
@@ -605,7 +622,7 @@ def main() -> None:
         axes.set_xlabel(x_label, fontsize=9.5, color=INK2)
         if not shared or axes in grid[:, 0]:
             axes.set_ylabel(y_label, fontsize=9.5, color=INK2)
-        set_x_range(axes, every if shared else [row for group in members for row in group["data"]["arms"].values()], symlog)
+        set_benchmark_range(axes, every if shared else [row for group in members for row in group["data"]["arms"].values()], symlog, swap)
         pending.append((axes, labels, polylines, unsteered_offset))
     figure.tight_layout(rect=(0, foot_height / height, 1, 1 - (head_height + 0.05) / height), w_pad=2.5 if not shared else 1.0, h_pad=2.0)
     for axes, labels, polylines, unsteered_offset in pending:
@@ -614,7 +631,7 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=SURFACE)
-    record = dict(composite=args.composite, y=args.y, y_max=args.y_max, scale=args.scale,
+    record = dict(composite=args.composite, y=args.y, y_max=args.y_max, scale=args.scale, swap_axes=swap,
                   symlog=dict(x=SYMLOG_X, y=SYMLOG_Y[args.y]) if symlog else None, layout="overlay" if args.overlay else "per-model" if args.per_model else "panels", shared_axes=bool(shared),
                   boot_draws=BOOT_DRAWS, boot_seed=BOOT_SEED,
                   groups=[dict(key=g["key"], model=g["model"]["name"], axis=g["axis_key"], title=g["preset"]["title"], drawn=g in drawn,
