@@ -20,6 +20,7 @@ from jaxtyping import Float
 
 from hack_separation import RANDOM_SEED, auroc_with_null, within_problem_auroc
 from selfconcept.correlation.random_vectors import random_directions
+from steer_gfar_lens_extract import VerdictKey
 
 
 class LayerSeparation(TypedDict):
@@ -33,8 +34,8 @@ class LayerSeparation(TypedDict):
 class ResponseMeans(TypedDict):
     means_by_layer: Float[np.ndarray, "layers episodes hidden"]
     record_layers: list[int]
-    verdict_keys: list[str]
-    problem_ids: list[str]
+    verdict_key_by_episode: list[VerdictKey]
+    problem_id_by_episode: list[str]
 
 
 def load_response_means(acts_dir: Path) -> ResponseMeans:
@@ -50,15 +51,15 @@ def load_response_means(acts_dir: Path) -> ResponseMeans:
     return {
         "means_by_layer": np.concatenate([pooled(cache) for cache in caches], axis=1),
         "record_layers": list(caches[0]["record_layers"]),
-        "verdict_keys": [key for cache in caches for key in cache["verdict_key"]],
-        "problem_ids": [example_id for cache in caches for example_id in cache["example_id"]],
+        "verdict_key_by_episode": [key for cache in caches for key in cache["verdict_key"]],
+        "problem_id_by_episode": [example_id for cache in caches for example_id in cache["example_id"]],
     }
 
 
-def layer_separations(means: ResponseMeans, gfar_units: Float[np.ndarray, "layers hidden"], verdicts_by_key: dict[str, str],
+def layer_separations(means: ResponseMeans, gfar_units: Float[np.ndarray, "layers hidden"], verdicts_by_key: dict[VerdictKey, str],
                       from_layer: int, random_count: int) -> list[LayerSeparation]:
-    is_hack = np.array([verdicts_by_key.get(key) == "HACK" for key in means["verdict_keys"]])
-    problem_ids = np.array(means["problem_ids"])
+    is_hack = np.array([verdicts_by_key.get(key) == "HACK" for key in means["verdict_key_by_episode"]])
+    problem_ids = np.array(means["problem_id_by_episode"])
     separations: list[LayerSeparation] = []
     for index, layer in enumerate(means["record_layers"]):
         if layer < from_layer:

@@ -28,7 +28,7 @@ from typing import Any, Literal, NamedTuple, NotRequired, TypedDict
 
 import numpy as np
 import torch
-from jaxtyping import Float, Int8
+from jaxtyping import Float, Int8, Int64
 from torch import Tensor, nn
 from transformers import AutoConfig, AutoTokenizer
 
@@ -56,12 +56,13 @@ Arm = Literal["steered", "steered_gfar_component"]
 ARMS: tuple[Arm, ...] = ("steered", "steered_gfar_component")
 NullMode = Literal["full", "gfar_component"]
 type Projections = Float[Tensor, "layers response_tokens"]
+type VerdictKey = str  # "<run>/seed<N>/<example_id>", the key of the judge's as_judged.json
 
 
 class SeedLens(TypedDict):
     example_id: list[str]
-    verdict_key: list[str]
-    token_offsets: np.ndarray
+    verdict_key: list[VerdictKey]
+    token_offsets: Int64[np.ndarray, "episodes_plus_one"]  # episode i's tokens are [token_offsets[i], token_offsets[i + 1])
     segment: Int8[np.ndarray, "response_tokens"]
     arms: list[Arm]
     unsteered: Projections

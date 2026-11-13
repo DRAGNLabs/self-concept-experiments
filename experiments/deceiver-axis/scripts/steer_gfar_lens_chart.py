@@ -27,10 +27,10 @@ from matplotlib.axes import Axes
 import numpy as np
 import torch
 from torch import Tensor
-from jaxtyping import Bool, Float
+from jaxtyping import Bool, Float, Int64
 
 from selfconcept.measurement.unit_axes import load_unit_axes
-from steer_gfar_lens_extract import load_gfar_units
+from steer_gfar_lens_extract import VerdictKey, load_gfar_units
 
 Group = Literal["combined", "hack", "rest"]
 Condition = Literal["unsteered", "steered"]
@@ -67,8 +67,8 @@ class GroupPercentiles(TypedDict):
 
 class Lens(TypedDict):
     projections_by_condition: dict[Condition, Float[np.ndarray, "layers tokens"]]
-    token_episode: np.ndarray
-    verdict_keys: list[str]
+    episode_index_by_token: Int64[np.ndarray, "tokens"]
+    verdict_key_by_episode: list[VerdictKey]
     steer_layer: int
     alpha: float
 
@@ -81,24 +81,24 @@ def load_lens(lens_dir: Path, arm: Arm) -> Lens:
     return {
         "projections_by_condition": {"unsteered": torch.cat([seed["unsteered"] for seed in seeds], dim=1).numpy(),
                                      "steered": torch.cat([seed[arm] for seed in seeds], dim=1).numpy()},
-        "token_episode": np.concatenate([episode_base + np.repeat(np.arange(len(seed["example_id"])), np.diff(seed["token_offsets"]))
+        "episode_index_by_token": np.concatenate([episode_base + np.repeat(np.arange(len(seed["example_id"])), np.diff(seed["token_offsets"]))
                                          for episode_base, seed in zip(episode_counts, seeds)]),
-        "verdict_keys": [key for seed in seeds for key in seed["verdict_key"]],
+        "verdict_key_by_episode": [key for seed in seeds for key in seed["verdict_key"]],
         "steer_layer": seeds[0]["steer_layer"],
         "alpha": seeds[0]["alpha"],
     }
 
 
-def episode_masks_by_group(verdict_keys: list[str], verdicts_by_key: dict[str, str] | None) -> dict[Group, Bool[np.ndarray, "episodes"]]:
-    everything = np.ones(len(verdict_keys), dtype=bool)
+def episode_masks_by_group(verdict_key_by_episode: list[VerdictKey], verdicts_by_key: dict[VerdictKey, str] | None) -> dict[Group, Bool[np.ndarray, "episodes"]]:
+    everything = np.ones(len(verdict_key_by_episode), dtype=bool)
     if verdicts_by_key is None:
         return {"combined": everything}
-    is_hack = np.array([verdicts_by_key.get(key) == "HACK" for key in verdict_keys])
+    is_hack = np.array([verdicts_by_key.get(key) == "HACK" for key in verdict_key_by_episode])
     return {"combined": everything, "hack": is_hack, "rest": ~is_hack}
 
 
 def group_percentiles(lens: Lens, episode_mask: Bool[np.ndarray, "episodes"]) -> GroupPercentiles:
-    token_mask = episode_mask[lens["token_episode"]]
+    token_mask = episode_mask[lens["episode_index_by_token"]]
     return {
         "episodes": int(episode_mask.sum()),
         "response_tokens": int(token_mask.sum()),
@@ -351,13 +351,13 @@ def main() -> None:
     lens = load_lens(args.lens, "steered")
     verdicts_by_key = json.loads(args.verdicts.read_text()) if args.verdicts else None
     percentiles_by_group: dict[Group, GroupPercentiles] = {group: group_percentiles(lens, mask)
-                            for group, mask in episode_masks_by_group(lens["verdict_keys"], verdicts_by_key).items() if mask.any()}
+                            for group, mask in episode_masks_by_group(lens["verdict_key_by_episode"], verdicts_by_key).items() if mask.any()}
     steer_layer, alpha = lens["steer_layer"], lens["alpha"]
     del lens
     component = None
     if args.component_lens is not None:
         component_lens = load_lens(args.component_lens, "steered_gfar_component")
-        component = group_percentiles(component_lens, np.ones(len(component_lens["verdict_keys"]), dtype=bool))
+        component = group_percentiles(component_lens, np.ones(len(component_lens["verdict_key_by_episode"]), dtype=bool))
         del component_lens
     null = null_medians(args.null_lens, "steered") if args.null_lens is not None else None
     separation = json.loads(args.separation.read_text()) if args.separation is not None else None
