@@ -76,7 +76,7 @@ def _workspace_conversation(example: dict, record: WorkspaceRecord, feedback: ha
     return messages
 
 
-def _conversation(
+def episode_conversation(
     example: dict, record: CheckRecord | WorkspaceRecord, feedback: harness.Feedback
 ) -> list[tuple[Role, str]]:
     if is_check_record(record):
@@ -111,7 +111,7 @@ def dossier_text(
 ) -> str:
     feedback: harness.Feedback = record.get("feedback") or "impossiblebench"
     note = note_path(spec["condition"]["note"], "check" if example["kind"] == "check" else "workspace")
-    conversation = _conversation(example, record, feedback)
+    conversation = episode_conversation(example, record, feedback)
     parts = [
         f"# {dossier_name}",
         f"model: {model_id}",

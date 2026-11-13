@@ -1,15 +1,19 @@
 from selfconcept.common.generation.model_specifics.types import GenerationSpecifics, TemplateWithoutThinkingFlag
 from selfconcept.common.harmony import join_harmony_completion, split_harmony_completion
 from selfconcept.common.hf_strong_types import AllRoles, ConversationTurn, HFTokenizer, configure_call
+from selfconcept.common.teacher_forcing.completion_markup import CompletionMarkup, CompletionMarkupSpecifics
 
-EMPTY_ANALYSIS_PREFILL = "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
+ANALYSIS_OPEN = "<|channel|>analysis<|message|>"
+FINAL_OPEN = "<|channel|>final<|message|>"
+ANALYSIS_CLOSE_FINAL_OPEN = f"<|end|><|start|>assistant{FINAL_OPEN}"
+EMPTY_ANALYSIS_PREFILL = f"{ANALYSIS_OPEN}{ANALYSIS_CLOSE_FINAL_OPEN}"
 
 
 class HarmonyAssistantTurn(ConversationTurn):
     thinking: str
 
 
-class HarmonyGenerationSpecifics(TemplateWithoutThinkingFlag, GenerationSpecifics[AllRoles, HarmonyAssistantTurn]):
+class HarmonyGenerationSpecifics(TemplateWithoutThinkingFlag, GenerationSpecifics[AllRoles, HarmonyAssistantTurn], CompletionMarkupSpecifics):
     skip_special_tokens = False
 
     def direct_answer_prefix_ids(self, tokenizer: HFTokenizer) -> list[int]:
@@ -21,3 +25,6 @@ class HarmonyGenerationSpecifics(TemplateWithoutThinkingFlag, GenerationSpecific
 
     def to_completion(self, assistant_turn: HarmonyAssistantTurn) -> str:
         return join_harmony_completion(assistant_turn["thinking"], assistant_turn["content"])
+
+    def completion_markup(self) -> CompletionMarkup:
+        return CompletionMarkup(ANALYSIS_OPEN, ANALYSIS_CLOSE_FINAL_OPEN, "<|return|>", FINAL_OPEN)
