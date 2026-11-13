@@ -2260,6 +2260,24 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      hack 0.3% (5 / 1728) against 4.7%, −4.5, CI −7.1 to −2.3, raw p 3.5e-06 (× 6 = 2.1e-05); hidden pass −11.0 (CI −15.1 to −6.8),
      no code +3.4: outside the dose rule on hidden pass by 1.0 point. Both expectations met; the fall is reported and not read as an
      effect at kept capability. Hardware read: seed 0 and seeds 6–7 inside the A100 seeds' range on all four columns, no seed named.
+     **Cap p95 complete (written 10:07 PM MST Nov 12, before the set is built or any verdict read):** 16 seeds × 108 = 1,728 episodes.
+     Seed 0 on the B200 (pilot 15264564, 6,562 s); seeds 1–15 on dw A100 pairs (15308030, 15 of 15 done markers, all COMPLETED,
+     7,508–8,679 s, last ended 10:06 pm). No error line in any log, no seed resumed or rerun. Seeds 7 and 15 ran on dw-1-4, the node
+     of the 3:13 pm memory error; seed 7's pair included the card at bus 0A:00.0 that showed 2 uncorrectable memory errors at job
+     start, and both seeds ended with their done marker and no error line. Set `ctl_g09_s0-15` = `gfar_cap_p95_L20-38`, same frozen
+     chain (copied from `verdicts_ctl_g07_s0-15` by sed). This is the sixth of six contrasts, so the read is the family read:
+     `analysis_gfar6` = four doses + both rungs against Koby's B200 unsteered arm, **Holm over 6**, which replaces the interim
+     p × 6 values of the five earlier reads (the point estimates, CIs and raw p of those five do not change; they are re-read from the
+     new files, and any contrast whose adjusted p ends on the other side of 0.05 from its interim p × 6 is named). Dose rule on the
+     Nov 11 measure: hidden pass over all episodes and no code, each within 10 points of unsteered. **Expected** (as written
+     Nov 11): judged hacking between p75's 0.3% and unsteered's 4.7%; the arm near the edge of the dose rule (the pilot seed lost
+     9.5 points of hidden pass among non-proxy episodes), side not predicted. A fall is reported as a lowering of hacking at kept
+     capability only if its Holm-adjusted contrast excludes zero and the arm is inside the rule; outside the rule it is reported and
+     not read that way. The rung moves 11.3–13.3% of prompt and 3.6–6.1% of generated positions. *Hardware read, descriptive:*
+     per-seed hidden pass, no code, automatic proxy and judged rate for seed 0 (B200) against the 15 A100-pair seeds; one seed
+     cannot be tested, so the read is whether seed 0 falls inside the A100 seeds' range on each column, and seeds 7 and 15 (dw-1-4)
+     are looked at the same way; a seed outside the range is named with the result. The contrast against Koby's B200 unsteered arm
+     is across hardware for 15 of 16 seeds and is stated as a limit. Chart: four doses and both rungs, new file name.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
