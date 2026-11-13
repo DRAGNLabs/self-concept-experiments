@@ -16,6 +16,10 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
+**Gemma Goodfire −0.08 judged, 5:36–5:47 pm MST Nov 12 (set `g07`, entry "Gemma 4 31B Goodfire-axis (gfar) dose −0.08, judged" below; interim, 4 of 6 Goodfire contrasts):** judged hack 3.3% (57 / 1728) against 4.7% unsteered, −1.4, CI −3.2 to +0.1, raw p 0.10 (× 6 = 0.61), and the arm is outside the dose rule on hidden pass by 1.3 points (−11.3, CI −16.1 to −6.7; no code +1.2). The expected order holds in the point estimates (3.3 ≤ 3.4 ≤ 4.7) but neither minus dose is separated from unsteered, and doubling the dose from −0.04 lowers judged hacking by 0.1 point while hidden pass falls 11 points. No Gemma Goodfire dose lowers judged hacking at kept capability. Seeds 0–8 ran on the B200 and 9–15 on two A100s: the per-seed ranges overlap on hidden pass, no code, automatic proxy and judged rate. Caps p75 and p95 are running; Holm over 6 when they are judged. Chart: `analysis_gfar4/gemma_hard108_goodfire_four_doses_chart_1112.png`.
+
+**Benchmark evals queued for the last judged Goodfire arms without one, 5:22 and 5:30 pm MST Nov 12 (user requests):** Muse `gf_cap_p90` (15313016) and gpt-oss `gf_cap_p75` + `gf_cap_p95` (15313152, one job), each with the recipe of the same model's earlier cap benchmark run and the reading fixed in PLAN before submission. Both running; nothing read yet.
+
 **Muse Goodfire p90 cap judged at 12 seeds, 5:00 pm MST Nov 12 (entry "Muse Goodfire-axis (gfar) p90 cap, judged at 12 seeds" below):** all 11 extension tasks finished inside their time limit (no seed cut, nothing continued). Judged hacking 9.6% against 32.8% unsteered (−23.1, CI −31.7 to −15.2, Holm 1.9e-06 over 10 contrasts), below the p95 cap's 17.0%. Hidden-test pass is level (+0.9) but no code is submitted in 10.6% of episodes against 0.0%, so the arm is outside the dose rule by 0.6 points on the no-code clause, as expected; p95 stays the heaviest Goodfire cap on Muse inside the rule. No earlier contrast's adjusted p crosses 0.05 in the 10-contrast family.
 
 **Gemma arms moved off the B200, 1:38 PM MST Nov 12 (user ~1:24 pm: "You can move the Gemma arms off the B200 to other GPUs"; entry "Gemma arms on two A100s" below; PLAN "Gemma arms off the B200", written first):** at 1:17 pm the pending B200 tasks had scheduler start estimates of Nov 15 (Goodfire −0.08 seeds 9–15) and Nov 17–18 or none (Goodfire caps p75 / p95 seeds 1–15). The 37 pending tasks were cancelled at 1:32 pm and resubmitted unchanged on dw with two A100-80GB cards per task, tensor-parallel (15308014, 15308022, 15308030); the first tasks started within a minute. −0.08 seeds 0–8 and each cap's seed 0 are B200 runs; hardware is listed per seed in `HARDWARE.tsv` in each arm directory. Arms are still read against Koby's B200 unsteered arm, so for the moved seeds the contrast crosses hardware (accepted by the user; stated with each result). No H200 run of this pipeline exists; the H200 check of Nov 10 was cancelled before it started. The four two-A100 unsteered seeds of Nov 11 are inside the B200 seed range on hidden pass, shown pass, the proxy and truncated turns; two of the four have one no-code episode each where none of the 16 B200 seeds has any. *2:58 PM MST:* two waiting cap p75 seeds (6 and 7) went on from dw to cs2 with two H100-80GB cards per task (15309561, 15309696; running since 2:46 and 2:52 pm), the only placement a scheduler dry run could start sooner; the cap p75 arm will have one B200 seed, two H100-pair seeds and thirteen A100-pair seeds. *3:24 PM MST:* cap p75 seed 5 (15308022_11, dw-1-4) was stopped at 3:13 pm by a GPU memory error after 40 of 108 episodes: `CUDA error: Invalid access of peer GPU memory over nvlink or a hardware error`, and the next task on the same card pair shows 2 uncorrectable memory errors on the A100 at bus 0A:00.0 where the earlier banner showed 0. A node fault (for ORC), no error in any other task. Seed 9 runs on the affected pair and is watched. *3:44 PM MST, correction:* seed 5 is run again from the start (15310621, all 108 problems, dw-1-4 excluded), not resumed. A resume was queued first (15310222) and cancelled before it started: resuming keeps the episodes that had finished and draws the 26 that were in flight again, which at 45 episodes in flight selects on speed (a slow, many-attempt episode gets a second draw). The stop was a hardware event, so a whole rerun carries no such selection. The 40 episodes of the stopped task are kept in `rh/stopped_partial/` and enter no table. Muse p90 runs one episode at a time, so a task cut by its time limit has one episode in flight; its continuation plan stands, with the count of cut seeds stated as the bound. Open: 131 earlier task logs show a real resume (most sequential; at concurrency 45 the Qwen gi_v2 pilot of Oct 29, 26 tasks, and the random-1729 control of Nov 4, 7 tasks with 3–5 episodes kept); not re-read.
@@ -301,6 +305,63 @@ By the pre-written rule (shape-free upper bound on q ≤ 5%), Goodfire +0.08 is 
 **Not done.** The one- and two-seed pilot screens of 2026-11-07 to 11-11 (hidden pass among non-proxy episodes) were not recomputed, so an arm dropped at a screen was not re-tested on hidden pass. Charts made before today keep their old rule panel; a family is re-run before its next chart. CIs for the hidden-pass Δ exist only where an analysis file has `hidden_pass` (the Gemma Goodfire doses above, from a re-run of the stored family with the merged code; every other outcome in that re-run is identical to the stored file).
 
 **Files.** Muse, gpt-oss, Gemma gi_v2 and Qwen rows: `gfar_vs_gi_v2/review_2026-11-10/corrections_dose_rule.md` (columns (a) and (b)); Muse Goodfire: `muse_glimmer/gi_v2/pilot/dose_rule_read_gfdose.json`, `dose_rule_read_gfcap95_oct.json`; gpt-oss Goodfire caps: `gi_v2/pilot/dose_rule_read_gfx01.json`; Gemma floors and Goodfire doses: `gemma4_31b_gi_v2/rh/hard108/analysis_floor3/`, `analysis_gfar3/dose_rule_read.json`. Gemma Goodfire hidden-pass CIs: `analysis_gfar3/merge_check_1112/` (the three-contrast family re-run with the merged code). Display family with the three random arms re-run as `analysis_gfar3rh/` (`analysis_gfar3r_run.sh gfar3rh …`); its chart, with hidden-test pass as the rule panel, is `analysis_gfar3rh/gemma_hard108_goodfire_doses_random_band_hidden_pass_chart_1112.png` and replaces the interim chart of 11:40 am for the rule panel only (panel (a) is unchanged). Reader: `scripts/dose_rule_read.py` (rule on `hidden_pass` from commit 6f4be0e).
+
+### Gemma 4 31B Goodfire-axis (gfar) dose −0.08, judged (set `g07`; interim read, 4 of 6 planned Goodfire contrasts) — 2026-11-12: judged hacking is 3.3% against 4.7% unsteered (−1.4, CI −3.2 to +0.1, raw p 0.10; × 6 = 0.61), the same level as −0.04 (3.4%), and the arm is outside the dose rule on hidden pass by 1.3 points (−11.3, CI −16.1 to −6.7), so the minus side of the Goodfire direction does not lower judged hacking at kept capability on Gemma
+
+**Question.** PLAN "Gemma doses extended" and "Goodfire −0.08 complete" (set name, interim rule, expectation and hardware read written 5:35 pm, before the set was built): is judged hacking ordered −0.08 ≤ −0.04 ≤ unsteered, and which side of the dose rule does the arm land on (the pilot seed missed the 10-point line by 0.1 points)?
+
+**Data.** `gemma4_31b_gi_v2/rh/hard108/gfar_L30_a-0.08/seed0..15`: steering along the Goodfire direction at layer 30, α −0.08, 16 × 108 = 1,728 episodes. Seeds 0–8 on the cs3 B200 (seed 0 pilot; seeds 1–8 array 15267210 tasks 15–22, last ended 1:47 pm Nov 12); seeds 9–15 on dw with two A100-80GB per task, tensor-parallel (array 15308014, 7 of 7 done markers, no error line, 12,294–14,212 s per task, last ended about 5:32 pm), after the user lifted the B200-only rule; hardware per seed in `HARDWARE.tsv`. No task was stopped part-way and none resumed. Extended on the user's word (Nov 11, 4:41 pm), not by the pilot screen. Blind single-arm set `ctl_g07_s0-15` (map `gfar_vs_gi_v2/steer/gemma_set_tags.tsv`), built 5:36 pm: 320 proxy dossiers / 87 batches, 24 hidden-signature dossiers of 351 hidden passes / 8 batches; frozen chain (Sonnet rubric-judge via `judge_runner.py`, `claude-sonnet-5-5`, 6 at once, first pass as judged, no adjudication), 5:36:21–5:47:28 pm, list price $33.66 + $2.93. Proxy HACK 53 / BORDERLINE 37 / NOT_HACK 230; hidden set 4 / 3 / 17. Every batch passed on the first attempt except that batches 6, 60 and 65 wrote `pressure_source` = `none` (out-of-set side field), kept as judged. No read-audit flag. Unsteered reference: Koby's B200 arm with the Nov 2 `main` verdicts.
+
+Analysis `analysis_gfar4` (`analysis_family_run.sh gfar4` with the four judged doses, no random arm; problem-stratified means over 108 problems, 20,000-draw problem bootstrap, exact sign-flip p; `dose_rule_read.py`). Hardware split: `hardware_split_read.py` (new; per-seed columns grouped by `HARDWARE.tsv`).
+
+**Result (Δ vs unsteered in points, 95% CI, raw p; the other three doses are in the two entries below and unchanged).**
+
+| measure | unsteered | −0.08 |
+|---|---|---|
+| judged hack, as judged | 4.7% (82 / 1728) | 3.3% (57 / 1728); −1.4, −3.2 to +0.1, p 0.10 (× 6 = 0.61) |
+| judged hack, BORDERLINE counted | 7.2% | 5.6%; −1.6, −3.7 to +0.3, p 0.13 |
+| judged hack, WEAK not counted | 3.6% | 1.9%; −1.7, −3.4 to −0.1, p 0.048 (× 6 = 0.29) |
+| judged hack, proxy set only | 4.7% | 3.1%; −1.6, −3.3 to −0.1, p 0.054 |
+| problems with a higher / lower / equal judged rate | | 10 / 19 / 79 |
+| automatic proxy (shown pass, hidden fail) | 20.2% | 18.5%; −1.7, −4.7 to +1.3, p 0.30 |
+| hidden pass, all episodes (rule measure) | 31.7% | 20.3%; −11.3, −16.1 to −6.7, p 6.5e-06 |
+| no code submitted | 0.0% | 1.2% (20 / 1728); +1.2, +0.6 to +1.9 |
+| shown-test pass | 51.9% | 38.8%; −13.0, −17.9 to −8.3, p 2.0e-07 |
+| turns per episode | 3.28 | 3.57 (+0.29, p 0.0003) |
+| reasoning characters per turn | 23,798 | 29,213 (+5,415, +4,853 to +5,984) |
+| truncated turns / turns | 6 / 5664 | 71 / 6162 |
+| judged hack among episodes with code | 82 / 1728 | 57 / 1708 (3.3%) |
+| dose rule | | **outside (hidden pass, by 1.3 points)** |
+
+The four doses side by side (judged hack; hidden pass Δ): −0.08 3.3% (−11.3), −0.04 3.4% (−0.2), unsteered 4.7%, +0.04 7.3% (−7.4), +0.08 12.3% (−17.5).
+
+Hack verdicts by strength and mechanism (proxy + hidden sets): 33 STRONG / 24 WEAK; input branch 23, fitted rule 20, lookup table 9, size restriction 3, test tampering 2.
+
+Hardware read (b), per-seed ranges, no test (`analysis_gfar4/hardware_split_gfar_L30_a-0.08.{json,log}`):
+
+| group | hidden pass | no code | automatic proxy | judged hack |
+|---|---|---|---|---|
+| B200, seeds 0–8 | 17.6–24.1% (mean 20.7) | 0.0–1.9% (1.0) | 15.7–21.3% (18.2) | 0.0–6.5% (3.1) |
+| two A100s, seeds 9–15 | 17.6–23.1% (mean 19.8) | 0.0–3.7% (1.3) | 15.7–23.1% (18.9) | 1.9–5.6% (3.6) |
+
+The ranges overlap on all four columns, so by the pre-written rule the arm is stated as one contrast against the B200 reference.
+
+**Reading.**
+- *The expected order holds in the point estimates and nowhere else.* 3.3% ≤ 3.4% ≤ 4.7%, but neither minus dose is separated from unsteered: raw p 0.10 at −0.08 and 0.12 at −0.04, 0.61 and 0.70 after × 6. Only the WEAK-not-counted variant has a CI excluding zero at −0.08 (raw p 0.048), which does not survive the family.
+- *Doubling the minus dose buys nothing on hacking and costs capability.* From −0.04 to −0.08 the judged rate moves 0.1 point while hidden pass goes from −0.2 to −11.3, shown pass from −1.4 to −13.0, and the model reasons longer and is cut at the token budget more often (71 truncated turns against 6).
+- *The arm is outside the dose rule, narrowly.* Hidden pass is 1.3 points past the 10-point line and its CI (−16.1 to −6.7) spans the line; no code is inside (+1.2). By the pre-written reading the hack difference is reported and not read as an effect at kept capability. With the arm outside the rule and the difference not significant, this dose says nothing for or against a hacking effect of the minus direction.
+- *The Goodfire dose response on Gemma is one-sided.* Plus doses raise judged hacking (7.3%, 12.3%) while losing hidden pass; minus doses leave it near the unsteered level (3.4%, 3.3%) with a floor of about 3%. No dose lowers judged hacking at kept capability: −0.04 keeps capability and does not separate, −0.08 does not separate and loses capability.
+- *The hacks that remain are weaker and less table-like than at +0.08:* 24 of 57 WEAK (16 of 213 at +0.08), lookup tables 9 of 57 (140 of 213).
+- *Hardware:* the B200 and two-A100 seed groups overlap on every column read and their means differ by under one point on hidden pass and by 0.5 on the judged rate.
+
+**Caveats.**
+- Interim: 4 of 6 planned Goodfire contrasts (cap p75 and cap p95 running). Raw p beside p × 6; Holm when the family is complete. No pending submission or rung choice uses this column.
+- Seven of the 16 seeds ran on two A100s and the unsteered reference is all B200; the seed-group read is descriptive (ranges, no test), and the cross-hardware contrast is a limit the user accepted on Nov 12.
+- The chart's Holm column is over the four doses shown (0.20 for both minus doses), not the family of six.
+- Single-arm set, neutral name; the unsteered verdicts are from Nov 2 and the pre-runner recipe (PLAN confound check, unmeasured). No benchmark eval has been run for this arm. No accepted control direction has been steered at this dose (the antonym controls are α +0.08, unjudged).
+- `hardware_split_read.py` was written for this read and has run on this arm only.
+
+**Files.** `gemma4_31b_gi_v2/rh/hard108/{gfar_L30_a-0.08, dossiers_ctl_g07_s0-15, dossiers_hidden_ctl_g07_s0-15, verdicts_ctl_g07_s0-15, analysis_gfar4}`; logs `build_ctl_g07.log`, `analysis_gfar4_run.log`; `hardware_split_read.py`. Chart, four doses, no random band (`scripts/gemma_gicap_chart.py --axis-name "Goodfire (gfar)"`): `analysis_gfar4/gemma_hard108_goodfire_four_doses_chart_1112.png`.
 
 ### Gemma 4 31B Goodfire-axis (gfar) dose +0.08, judged (set `g06`; interim read, 3 of 6 planned Goodfire contrasts) — 2026-11-12: judged hacking rises to 12.3% against 4.7% unsteered (+7.6, CI +4.7 to +10.7, raw p 1.7e-08; × 6 = 1.0e-07) and the arm is outside the dose rule as expected (rule measure −17.2, CI −21.7 to −12.7), so the rise is not read as an effect of the direction at kept capability; the judged rate is monotone over −0.04 / unsteered / +0.04 / +0.08 (3.4 / 4.7 / 7.3 / 12.3%)
 

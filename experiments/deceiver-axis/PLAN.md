@@ -1955,6 +1955,13 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   before the arm is stated as a contrast against the B200 reference. The cross-hardware contrast for seeds 9–15 is stated as a limit
   either way. Chart: the four doses without the isotropic random band (Koby, Nov 12). No pending submission, extension or rung choice
   depends on this column.
+  **Result (judged 5:36–5:47 pm MST Nov 12; FINDINGS "Gemma 4 31B Goodfire-axis (gfar) dose −0.08, judged"; `analysis_gfar4`):** judged
+  hack 3.3% (57 / 1728), −1.4, CI −3.2 to +0.1, raw p 0.10 (× 6 = 0.61), 10 problems up / 19 down; outside the dose rule on hidden
+  pass by 1.3 points (−11.3, CI −16.1 to −6.7; no code +1.2). The order holds in the point estimates (3.3 ≤ 3.4 ≤ 4.7), not past the
+  CIs; outside the rule, so reported and not read as an effect at kept capability. Four doses: 3.3 / 3.4 / 4.7 / 7.3 / 12.3%. Hardware
+  read (b): B200 seeds 0–8 and two-A100 seeds 9–15 overlap on all four columns (hidden pass 17.6–24.1 / 17.6–23.1, no code 0.0–1.9 /
+  0.0–3.7, proxy 15.7–21.3 / 15.7–23.1, judged 0.0–6.5 / 1.9–5.6), so nothing is put to the user on hardware. Chart
+  `analysis_gfar4/gemma_hard108_goodfire_four_doses_chart_1112.png`. Remaining in the family: caps p75 and p95.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
