@@ -24,6 +24,11 @@ of the ratio (both rates redrawn). A model whose unsteered rate is zero has no r
 --y-max sets the top of the y axis: an arm above it is not drawn as a marker, its line leaves through the top of the frame and
 its label at the top edge carries the value.
 
+--scale symlog draws both axes on a symmetric log scale (differences cross zero, so a plain log axis is not available): linear
+within 0.5 benchmark points / 1 hack-rate point (10 with --y relative) of unsteered, logarithmic beyond, ticks on a 1-2-5 ladder.
+It spreads the arms near the origin and pulls in the far ones; distances from the origin, slopes and error-bar lengths are then
+no longer comparable across the plot.
+
 Error bars are 95% CIs of the difference: vertical = the problem-level paired bootstrap CI of the analysis file
 (`contrasts[arm].ci95`); horizontal = an item-paired bootstrap of the composite (items resampled within each benchmark, the
 same draw for arm and unsteered, 10,000 draws, fixed seed). An arm on which the model stops submitting code (share of episodes
@@ -63,6 +68,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import to_rgb
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
 
 N = Path.home() / "nobackup/autodelete/self-concept-experiments/schemer-axis"
 TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
@@ -393,8 +399,24 @@ def style_axes(axes: Axes) -> None:
     axes.tick_params(colors=MUTED, labelsize=8.5, labelleft=True)
 
 
-def set_x_range(axes: Axes, rows: list[dict]) -> None:
-    axes.set_xlim(min(min(row["diff_ci"][0] for row in rows), 0) - 0.4, max(max(row["diff_ci"][1] for row in rows), 0) + 0.4)
+def set_x_range(axes: Axes, rows: list[dict], symlog: bool = False) -> None:
+    low, high = min(min(row["diff_ci"][0] for row in rows), 0), max(max(row["diff_ci"][1] for row in rows), 0)
+    axes.set_xlim(*((1.12 * low - 0.15, 1.12 * high + 0.15) if symlog else (low - 0.4, high + 0.4)))
+
+
+# --scale symlog: linear within +-threshold, logarithmic beyond; ticks on a 1-2-5 ladder. Differences cross zero, so a plain log
+# axis is not available. Thresholds: benchmark change 0.5 points; hack-rate change 1 point (10 with --y relative, in % of unsteered).
+# `linscale`: length of the linear stretch (0 to the threshold) in decades; the y stretch is kept short, it holds few arms.
+SYMLOG_X = dict(linthresh=0.5, linscale=1.0, ticks=(0.5, 1, 2, 5, 10, 20))
+SYMLOG_Y = {"points": dict(linthresh=1.0, linscale=0.45, ticks=(1, 2, 5, 10, 20, 50, 100)),
+            "relative": dict(linthresh=10.0, linscale=0.45, ticks=(10, 20, 50, 100, 200, 500))}
+
+
+def symlog_axis(axis, linthresh: float, linscale: float, ticks: tuple[float, ...]) -> None:
+    (axis.axes.set_xscale if axis.axis_name == "x" else axis.axes.set_yscale)("symlog", linthresh=linthresh, linscale=linscale)
+    axis.set_major_locator(FixedLocator([-t for t in reversed(ticks)] + [0] + list(ticks)))
+    axis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}".replace("-", "−")))
+    axis.set_minor_locator(NullLocator())
 
 
 def finish_panel(axes: Axes, labels: list[dict], polylines: list, unsteered_offset: tuple[int, int] | None, y_max: float | None) -> None:
@@ -429,6 +451,7 @@ def footnote(groups: list[dict], score_name: str, relative: bool, multi_model: b
     return "\n".join(lines + ([" ".join(notes)] if notes else []))
 
 
+COUNT_WORDS = {2: "two", 3: "three", 4: "four"}
 OVERLAY_KIND_NAMES = {"steering": "steering (add α · layer norm)", "cap": "cap (clamp from above)", "floor": "floor (clamp from below)"}
 DASHES = (0, (3.2, 2.2))
 
@@ -475,6 +498,8 @@ def main() -> None:
     parser.add_argument("--composite", choices=sorted(COMPOSITES), default="pooled")
     parser.add_argument("--y", choices=sorted(Y_KEYS), default="points", help="judged hack rate: change in points, or as %% of the unsteered rate")
     parser.add_argument("--y-max", type=float, help="top of the y axis; an arm above it is named at the top edge with its value")
+    parser.add_argument("--scale", choices=("linear", "symlog"), default="linear",
+                        help="symlog: both axes linear near zero (within 0.5 benchmark points / 1 hack-rate point) and logarithmic beyond")
     parser.add_argument("--overlay", action="store_true", help="all (model, axis) pairs on one set of axes, colour = pair")
     parser.add_argument("--per-model", action="store_true", help="one panel per model with its axes overlaid, colour = axis")
     parser.add_argument("--shared-axes", action="store_true", help="panel layout: one x and y range for all panels (default: own range per panel)")
@@ -497,6 +522,10 @@ def main() -> None:
     y_label = ("Change in judged hack rate, % of the unsteered rate (−100 = none left; lower = better)" if relative
                else "Δ judged hack rate vs unsteered, points (lower = better)")
     x_label = "Δ benchmark score vs unsteered, points (higher = better)"
+    symlog = args.scale == "symlog"
+    if symlog:
+        x_label += f"; log scale beyond ±{SYMLOG_X['linthresh']:g}"
+        y_label += f"; log scale beyond ±{SYMLOG_Y[args.y]['linthresh']:g}"
     label_text = "Labels: steering dose α (in layer norms) or clamp threshold (percentile of the unsteered projection)."
     what = "relative change in judged reward hacking" if relative else "change in judged reward hacking"
     levels = lambda data: f"judged hack rate {data['unsteered']['hack']:.1f}%, benchmark score {data['unsteered']['composite']:.1f}%"
@@ -512,7 +541,7 @@ def main() -> None:
             raise SystemExit(f"--overlay draws at most {len(GROUP_COLORS)} pairs (validated colours); use the panel layout")
         panel_groups = [drawn]
         width, panel_height, columns = 10.0, 7.6, 1
-        title = (f"{axis_names} on {len(drawn)} models: {what} against change in benchmark score" if multi_model
+        title = (f"{axis_names} on {COUNT_WORDS.get(len(drawn), len(drawn))} models: {what} against change in benchmark score" if multi_model
                  else f"{models}, {len(drawn)} steering directions: {what} against change in benchmark score")
         for group, color in zip(drawn, GROUP_COLORS):
             group["color"] = color
@@ -526,7 +555,7 @@ def main() -> None:
         panel_groups = [[g for g in drawn if g["model_key"] == key] for key in dict.fromkeys(g["model_key"] for g in drawn)]
         columns = len(panel_groups) if len(panel_groups) <= 2 else 2
         width, panel_height = 7.4 * columns, 6.5
-        on = models if len(panel_groups) <= 2 else f"{('three', 'four')[len(panel_groups) - 3] if len(panel_groups) <= 4 else len(panel_groups)} models"
+        on = models if len(panel_groups) <= 2 else f"{COUNT_WORDS.get(len(panel_groups), len(panel_groups))} models"
         title = f"{axis_names} on {on}: {what} against change in benchmark score"
         group_handles = [Line2D([], [], color=palette[key], marker="o", linewidth=2, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5,
                                 label=AXIS_NAMES[key]) for key in args.axes if any(g["axis_key"] == key for g in drawn)]
@@ -554,6 +583,9 @@ def main() -> None:
         axes.set_visible(False)
     for axes, members in zip(panels, panel_groups):
         style_axes(axes)
+        if symlog:
+            symlog_axis(axes.xaxis, **SYMLOG_X)
+            symlog_axis(axes.yaxis, **SYMLOG_Y[args.y])
         first = members[0]
         labels, polylines, unsteered_offset = [], [], None
         for group in members:
@@ -573,7 +605,7 @@ def main() -> None:
         axes.set_xlabel(x_label, fontsize=9.5, color=INK2)
         if not shared or axes in grid[:, 0]:
             axes.set_ylabel(y_label, fontsize=9.5, color=INK2)
-        set_x_range(axes, every if shared else [row for group in members for row in group["data"]["arms"].values()])
+        set_x_range(axes, every if shared else [row for group in members for row in group["data"]["arms"].values()], symlog)
         pending.append((axes, labels, polylines, unsteered_offset))
     figure.tight_layout(rect=(0, foot_height / height, 1, 1 - (head_height + 0.05) / height), w_pad=2.5 if not shared else 1.0, h_pad=2.0)
     for axes, labels, polylines, unsteered_offset in pending:
@@ -582,7 +614,8 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=SURFACE)
-    record = dict(composite=args.composite, y=args.y, y_max=args.y_max, layout="overlay" if args.overlay else "per-model" if args.per_model else "panels", shared_axes=bool(shared),
+    record = dict(composite=args.composite, y=args.y, y_max=args.y_max, scale=args.scale,
+                  symlog=dict(x=SYMLOG_X, y=SYMLOG_Y[args.y]) if symlog else None, layout="overlay" if args.overlay else "per-model" if args.per_model else "panels", shared_axes=bool(shared),
                   boot_draws=BOOT_DRAWS, boot_seed=BOOT_SEED,
                   groups=[dict(key=g["key"], model=g["model"]["name"], axis=g["axis_key"], title=g["preset"]["title"], drawn=g in drawn,
                                color=g.get("color"), **g["data"]) for g in groups])
