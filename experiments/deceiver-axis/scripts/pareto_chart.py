@@ -34,8 +34,9 @@ that avoids markers, lines and the labels already placed (`place_labels`; always
 y range (user 2026-11-13); --shared-axes shares both across the panels.
 
 An arm of the analysis file with no benchmark run is left out, printed and named in the footnote (2026-11-13: the Goodfire p25
-cap on Muse and on Qwen; those runs are queued by Koby). Analysis arm names of the Gemma / Qwen sets (`gfar_L30_a-0.04`,
-`gfar_cap_p75_L20-38`) are mapped to the benchmark-run names (`gf_m0.04`, `gf_cap_p75`).
+cap on Muse and on Qwen, and gi_v2 ±0.16 and the three gi_v2 floors on Gemma; those runs are queued by Koby). Analysis arm
+names of the Gemma / Qwen sets (`L30_a-0.04`, `cap_p25_L20-38`, `gfar_L30_a-0.04`, `gfar_cap_p75_L20-38`) are mapped to the
+benchmark-run names (`gi_m0.04`, `gi_cap_p25`, `gf_m0.04`, `gf_cap_p75`).
 
 Writes <out>.png, <out>.pdf and <out>.json (every plotted number).
 
@@ -93,26 +94,33 @@ MODELS = {
                                     "gf_m0.1": (-10, 3)})}),
     "muse": dict(
         name="Muse-Glimmer-30B", task_set="45 problems × 12 seeds", capeval=N / "muse_glimmer/gi_v2/capeval",
-        axes={"gfar": dict(title="Goodfire reward-hacking axis (layer 26; clamps on layers 17–33)", prefix="gf_",
+        axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 26; clamps on layers 17–33)", prefix="gi_",
+                            analysis=N / "muse_glimmer/gi_v2/pilot/analysis_floorladder_all_as_judged.json"),
+              "gfar": dict(title="Goodfire reward-hacking axis (layer 26; clamps on layers 17–33)", prefix="gf_",
                            analysis=N / "muse_glimmer/gi_v2/pilot/analysis_ctl_m01_s0-11_all_as_judged.json")}),
     "gemma": dict(
         name="Gemma 4 31B", task_set="108 problems × 16 seeds", capeval=N / "gemma4_31b_gi_v2/capeval",
-        axes={"gfar": dict(title="Goodfire reward-hacking axis (layer 30; clamps on layers 20–38)", prefix="gf_",
+        axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 30; clamps on layers 20–38)", prefix="gi_",
+                            analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_capfloor15/analysis_all_as_judged.json"),
+              "gfar": dict(title="Goodfire reward-hacking axis (layer 30; clamps on layers 20–38)", prefix="gf_",
                            analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_gfar6/analysis_all_as_judged.json")}),
     "qwen": dict(
         name="Qwen3.8-27B", task_set="61 problems × 12 seeds", capeval=N / "qwen38_27b_gi_v2/capeval",
-        axes={"gfar": dict(title="Goodfire reward-hacking axis (layer 32; clamps on layers 22–42)", prefix="gf_",
+        axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 32; clamps on layers 22–42)", prefix="gi_",
+                            analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_floor/analysis_all_as_judged.json"),
+              "gfar": dict(title="Goodfire reward-hacking axis (layer 32; clamps on layers 22–42)", prefix="gf_",
                            analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gfar_gfdose/analysis_all_as_judged.json")}),
 }
 AXIS_NAMES = {"gi_v2": "gi_v2 persona-contrast vector", "gfar": "Goodfire reward-hacking axis"}
 
 
 def canonical(arm: str) -> str:
-    """Benchmark-run name of an analysis arm: gfar_L30_a-0.04 -> gf_m0.04, gfar_cap_p75_L20-38 -> gf_cap_p75; others unchanged."""
-    if match := re.fullmatch(r"gfar_L\d+_a(-?)(\d*\.\d+)", arm):
-        return f"gf_{'m' if match.group(1) else 'p'}{match.group(2)}"
-    if match := re.fullmatch(r"gfar_(cap|floor)_p(\d+)_L\d+-\d+", arm):
-        return f"gf_{match.group(1)}_p{match.group(2)}"
+    """Benchmark-run name of an analysis arm of the Gemma / Qwen sets: L30_a-0.04 -> gi_m0.04, cap_p25_L20-38 -> gi_cap_p25,
+    gfar_L30_a-0.04 -> gf_m0.04, gfar_cap_p75_L20-38 -> gf_cap_p75; others (random-direction arms included) unchanged."""
+    if match := re.fullmatch(r"(gfar_)?L\d+_a(-?)(\d*\.\d+)", arm):
+        return f"{'gf' if match.group(1) else 'gi'}_{'m' if match.group(2) else 'p'}{match.group(3)}"
+    if match := re.fullmatch(r"(gfar_)?(cap|floor)_p(\d+)_L\d+-\d+", arm):
+        return f"{'gf' if match.group(1) else 'gi'}_{match.group(2)}_p{match.group(3)}"
     return arm
 
 
