@@ -24,11 +24,7 @@ set -euo pipefail
 #          [NULL_DIRECTIONS="name=path ..." TOKEN_STRIDE=<k> NULL_MODE=<full|gfar_component>]
 #   sbatch --array=0-3 --export=ALL [-p cs2] experiments/deceiver-axis/slurm/steer_gfar_lens.sbatch
 
-export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
-export OPENSSL_CONF=/dev/null
-export TIKTOKEN_RS_CACHE_DIR="$HOME/nobackup/autodelete/self-concept-experiments/tiktoken-rs-cache"
+source ../../compute_node_env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export SOO_CHAT_KWARGS="${CHAT_KWARGS:?set CHAT_KWARGS to the chat-template kwargs of the run as JSON}"
 SEEDS="${SEEDS:?set SEEDS}"
