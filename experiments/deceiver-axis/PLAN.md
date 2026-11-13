@@ -2019,6 +2019,9 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   is not the task-set case where a resumed seed keeps quick episodes and redraws slow ones: benchmark items are single-turn, each has
   its own sampling seed, records are written per whole batch, and the batch in flight at the cut is discarded and run again in full,
   so no item is selected on its speed. The continuation's hardware is added to `HARDWARE.tsv` and the cut is stated with the result.
+  **Result (read 9:24 PM MST Nov 12, all four arms done, none cut; FINDINGS "Benchmarks for the four Gemma Goodfire doses"):** all
+  four doses keep all four benchmarks, as expected. Largest loss −0.08 on MMLU-Pro, −1.3 (CI −2.4 to −0.1), within 2 points; every
+  other Δ has a CI covering zero. No dose-rule status changes; −0.08 and +0.08 are outside on the task set and clean on the benchmarks.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
