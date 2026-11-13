@@ -2090,6 +2090,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      +0.0 / +2.3), and both are inside the dose rule on the task set (hidden pass over all episodes +3.5 / +2.4, no code
      −6.7 / −6.9). p95 is at the unsteered judged rate, so its benchmark row says nothing about a cost of the effect; it is run
      to complete the set. No further rung or arm is added or dropped on the outcome.
+     *Submitted 5:30 pm MST Nov 12: job 15313152* (`schemer-capeval-gfcap7595-gptoss`, array 0, `ARMS_PER_TASK=2`; `-p cs,cs2 --qos cs`,
+     one untyped 80 GB GPU, `--mem-per-cpu=9G`, 1 h, no requeue, `--exclude=cs-2-1`; picker rows 1–2; dry-run start estimate
+     7:07 pm on cs-1-4). Arms file built by `gfar_vs_gi_v2/steer/build_gfar_capeval_arms_1112_gptoss.py`: thresholds equal in 12
+     of 12 RH seeds for each rung.
   2. *Gemma: one-seed pilots at p25 / p50 / p75 / p95 before any 16-seed arm.* p25 was outside the rule on the three
      other models and broke two, and the share of positions moved does not transfer between models (gpt-oss usable
      at 56% of generated positions, Muse broken at 28%). The queued 16-seed p25 arm 15216111 (never started) is
