@@ -24,7 +24,7 @@ import time
 from collections.abc import Callable
 from contextlib import nullcontext
 from pathlib import Path
-from typing import Any, Literal, NotRequired, TypedDict
+from typing import Any, Literal, NamedTuple, NotRequired, TypedDict
 
 import numpy as np
 import torch
@@ -131,26 +131,49 @@ def steering_coefficient(layer_norms_path: Path, layer: int, alpha: float) -> fl
     return alpha * float(layer_norms[layer])
 
 
-def response_projections(model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], ids: list[int],
-                         response_mask: torch.Tensor, gfar_units: Float[Tensor, "layers hidden"],
-                         steering_by_layer: dict[int, Transform]) -> Projections:
-    decoder_layers = get_decoder_layers(model)
+class LensForward(NamedTuple):
+    model: nn.Module
+    runner: nn.Module  # the model, or its base without the LM head
+    runner_kwargs: dict[str, Any]
+    gfar_units: Float[Tensor, "layers hidden"]
+    steering_by_layer_by_arm: dict[str, dict[int, Transform]]
+    token_stride: int
+
+
+class TurnProjections(NamedTuple):
+    unsteered: Projections
+    steered_by_arm: dict[str, Projections]
+    response_segments: Int8[np.ndarray, "response_tokens"]
+    kept_tokens: int
+
+
+class EpisodeProjections(TypedDict):
+    unsteered: list[Projections]
+    steered_by_arm: dict[str, list[Projections]]
+    response_segments: list[Int8[np.ndarray, "response_tokens"]]
+    turn_lengths: list[int]
+    oom_truncated: list[tuple[int, int]]
+    missing_reasoning: list[int]
+
+
+def response_projections(forward: LensForward, ids: list[int], response_mask: torch.Tensor, steering_by_layer: dict[int, Transform]) -> Projections:
+    decoder_layers = get_decoder_layers(forward.model)
     projections_by_layer: dict[int, Tensor] = {}
 
     def record(layer: int):
         def hook(_module, _inputs, output) -> None:
             states = output[0] if isinstance(output, tuple) else output
             hidden_states = states[0]
-            projections_by_layer[layer] = (hidden_states[response_mask.to(hidden_states.device)].float() @ gfar_units[layer].to(hidden_states.device)).cpu()
+            projections_by_layer[layer] = (hidden_states[response_mask.to(hidden_states.device)].float() @ forward.gfar_units[layer].to(hidden_states.device)).cpu()
         return hook
 
     # Steering hooks are registered before the recording hooks so the steer layer records its steered output.
     transforms_by_layer: dict[int, object] = dict(steering_by_layer)
-    with _hooks(model, transforms_by_layer) if transforms_by_layer else nullcontext():
+    with _hooks(forward.model, transforms_by_layer) if transforms_by_layer else nullcontext():
         handles = [decoder_layers[layer].register_forward_hook(record(layer)) for layer in range(len(decoder_layers))]
         try:
             with torch.inference_mode():
-                runner(input_ids=torch.tensor([ids], device=response_mask.device), **runner_kwargs)
+                forward.runner(input_ids=torch.tensor([ids], device=response_mask.device), **forward.runner_kwargs)
         finally:
             for handle in handles:
                 handle.remove()
@@ -165,27 +188,42 @@ def arm_vector(arm: Arm, gi_v2_unit: Float[Tensor, "hidden"], gfar_unit: Float[T
     return gi_v2_unit if arm == "steered" else gfar_component(gi_v2_unit, gfar_unit)
 
 
-def turn_projections(model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], ids: list[int],
-                     segments: Int8[np.ndarray, "tokens"], gfar_units: Float[Tensor, "layers hidden"],
-                     steering_by_layer_by_arm: dict[str, dict[int, Transform]], token_stride: int
-                     ) -> tuple[Projections, dict[str, Projections], Int8[np.ndarray, "response_tokens"], int]:
-    """(unsteered, per-arm steered, response segments, tokens kept); a turn the GPU cannot hold is cut to its first 80% and retried."""
+def strided_response_mask(segments: Int8[np.ndarray, "tokens"], token_stride: int) -> np.ndarray:
+    is_response = (segments == Segment.REASONING) | (segments == Segment.ANSWER)
+    is_response[np.flatnonzero(is_response)[np.arange(int(is_response.sum())) % token_stride != 0]] = False
+    return is_response
+
+
+def turn_projections(forward: LensForward, ids: list[int], segments: Int8[np.ndarray, "tokens"]) -> TurnProjections:
+    """A turn the GPU cannot hold is cut to its first 80% and retried."""
     kept = len(ids)
     while True:
-        is_response = (segments[:kept] == Segment.REASONING) | (segments[:kept] == Segment.ANSWER)
-        is_response[np.flatnonzero(is_response)[np.arange(int(is_response.sum())) % token_stride != 0]] = False
-        response_mask = torch.as_tensor(is_response, device=gfar_units.device)
+        is_response = strided_response_mask(segments[:kept], forward.token_stride)
+        response_mask = torch.as_tensor(is_response, device=forward.gfar_units.device)
         try:
-            unsteered = response_projections(model, runner, runner_kwargs, ids[:kept], response_mask, gfar_units, {})
-            steered_by_arm: dict[str, Projections] = {arm: response_projections(model, runner, runner_kwargs, ids[:kept], response_mask, gfar_units, steering_by_layer)
-                              for arm, steering_by_layer in steering_by_layer_by_arm.items()}
-            return unsteered, steered_by_arm, segments[:kept][is_response], kept
+            unsteered = response_projections(forward, ids[:kept], response_mask, {})
+            steered_by_arm = {arm: response_projections(forward, ids[:kept], response_mask, steering_by_layer)
+                              for arm, steering_by_layer in forward.steering_by_layer_by_arm.items()}
+            return TurnProjections(unsteered, steered_by_arm, segments[:kept][is_response], kept)
         except torch.OutOfMemoryError:
             torch.cuda.empty_cache()
             if kept < MIN_TOKENS_BEFORE_GIVING_UP:
                 raise
             kept = int(kept * 0.8)
             logger.warning("out of memory: turn retried on its first %d of %d tokens", kept, len(ids))
+
+
+def episode_projections(forward: LensForward, turns: list[RenderedTurn]) -> EpisodeProjections:
+    projections_by_turn = [turn_projections(forward, turn.ids, turn.segments) for turn in turns]
+    return {
+        "unsteered": [projections.unsteered for projections in projections_by_turn],
+        "steered_by_arm": {arm: [projections.steered_by_arm[arm] for projections in projections_by_turn] for arm in forward.steering_by_layer_by_arm},
+        "response_segments": [projections.response_segments for projections in projections_by_turn],
+        "turn_lengths": [turn.uncapped_length for turn in turns],
+        "oom_truncated": [(turn.turn, projections.kept_tokens) for turn, projections in zip(turns, projections_by_turn)
+                          if projections.kept_tokens < len(turn.ids)],
+        "missing_reasoning": [turn.turn for turn in turns if turn.reasoning_missing],
+    }
 
 
 def compact(projections: Projections) -> Projections:
@@ -210,50 +248,35 @@ def rendered_episode(args: argparse.Namespace, run_dir: Path, specifics: Complet
 
 
 def seed_lens(args: argparse.Namespace, seed: int, specifics: CompletionMarkupSpecifics, tokenizer: HFTokenizer, family: str,
-              chat_kwargs: dict[str, Any], model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], gfar_units: Float[Tensor, "layers hidden"],
-              steering_by_layer_by_arm: dict[str, dict[int, Transform]], coefficient: float) -> SeedLens:
+              chat_kwargs: dict[str, Any], forward: LensForward, coefficient: float) -> SeedLens:
     run_dir = args.run / f"seed{seed}"
     all_records: list[ExampleRecord] = [json.loads(line) for line in (run_dir / f"{args.tag}_impossible_original.jsonl").open()]
     records = [record for record in all_records if is_scored_record(record)][: args.n]
     reasoning_by_turn_by_example = seed_reasoning_by_turn_by_example_id(run_dir, args.tag)
-    unsteered_parts, segment_parts, token_offsets = [], [], [0]
-    steered_parts_by_arm: dict[str, list[Projections]] = {arm: [] for arm in steering_by_layer_by_arm}
-    turn_lengths, oom_truncated, missing_reasoning = [], [], []
     started = time.time()
-    for episode_index, record in enumerate(records):
+    episodes: list[EpisodeProjections] = []
+    for record in records:
         turns = rendered_episode(args, run_dir, specifics, tokenizer, record, reasoning_by_turn_by_example.get(record["example_id"], {}), chat_kwargs)
-        truncations = []
-        episode_response_tokens = 0
-        for turn in turns:
-            unsteered, steered_by_arm, response_segments, kept = turn_projections(model, runner, runner_kwargs, turn.ids, turn.segments, gfar_units,
-                                                                                  steering_by_layer_by_arm, args.token_stride)
-            if kept < len(turn.ids):
-                truncations.append((turn.turn, kept))
-            unsteered_parts.append(unsteered)
-            for arm, steered in steered_by_arm.items():
-                steered_parts_by_arm[arm].append(steered)
-            segment_parts.append(response_segments)
-            episode_response_tokens += len(response_segments)
-        token_offsets.append(token_offsets[-1] + episode_response_tokens)
-        turn_lengths.append([turn.uncapped_length for turn in turns])
-        oom_truncated.append(truncations)
-        missing_reasoning.append([turn.turn for turn in turns if turn.reasoning_missing])
-        logger.info("seed %d: %d/%d episodes, %.0f s", seed, episode_index + 1, len(records), time.time() - started)
+        episodes.append(episode_projections(forward, turns))
+        logger.info("seed %d: %d/%d episodes, %.0f s", seed, len(episodes), len(records), time.time() - started)
+    response_tokens_by_episode = [sum(len(segments) for segments in episode["response_segments"]) for episode in episodes]
     lens: SeedLens = {
         "arms": list(args.arms),
         "null_projections": {}, "null_mode": args.null_mode, "token_stride": args.token_stride,
         "example_id": [record["example_id"] for record in records],
         "verdict_key": [f"{args.run.name}/seed{seed}/{record['example_id']}" for record in records],
-        "token_offsets": np.asarray(token_offsets, dtype=np.int64),
-        "segment": np.concatenate(segment_parts),
-        "unsteered": compact(torch.cat(unsteered_parts, dim=1)),
-        "turn_lengths": turn_lengths, "oom_truncated": oom_truncated, "missing_reasoning": missing_reasoning,
+        "token_offsets": np.concatenate([[0], np.cumsum(response_tokens_by_episode)]).astype(np.int64),
+        "segment": np.concatenate([segments for episode in episodes for segments in episode["response_segments"]]),
+        "unsteered": compact(torch.cat([projections for episode in episodes for projections in episode["unsteered"]], dim=1)),
+        "turn_lengths": [episode["turn_lengths"] for episode in episodes],
+        "oom_truncated": [episode["oom_truncated"] for episode in episodes],
+        "missing_reasoning": [episode["missing_reasoning"] for episode in episodes],
         "model": args.model, "family": family, "chat_kwargs": chat_kwargs, "tag": args.tag, "run": str(args.run), "seed": seed,
         "steer_layer": args.steer_layer, "alpha": args.alpha, "coefficient": coefficient, "gi_v2": str(args.gi_v2), "gfar": args.gfar,
         "max_length": args.max_length, "seconds": time.time() - started,
     }
-    for arm, parts in steered_parts_by_arm.items():
-        projections = compact(torch.cat(parts, dim=1))
+    for arm in forward.steering_by_layer_by_arm:
+        projections = compact(torch.cat([part for episode in episodes for part in episode["steered_by_arm"][arm]], dim=1))
         if arm == "steered" or arm == "steered_gfar_component":
             lens[arm] = projections
         else:
@@ -291,6 +314,7 @@ def main() -> None:
     base = getattr(model, model.base_model_prefix, None)
     runner, runner_kwargs = ((base, {"use_cache": False}) if isinstance(base, nn.Module) and base is not model
                              else (model, {"use_cache": False, "logits_to_keep": 1}))
+    forward = LensForward(model, runner, runner_kwargs, gfar_units, steering_by_layer_by_arm, args.token_stride)
 
     args.out.mkdir(parents=True, exist_ok=True)
     for seed in args.seeds:
@@ -298,8 +322,7 @@ def main() -> None:
         if out_path.exists():
             logger.info("%s exists, skipped", out_path)
             continue
-        lens = seed_lens(args, seed, markup_specifics, tokenizer, specifics.family, chat_kwargs, model, runner, runner_kwargs, gfar_units,
-                         steering_by_layer_by_arm, coefficient)
+        lens = seed_lens(args, seed, markup_specifics, tokenizer, specifics.family, chat_kwargs, forward, coefficient)
         temporary = out_path.with_suffix(".pt.tmp")
         torch.save(lens, temporary)
         temporary.rename(out_path)
