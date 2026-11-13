@@ -57,6 +57,10 @@ Deep-dive references are in `/apps/instructions_for_ai_agents/ai-docs/`
 - **Software:** check Lmod modules before installing anything. No `sudo`, no
   system-wide installs, no replacing system libraries or changing shared
   environments, no unreviewed remote installers.
+- **Python packages (repo rule):** every package the code needs goes into the
+  uv project (`uv add` / `pyproject.toml` + `uv.lock`, pinned when versions
+  matter, e.g. git dependencies at a commit), never only into a local venv with
+  `uv pip install`, so everyone's `uv sync` gets it.
 - **Cron/scrontab:** before using or recommending it, list the user's existing
   entries and ask whether each is still needed. Don't change or remove entries
   without approval. Cron is for lightweight periodic work only.
