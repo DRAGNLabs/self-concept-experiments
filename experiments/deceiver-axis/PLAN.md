@@ -2013,6 +2013,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   four logs, `TRITON_ATTN` is in use, and the `gf_m0.08` spec file equals the spec of the seven two-card task-set seeds of
   `gfar_L30_a-0.08` (direction tensor and coefficient). Unit tests: 324 run, the new argument test passes; four SOO test modules fail
   to import a sibling module when run from the repo root, unrelated to this change.
+  *If an arm reaches the 3 h limit (written 7:47 PM MST Nov 12, with `gf_p0.08` finished at 7:43 pm in 4,038 s on the H100 pair and the
+  three A100-pair arms in MMLU-Pro at 11–17 min per 256-item batch, which puts `gf_m0.08` within minutes of the 9:35 pm limit; no
+  accuracy has been read):* the arm is continued by one more task with the same command (the script skips items already written). This
+  is not the task-set case where a resumed seed keeps quick episodes and redraws slow ones: benchmark items are single-turn, each has
+  its own sampling seed, records are written per whole batch, and the batch in flight at the cut is discarded and run again in full,
+  so no item is selected on its speed. The continuation's hardware is added to `HARDWARE.tsv` and the cut is stated with the result.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.

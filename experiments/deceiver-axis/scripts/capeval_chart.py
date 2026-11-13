@@ -190,6 +190,19 @@ PRESETS = {
             "and 12.5% of generated positions, the p95 cap 37.6% and 4.7–7.2%. The p25 cap has no benchmark run (the model stops submitting code on the task set).\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "gemma_gfar": dict(
+        compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_gfar.json",
+        out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_gfar_chart.png",
+        dose_arms=[("gf_m0.08", "−0.08"), ("gf_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gf_p0.04", "+0.04"), ("gf_p0.08", "+0.08")],
+        side_arms=[],
+        series_label="Goodfire-axis dose arms, Δ with 95% CI",
+        col_labels=["dose −0.08", "dose −0.04", "unsteered", "dose +0.04", "dose +0.08"],
+        title="Gemma 4 31B, Goodfire reward-hacking axis: capability retention at the four judged doses",
+        layer="30",
+        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Add-steering at layer 30 in units of the layer's mean residual norm, the doses of the hard108 task set.\n"
+            "Dose arms ran tensor-parallel on two 80 GB cards (−0.08, −0.04, +0.04 on A100 pairs, +0.08 on an H100 pair); the unsteered run (2026-11-02) ran on one B200, so each Δ is across hardware.\n"
+            "Δ = arm accuracy minus the unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
     "gemma_v2_clamp": dict(
         compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_clamp.json",
         out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_clamp_chart.png",
