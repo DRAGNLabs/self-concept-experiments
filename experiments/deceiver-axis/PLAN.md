@@ -2022,6 +2022,31 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   **Result (read 9:24 PM MST Nov 12, all four arms done, none cut; FINDINGS "Benchmarks for the four Gemma Goodfire doses"):** all
   four doses keep all four benchmarks, as expected. Largest loss −0.08 on MMLU-Pro, −1.3 (CI −2.4 to −0.1), within 2 points; every
   other Δ has a CI covering zero. No dose-rule status changes; −0.08 and +0.08 are outside on the task set and clean on the benchmarks.
+  **Benchmark eval for the two Gemma Goodfire caps (written 9:42 PM MST Nov 12, before the arms file is built or anything is
+  submitted; no score exists):** `gf_cap_p75` and `gf_cap_p95` through GSM8K / MMLU-Pro / HumanEval / IFBench, the run promised above
+  for the two rungs once both have 16 task-set seeds (p75 since 8:33 pm, judged; p95 has seeds 0–8 complete and seeds 9–15 at 93–104
+  of 108 episodes at writing; nothing is submitted before 16 of 16 exist). Recipe = the two-card recipe of 15314200, unchanged:
+  `capability_eval.sbatch`, `TP=2`, attention backend pinned to `TRITON_ATTN`, same model, sampling, window and token budget, one arm
+  per job, `-p cs,cs2 --qos cs --gpus-per-node=2`, 8 cores, 48 GB host memory, no requeue, `--exclude=cs-2-1`; placement rechecked
+  with the picker and a dry run before submission. Arms file `gemma4_31b_gi_v2/capeval/arms_gfar_cap.tsv`, built by
+  `gfar_vs_gi_v2/steer/build_gfar_capeval_arms_1112_gemma_caps.py`: each line is the `gi_cap_p25` line of `arms_cap.tsv` with the
+  direction file and the thresholds file swapped for the Goodfire ones, accepted only because mode, direction, band 20–38 and all 19
+  thresholds equal the steering block recorded by 16 of 16 task-set seeds of the rung. *Checks before any number is read:* both ranks
+  print the worker patch line in cap mode for layers 20–38, `TRITON_ATTN` is in use, and the `gf_cap_p75` spec file equals the spec of
+  a two-card task-set seed of `gfar_cap_p75_L20-38` (direction tensors and thresholds); hardware per arm goes into
+  `capeval/HARDWARE.tsv`. **Reference, reading, limit:** as for the doses: `capeval/unsteered` (2026-11-02, B200), item-paired, the
+  retention rule (per benchmark within 2 points of unsteered or a CI covering zero); the contrast is across hardware and one card
+  against two, and no unsteered two-card benchmark run exists. **Expected:** `gf_cap_p95` keeps all four (it moves 11.3–13.3% of
+  prompt and 3.6–6.1% of generated positions; its pilot seed was at unsteered on no code and truncated turns). `gf_cap_p75` keeps
+  GSM8K, HumanEval and IFBench; MMLU-Pro is its likeliest loss and is left open: the rung moves 27.6–28.1% / 26.4% of positions and
+  loses 11.0 points of hidden pass on the task set, the gi_v2 caps lose MMLU-Pro at p25–p50 (−4.4 to −2.4) and keep it at p65
+  (−1.1), and the Goodfire −0.08 dose, which loses the same hidden pass, is at −1.3. **What it changes:** nothing in the dose rule of
+  record. p75 is outside on the task set whatever the benchmarks show (a clean p75 is written as outside on the task set and clean
+  on the benchmarks); p95's status comes from its own task-set read; a benchmark loss on an inside arm is written beside its inside
+  status. **Time limits:** scaled from the one calibration on this recipe, the −0.08 dose (10,022 s for the four benchmarks on an A100
+  pair; its task-set seeds on A100 pairs took 12,294–14,212 s, p75's 10,695–12,025 s, p95's 7,508–8,606 s so far): about 2 h 25 min
+  for p75 and 1 h 45 min for p95 on an A100 pair, so 3 h and 2 h 15 min, each as its own one-task job. A cut is handled by the
+  continuation rule above.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
