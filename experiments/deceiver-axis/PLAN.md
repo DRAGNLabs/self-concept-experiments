@@ -2053,6 +2053,49 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   IFBench +2.0), so the benchmark left open is kept. `gf_cap_p95` keeps GSM8K (+0.1), MMLU-Pro (+0.5) and HumanEval (+0.0) and
   **loses IFBench** (−3.3, CI −6.3 to −0.3, 7 / 17, McNemar p 0.064): expectation not met. No dose-rule status changes; p95 is
   written as inside the task-set rule with an IFBench loss beside it.
+  **Benchmark evals for the seven configs without one (written 12:50 PM MST Nov 13, before any arms file is built or anything is
+  submitted; user about 12:45 pm: "Let's start by filling in the benchmarking gaps - Qwen p25 cap, Muse p25 cap, Gemma double alpha,
+  Gemma floor p95/p75/p50"):** GSM8K / MMLU-Pro / HumanEval / IFBench for (1) Qwen `gf_cap_p25` (Goodfire cap p25, layers 22–42),
+  (2) Muse `gf_cap_p25` (Goodfire cap p25, layers 17–33), (3) Gemma gi_v2 `gi_m0.16` and `gi_p0.16` (layer 30, the double dose; the
+  Goodfire ±0.16 arms are one-seed pilots that break the model and are not benchmarked), (4) Gemma gi_v2 `gi_floor_p50`,
+  `gi_floor_p75`, `gi_floor_p95` (layers 20–38). Each model keeps its benchmark recipe of record (`capability_eval.sbatch`, sampling
+  and chat settings of its unsteered benchmark run, T 1.0, sample seed 0, 16,384 new tokens, 20,480-token window; Qwen with
+  `VLLM_MAX_NUM_SEQS=128`), one arm per job or array task. *Arms files:* each line is an existing line of the model's benchmark arms
+  file with only the direction, mode, α or thresholds file swapped (Qwen: `gi_cap_p25` line; Muse: `gf_cap_p95` line; Gemma doses:
+  `gi_m0.08` line; Gemma floors: `gi_cap_p25` line with `--steer-mode floor`), accepted only if mode, layer or band, α / coefficient
+  / layer norm or every per-layer threshold equal the steering block recorded by every task-set seed of the arm (12 for Qwen and
+  Muse, 16 for Gemma). Koby's ±0.16 seeds record the direction under his own home path, which I do not open; the benchmark line uses
+  the group-share copy, as the ±0.04 / ±0.08 benchmark lines did, and the equality check covers layer, α, layer norm and
+  coefficient. Builder scripts go to `gfar_vs_gi_v2/steer/`.
+  **Reference and reading:** each model's original unsteered benchmark run (Qwen `qwen38_27b_gi_v2/capeval/unsteered`, Muse
+  `muse_glimmer/gi_v2/capeval/unsteered` of 2026-10-29, Gemma `gemma4_31b_gi_v2/capeval/unsteered` of 2026-11-02 on the B200),
+  item-paired, retention rule (per benchmark within 2 points of unsteered or a CI covering zero), truncated and no-answer shares
+  given beside every accuracy. No dose-rule status changes with any outcome: both p25 Goodfire caps are already written as breaking
+  the model on the task set, Gemma ±0.16 and floor p95 are outside the rule, floors p50 and p75 are inside with no change in judged
+  hacking.
+  **Expected (written before any item is scored):** *Muse `gf_cap_p25`* loses all four with most answers cut at the token budget: on
+  the task set 95.8% of attempts ran to the same 16,384-token budget and 98.9% of episodes had no code. *Qwen `gf_cap_p25`* loses
+  MMLU-Pro, HumanEval and IFBench with many truncated answers (task set: no code 86.1%, 36% of attempts cut at 65,536 tokens); GSM8K
+  is left open. For these two arms the benchmark records the breakage and supports no capability claim. *Gemma `gi_m0.16`* loses at
+  least MMLU-Pro and IFBench with truncated answers (task set: 26% no code, reasoning per turn doubled, 26% of turns cut at 32,768);
+  GSM8K and HumanEval left open. *Gemma `gi_p0.16`* is left open: it loses 29.4 points of hidden pass on the task set, but gi_v2
+  +0.08 and Goodfire +0.08 (−17.5 hidden pass) kept all four; MMLU-Pro is the likeliest loss. *Gemma floors:* p50 and p75 keep all
+  four (inside the task-set rule; the Qwen and gpt-oss floors keep theirs); p95 is left open, MMLU-Pro the likeliest loss (it is far
+  outside the task-set rule, and the Gemma caps lose MMLU-Pro in step with the rung).
+  **Placement and time limits:** picker and dry run before each submission, record in `gfar_vs_gi_v2/steer/gpu_pick_2026-11-13.txt`.
+  Qwen and Muse: one 80 GB card on cs / cs2 at qos cs, no requeue, the hardware class of their references and of every earlier
+  benchmark run. Gemma: the cs3 B200 (one card, `VLLM_ATTENTION_BACKEND=TRITON_ATTN`), the card of the reference and of the other
+  gi_v2 benchmark arms, if the dry run starts the tasks today; otherwise the two-card recipe of 15314200 (`TP=2`, `ENGINE_KWARGS`
+  attention backend `TRITON_ATTN`, two 80 GB cards on cs / cs2), with hardware per arm in `capeval/HARDWARE.tsv` and the
+  cross-hardware limit stated with the result. Limits from token volume: an arm whose answers all run to 16,384 tokens writes about
+  52 M tokens against 1.1 M (Muse), 3.8 M (Qwen) and 6.9 M (Gemma) unsteered. Peak output seen in the earlier benchmark logs is
+  about 1,600 tokens/s for Muse and 1,150 for Qwen on one 80 GB card (not saturated for Muse), 3,900 for Gemma on the B200 or an
+  H100 pair and 1,400–1,700 on an A100 pair. So: Muse 9 h (4.5–9 h if the task-set truncation carries over; 20–35 min if it does
+  not), Qwen 10 h (7–12 h if half or more of the answers truncate; about 2 h 20 min if not), Gemma `gi_m0.16` 4 h on the B200 or 6 h
+  on two cards, the other four Gemma arms 2 h 15 min on the B200 or 3 h on two cards. A job that reaches its limit is continued by
+  one job with the same command (the script skips written items), as the continuation rule above allows for benchmark arms; the pace
+  after GSM8K is reported to the user for the two cap arms, which may take most of a day of one card each to show that a broken arm
+  is broken.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
