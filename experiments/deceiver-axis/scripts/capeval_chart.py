@@ -203,6 +203,22 @@ PRESETS = {
             "Dose arms ran tensor-parallel on two 80 GB cards (−0.08, −0.04, +0.04 on A100 pairs, +0.08 on an H100 pair); the unsteered run (2026-11-02) ran on one B200, so each Δ is across hardware.\n"
             "Δ = arm accuracy minus the unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
+    "gemma_gfar_full": dict(
+        compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_gfar_full.json",
+        out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_gfar_full_chart.png",
+        dose_arms=[("gf_m0.08", "−0.08"), ("gf_m0.04", "−0.04"), ("unsteered", "0\nunsteered"), ("gf_p0.04", "+0.04"), ("gf_p0.08", "+0.08")],
+        side_arms=[("gf_cap_p75", "cap\np75"), ("gf_cap_p95", "cap\np95")],
+        side_label="caps, layers 20–38",
+        series_label="Goodfire-axis dose arms, Δ with 95% CI",
+        col_labels=["dose −0.08", "dose −0.04", "unsteered", "dose +0.04", "dose +0.08", "cap p75", "cap p95"],
+        title="Gemma 4 31B, Goodfire reward-hacking axis: capability retention, steering doses and caps",
+        layer="30",
+        sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Doses: add-steering at layer 30 in units of the layer's mean residual norm.\n"
+            "Caps: the projection on the axis is clipped down to its unsteered 75th / 95th percentile at every position over layers 20–38; on unsteered activations the p75 cap moves 27.6–28.1% of prompt\n"
+            "and 26.4% of generated positions, the p95 cap 11.3–13.3% and 3.6–6.1%. All six arms ran tensor-parallel on two 80 GB cards (+0.08 on an H100 pair, the rest on A100 pairs);\n"
+            "the unsteered run (2026-11-02) ran on one B200, so each Δ is across hardware.\n"
+            "Δ = arm accuracy minus the unsteered run on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
+    ),
     "gemma_v2_clamp": dict(
         compare=SCRATCH / "gemma4_31b_gi_v2/capeval/compare_clamp.json",
         out=SCRATCH / "gemma4_31b_gi_v2/capeval/capeval_gemma_clamp_chart.png",

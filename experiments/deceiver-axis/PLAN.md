@@ -2047,6 +2047,12 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   pair; its task-set seeds on A100 pairs took 12,294–14,212 s, p75's 10,695–12,025 s, p95's 7,508–8,606 s so far): about 2 h 25 min
   for p75 and 1 h 45 min for p95 on an A100 pair, so 3 h and 2 h 15 min, each as its own one-task job. A cut is handled by the
   continuation rule above.
+  **Result (read 12:37 AM MST Nov 13, FINDINGS "Benchmarks for the two Gemma Goodfire caps (p75, p95)"):** both jobs ended without a
+  cut (p75 8,487 s; p95 8,041 s, 43 s inside its limit: the 1 h 45 min estimate was wrong, the arm ran at the pace of the −0.04
+  dose) and passed the start-up checks. `gf_cap_p75` keeps all four (GSM8K −0.3, MMLU-Pro −1.3 with CI −2.4 to −0.2, HumanEval −1.8,
+  IFBench +2.0), so the benchmark left open is kept. `gf_cap_p95` keeps GSM8K (+0.1), MMLU-Pro (+0.5) and HumanEval (+0.0) and
+  **loses IFBench** (−3.3, CI −6.3 to −0.3, 7 / 17, McNemar p 0.064): expectation not met. No dose-rule status changes; p95 is
+  written as inside the task-set rule with an IFBench loss beside it.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
