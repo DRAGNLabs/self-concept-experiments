@@ -2154,6 +2154,11 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      no code (the measure of 2026-11-11, per "Sets not yet built or read"). The 10-contrast family keeps the three isotropic
      random add arms because the rule above was written with them; whether they come off the Muse family is an open question
      to the user and Koby, and this read does not settle it.
+     **Result (2026-11-12 5:00 PM MST; FINDINGS "Muse Goodfire-axis (gfar) p90 cap, judged at 12 seeds").** Judged hacking 9.6%
+     against 32.8% unsteered (−23.1, CI −31.7 to −15.2, Holm 1.9e-06 over 10), below p95's 17.0%; hidden pass +0.9 (CI −4.6 to
+     +6.5), no code +10.6: outside the dose rule on the no-code clause by 0.6 points, as expected, so the fall is not read as an
+     effect at kept capability. No earlier contrast's adjusted p crosses 0.05 in the 10-contrast family. Not run: a benchmark
+     eval for p90 (on request only).
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /
