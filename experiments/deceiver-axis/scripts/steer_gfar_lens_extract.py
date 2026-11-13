@@ -30,11 +30,17 @@ import numpy as np
 import torch
 from jaxtyping import Float, Int8
 from torch import Tensor, nn
-from transformers import AutoConfig, AutoTokenizer, PreTrainedTokenizerBase
+from transformers import AutoConfig, AutoTokenizer
 
 import make_dossiers
-from episode_rendering import ANSWER_SEGMENT, REASONING_SEGMENT, Family, episode_turns, load_reasoning_sidecar
+from selfconcept.arm_search.rh.dossier import episode_conversation
+from selfconcept.arm_search.rh.episodes import reasoning_by_turn_by_example_id
+from selfconcept.codebench.harness import CheckRecord, ExampleRecord, WorkspaceRecord, is_scored_record
 from selfconcept.common.chat import chat_template_kwargs
+from selfconcept.common.hf_strong_types import HFTokenizer
+from selfconcept.common.teacher_forcing.completion_markup import CompletionMarkupSpecifics
+from selfconcept.common.teacher_forcing.registry import completion_markup_specifics_for
+from selfconcept.common.teacher_forcing.rendering import RenderedTurn, Segment, episode_turns
 from selfconcept.common.loading import load_causal_lm
 from selfconcept.measurement.intervene import _hooks, add_transform
 from selfconcept.measurement.steering_specifics import steering_model_specifics
@@ -68,7 +74,7 @@ class SeedLens(TypedDict):
     oom_truncated: list[list[tuple[int, int]]]
     missing_reasoning: list[list[int]]
     model: str
-    family: Family
+    family: str
     chat_kwargs: dict[str, Any]
     tag: str
     run: str
@@ -166,7 +172,7 @@ def turn_projections(model: nn.Module, runner: nn.Module, runner_kwargs: dict[st
     """(unsteered, per-arm steered, response segments, tokens kept); a turn the GPU cannot hold is cut to its first 80% and retried."""
     kept = len(ids)
     while True:
-        is_response = (segments[:kept] == REASONING_SEGMENT) | (segments[:kept] == ANSWER_SEGMENT)
+        is_response = (segments[:kept] == Segment.REASONING) | (segments[:kept] == Segment.ANSWER)
         is_response[np.flatnonzero(is_response)[np.arange(int(is_response.sum())) % token_stride != 0]] = False
         response_mask = torch.as_tensor(is_response, device=gfar_units.device)
         try:
@@ -186,36 +192,52 @@ def compact(projections: Projections) -> Projections:
     return projections.half() if float(projections.abs().max()) < FP16_SAFE_ABS else projections
 
 
-def seed_lens(args: argparse.Namespace, seed: int, tokenizer: PreTrainedTokenizerBase, family: Family, chat_kwargs: dict[str, Any],
-              model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], gfar_units: Float[Tensor, "layers hidden"],
+def seed_reasoning_by_turn_by_example_id(run_dir: Path, tag: str) -> dict[str, dict[int, str]]:
+    """Merged over the run's per-scenario reasoning sidecars."""
+    merged: dict[str, dict[int, str]] = {}
+    for path in sorted(run_dir.glob(f"{tag}_*_reasoning.jsonl")):
+        for example_id, reasoning_by_turn in reasoning_by_turn_by_example_id(path).items():
+            merged.setdefault(example_id, {}).update(reasoning_by_turn)
+    return merged
+
+
+def rendered_episode(args: argparse.Namespace, run_dir: Path, specifics: CompletionMarkupSpecifics, tokenizer: HFTokenizer,
+                     record: CheckRecord | WorkspaceRecord, reasoning_by_turn: dict[int, str], chat_kwargs: dict[str, Any]) -> list[RenderedTurn]:
+    example = make_dossiers.find_example(args.data, args.tag, record["example_id"], run_dir)
+    steps = episode_conversation(example, record, record.get("feedback") or "impossiblebench")
+    answers = [attempt.get("completion") or "" for attempt in record["attempts"]]
+    return episode_turns(specifics, tokenizer, steps, answers, reasoning_by_turn, args.max_length, chat_kwargs)
+
+
+def seed_lens(args: argparse.Namespace, seed: int, specifics: CompletionMarkupSpecifics, tokenizer: HFTokenizer, family: str,
+              chat_kwargs: dict[str, Any], model: nn.Module, runner: nn.Module, runner_kwargs: dict[str, Any], gfar_units: Float[Tensor, "layers hidden"],
               steering_by_layer_by_arm: dict[str, dict[int, Transform]], coefficient: float) -> SeedLens:
     run_dir = args.run / f"seed{seed}"
-    records = [json.loads(line) for line in (run_dir / f"{args.tag}_impossible_original.jsonl").open()][: args.n]
-    reasoning_by_turn_by_example = load_reasoning_sidecar(run_dir, args.tag)
+    all_records: list[ExampleRecord] = [json.loads(line) for line in (run_dir / f"{args.tag}_impossible_original.jsonl").open()]
+    records = [record for record in all_records if is_scored_record(record)][: args.n]
+    reasoning_by_turn_by_example = seed_reasoning_by_turn_by_example_id(run_dir, args.tag)
     unsteered_parts, segment_parts, token_offsets = [], [], [0]
     steered_parts_by_arm: dict[str, list[Projections]] = {arm: [] for arm in steering_by_layer_by_arm}
     turn_lengths, oom_truncated, missing_reasoning = [], [], []
     started = time.time()
     for episode_index, record in enumerate(records):
-        example = make_dossiers.find_example(args.data, args.tag, record["example_id"], run_dir)
-        turns, missing, full_lengths = episode_turns(tokenizer, family, example, record, reasoning_by_turn_by_example.get(record["example_id"], {}),
-                                                     args.max_length, chat_kwargs)
+        turns = rendered_episode(args, run_dir, specifics, tokenizer, record, reasoning_by_turn_by_example.get(record["example_id"], {}), chat_kwargs)
         truncations = []
         episode_response_tokens = 0
-        for ids, segments, turn in turns:
-            unsteered, steered_by_arm, response_segments, kept = turn_projections(model, runner, runner_kwargs, ids, segments, gfar_units,
+        for turn in turns:
+            unsteered, steered_by_arm, response_segments, kept = turn_projections(model, runner, runner_kwargs, turn.ids, turn.segments, gfar_units,
                                                                                   steering_by_layer_by_arm, args.token_stride)
-            if kept < len(ids):
-                truncations.append((turn, kept))
+            if kept < len(turn.ids):
+                truncations.append((turn.turn, kept))
             unsteered_parts.append(unsteered)
             for arm, steered in steered_by_arm.items():
                 steered_parts_by_arm[arm].append(steered)
             segment_parts.append(response_segments)
             episode_response_tokens += len(response_segments)
         token_offsets.append(token_offsets[-1] + episode_response_tokens)
-        turn_lengths.append(full_lengths)
+        turn_lengths.append([turn.uncapped_length for turn in turns])
         oom_truncated.append(truncations)
-        missing_reasoning.append(missing)
+        missing_reasoning.append([turn.turn for turn in turns if turn.reasoning_missing])
         logger.info("seed %d: %d/%d episodes, %.0f s", seed, episode_index + 1, len(records), time.time() - started)
     lens: SeedLens = {
         "arms": list(args.arms),
@@ -243,9 +265,9 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     args = parse_args()
     specifics = steering_model_specifics(args.model)
-    family: Family = specifics.family  # type: ignore[assignment]
+    markup_specifics = completion_markup_specifics_for(args.model)
     chat_kwargs = chat_template_kwargs()
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    tokenizer: HFTokenizer = AutoTokenizer.from_pretrained(args.model)
     num_layers, hidden = model_dims(args.model)
     device = torch.device("cuda:0")
     gfar_units = load_gfar_units(args.gfar, num_layers, hidden).to(device)
@@ -276,7 +298,8 @@ def main() -> None:
         if out_path.exists():
             logger.info("%s exists, skipped", out_path)
             continue
-        lens = seed_lens(args, seed, tokenizer, family, chat_kwargs, model, runner, runner_kwargs, gfar_units, steering_by_layer_by_arm, coefficient)
+        lens = seed_lens(args, seed, markup_specifics, tokenizer, specifics.family, chat_kwargs, model, runner, runner_kwargs, gfar_units,
+                         steering_by_layer_by_arm, coefficient)
         temporary = out_path.with_suffix(".pt.tmp")
         torch.save(lens, temporary)
         temporary.rename(out_path)
