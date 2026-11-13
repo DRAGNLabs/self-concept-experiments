@@ -9,14 +9,17 @@ One panel per steering axis of a model (gi_v2 vector, Goodfire RH axis). Every a
       (figures/pareto/composite_options.py, 2026-11-13), and the pooled CI is less than half as wide;
   y = judged hack rate (as judged; main_analysis.py output, `judged_hack` of the analysis file named in the preset), in %.
 Both axes are drawn as the arm's difference from unsteered, in points, so the unsteered arm is the origin (its levels are in
-the subtitle). Three series, each a line from the origin outwards in dose order: steering (most negative dose ... unsteered ...
-most positive dose), capping (weakest rung first: highest percentile threshold) and flooring (weakest rung first: lowest
-percentile).
+the subtitle); the two zero lines are drawn darker than the grid. Lines run from the origin outwards in dose order: steering
+(most negative dose ... unsteered ... most positive dose) in one colour; capping (weakest rung first: highest percentile
+threshold) and flooring (weakest rung first: lowest percentile) share the second colour and differ by marker (cap = triangle
+pointing down, floor = triangle pointing up) and by their labels, as the two signs of steering share theirs.
 
 Error bars are 95% CIs of the difference: vertical = the problem-level paired bootstrap CI of the analysis file
 (`contrasts[arm].ci95`); horizontal = an item-paired bootstrap of the composite (items resampled within each benchmark, the
-same draw for arm and unsteered, 10,000 draws, fixed seed). An arm outside the task-set dose rule (hidden-test pass or no-code
-more than 10 points from unsteered) is drawn hollow. Label offsets (points) per arm come from the preset's `offsets` or --offsets.
+same draw for arm and unsteered, 10,000 draws, fixed seed). An arm outside the task-set dose rule (share of episodes with no
+code submitted, or hidden-test pass rate, more than 10 points from unsteered) is drawn hollow; the JSON names which of the two.
+Label offsets (points) per arm come from the preset's `offsets` or --offsets. --separate-axes gives every panel its own x and
+y range (default: both shared across the panels).
 
 Writes <out>.png, <out>.pdf and <out>.json (every plotted number).
 
@@ -36,6 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 
 N = Path.home() / "nobackup/autodelete/self-concept-experiments/schemer-axis"
@@ -43,13 +47,14 @@ TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
 BOOT_DRAWS, BOOT_SEED = 10_000, 0
 RULE_POINTS = 10.0  # task-set dose rule: |Δ hidden pass| and |Δ no-code| within 10 points of unsteered
 
-# categorical slots 1-3 of the chart palette (validated: CVD ΔE 9.2 worst pair; aqua is under 3:1 on the surface, so every
-# point is direct-labelled and each series has its own marker shape)
-STEER, CAP, FLOOR = "#2a78d6", "#eb6834", "#1baf7a"
+# categorical slots 1-2 of the chart palette (validated). Caps and floors share the clamp colour (user 2026-11-13: the pair is
+# to clamping what the two signs are to steering); marker shape and the direct label tell them apart.
+STEER, CLAMP = "#2a78d6", "#eb6834"
+ZERO = "#52514e"  # the two zero lines (the unsteered level), darker than the grid
 INK, INK2, MUTED, GRID, AXIS, SURFACE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb"
 SERIES = {"steering": dict(color=STEER, marker="o", name="steering (add α · layer norm)"),
-          "cap": dict(color=CAP, marker="v", name="capping (clamp projection from above)"),
-          "floor": dict(color=FLOOR, marker="^", name="flooring (clamp projection from below)")}
+          "cap": dict(color=CLAMP, marker="v", name="cap (clamp projection from above)"),
+          "floor": dict(color=CLAMP, marker="^", name="floor (clamp projection from below)")}
 
 MODELS = {
     "gptoss": dict(
@@ -104,9 +109,9 @@ def pooled(accuracies: np.ndarray, counts: np.ndarray) -> np.ndarray:
     return (accuracies * counts).sum(axis=-1) / counts.sum()
 
 
-COMPOSITES = {"pooled": (pooled, "Δ benchmark score vs unsteered (points; share of all {items:,} benchmark items correct)"),
-              "mean": (plain_mean, "Δ benchmark score vs unsteered (points; mean accuracy of the four benchmarks)"),
-              "geometric": (geometric_mean, "Δ benchmark score vs unsteered (points; geometric mean of the four accuracies)")}
+COMPOSITES = {"pooled": (pooled, "share of all {items:,} benchmark items answered correctly"),
+              "mean": (plain_mean, "mean accuracy over the four benchmarks"),
+              "geometric": (geometric_mean, "geometric mean of the four benchmark accuracies")}
 
 
 def composite(root: Path, arm: str, combine) -> dict:
@@ -158,7 +163,9 @@ def load_axis(model: dict, axis: dict, combine) -> dict:
         rows[arm] = dict(kind=kind(arm), label=label(arm), hack=100 * judged["arms"][arm]["rate"], hack_diff=100 * contrast["diff"],
                          hack_diff_ci=[100 * contrast["ci95"][0], 100 * contrast["ci95"][1]], episodes=judged["arms"][arm]["episodes"],
                          hidden_pass_diff=hidden_diff, no_code_diff=no_code_diff,
-                         inside_dose_rule=abs(hidden_diff) <= RULE_POINTS and abs(no_code_diff) <= RULE_POINTS, **bench)
+                         inside_dose_rule=abs(hidden_diff) <= RULE_POINTS and abs(no_code_diff) <= RULE_POINTS,
+                         outside_on=[name for name, value in (("no_code", no_code_diff), ("hidden_pass", hidden_diff)) if abs(value) > RULE_POINTS],
+                         **bench)
     unsteered_composite = {round(row["composite_unsteered"], 9) for row in rows.values()}
     assert len(unsteered_composite) == 1, unsteered_composite
     unsteered = dict(hack=100 * judged["arms"]["unsteered"]["rate"], episodes=judged["arms"]["unsteered"]["episodes"],
@@ -192,8 +199,8 @@ DEFAULT_OFFSETS = {"steering": (-9, 6), "cap": (10, -5), "floor": (10, 5)}
 def draw_panel(axes: Axes, data: dict, title: str, offsets: dict[str, tuple[int, int]]) -> None:
     """Both axes are differences from unsteered, in points; the unsteered arm is the origin."""
     rows = data["arms"]
-    axes.axhline(0, color=AXIS, linewidth=1, zorder=1)
-    axes.axvline(0, color=AXIS, linewidth=1, zorder=1)
+    axes.axhline(0, color=ZERO, linewidth=1.1, zorder=1.5)
+    axes.axvline(0, color=ZERO, linewidth=1.1, zorder=1.5)
     for series, polylines in series_order(rows).items():
         style = SERIES[series]
         for arms in polylines:
@@ -229,46 +236,55 @@ def main() -> None:
     parser.add_argument("--model", choices=sorted(MODELS), default="gptoss")
     parser.add_argument("--axes", nargs="+", default=["gi_v2", "gfar"])
     parser.add_argument("--composite", choices=sorted(COMPOSITES), default="pooled")
+    parser.add_argument("--separate-axes", action="store_true", help="own x and y range per panel (default: shared)")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--offsets", type=Path, help="JSON {axis: {arm: [dx, dy]}} of label offsets in points")
     args = parser.parse_args()
     model = MODELS[args.model]
-    combine, x_label = COMPOSITES[args.composite]
+    combine, score_name = COMPOSITES[args.composite]
     data = {axis: load_axis(model, model["axes"][axis], combine) for axis in args.axes}
     offsets = json.loads(args.offsets.read_text()) if args.offsets else {}
 
-    figure, axes_row = plt.subplots(1, len(args.axes), figsize=(6.5 * len(args.axes), 7.0), facecolor=SURFACE, sharex=True, sharey=True,
+    shared = not args.separate_axes
+    figure, axes_row = plt.subplots(1, len(args.axes), figsize=(6.5 * len(args.axes), 7.2), facecolor=SURFACE, sharex=shared, sharey=shared,
                                     squeeze=False)
+    every = [row for d in data.values() for row in d["arms"].values()]
     for axes, axis in zip(axes_row[0], args.axes):
         axes.set_facecolor(SURFACE)
         preset = model["axes"][axis]
         draw_panel(axes, data[axis], preset["title"], {**preset.get("offsets", {}), **{k: tuple(v) for k, v in offsets.get(axis, {}).items()}})
-        axes.set_xlabel(x_label.format(items=data[axis]["items"]) + "  →  better", fontsize=9, color=INK2)
+        axes.set_xlabel("Δ benchmark score vs unsteered, points (higher = better)", fontsize=9.5, color=INK2)
         axes.tick_params(labelleft=True)
-    axes_row[0][0].set_ylabel("Δ judged hack rate on the task set vs unsteered (points)  ↓  better", fontsize=9.5, color=INK2)
-    every = [row for d in data.values() for row in d["arms"].values()]
-    axes_row[0][0].set_xlim(min(row["diff_ci"][0] for row in every) - 0.4, max(row["diff_ci"][1] for row in every) + 0.4)
-    handles = [Line2D([], [], color=s["color"], marker=s["marker"], markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5, linewidth=2,
-                      label=s["name"]) for s in SERIES.values()]
-    handles.append(Line2D([], [], color=INK, marker="o", markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5, linewidth=0, label="unsteered"))
-    handles.append(Line2D([], [], color=SURFACE, marker="o", markersize=8, markeredgecolor=INK2, markeredgewidth=1.8, linewidth=0,
-                          label="hollow: outside the task-set dose rule"))
-    figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.012, 0.915), ncol=len(handles), frameon=False, fontsize=9,
+        if not shared or axes is axes_row[0][0]:
+            axes.set_ylabel("Δ judged hack rate vs unsteered, points (lower = better)", fontsize=9.5, color=INK2)
+        in_view = every if shared else list(data[axis]["arms"].values())
+        axes.set_xlim(min(min(row["diff_ci"][0] for row in in_view), 0) - 0.4, max(max(row["diff_ci"][1] for row in in_view), 0) + 0.4)
+    marks = dict(markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5)
+    handles = [Line2D([], [], color=s["color"], marker=s["marker"], linewidth=2, label=s["name"], **marks) for s in SERIES.values()]
+    handles.append(Line2D([], [], color=INK, marker="o", linewidth=0, label="unsteered", **marks))
+    figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.012, 0.922), ncol=len(handles), frameon=False, fontsize=9,
                   handletextpad=0.5, columnspacing=1.6)
+    hollow = [Line2D([], [], color=SURFACE, marker=s["marker"], markersize=8, markeredgecolor=s["color"], markeredgewidth=1.8, linewidth=0)
+              for s in (SERIES["steering"], SERIES["cap"])]
+    figure.legend(handles=[tuple(hollow)], labels=[f"hollow marker: the share of episodes with no code submitted, or the hidden-test pass rate, "
+                                                   f"is more than {RULE_POINTS:g} points from unsteered"],
+                  handler_map={tuple: HandlerTuple(ndivide=None, pad=0.6)}, loc="upper left", bbox_to_anchor=(0.012, 0.892), frameon=False,
+                  fontsize=9, handletextpad=0.5, handlelength=2.4)
     first = next(iter(data.values()))
     figure.suptitle(f"{model['name']}: change in judged reward hacking against change in benchmark score, per intervention", x=0.015, y=0.985,
                     ha="left", fontsize=12.5, color=INK)
-    figure.text(0.015, 0.932, f"Unsteered: judged hack rate {first['unsteered']['hack']:.1f}%, benchmark score {first['unsteered']['composite']:.1f}%. "
+    figure.text(0.015, 0.934, f"Unsteered: judged hack rate {first['unsteered']['hack']:.1f}%, benchmark score {first['unsteered']['composite']:.1f}%. "
                 "Labels: steering dose α (in layer norms) or clamp threshold (percentile of the unsteered projection).", fontsize=9.5,
                 color=INK2, ha="left", va="bottom")
     figure.text(0.015, 0.012, f"Hack rate: {first['problems']} problems × {first['seeds']} seeds per arm, as judged; bars = 95% CI of the difference, "
-                f"paired bootstrap over problems.\nBenchmark score: one run per arm on GSM8K (1,319 items), MMLU-Pro (1,400), HumanEval (164) and "
-                f"IFBench (300); bars = 95% CI of the difference, paired bootstrap over items.", fontsize=7.8, color=MUTED, ha="left", va="bottom")
-    figure.tight_layout(rect=(0, 0.05, 1, 0.885))
+                f"paired bootstrap over problems.\nBenchmark score = {score_name.format(items=first['items'])}: GSM8K (1,319 items), MMLU-Pro (1,400), "
+                f"HumanEval (164), IFBench (300), one run per arm; bars = 95% CI of the difference, paired bootstrap over items.",
+                fontsize=7.8, color=MUTED, ha="left", va="bottom")
+    figure.tight_layout(rect=(0, 0.05, 1, 0.862), w_pad=2.5 if not shared else 1.0)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=SURFACE)
-    args.out.with_suffix(".json").write_text(json.dumps(dict(model=model["name"], composite=args.composite, boot_draws=BOOT_DRAWS, boot_seed=BOOT_SEED, axes=data), indent=1))
+    args.out.with_suffix(".json").write_text(json.dumps(dict(model=model["name"], composite=args.composite, shared_axes=shared, boot_draws=BOOT_DRAWS, boot_seed=BOOT_SEED, axes=data), indent=1))
     for axis, d in data.items():
         u = d["unsteered"]
         print(f"{axis}: unsteered hack {u['hack']:.1f}%, composite {u['composite']:.2f}")
