@@ -2278,6 +2278,14 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      cannot be tested, so the read is whether seed 0 falls inside the A100 seeds' range on each column, and seeds 7 and 15 (dw-1-4)
      are looked at the same way; a seed outside the range is named with the result. The contrast against Koby's B200 unsteered arm
      is across hardware for 15 of 16 seeds and is stated as a limit. Chart: four doses and both rungs, new file name.
+     **Result (judged 10:11–10:19 pm, read 10:29 PM MST Nov 12; FINDINGS "Gemma 4 31B Goodfire-axis (gfar) cap p95, judged … Holm over
+     6"):** judged hack 2.1% (37 / 1728) against 4.7%, −2.6, CI −4.2 to −1.3, raw p 5.9e-05, Holm 0.00024 over 6; hidden pass −1.0
+     (CI −3.6 to +1.8), no code +0.0: **inside the dose rule**, so by the pre-written reading the rung lowers judged hacking at kept
+     task-set capability. Order as expected (0.3 / 2.1 / 4.7%); the arm was expected near the edge of the rule and is well inside.
+     Holm over 6 for the other five: −0.08 0.20, −0.04 0.20, +0.04 0.00034, +0.08 1.0e-07, cap p75 1.8e-05; no contrast changes side
+     of 0.05 from its interim p × 6. Hardware read: seed 0 (B200) is named, outside the A100 seeds' range on judged hack by one
+     verdict (4 against 0–3; unsteered seeds 3–7) and inside on the other three columns; seeds 7 and 15 inside on all four.
+     The unsteered seeds run on two A100s on Nov 11 are unjudged; judging them is put to the user, not done.
   3. *Muse `gf_cap_p90`, one-seed pilot.* Threshold `thresholds/muse/gfar_p90.json` written offline from the stored
      projection sidecar by the `cap_thresholds.sbatch` recipe (median over the 4 threshold turns of each turn's
      stored 0.9 quantile of generated-token projections, per layer; no GPU run). Arm = the `gf_cap_p95` line with
