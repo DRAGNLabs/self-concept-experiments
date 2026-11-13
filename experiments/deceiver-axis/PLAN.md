@@ -2114,6 +2114,9 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      one untyped 80 GB GPU, `--mem-per-cpu=9G`, 1 h, no requeue, `--exclude=cs-2-1`; picker rows 1–2; dry-run start estimate
      7:07 pm on cs-1-4). Arms file built by `gfar_vs_gi_v2/steer/build_gfar_capeval_arms_1112_gptoss.py`: thresholds equal in 12
      of 12 RH seeds for each rung.
+     **Result (read 6:00 PM MST Nov 12; job ran 5:31–5:58 pm on one A100, cs-1-3; FINDINGS "Benchmarks for the three Goodfire caps that
+     had none"; `gi_v2/capeval/compare_gfcap7595.{md,json}`):** both rungs keep all four, as expected. p75: GSM8K +0.1, MMLU-Pro +0.0,
+     HumanEval +0.6, IFBench +4.7 (CI −1.0 to +10.3). p95: −0.1 / −0.5 / +1.2 / +4.3. No truncated answers. No status change.
   2. *Gemma: one-seed pilots at p25 / p50 / p75 / p95 before any 16-seed arm.* p25 was outside the rule on the three
      other models and broke two, and the share of positions moved does not transfer between models (gpt-oss usable
      at 56% of generated positions, Muse broken at 28%). The queued 16-seed p25 arm 15216111 (never started) is
@@ -2228,6 +2231,10 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      *Submitted 5:22 pm MST Nov 12: job 15313016* (`schemer-capeval-gfcap90-muse`, array 0; `-p cs,cs2 --qos cs`, one untyped
      80 GB GPU, `--mem-per-cpu=8G`, 1 h 30 min, no requeue, `--exclude=cs-2-1`; picker rows 1–2; dry-run start estimate
      6:54 pm on cs-1-3).
+     **Result (read 6:00 PM MST Nov 12; job ran 5:23–5:57 pm on one A100, cs-1-4, 2,016 s; FINDINGS "Benchmarks for the three Goodfire
+     caps that had none"; `capeval/compare_gfcap90.{md,json}`):** p90 keeps all four: GSM8K +0.1, MMLU-Pro +0.9, HumanEval +0.0, IFBench
+     +0.3 (CI −5.0 to +5.7), no truncated or missing answers. The three expected benchmarks are kept and the open one (IFBench) is too.
+     p90 stays outside the task-set dose rule on no code and is written as outside on the task set, clean on the benchmarks.
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /

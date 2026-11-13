@@ -158,36 +158,36 @@ PRESETS = {
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     # Goodfire axis, every benchmarked arm per model (doses + caps). compare_gfar_full.json = rows copied from the
-    # existing compare files (doses: compare_gfar; caps: compare_clamp / compare_gfcap95), nothing recomputed.
+    # existing compare files (doses: compare_gfar; caps: compare_clamp / compare_gfcap95 / compare_gfcap90 / compare_gfcap7595), nothing recomputed.
     "gptoss_gfar_full": dict(
         compare=SCRATCH / "gi_v2/capeval/compare_gfar_full.json",
         out=SCRATCH / "gi_v2/capeval/capeval_gfar_full_chart.png",
         dose_arms=[("gf_m0.4", "−0.4"), ("gf_m0.2", "−0.2"), ("gf_m0.1", "−0.1"), ("unsteered", "0\nunsteered"), ("gf_p0.1", "+0.1"), ("gf_p0.2", "+0.2"), ("gf_p0.4", "+0.4")],
-        side_arms=[("gf_cap_p25", "cap\np25"), ("gf_cap_p50", "cap\np50")],
+        side_arms=[("gf_cap_p25", "cap\np25"), ("gf_cap_p50", "cap\np50"), ("gf_cap_p75", "cap\np75"), ("gf_cap_p95", "cap\np95")],
         side_label="caps, layers 12–23",
         tick_fs=8,
         series_label="Goodfire-axis dose arms, Δ with 95% CI",
-        col_labels=["dose −0.4", "dose −0.2", "dose −0.1", "unsteered", "dose +0.1", "dose +0.2", "dose +0.4", "cap p25", "cap p50"],
+        col_labels=["dose −0.4", "dose −0.2", "dose −0.1", "unsteered", "dose +0.1", "dose +0.2", "dose +0.4", "cap p25", "cap p50", "cap p75", "cap p95"],
         title="gpt-oss-120b, Goodfire reward-hacking axis: capability retention, steering doses and caps",
         layer="17",
         sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Doses: add-steering at layer 17 in units of the layer's mean residual norm.\n"
-            "Caps: the projection on the axis is clipped down to its unsteered 25th / 50th percentile at every position over layers 12–23; on unsteered activations the p25 cap moves 77%\n"
-            "of generated positions and the p50 cap 56%.\n"
+            "Caps: the projection on the axis is clipped down to its unsteered 25th / 50th / 75th / 95th percentile at every position over layers 12–23; on unsteered activations the caps move\n"
+            "77% (p25), 56% (p50), 36% (p75) and 9–12% (p95) of generated positions.\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     "muse_gfar_full": dict(
         compare=SCRATCH / "muse_glimmer/gi_v2/capeval/compare_gfar_full.json",
         out=SCRATCH / "muse_glimmer/gi_v2/capeval/capeval_gfar_full_chart.png",
         dose_arms=[("gf_m0.16", "−0.16"), ("gf_m0.08", "−0.08"), ("unsteered", "0\nunsteered"), ("gf_p0.08", "+0.08"), ("gf_p0.16", "+0.16")],
-        side_arms=[("gf_cap_p95", "cap\np95")],
-        side_label="cap, layers 17–33",
+        side_arms=[("gf_cap_p90", "cap\np90"), ("gf_cap_p95", "cap\np95")],
+        side_label="caps, layers 17–33",
         series_label="Goodfire-axis dose arms, Δ with 95% CI",
-        col_labels=["dose −0.16", "dose −0.08", "unsteered", "dose +0.08", "dose +0.16", "cap p95"],
-        title="Muse-Glimmer-30B, Goodfire reward-hacking axis: capability retention, steering doses and cap",
+        col_labels=["dose −0.16", "dose −0.08", "unsteered", "dose +0.08", "dose +0.16", "cap p90", "cap p95"],
+        title="Muse-Glimmer-30B, Goodfire reward-hacking axis: capability retention, steering doses and caps",
         layer="26",
         sub="Koby's Goodfire reward-hacking axis (hack minus honest; positive = toward hacking). Doses: add-steering at layer 26 in units of the layer's mean residual norm.\n"
-            "Cap: the projection on the axis is clipped down to its unsteered 95th percentile at every position over layers 17–33; on unsteered activations it moves 37.6% of prompt\n"
-            "positions and 4.7–7.2% of generated positions. The p25 cap has no benchmark run (the model stops submitting code on the task set).\n"
+            "Caps: the projection on the axis is clipped down to its unsteered 90th / 95th percentile at every position over layers 17–33; on unsteered activations the p90 cap moves 50.7% of prompt\n"
+            "and 12.5% of generated positions, the p95 cap 37.6% and 4.7–7.2%. The p25 cap has no benchmark run (the model stops submitting code on the task set).\n"
             "Δ = arm accuracy minus the unsteered run (2026-10-29) on the same items; error bars are 95% CIs of the paired difference; p from the exact McNemar test on discordant items.",
     ),
     "gemma_v2_clamp": dict(
@@ -347,10 +347,11 @@ def main() -> None:
         rows.append(("   95% CI of Δ", False, lambda a, task=task: "—" if rec(task, a) is None else f"{100 * rec(task, a)['ci_lo']:+.1f} to {100 * rec(task, a)['ci_hi']:+.1f}"))
         rows.append(("   McNemar p · gains / losses", False, lambda a, task=task: "—" if rec(task, a) is None else f"{fmt_p(rec(task, a)['mcnemar_p'])} · {rec(task, a)['gains']} / {rec(task, a)['losses']}"))
     cell_text = [[n] + [f(a) for a in all_arms] for n, _, f in rows]
-    widths = [0.21] + [0.79 / len(all_arms)] * len(all_arms)
+    label_w = 0.21 if len(all_arms) <= 9 else 0.17  # wide tables (10+ arms): narrower label column, smaller font, so no cell text is clipped
+    widths = [label_w] + [(1 - label_w) / len(all_arms)] * len(all_arms)
     tbl = axt.table(cellText=cell_text, colLabels=["metric"] + P["col_labels"][: len(all_arms)], colWidths=widths, loc="upper center", cellLoc="center", bbox=[0.0, 0.0, 1.0, 0.94])
     tbl.auto_set_font_size(False)
-    tbl.set_fontsize(8.5)
+    tbl.set_fontsize(8.5 if len(all_arms) <= 9 else 7.4)
     group = 0
     for (r, c), cell in tbl.get_celld().items():
         cell.set_edgecolor(RULE)
