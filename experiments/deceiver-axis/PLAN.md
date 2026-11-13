@@ -2162,7 +2162,7 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      **Benchmark eval for p90: reinstated (written 2026-11-12 5:24 PM MST, before the picker ran or anything was submitted).**
      The user asked for it about 5:10 pm, withdrew it about 5:20 pm thinking it widened the scope, and reinstated it about
      5:22 pm on the condition that the other Goodfire arms already have benchmark evals ("then go ahead with p90"). They do: on
-     Muse the p95 cap (15262741) and the four doses ±0.08 / ±0.16 (15234624), on gpt-oss the six doses and the p50 cap, on Qwen
+     Muse the p95 cap (15262741) and the four doses ±0.08 / ±0.16 (15234624), on gpt-oss the six doses and the p25 / p50 caps, on Qwen
      ±0.08. The Goodfire arms without one are Muse p25 and Qwen p25 (the model stops submitting on the task set) and gpt-oss
      p75 / p95 (not requested). So p90 fills a gap in the Muse Goodfire set. The recipe and reading below are the text of
      5:16 pm, unchanged.
@@ -2182,6 +2182,9 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      and HumanEval kept, as at p95 (+0.3 / +0.8 / +2.4); IFBench open (p95 +0.0; the Muse arms that lose a benchmark lose
      this one); a truncated or no-answer share above unsteered's is possible, since 10.6% of task-set episodes end
      without code. No further rung or arm is added or dropped on the outcome.
+     *Submitted 5:22 pm MST Nov 12: job 15313016* (`schemer-capeval-gfcap90-muse`, array 0; `-p cs,cs2 --qos cs`, one untyped
+     80 GB GPU, `--mem-per-cpu=8G`, 1 h 30 min, no requeue, `--exclude=cs-2-1`; picker rows 1–2; dry-run start estimate
+     6:54 pm on cs-1-3).
   **Submitted 2026-11-11 3:14–3:18 pm MST (picker output and decisions in `gpu_pick_2026-11-11.txt`, `jobs.txt`):**
   15216111 cancelled at 3:14 pm (16 pending tasks, none started). **15264564** Gemma pilots (4 tasks, cs3 B200, qos
   cs, 5 h, ahead of the floor array in the queue). **15264575** gpt-oss `gf_cap_p75` + `gf_cap_p95` (24 tasks, cs /
