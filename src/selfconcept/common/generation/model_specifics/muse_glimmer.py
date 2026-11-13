@@ -14,6 +14,7 @@ import re
 
 from selfconcept.common.generation.model_specifics.types import GenerationSpecifics, TemplateWithoutThinkingFlag
 from selfconcept.common.hf_strong_types import AllRoles, ConversationTurn, HFTokenizer, configure_call
+from selfconcept.common.teacher_forcing.completion_markup import CompletionMarkup, CompletionMarkupSpecifics
 
 START = "<|start|>"
 MESSAGE = "<|message|>"
@@ -62,7 +63,7 @@ def join_muse_glimmer_completion(reasoning: str | None, content: str) -> str:
     return f" to=self{MESSAGE}{reasoning}{EOM}{START}assistant{USER_CHANNEL_PREFIX}{content}{EOT}"
 
 
-class MuseGlimmerGenerationSpecifics(TemplateWithoutThinkingFlag, GenerationSpecifics[AllRoles, MuseGlimmerAssistantTurn]):
+class MuseGlimmerGenerationSpecifics(TemplateWithoutThinkingFlag, GenerationSpecifics[AllRoles, MuseGlimmerAssistantTurn], CompletionMarkupSpecifics):
     skip_special_tokens = False
 
     def direct_answer_prefix_ids(self, tokenizer: HFTokenizer) -> list[int]:
@@ -77,3 +78,6 @@ class MuseGlimmerGenerationSpecifics(TemplateWithoutThinkingFlag, GenerationSpec
 
     def to_completion(self, assistant_turn: MuseGlimmerAssistantTurn) -> str:
         return join_muse_glimmer_completion(assistant_turn.get("reasoning_content"), assistant_turn["content"])
+
+    def completion_markup(self) -> CompletionMarkup:
+        return CompletionMarkup(f" to=self{MESSAGE}", f"{EOM}{START}assistant{USER_CHANNEL_PREFIX}", EOT, USER_CHANNEL_PREFIX)

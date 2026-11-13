@@ -10,6 +10,7 @@ from typing import Any
 
 from selfconcept.common.generation.model_specifics.types import GenerationSpecifics
 from selfconcept.common.hf_strong_types import AllRoles, ConversationTurn
+from selfconcept.common.teacher_forcing.completion_markup import CompletionMarkup, CompletionMarkupSpecifics
 
 THOUGHT_OPEN = "<|channel>thought\n"
 THOUGHT_CLOSE = "<channel|>"
@@ -47,7 +48,7 @@ def _strip_control(text: str) -> str:
     return text
 
 
-class Gemma4GenerationSpecifics(GenerationSpecifics[AllRoles, Gemma4AssistantTurn]):
+class Gemma4GenerationSpecifics(GenerationSpecifics[AllRoles, Gemma4AssistantTurn], CompletionMarkupSpecifics):
     skip_special_tokens = False
 
     def set_thinking_flag(self, old_chat_kwargs: dict[str, Any], enable_thinking: bool) -> dict[str, Any]:
@@ -62,3 +63,6 @@ class Gemma4GenerationSpecifics(GenerationSpecifics[AllRoles, Gemma4AssistantTur
 
     def to_completion(self, assistant_turn: Gemma4AssistantTurn) -> str:
         return join_gemma4_completion(assistant_turn.get("reasoning"), assistant_turn["content"])
+
+    def completion_markup(self) -> CompletionMarkup:
+        return CompletionMarkup(THOUGHT_OPEN, f"\n{THOUGHT_CLOSE}", "", "")

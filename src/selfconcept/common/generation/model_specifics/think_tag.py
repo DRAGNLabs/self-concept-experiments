@@ -10,6 +10,7 @@ from typing import Any
 
 from selfconcept.common.generation.model_specifics.types import GenerationSpecifics, ReasoningContentAssistantTurn
 from selfconcept.common.hf_strong_types import AllRoles
+from selfconcept.common.teacher_forcing.completion_markup import CompletionMarkup, CompletionMarkupSpecifics
 
 THINK_OPEN, THINK_CLOSE = "<think>", "</think>"
 
@@ -32,8 +33,12 @@ class ThinkTagGenerationSpecifics(GenerationSpecifics[AllRoles, ReasoningContent
         return self.completion_format.format(reasoning=assistant_turn["reasoning_content"], content=assistant_turn["content"])
 
 
-class QwenThinkGenerationSpecifics(ThinkTagGenerationSpecifics):
+class QwenThinkGenerationSpecifics(ThinkTagGenerationSpecifics, CompletionMarkupSpecifics):
     completion_format = "{reasoning}\n</think>\n\n{content}"
+
+    def completion_markup(self) -> CompletionMarkup:
+        # The generation prompt already opens the thought, so a turn without reasoning closes an empty one.
+        return CompletionMarkup("", f"\n{THINK_CLOSE}\n\n", "<|im_end|>", f"\n{THINK_CLOSE}\n\n")
 
 
 class GlmThinkGenerationSpecifics(ThinkTagGenerationSpecifics):
