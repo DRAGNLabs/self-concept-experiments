@@ -2071,6 +2071,25 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
      to −6.3, Holm 2.5e-05 over 13 contrasts) and 11.5% at p95 (−0.2, CI −3.1 to +2.8, p 1.0) against 11.7% unsteered; both inside the dose
      rule (rule measure +1.8 / +2.7, no-code −6.7 / −6.9). Order as expected (0.2 ≤ 1.3 ≤ 11.5 ≤ 11.7); p95 is the rung where the cap stops
      working. No benchmarks run for the two rungs (on request).
+     **Benchmark eval for p75 and p95 (user 2026-11-12 ~5:26 pm MST: "Let's queue these, yes", on a side note that these are
+     the two judged gpt-oss Goodfire caps without one; written 5:27 PM MST, before the arms file is built or anything is
+     submitted, no score exists).** `gf_cap_p75` and `gf_cap_p95` through GSM8K / MMLU-Pro / HumanEval / IFBench with the recipe
+     of the p25 / p50 caps' benchmark run (15234338; "Capability retention for the cap and floor arms"): `capability_eval.sbatch`,
+     MODEL openai/gpt-oss-120b, reasoning_effort low, the `gf_cap_p50` line of `gi_v2/capeval/arms_clamp.tsv` with the threshold
+     file swapped; each line is accepted only if the threshold file equals the thresholds recorded by all 12 RH seeds of that
+     arm and the direction, mode and layers equal the recorded steering block (`gi_v2/capeval/arms_gfar_cap_p7595.tsv`), output
+     `gi_v2/capeval/gf_cap_p{75,95}/`. One job, both arms one after the other (`ARMS_PER_TASK=2`): 9 to 16 minutes per arm on
+     the earlier gpt-oss benchmark arms (p25 856 s, p50 635 s), so 1 h. One 80 GB GPU, placement by the picker, no requeue;
+     72 GB host memory (`--mem-per-cpu=9G`; the largest peak of the earlier gpt-oss benchmark jobs is 59.3 GiB, 15262751_0).
+     Reference: the 2026-10-29 unsteered benchmark run only.
+     **Reading, fixed now.** The retention rule as written (within 2 points of unsteered or CI covering zero per benchmark;
+     clean = all four; a truncated share more than 2 points above unsteered's is reported as truncation-limited, not as a
+     capability loss). The dose rule of record stays the task-set rule: both rungs stay inside it whatever the scores are, and
+     an arm inside on the task set with a benchmark loss is written that way. **Expected:** both rungs clean on all four. They
+     move fewer positions than p50 (36% and 9–12% of generated positions against 56%), p50 is clean on all four (−0.5 / +0.6 /
+     +0.0 / +2.3), and both are inside the dose rule on the task set (hidden pass over all episodes +3.5 / +2.4, no code
+     −6.7 / −6.9). p95 is at the unsteered judged rate, so its benchmark row says nothing about a cost of the effect; it is run
+     to complete the set. No further rung or arm is added or dropped on the outcome.
   2. *Gemma: one-seed pilots at p25 / p50 / p75 / p95 before any 16-seed arm.* p25 was outside the rule on the three
      other models and broke two, and the share of positions moved does not transfer between models (gpt-oss usable
      at 56% of generated positions, Muse broken at 28%). The queued 16-seed p25 arm 15216111 (never started) is
