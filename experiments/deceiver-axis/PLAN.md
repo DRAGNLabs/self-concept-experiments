@@ -1962,6 +1962,27 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   read (b): B200 seeds 0–8 and two-A100 seeds 9–15 overlap on all four columns (hidden pass 17.6–24.1 / 17.6–23.1, no code 0.0–1.9 /
   0.0–3.7, proxy 15.7–21.3 / 15.7–23.1, judged 0.0–6.5 / 1.9–5.6), so nothing is put to the user on hardware. Chart
   `analysis_gfar4/gemma_hard108_goodfire_four_doses_chart_1112.png`. Remaining in the family: caps p75 and p95.
+  **Benchmark eval for the four judged Gemma Goodfire doses (user about 6:12 pm MST Nov 12: "let's start running the gemma goodfire
+  benchmarks on the completed gfar arms"; written 6:20 PM, before submission):** GSM8K, MMLU-Pro (1,400-item subsample), HumanEval and
+  IFBench for `gf_m0.08`, `gf_m0.04`, `gf_p0.04`, `gf_p0.08` = the task-set arms `gfar_L30_a{-0.08,-0.04,0.04,0.08}` (16 seeds each,
+  all judged). The completed arms are these four; caps p75 and p95 are still running on the task set and get the same benchmark run
+  when their 16 seeds are done. Recipe = the Gemma benchmark runs on record (unsteered and gi_v2 doses 14983080, random 1729 15039083,
+  gi_v2 caps 15234463): `capability_eval.sbatch`, `MODEL=google/gemma-4-31B-it`, `enable_thinking` true, T 1.0, top-p 0.95, top-k 64,
+  sample seed 0, 16,384 new tokens, 20,480-token window, one arm per task. Arms file `gemma4_31b_gi_v2/capeval/arms_gfar.tsv`, built by
+  `gfar_vs_gi_v2/steer/build_gfar_capeval_arms_1112_gemma.py`: each line is the gi_v2 dose line of the same α with the direction file
+  swapped for the Goodfire one, accepted only because direction, mode, layer 30, α and layer norm equal the steering block recorded by
+  16 of 16 task-set seeds. **Reference:** `gemma4_31b_gi_v2/capeval/unsteered` (2026-11-02, B200), item-paired, 10,000-resample
+  bootstrap CI, exact McNemar. **Reading:** the retention rule used for every benchmark run here (per benchmark, within 2 points of
+  unsteered or a CI covering zero; an arm is clean if it keeps all four). **Expected:** all four doses keep all four benchmarks, as
+  the gi_v2 doses at the same α did (every Δ within one point, entry of 2026-11-02), including gi_v2 +0.08, which was outside the
+  task-set rule. If an arm loses a benchmark, the likeliest is ±0.08 on MMLU-Pro, the one the Gemma caps lose. **What it changes:**
+  nothing in the dose rule of record (task-set hidden pass and no code): −0.04 and +0.04 stay inside, −0.08 and +0.08 outside. A clean
+  −0.08 or +0.08 is written as outside on the task set and clean on the benchmarks; a benchmark loss on an inside arm is written
+  beside its inside status, as for Gemma caps p45 / p50. **Placement:** one B200 per task on cs3 at qos cs, the card of every earlier
+  Gemma benchmark run and of the reference. `capability_eval_vllm.py` runs one GPU only (`tensor_parallel_size=1`), and the 20,480-token
+  window does not fit an 80 GB card (14982952, Nov 2), so the two-card placements the Gemma task-set arms moved to today are not
+  available to this script without a code change; an H200 would fit but the scheduler's dry-run start for one is Nov 29. 8 cores,
+  48 GB host memory, 2 h 30 min per task (earlier arms took 71–95 min), no requeue.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
