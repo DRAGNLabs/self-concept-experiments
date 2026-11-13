@@ -1988,6 +1988,25 @@ capping along the Goodfire axis"). Design, written before any result of ours:**
   Nov 13 for all four tasks. For comparison, a two-card task on cs would start about 8:48 pm tonight by dry run, but needs the
   tensor-parallel worker path ported from `steered_rh_vllm.py` into the benchmark script and would be read against a B200 reference;
   not done, put to the user.
+  **Moved to cs with two cards per task (user about 6:29 pm MST Nov 12: "Yeah, let's try to get it done tonight on cs"; written 6:30 PM,
+  before the code change and the submission):** the pending B200 array 15313993 is cancelled (none of its tasks has started) and the
+  same four arms are resubmitted on `-p cs,cs2 --qos cs` with two 80 GB cards per task (A100 pair on cs or H100 pair on cs2, whichever
+  the scheduler starts first; `--exclude=cs-2-1`), tensor-parallel over the two cards. *Code change:* `capability_eval_vllm.py` gets
+  `--tensor-parallel-size` and `--engine-kwargs`; with more than one card the steering goes through the same spec file and worker class
+  (`steering_worker.SteeredWorker`) the task-set harness uses, which is the path all two-card Gemma task-set arms ran on (add-steering
+  on the `gemma4` family). `capability_eval.sbatch` takes `TP` and `ENGINE_KWARGS`; one card stays the default and the one-card command
+  is unchanged. The attention backend is pinned to `TRITON_ATTN`, the one vLLM chose by itself on the B200 in the reference run, as the
+  two-card task-set arms do. Everything else is the recipe above (arms file, sampling, window, token budget, one arm per task).
+  *Checks before any number is read:* each task log carries the worker line "patched Gemma4DecoderLayer.forward (add) for layers [30]"
+  from both ranks and the engine line naming `TRITON_ATTN`; `summary.json` records the card count and the steering block equal to the
+  arms line; the card model per arm is recorded (`HARDWARE.tsv` in `capeval/`). No separate smoke job: the first task's start-up shows
+  the worker lines within minutes, and if they are missing the array is cancelled before anything is scored. *Reference and limit:* the
+  reference stays the B200 unsteered benchmark run of 2026-11-02 (the original unsteered run is the only reference). The contrast is
+  therefore across hardware and across one card against two: items are still paired, but the sampled text differs, so the paired CI
+  is wider than for a same-card pair, and a hardware offset on a benchmark cannot be separated from a dose effect by these four arms
+  alone. No unsteered two-card benchmark run is in this submission. Reading, expectation and "what it changes" are unchanged.
+  *Time limit:* 3 h per task (B200 arms took 71–95 min; on the task set an A100 pair ran about 1.4 times as long as the B200, an H100
+  pair about 0.9 times). 8 cores, 48 GB host memory, no requeue.
   **Qwen pilot read (2026-11-10 9:38 am MST):** only ±0.08 is inside the rule (honest hidden pass −1.4 / −3.8, no-code −0.4 / +4.5
   against the 12-seed unsteered arm); ±0.16 and ±0.32 are outside. Both ±0.08 arms extended to 12 seeds: job 15223248,
   `qwen38_27b_gi_v2/gfar/settings_gfar_ext.tsv`, `gfar_L32_a{0.08,-0.08}/seed{2..11}`, pilot recipe with only the sample seed changed.
