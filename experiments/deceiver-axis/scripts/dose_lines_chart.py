@@ -8,7 +8,9 @@ union of the rungs run on the two axes, evenly spaced (not to scale); the clamp 
 unsteered arm in points, one y axis for both measures (both are percentage points): judged hack rate (solid line, circles) and
 benchmark composite (dashed line, squares; pareto_chart.py's pooled score by default). Colour = steering axis, the colours of
 pareto_chart.py --per-model. The steering lines pass through the unsteered point; the cap and floor lines join their own rungs
-only. Error bars = 95% CIs of the difference (hack rate: paired bootstrap over problems, from the analysis file; benchmark:
+only. --split (user 2026-11-13) puts steering and clamping side by side instead, each around its own unsteered point: the doses
+with α = 0 in the middle, then the caps in order of threshold percentile, a second unsteered point, and the floors in order of
+threshold percentile; the cap and floor lines pass through that second point. Error bars = 95% CIs of the difference (hack rate: paired bootstrap over problems, from the analysis file; benchmark:
 item-paired bootstrap). A hollow marker = the model stops submitting code on that arm (no-code share more than 10 points above
 unsteered), drawn on both of the arm's points.
 
@@ -20,6 +22,7 @@ Data, presets and the benchmark composite come from pareto_chart.py (`MODELS`, `
 
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --model gptoss muse gemma qwen --out <path>.png
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --kinds steering --out <path>.png      # steering doses only
+    python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --out <path>.png               # steering | caps, unsteered, floors
 """
 from __future__ import annotations
 
@@ -43,6 +46,8 @@ SECTIONS = {"cap": "cap at percentile", "steering": "steering dose α (layer nor
 TINT = "#f3f2ec"  # background of the clamp sections
 DODGE = 0.07  # the two axes' markers sit this far (in x steps) either side of the tick, so their error bars do not overlap
 SECTION_GAP = 0.5  # extra x steps between two sections
+SPLIT_GAP = 1.0  # --split: extra x steps between the steering part and the clamp part
+ORIGIN_PAD = 0.4  # --split: extra x steps either side of the clamp part's unsteered point (room for its tick label)
 PANEL_WIDTH, LEFT, RIGHT, PLOT_HEIGHT, TITLE_HEIGHT, XAXIS_HEIGHT, GAP = 8.4, 0.8, 0.25, 4.3, 0.62, 0.72, 0.3
 
 
@@ -75,12 +80,51 @@ def layout(groups: list[dict], kinds: list[str]) -> tuple[dict[tuple[str, float]
     return slots, sections
 
 
-def draw_plot(axes, groups: list[dict], kinds: list[str]) -> None:
-    slots, sections = layout(groups, kinds)
+def plan(groups: list[dict], kinds: list[str], split: bool = False) -> tuple[dict[tuple[str, float], float], list[dict], list[float]]:
+    """What draw_plot draws: the x position of every (kind, rung), the parts of the x axis and the unsteered positions. A part has
+    its extent, tick labels, captions (centre, text, width in steps) and chains; a chain is the kinds of arm one line joins and the
+    unsteered position that line passes through (None: it joins its own rungs only). Default: layout()'s three sections, with one
+    unsteered point in the steering section. `split`: a steering part, then a clamp part with its own unsteered point between the
+    caps and the floors (caps in order of threshold percentile, unsteered, floors in order of threshold percentile)."""
+    if not split:
+        slots, sections = layout(groups, kinds)
+        origin = slots.get(("steering", 0.0))
+        parts = [dict(start=section["start"], end=section["end"], tinted=section["kind"] != "steering",
+                      ticks=[(slots[(section["kind"], value)], rung_label(section["kind"], value)) for value in section["rungs"]],
+                      captions=[((section["start"] + section["end"]) / 2, SECTIONS[section["kind"]], section["end"] - section["start"])],
+                      chains=[dict(kinds=(section["kind"],), origin=origin if section["kind"] == "steering" else None)]) for section in sections]
+        return slots, parts, [] if origin is None else [origin]
+    rungs = lambda kind: sorted({row["rung"] for group in groups for row in group["rows"] if row["kind"] == kind}) if kind in kinds else []
+    slots, parts, origins, x = {}, [], [], 0.0
+    if "steering" in kinds:
+        doses = sorted(set(rungs("steering")) | {0.0})
+        slots.update({("steering", value): x + index for index, value in enumerate(doses)})
+        origins.append(slots[("steering", 0.0)])
+        parts.append(dict(start=x - 0.5, end=x + len(doses) - 0.5, tinted=False, ticks=[(slots[("steering", value)], rung_label("steering", value)) for value in doses],
+                          captions=[(x + (len(doses) - 1) / 2, SECTIONS["steering"], len(doses))], chains=[dict(kinds=("steering",), origin=origins[-1])]))
+        x += len(doses) + SPLIT_GAP
+    caps, floors = rungs("cap"), rungs("floor")
+    if caps or floors:
+        origin = x + len(caps) + (ORIGIN_PAD if caps else 0.0)
+        first_floor = origin + 1 + ORIGIN_PAD
+        slots.update({("cap", value): x + index for index, value in enumerate(caps)})
+        slots.update({("floor", value): first_floor + index for index, value in enumerate(floors)})
+        origins.append(origin)
+        captions = ([(x + (len(caps) - 1) / 2, SECTIONS["cap"], len(caps))] if caps else []) + (
+            [(first_floor + (len(floors) - 1) / 2, SECTIONS["floor"], len(floors))] if floors else [])
+        parts.append(dict(start=x - 0.5, end=(first_floor + len(floors) - 0.5) if floors else origin + 0.5, tinted=True,
+                          ticks=[(slots[("cap", value)], rung_label("cap", value)) for value in caps] + [(origin, "unsteered")]
+                          + [(slots[("floor", value)], rung_label("floor", value)) for value in floors],
+                          captions=captions, chains=[dict(kinds=("cap", "floor"), origin=origin)]))
+    return slots, parts, origins
+
+
+def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False) -> None:
+    slots, parts, origins = plan(groups, kinds, split)
     axes.set_facecolor(pc.SURFACE)
-    for section in sections:
-        if section["kind"] != "steering":
-            axes.axvspan(section["start"], section["end"], color=TINT, linewidth=0, zorder=0)
+    for part in parts:
+        if part["tinted"]:
+            axes.axvspan(part["start"], part["end"], color=TINT, linewidth=0, zorder=0)
     axes.axhline(0, color=pc.ZERO, linewidth=1.1, zorder=1.5)
     axes.grid(axis="y", color=pc.GRID, linewidth=0.6, zorder=0.5)
     axes.set_axisbelow(True)
@@ -88,37 +132,36 @@ def draw_plot(axes, groups: list[dict], kinds: list[str]) -> None:
         axes.spines[side].set_visible(False)
     for side in ("left", "bottom"):
         axes.spines[side].set_color(pc.AXIS)
-    origin = slots.get(("steering", 0.0))
-    if origin is not None:
+    for origin in origins:
         axes.axvline(origin, color=pc.GRID, linewidth=0.6, zorder=1)
     for index, group in enumerate(groups):
         shift = (index - (len(groups) - 1) / 2) * 2 * DODGE
-        for section in sections:
-            for measure in MEASURES.values():
-                points = sorted(((slots[(row["kind"], row["rung"])] + shift, row) for row in group["rows"]
-                                 if row["kind"] == section["kind"] and row[measure["value"]] is not None), key=lambda point: point[0])
-                if not points:
-                    continue
-                line = [(x, row[measure["value"]]) for x, row in points] + ([(origin, 0.0)] if section["kind"] == "steering" else [])
-                axes.plot(*zip(*sorted(line)), color=group["color"], linewidth=measure["width"], linestyle=measure["dash"], zorder=3,
-                          solid_capstyle="round", solid_joinstyle="round")
-                for x, row in points:
-                    y, (low, high) = row[measure["value"]], row[measure["ci"]]
-                    axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1, alpha=0.4, zorder=2)
-                    face, edge = (pc.SURFACE, group["color"]) if row["stops_submitting"] else (group["color"], pc.SURFACE)
-                    axes.plot(x, y, measure["marker"], markersize=measure["size"], color=face, markeredgecolor=edge, markeredgewidth=1.6, zorder=4)
-    if origin is not None:
+        for part in parts:
+            for chain in part["chains"]:
+                for measure in MEASURES.values():
+                    points = sorted(((slots[(row["kind"], row["rung"])] + shift, row) for row in group["rows"]
+                                     if row["kind"] in chain["kinds"] and row[measure["value"]] is not None), key=lambda point: point[0])
+                    if not points:
+                        continue
+                    line = [(x, row[measure["value"]]) for x, row in points] + ([(chain["origin"], 0.0)] if chain["origin"] is not None else [])
+                    axes.plot(*zip(*sorted(line)), color=group["color"], linewidth=measure["width"], linestyle=measure["dash"], zorder=3,
+                              solid_capstyle="round", solid_joinstyle="round")
+                    for x, row in points:
+                        y, (low, high) = row[measure["value"]], row[measure["ci"]]
+                        axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1, alpha=0.4, zorder=2)
+                        face, edge = (pc.SURFACE, group["color"]) if row["stops_submitting"] else (group["color"], pc.SURFACE)
+                        axes.plot(x, y, measure["marker"], markersize=measure["size"], color=face, markeredgecolor=edge, markeredgewidth=1.6, zorder=4)
+    for origin in origins:
         axes.plot(origin, 0, "o", markersize=8, color=pc.INK, markeredgecolor=pc.SURFACE, markeredgewidth=1.6, zorder=5)
-    axes.set_xlim(sections[0]["start"], sections[-1]["end"])
-    axes.set_xticks([slots[(section["kind"], value)] for section in sections for value in section["rungs"]],
-                    [rung_label(section["kind"], value) for section in sections for value in section["rungs"]])
+    axes.set_xlim(parts[0]["start"], parts[-1]["end"])
+    axes.set_xticks([x for part in parts for x, _ in part["ticks"]], [text for part in parts for _, text in part["ticks"]])
     axes.tick_params(colors=pc.MUTED, labelsize=8.2)
     axes.set_ylabel("Δ vs unsteered, points", fontsize=9.5, color=pc.INK2)
-    inches_per_step = axes.get_position().width * axes.figure.get_figwidth() / (sections[-1]["end"] - sections[0]["start"])
-    for section in sections:
-        width = (section["end"] - section["start"]) * inches_per_step
-        axes.text((section["start"] + section["end"]) / 2, -0.075, pc.wrap(SECTIONS[section["kind"]], 9, max(1.25 * width, 0.9)), fontsize=9,
-                  color=pc.INK2, ha="center", va="top", linespacing=1.2, transform=axes.get_xaxis_transform(), clip_on=False)
+    inches_per_step = axes.get_position().width * axes.figure.get_figwidth() / (parts[-1]["end"] - parts[0]["start"])
+    for part in parts:
+        for centre, text, steps in part["captions"]:
+            axes.text(centre, -0.075, pc.wrap(text, 9, max(1.25 * steps * inches_per_step, 0.9)), fontsize=9,
+                      color=pc.INK2, ha="center", va="top", linespacing=1.2, transform=axes.get_xaxis_transform(), clip_on=False)
 
 
 def main() -> None:
@@ -126,6 +169,8 @@ def main() -> None:
     parser.add_argument("--model", nargs="+", choices=sorted(pc.MODELS), default=["gptoss", "muse", "gemma", "qwen"])
     parser.add_argument("--axes", nargs="+", default=["gi_v2", "gfar"])
     parser.add_argument("--kinds", nargs="+", choices=list(SECTIONS), default=list(SECTIONS), help="sections to draw (default: all three)")
+    parser.add_argument("--split", action="store_true",
+                        help="steering and clamping side by side, each around its own unsteered point: doses, then caps / unsteered / floors")
     parser.add_argument("--composite", choices=sorted(pc.COMPOSITES), default="pooled")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -153,7 +198,9 @@ def main() -> None:
                     12.5, width - 0.3)
     order = {"cap": "caps by threshold", "steering": "steering doses", "floor": "floors by threshold"}
     subtitle = pc.wrap("Both measures are the change from the model's unsteered arm, in points, on one y axis. Bars = 95% CI. "
-                       + (f"Left to right: {', '.join(order[kind] for kind in kinds)}. Rungs" if len(kinds) > 1 else "Doses")
+                       + ("Left: steering doses. Right (tinted): caps and floors by threshold, either side of their own unsteered point. Rungs"
+                          if args.split and "steering" in kinds and len(kinds) > 1
+                          else f"Left to right: {', '.join(order[kind] for kind in kinds)}. Rungs" if len(kinds) > 1 else "Doses")
                        + " are evenly spaced, not to scale.", 9.5, width - 0.1)
     notes = []
     for panel in panels:
@@ -200,7 +247,7 @@ def main() -> None:
         column, grid_row = index % columns, index // columns
         top = head_height + grid_row * panel_height
         plot = figure.add_axes(((column * PANEL_WIDTH + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT), plot_width / width, PLOT_HEIGHT / height))
-        draw_plot(plot, panel["groups"], kinds)
+        draw_plot(plot, panel["groups"], kinds, args.split)
         unsteered = panel["groups"][0]["data"]["unsteered"]
         plot.set_title(f"{panel['model']['name']}\nunsteered: judged hack rate {unsteered['hack']:.1f}%, benchmark score {unsteered['composite']:.1f}%",
                        fontsize=9.6, color=pc.INK, loc="left", pad=8, linespacing=1.35)
@@ -208,7 +255,7 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=pc.SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=pc.SURFACE)
-    record = dict(composite=args.composite, kinds=kinds, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
+    record = dict(composite=args.composite, kinds=kinds, split=args.split, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
                   panels=[dict(model=panel["model"]["name"],
                                axes=[dict(axis=group["axis_key"], color=group["color"], analysis=group["data"]["analysis"],
                                           unsteered=group["data"]["unsteered"], arms=group["rows"]) for group in panel["groups"]])
