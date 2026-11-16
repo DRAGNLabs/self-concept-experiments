@@ -98,7 +98,7 @@ MODELS = {
                                      "gi_cap_p25": (-12, 1), "gi_cap_p5": (13, -9), "gi_floor_p50": (-10, 7), "gi_floor_p95": (-10, -7),
                                      "unsteered": (12, 7)}),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 17; clamps on layers 12–23)", prefix="gf_",
-                           analysis=N / "gi_v2/pilot/analysis_gfx01_all_as_judged.json", summary=N / "gi_v2/pilot/summary_gfar.json",
+                           analysis=N / "gi_v2/pilot/analysis_gfx02nr_all_as_judged.json", summary=N / "gi_v2/pilot/summary_gfar.json",
                            offsets={"gf_cap_p75": (13, 4), "gf_cap_p50": (12, -10), "gf_cap_p25": (0, -14), "gf_cap_p95": (12, -8),
                                     "gf_m0.1": (-10, 3)})}),
     "muse": dict(
@@ -106,13 +106,13 @@ MODELS = {
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 26; clamps on layers 17–33)", prefix="gi_",
                             analysis=N / "muse_glimmer/gi_v2/pilot/analysis_floorladder_all_as_judged.json"),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 26; clamps on layers 17–33)", prefix="gf_",
-                           analysis=N / "muse_glimmer/gi_v2/pilot/analysis_ctl_m01_s0-11_all_as_judged.json")}),
+                           analysis=N / "muse_glimmer/gi_v2/pilot/analysis_gfx03_all_as_judged.json")}),
     "gemma": dict(
         name="Gemma 4 31B", task_set="108 problems × 16 seeds", capeval=N / "gemma4_31b_gi_v2/capeval",
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 30; clamps on layers 20–38)", prefix="gi_",
                             analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_capfloor15/analysis_all_as_judged.json"),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 30; clamps on layers 20–38)", prefix="gf_",
-                           analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_gfar6/analysis_all_as_judged.json")}),
+                           analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_gfar7/analysis_all_as_judged.json")}),
     "qwen": dict(
         name="Qwen3.8-27B", task_set="61 problems × 12 seeds", capeval=N / "qwen38_27b_gi_v2/capeval",
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 32; clamps on layers 22–42)", prefix="gi_",
