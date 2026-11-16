@@ -56,6 +56,9 @@ ARMS = [
     ("gpt-oss", "gfar", "cap", 50, GP + "/gf_cap_p50", None),
     ("gpt-oss", "gfar", "cap", 75, GP + "/gf_cap_p75", None),
     ("gpt-oss", "gfar", "cap", 95, GP + "/gf_cap_p95", None),
+    ("gpt-oss", "gfar", "floor", 50, GP + "/gf_floor_p50", None),
+    ("gpt-oss", "gfar", "floor", 75, GP + "/gf_floor_p75", None),
+    ("gpt-oss", "gfar", "floor", 95, GP + "/gf_floor_p95", None),
     ("Muse", "gi_v2", "cap", 5, MP + "/gi_cap_p5", None),
     ("Muse", "gi_v2", "cap", 25, MP + "/gi_cap_p25", None),
     ("Muse", "gi_v2", "cap", 50, MP + "/gi_cap_p50", None),
@@ -66,6 +69,9 @@ ARMS = [
     ("Muse", "gfar", "cap", 75, MP + "/gf_cap_p75", GF + "/muse/gfar_p75.json"),
     ("Muse", "gfar", "cap", 90, MP + "/gf_cap_p90", GF + "/muse/gfar_p90.json"),
     ("Muse", "gfar", "cap", 95, MP + "/gf_cap_p95", GF + "/muse/gfar_p95.json"),
+    ("Muse", "gfar", "floor", 50, MP + "/gf_floor_p50", None),
+    ("Muse", "gfar", "floor", 75, MP + "/gf_floor_p75", None),
+    ("Muse", "gfar", "floor", 95, MP + "/gf_floor_p95", None),
     ("Gemma", "gi_v2", "cap", 25, GE + "/cap_p25_L20-38", None),
     ("Gemma", "gi_v2", "cap", 35, GE + "/cap_p35_L20-38", None),
     ("Gemma", "gi_v2", "cap", 45, GE + "/cap_p45_L20-38", None),
@@ -78,11 +84,18 @@ ARMS = [
     ("Gemma", "gfar", "cap", 50, GE + "/gfar_cap_p50_L20-38", GF + "/gemma4_31b/gfar_p50.json"),
     ("Gemma", "gfar", "cap", 75, GE + "/gfar_cap_p75_L20-38", GF + "/gemma4_31b/gfar_p75.json"),
     ("Gemma", "gfar", "cap", 95, GE + "/gfar_cap_p95_L20-38", GF + "/gemma4_31b/gfar_p95.json"),
+    ("Gemma", "gfar", "floor", 50, GE + "/gfar_floor_p50_L20-38", None),
     ("Qwen", "gi_v2", "cap", 25, G + "/qwen38_27b_gi_v2/rh/qwen_hard61/cap_p25_L22-42", None),
     ("Qwen", "gi_v2", "floor", 50, QW + "/floor_p50_L22-42", None),
     ("Qwen", "gi_v2", "floor", 75, QW + "/floor_p75_L22-42", None),
     ("Qwen", "gi_v2", "floor", 95, QW + "/floor_p95_L22-42", None),
     ("Qwen", "gfar", "cap", 25, QW + "/gfar_cap_p25_L22-42", None),
+    # Koby's coverage batch of 2026-11-13 (symlinks to the share copies; Qwen under the cov1113/ staging root)
+    ("Qwen", "gi_v2", "cap", 50, QW + "/cov1113/cap_p50_L22-42", None),
+    ("Qwen", "gfar", "cap", 50, QW + "/cov1113/gfar_cap_p50_L22-42", None),
+    ("Qwen", "gfar", "floor", 50, QW + "/cov1113/gfar_floor_p50_L22-42", None),
+    ("Qwen", "gfar", "floor", 75, QW + "/cov1113/gfar_floor_p75_L22-42", None),
+    ("Qwen", "gfar", "floor", 95, QW + "/cov1113/gfar_floor_p95_L22-42", None),
 ]
 
 

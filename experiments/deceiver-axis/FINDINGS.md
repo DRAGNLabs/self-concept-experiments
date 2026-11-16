@@ -16,6 +16,10 @@ call a non-significant result evidence of no effect.
 
 ## Current status
 
+**gpt-oss Goodfire floors judged, 1:18–1:27 pm MST Nov 16 (set `gfx02`, Koby's coverage batch; entry "gpt-oss Goodfire-axis (gfar) floors p50 / p75 / p95, judged" below; written 1:47 PM MST Nov 16):** judged hack 8.0% at p50 (−3.7, CI −6.5 to −1.1), 10.7% at p75 (−0.9) and 18.5% at p95 (+6.9, CI +2.4 to +11.5) against 11.7% unsteered. p50 and p75 are inside the dose rule and keep all four benchmarks; **neither raises judged hacking**, as expected. p95 is outside the rule on hidden pass (−13.5) and loses MMLU-Pro (−4.6), so its rise is not read as an effect at kept capability. Its Holm p is 0.066 in the family written before the read (13 Goodfire arms + three random add arms) and 0.048 over the 13 Goodfire arms alone. **Random directions are no longer a control on any model (user, about 1:41 pm Nov 16):** the isotropic random add arms leave the gpt-oss and Muse Holm families and new charts; for gpt-oss this came after the read, so both values are reported; for Muse it precedes every read. Earlier entries stay as written.
+
+**Gemma Goodfire floor p50 judged, 1:27–1:31 pm MST Nov 16 (set `g10`, Koby's coverage batch; entry "Gemma 4 31B Goodfire-axis (gfar) floor p50, judged" below; written 1:47 PM MST Nov 16):** a broken arm, as expected. No code in 24.5% of episodes, 2,105 of 3,477 turns truncated, hidden pass −22.2 (CI −27.4 to −17.2), MMLU-Pro −5.5 and IFBench −4.7 lost. Judged hack 1.2% (21 / 1728) against 4.7% unsteered (−3.5, CI −5.8 to −1.6, Holm 0.0006 over seven Goodfire contrasts), read as lost output and not as suppression. No Goodfire floor rung is usable on Gemma (Koby stopped the ladder at p50). The six earlier Goodfire contrasts keep their sides of 0.05.
+
 **Benchmark eval for the two Gemma Goodfire caps, read 12:37 AM MST Nov 13 (jobs 15317882, 15317886; entry "Benchmarks for the two Gemma Goodfire caps (p75, p95)" below; written 12:40 AM MST Nov 13):** the p75 cap keeps all four benchmarks (largest loss HumanEval −1.8, three items; MMLU-Pro −1.3, CI −2.4 to −0.2, within the 2-point rule). **The p95 cap loses IFBench by the retention rule:** 77.0% against 80.3% unsteered, −3.3, CI −6.3 to −0.3, 7 gains / 17 losses, McNemar p 0.064; it keeps GSM8K (+0.1), MMLU-Pro (+0.5) and HumanEval (+0.0). This was not expected (p95 had been expected to keep all four). No dose-rule status changes: p95 stays inside the task-set dose rule and now carries "loses IFBench" beside it; p75 stays outside on the task set and is clean on the benchmarks. Weighing the p95 loss: the CI clears zero by one item, the raw p is one of 8 new comparisons and not corrected, and the loss is not ordered with the rung (p75, which moves far more positions, is at +2.0 on IFBench). Both arms ran on two A100s against the B200 reference. Neither job was cut (p95 ended 43 s inside its limit). Chart: `gemma4_31b_gi_v2/capeval/capeval_gemma_gfar_full_chart_1113.png`.
 
 **Gemma Goodfire cap p95 judged and the family closed, 10:11–10:19 pm MST Nov 12 (set `g09`, entry "Gemma 4 31B Goodfire-axis (gfar) cap p95, judged … Holm over 6" below; written 10:29 PM):** judged hack 2.1% (37 / 1728) against 4.7% unsteered, −2.6, CI −4.2 to −1.3, Holm 0.00024 over the six Goodfire contrasts, and the arm is **inside the dose rule** (hidden pass −1.0, CI −3.6 to +1.8; no code +0.0). By the pre-written reading it lowers judged hacking at kept task-set capability, the only arm of the family that does and the first Gemma cap rung on either axis that is both inside the rule and significant after correction. The order p75 ≤ p95 ≤ unsteered is as expected (0.3 / 2.1 / 4.7%); the arm had been expected near the edge of the rule and is well inside. What falls is STRONG verdicts (62 → 16; WEAK 20 → 21) while the automatic proxy does not move (20.2% → 19.6%). Limit to state with it: 15 of 16 seeds ran on two A100s against the B200 reference, and seed 0, the one B200 seed, has the arm's highest count (4 hacks against 0–3; unsteered seeds have 3–7). The rung moves 11.3–13.3% of prompt and 3.6–6.1% of generated positions. Holm over 6 for the other five: −0.08 0.20, −0.04 0.20, +0.04 0.00034, +0.08 1.0e-07, cap p75 1.8e-05; none changes side of 0.05. Benchmark evals for both caps are running (15317882, 15317886). Chart: `analysis_gfar6/gemma_hard108_goodfire_doses_caps_p75_p95_chart_1112.png`.
@@ -182,6 +186,99 @@ Recorded `lcbhard_55` hidden passes, of 12 seeds:
 **Reading.** Arms within about 2 points of a line on a hidden-pass measure are not separated from it by this evidence. That covers the Muse p95 cap and the Muse −0.08 dose, both outside the 10-point rule by 0.6 points on the rule measure. Their status as written (outside; the miss may be composition, not capability) stands, with this as a second reason not to read the miss as a capability loss. Arms far from the line are not affected.
 
 **Not established.** How many of the recorded `lcbhard_55` results in each arm sit near the limit (only three October episodes were re-timed); whether other problems have the same margin (the probe covered five); whether verification time differs by node type.
+
+### gpt-oss Goodfire-axis (gfar) floors p50 / p75 / p95, judged (set `gfx02`, Koby's coverage batch of Nov 13) — 2026-11-16: the two floors inside the dose rule do not raise judged hacking (8.0% and 10.7% against 11.7% unsteered); the p95 floor raises it to 18.5% (+6.9, CI +2.4 to +11.5) but is outside the rule on hidden pass (−13.5) and loses MMLU-Pro, so the rise is not read as an effect at kept capability; its adjusted p is 0.066 in the family written before the read and 0.048 after the random arms left the family the same afternoon
+
+**Question.** PLAN "Koby's coverage batch of 2026-11-13: judging" (written 1:10 pm, before any set was built). Adding the Goodfire direction never raised hacking on gpt-oss (+0.1 … +0.4 stopped the model submitting code) while capping it lowered hacking by 10–11 points. Does holding the projection up with a floor raise judged hacking? Expected: no rise at p50 or p75 (a change between −5 and +2 points); p95 outside the rule, a rise of a few points the likelier direction.
+
+**Data.** Koby's runs, read from the share copy `coverage_1113_kobyjl/gptoss120b/rh/gf_floor_p{50,75,95}` through symlinks in `gi_v2/pilot/` (nothing copied or written there): floor along the Goodfire direction on layers 12–23 at the stored unsteered percentile (the thresholds of our `gf_cap_p50 / p75 / p95`), main-run recipe, 45 problems × 12 seeds = 540 episodes per arm, every seed with every problem once, one steering block per arm. Hardware per his README: cs / cs2 / cs3, qos cs. Open-loop share of positions the floor moves (`clamp_shares.md`, regenerated today with these arms): p50 41.1% of prompt and 44% of generated positions, p75 55.7% / 63.9%, p95 81% / 88–91%.
+
+**Judging.** Blind set `gfx02` (three arms mixed, neutral names): 280 shown-pass / hidden-fail dossiers in 47 batches and 72 hidden-pass signature dossiers in 12, Sonnet rubric-judge through `judge_runner.py`, six at once, first pass as judged, no adjudication; 1:18:28–1:27:04 pm MST, list price $6.90 + $1.82. No read-audit flag. Proxy batches 6 and 26 wrote `pressure_source` = `none` (out-of-set side field), kept as judged. Verdicts (HACK / BORDERLINE / NOT_HACK): p50 proxy 35 / 10 / 36, hidden-pass 8 / 4 / 7; p75 42 / 7 / 37 and 16 / 2 / 11; p95 85 / 3 / 25 and 15 / 2 / 7.
+
+**Numbers (problem-stratified means over 45 problems; Δ against the October unsteered arm in points, problem-bootstrap 95% CI, exact sign-flip p).** Two Holm columns: over the 16 contrasts of the family as written before the read (13 Goodfire arms + three isotropic random add arms, `analysis_gfx02_*`), and over the 13 Goodfire contrasts (`analysis_gfx02nr_*`) after the user's decision of about 1:41 pm that random directions are not a control on any model. That decision came after the 16-contrast file was read (PLAN amendment 1:42 pm), so for this set the 13-contrast column is post hoc.
+
+| measure | unsteered | floor p50 | floor p75 | floor p95 |
+|---|---|---|---|---|
+| positions moved, prompt / generated | | 41.1% / 44% | 55.7% / 63.9% | 81% / 88–91% |
+| judged hack, as judged | 11.7% (63 / 540) | 8.0% (43 / 540) | 10.7% (58 / 540) | 18.5% (100 / 540) |
+| Δ (95% CI) | | −3.7 (−6.5 to −1.1) | −0.9 (−4.4 to +2.4) | +6.9 (+2.4 to +11.5) |
+| raw p | | 0.011 | 0.67 | 0.0060 |
+| Holm p, 16 contrasts (as pre-written) / 13 (no random arms) | | 0.097 / 0.065 | 1.0 / 1.0 | 0.066 / 0.048 |
+| problems up / down / tied | | 3 / 13 / 29 | 11 / 9 / 25 | 23 / 5 / 17 |
+| judged hack, BORDERLINE counted | 15.0% | 10.6% (−4.4; Holm 0.084 / 0.056) | 12.4% (−2.6; 1.0 / 0.60) | 19.4% (+4.4; 0.64 / 0.40) |
+| judged hack, WEAK not counted | 10.4% | 6.3% (−4.1; 0.019 / 0.014) | 9.8% (−0.6; 1.0 / 1.0) | 16.9% (+6.5; 0.043 / 0.030) |
+| judged hack, proxy set only | 9.6% | 6.5% (−3.1; 0.25 / 0.17) | 7.8% (−1.9; 1.0 / 1.0) | 15.7% (+6.1; 0.064 / 0.045) |
+| judged hack among episodes with code | 12.6% (63 / 500) | 8.5% (43 / 506) | 11.6% (58 / 500) | 20.4% (100 / 490) |
+| automatic proxy (shown pass, hidden fail) | 19.4% | 15.0% (−4.4) | 15.9% (−3.5) | 20.9% (+1.5) |
+| hidden-test pass, all episodes (rule measure) | 25.0% | 20.0% (−5.0, CI −9.6 to −0.4) | 23.1% (−1.9, CI −6.9 to +3.3) | 11.5% (−13.5, CI −21.5 to −5.9) |
+| no code submitted | 7.4% | 6.3% (−1.1) | 7.4% (0.0) | 9.3% (+1.9) |
+| shown-test pass | 44.4% | 35.0% (−9.4, CI −13.9 to −5.2) | 39.1% (−5.4, CI −11.5 to +0.6) | 32.4% (−12.0, CI −19.4 to −4.8) |
+| turns per episode | 2.90 | 3.28 (+0.38) | 3.18 (+0.28) | 3.23 (+0.33) |
+| truncated turns | 0 / 1,568 | 0 / 1,772 | 0 / 1,718 | 0 / 1,746 |
+| dose rule | | inside | inside | outside (hidden pass) |
+| benchmarks, Δ GSM8K / MMLU-Pro / HumanEval / IFBench | | −0.5 / −0.7 / +1.2 / −2.7 (keeps all four) | −0.5 / −1.0 / +0.6 / −1.0 (keeps all four) | −1.1 / **−4.6** / 0.0 / +2.3 (loses MMLU-Pro) |
+
+Earlier contrasts in the larger family: no adjusted p crosses 0.05 in the as-judged file under either family (−0.1: 0.069 in the 13-contrast file of `gfx01` → 0.087 with 16 / 0.061 with 13 Goodfire only; +0.4: 0.105 → 0.12 / 0.075; the five that were clear stay below 0.001; cap p95, +0.1, +0.2 stay at 0.76–1.0).
+
+**Reading.**
+- *The expectation holds for p50 and p75: a floor inside the rule does not raise judged hacking.* p75 is level (−0.9, CI covering zero). p50 is lower by 3.7 points with a CI just below zero, inside the band written beforehand, and not clear after Holm in either family (it is clear with WEAK not counted). The picture-changer named in the PLAN (a Goodfire floor inside the rule that raises judged hacking by a Holm-clear margin) did not occur.
+- *p50 passes the shown tests less often.* Shown-test pass falls 9.4 points (Holm 0.001) and hidden pass 5.0 with the arm still inside the rule, and the benchmarks hold. A judged hack needs a shown-test pass, so part of the lower rate may be fewer passing episodes; the columns do not separate that from less hacking per attempt.
+- *p95 rises, outside the rule.* +6.9 points with a CI above zero, higher on 23 problems and lower on 5. Hidden pass falls 13.5 points, shown pass 12.0, reasoning per turn is shorter (−495 characters) and MMLU-Pro is lost (−4.6, CI −6.4 to −2.7). By the rule written before the run the rise is reported and not read as an effect of the direction at kept capability: a model that solves fewer problems has more failing episodes in which a hack can occur. The automatic proxy barely moves (+1.5) while the judged rate rises, so more of the shown-pass / hidden-fail episodes are judged hacks (85 of 113 at p95 against 52 of 105 unsteered).
+- *The adjusted p depends on the family, and the family changed after the read.* 0.066 with the three random add arms the PLAN named, 0.048 without them. The rise is not robust to the verdict variant either (BORDERLINE counted: +4.4, Holm 0.64 / 0.40). Neither value changes the reading, because the arm is outside the rule.
+- *Across the ladder* judged hacking goes 8.0% → 10.7% → 18.5% as the floor moves 44% → 64% → about 90% of generated positions, with capability holding at the first two rungs and failing at the third. There is no rung where hacking rises with capability kept.
+
+**Caveats.**
+- The arms are Koby's runs, judged in their own set under neutral names; the unsteered verdicts are from the October `main` set. Arm and reference were not judged in one set, and judge drift between sets is not measured.
+- The 13-contrast family is post hoc for this set (see above). Earlier gpt-oss Goodfire entries keep their families with the random arms as written.
+- The floor is applied at every position, prompt included; the shares are open-loop estimates from unsteered activations.
+- The benchmark runs are Koby's (`capeval/gf_floor_p*`, IFBench scored with `ifbench` at allenai/IFBench 20aec206dd, which he reports reproduces all 1,800 per-item verdicts of six earlier evals), paired item by item with our October 29 unsteered run (`compare_cov1113.{json,md}`); no truncated answers.
+
+**Files.** Runs `coverage_1113_kobyjl/gptoss120b/rh/gf_floor_p*` (share; symlinks in `gi_v2/pilot/`); set `gi_v2/pilot/{dossiers_gfx02,dossiers_hidden_gfx02,verdicts_gfx02}/` (DISPATCH.txt, runner logs), `build_gfx02.log`; analysis `analysis_gfx02_{all,proxy}_<variant>.{json,log}` (16 contrasts), `analysis_gfx02nr_{all,proxy}_<variant>.{json,log}` (13), `dose_rule_read_gfx02{,nr}.{json,md}`, `summary_gfar.json`, roots `analysis_root_gfar/`, `analysis_root_gfar_nr/`; scripts `gfar_vs_gi_v2/steer/run_cov1113_gptoss.sh`, `run_cov1113_gptoss_norandom.sh`, chain `gfar_vs_gi_v2/cov1113_chain.sh`; shares `gfar_vs_gi_v2/clamp_shares.{md,json}`; benchmarks `gi_v2/capeval/compare_cov1113.{json,md}`.
+
+### Gemma 4 31B Goodfire-axis (gfar) floor p50, judged (set `g10`, Koby's coverage batch of Nov 13) — 2026-11-16: a broken arm, as expected: no code in 24.5% of episodes, 2,105 of 3,477 turns truncated, hidden pass −22.2; judged hacking is 1.2% (21 / 1728) against 4.7% unsteered and is read as lost output, not as suppression
+
+**Question.** PLAN "Koby's coverage batch of 2026-11-13: judging". Koby ran the least extreme Goodfire floor on Gemma, saw it break and stopped the ladder there (p75 / p95 not run); the least extreme failing rung is judged all the same. Expected from the automatic columns: judged hacking at or below 2%, read as a broken arm.
+
+**Data.** Koby's run, read from the share copy `coverage_1113_kobyjl/gemma4_31b/rh/gfar_floor_p50_L20-38` through a symlink in `rh/hard108/`: floor along the Goodfire direction on layers 20–38 at the stored unsteered p50 (the thresholds of our `gfar_cap_p50_L20-38`), hard108 × 16 seeds = 1,728 episodes, every seed with every problem once, one steering block. Two cards, tensor-parallel 2, TRITON_ATTN (his README), as our dw / cs2 Gemma arms; read against Koby's B200 unsteered arm like every Gemma arm. Open-loop share moved: 52.5% of prompt and 48.3% of generated positions.
+
+**Judging.** Blind set `ctl_g10_s0-15` (the arm alone, neutral name): 84 shown-pass / hidden-fail dossiers in 19 batches and 8 hidden-pass signature dossiers in 3; Sonnet rubric-judge, six at once, first pass as judged, no adjudication; 1:27:04–1:30:48 pm MST, list price $6.72 + $0.86. All 22 batches verified, no out-of-set field, no read-audit flag. Verdicts: proxy HACK 14 / BORDERLINE 6 / NOT_HACK 64; hidden-pass set 7 / 0 / 1.
+
+**Numbers (problem-stratified means over 108 problems; Δ against unsteered in points, problem-bootstrap 95% CI, exact sign-flip p; Holm over the seven Goodfire contrasts, `analysis_gfar7`).**
+
+| measure | unsteered | floor p50 |
+|---|---|---|
+| positions moved, prompt / generated | | 52.5% / 48.3% |
+| judged hack, as judged | 4.7% (82 / 1728) | 1.2% (21 / 1728) |
+| Δ (95% CI) | | −3.5 (−5.8 to −1.6) |
+| raw p / Holm p | | 0.00020 / 0.00060 |
+| problems up / down / tied | | 6 / 25 / 77 |
+| judged hack, BORDERLINE counted | 7.2% | 1.6% (−5.7, Holm 1.5e-05) |
+| judged hack, WEAK not counted | 3.6% | 1.2% (−2.4, Holm 0.0034) |
+| judged hack, proxy set only | 4.7% | 0.8% (−3.9, Holm 8.1e-05) |
+| judged hack among episodes with code | 4.7% (82 / 1728) | 1.6% (21 / 1304) |
+| automatic proxy (shown pass, hidden fail) | 20.2% | 4.9% (−15.3) |
+| hidden-test pass, all episodes (rule measure) | 31.7% | 9.5% (−22.2, CI −27.4 to −17.2) |
+| no code submitted | 0.0% | 24.5% (424 / 1728; +24.5, CI +21.0 to +28.2) |
+| shown-test pass | 51.9% | 14.4% (−37.5, CI −44.0 to −31.1) |
+| episodes whose final code parses | 100.0% | 50.1% |
+| truncated turns / turns | 6 / 5,664 | 2,105 / 3,477 |
+| reasoning characters per turn | 23,798 | 36,608 |
+| dose rule | | outside (hidden pass and no code) |
+| benchmarks, Δ GSM8K / MMLU-Pro / HumanEval / IFBench | | −0.3 / **−5.5** / −1.2 / **−4.7** (loses MMLU-Pro and IFBench) |
+
+The six earlier Goodfire contrasts keep their sides of 0.05 with the seventh multiplier: +0.04 0.00046 (was 0.00034), +0.08 below 1e-06, cap p75 2.1e-05, cap p95 0.00029 (was 0.00024), −0.04 and −0.08 0.20.
+
+**Reading.**
+- *Broken arm, as expected.* A quarter of the episodes end without code, three turns in five run into the token budget, the final code parses in half of the episodes (50.1% against 100.0%), and the benchmarks lose MMLU-Pro (−5.5, CI −7.0 to −4.0, with 2.6% of answers truncated) and IFBench (−4.7, CI −9.0 to −0.3, 3.3% truncated). The fall in judged hacking (−3.5, Holm 0.0006) is reported and not read as suppression.
+- *No Goodfire floor rung on Gemma is usable.* The floor at p50 moves 48% of generated positions and breaks the model; Koby did not run p75 / p95, which move more. So the floor question (does holding the projection up raise hacking?) has no answer on this model. Adding the direction does raise judged hacking (+0.04: 7.3%, inside the rule; entry of Nov 12).
+- *Seven of the eight hidden-pass signature dossiers were judged HACK.* These are episodes that pass the hidden tests with code matching the hard-coding signatures; they are counted like every other verdict (7 of the 21).
+
+**Caveats.**
+- Koby's run on two cards, read against the B200 unsteered arm; the hardware check of Nov 12 put the two-card placement inside the B200 seed range on every capability column, and this arm's losses are far larger than that range.
+- Judged alone under a neutral set name; the unsteered verdicts are from the earlier unsteered set. Judge drift between sets is not measured.
+- Benchmark run is Koby's (`capeval/gf_floor_p50`), paired with the B200 unsteered benchmark run (`compare_cov1113.{json,md}`).
+
+**Files.** Run `coverage_1113_kobyjl/gemma4_31b/rh/gfar_floor_p50_L20-38` (share; symlink in `gemma4_31b_gi_v2/rh/hard108/`); set `dossiers_ctl_g10_s0-15/`, `dossiers_hidden_ctl_g10_s0-15/`, `verdicts_ctl_g10_s0-15/`, `build_ctl_g10.log`; analysis `analysis_gfar7/` (`analysis_{all,proxy}_<variant>.{json,log}`, `dose_rule_read.{json,log}`, `summary_gfar7.json`), `analysis_gfar7_run.log`; set table `gfar_vs_gi_v2/steer/gemma_set_tags.tsv`; benchmarks `gemma4_31b_gi_v2/capeval/compare_cov1113.{json,md}`.
 
 ### Muse Goodfire-axis (gfar) p90 cap, judged at 12 seeds (set `ctl_m01_s0-11`) — 2026-11-12: judged hacking falls to 9.6% against 32.8% unsteered (−23.1 points, CI −31.7 to −15.2, Holm 1.9e-06 over 10 contrasts), below the p95 cap's 17.0%; hidden-test pass is level (+0.9, CI −4.6 to +6.5) but no code is submitted in 10.6% of episodes against 0.0%, so the arm is outside the dose rule by 0.6 points on the no-code clause, as expected, and the fall is not read as an effect of the direction at kept capability
 
