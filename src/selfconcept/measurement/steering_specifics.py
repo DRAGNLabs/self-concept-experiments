@@ -19,6 +19,7 @@ from typing import Final, Protocol
 import torch
 
 from selfconcept.common.generation.model_specifics.gemma4 import split_gemma4_completion
+from selfconcept.common.generation.model_specifics.mistral_small4 import split_mistral_think_completion
 from selfconcept.common.generation.model_specifics.muse_glimmer import split_muse_glimmer_completion
 from selfconcept.common.generation.model_specifics.think_flag import split_qwen_think_completion
 from selfconcept.common.harmony import split_harmony_completion
@@ -31,7 +32,7 @@ type Restore = Callable[[], None]
 class SteeringModelSpecifics(Protocol):
     @property
     def family(self) -> str:
-        """Record label; the same names the FAMILIES tables used (gpt-oss, gemma4, muse-glimmer, qwen3.5)."""
+        """Record label; the same names the FAMILIES tables used (gpt-oss, gemma4, muse-glimmer, qwen3.5, mistral-small-4)."""
         ...
 
     @property
@@ -163,6 +164,36 @@ class Qwen35SteeringSpecifics:
         return self.split_completion
 
 
+@dataclass(frozen=True)
+class MistralSmall4SteeringSpecifics:
+    """Mistral-Small-4 (vLLM loads the native repo as MistralLarge3, a Deepseek-V3 MLA model wrapped by Pixtral).
+    ``DeepseekV2DecoderLayer.forward`` returns ``(mlp_output, residual)`` like gpt-oss. The template's
+    reasoning_effort is ``none`` or ``high`` (``low`` is rejected by the template). ``none`` is the default and
+    closes no channel in the completion, so the whole completion is the answer. ``high`` does not open ``[THINK]``
+    in the prompt either: the model emits ``[THINK]...[/THINK]`` and then the answer."""
+
+    family: str = "mistral-small-4"
+    hf_attn_implementation: str | None = None
+    vllm_block: tuple[str, str] = ("vllm.model_executor.models.deepseek_v2", "DeepseekV2DecoderLayer")
+
+    def patch_vllm(self, block_cls: type, transforms_by_layer: dict[int, object]) -> Restore:
+        return patch_vllm_blocks(block_cls, transforms_by_layer)
+
+    def vllm_stream(self, output: object) -> torch.Tensor:
+        return _sum_stream(output)
+
+    def split_completion(self, raw_completion: str) -> tuple[str, str]:
+        return split_mistral_think_completion(raw_completion)
+
+    def completion_splitter(self, chat_kwargs: Mapping[str, object]) -> CompletionSplitter:
+        effort = chat_kwargs.get("reasoning_effort", "none")
+        if effort == "high":
+            return self.split_completion
+        if effort in ("none", None):
+            return split_answer_only
+        raise ValueError(f"Mistral-Small-4 reasoning_effort must be 'none' or 'high', got {effort!r}")
+
+
 # First substring match (on the lower-cased model name) wins.
 STEERING_SPECIFICS_FACTORY_BY_NAME_SUBSTRING: Final[dict[str, Callable[[], SteeringModelSpecifics]]] = {
     "gpt-oss": GptOssSteeringSpecifics,
@@ -174,6 +205,7 @@ STEERING_SPECIFICS_FACTORY_BY_NAME_SUBSTRING: Final[dict[str, Callable[[], Steer
     "qwen3_5": Qwen35SteeringSpecifics,
     "qwen3.8": Qwen35SteeringSpecifics,
     "qwen3_8": Qwen35SteeringSpecifics,
+    "mistral-small-4": MistralSmall4SteeringSpecifics,
 }
 
 

@@ -43,7 +43,14 @@ to=self channel; SOO_CHAT_KWARGS='{"reasoning_strength": "low"}' is the analogue
 ``qwen3.5`` (Qwen3.5/3.8 checkpoints, e.g. Qwen/Qwen3.8-27B; thinking is on by default, SOO_CHAT_KWARGS=
 '{"reasoning_effort":"low"}', the template default is xhigh; SOO_CHAT_KWARGS='{"enable_thinking": false}' turns the
 thought channel off and the whole completion is the answer; set VLLM_MAX_NUM_SEQS=128, since the hybrid
-linear-attention cache does not fit vLLM's default sequence count on one 80 GB card). Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
+linear-attention cache does not fit vLLM's default sequence count on one 80 GB card) and ``mistral-small-4``
+(mistralai/Mistral-Small-4-119B-2603, loaded from the native consolidated shards as MistralLarge3). Its template
+accepts reasoning_effort ``none`` or ``high`` only, and ``none`` is the default, so a collection run sets
+SOO_CHAT_KWARGS='{"reasoning_effort":"high"}' or the reasoning sidecar is empty. Pass
+``--engine-kwargs '{"limit_mm_per_prompt": {"image": 0}, "attention_backend": "TRITON_MLA"}'``
+so the vision tower is not given a profiling budget and B200 does not select FLASHINFER_MLA
+(that backend downloads a cubin, and compute nodes have no outbound network).
+Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
 import argparse
@@ -138,7 +145,8 @@ def model_dims(model_name: str) -> tuple[int, int]:
 
 def model_layers(model):
     """The decoder layers of a loaded vLLM model: gpt-oss and Muse Glimmer at model.model.layers, Gemma 4 (unified
-    multimodal wrapper) and Qwen3.5/3.8 (Qwen3_5ForConditionalGeneration) at model.language_model.model.layers."""
+    multimodal wrapper), Qwen3.5/3.8 (Qwen3_5ForConditionalGeneration) and Mistral-Small-4 (Pixtral around
+    MistralLarge3) at model.language_model.model.layers."""
     for path in ("model.layers", "language_model.model.layers"):
         obj = model
         try:
@@ -383,6 +391,10 @@ def score(args, llm, tokenizer, steering: dict) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.specifics.family == "mistral-small-4":
+        from selfconcept.measurement.mistral_vllm_shim import use_mistral_vllm_shim
+
+        use_mistral_vllm_shim(Path(__file__).resolve().parent.parent / "vllm_shim")
     os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
     # vLLM keys its torch.compile cache on the model config, not on the patched block forward, so a cached
     # graph from a differently-steered run gets served to this one (smokes 14028603 and 14029300 crashed that way).

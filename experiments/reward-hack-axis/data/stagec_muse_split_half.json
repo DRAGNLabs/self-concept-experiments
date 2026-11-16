@@ -1,0 +1,443 @@
+{
+  "model": "meta-models/Muse-Glimmer-30B",
+  "layer": 26,
+  "formula": "mean(hack replies) - mean(honest replies)",
+  "split_rule": "train problems only, sorted by problem number; even positions versus odd positions; every reply from a problem stays in that half",
+  "cosine": 0.8788909912109375,
+  "source_activations": "/home/heychris/nobackup/autodelete/self-concept-experiments/reward-hack-axis/stagec_muse/response_mean.pt",
+  "source_pairs": "/home/heychris/self-concept-experiments/experiments/reward-hack-axis/data/stagec_muse_pairs.jsonl",
+  "saved_train_axis": "/home/heychris/nobackup/autodelete/self-concept-experiments/reward-hack-axis/stagec_muse/hack_axis.pt",
+  "matches_saved_train_axis": true,
+  "halves": {
+    "even": {
+      "half": "even",
+      "problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "n_pairs": 11,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_18__00",
+          "task_id": "lcbhard_18",
+          "hack": {
+            "id": "lcbhard_18__00__hack",
+            "seed": "seed11",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 648
+          },
+          "honest": {
+            "id": "lcbhard_18__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 606
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__00",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 589
+          },
+          "honest": {
+            "id": "lcbhard_28__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 983
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__01",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__01__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 807
+          },
+          "honest": {
+            "id": "lcbhard_28__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 709
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__02",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__02__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 2,
+            "n_response_tokens": 941
+          },
+          "honest": {
+            "id": "lcbhard_28__02__honest",
+            "seed": "seed11",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 829
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__03",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 800
+          },
+          "honest": {
+            "id": "lcbhard_28__03__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 814
+          }
+        },
+        {
+          "pair_id": "lcbhard_74__00",
+          "task_id": "lcbhard_74",
+          "hack": {
+            "id": "lcbhard_74__00__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 564
+          },
+          "honest": {
+            "id": "lcbhard_74__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 734
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__00",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__00__hack",
+            "seed": "seed0",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 636
+          },
+          "honest": {
+            "id": "lcbhard_7__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 753
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__01",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__01__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 688
+          },
+          "honest": {
+            "id": "lcbhard_7__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 611
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__02",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__02__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 762
+          },
+          "honest": {
+            "id": "lcbhard_7__02__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 477
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__03",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2743
+          },
+          "honest": {
+            "id": "lcbhard_7__03__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 686
+          }
+        },
+        {
+          "pair_id": "lcbhard_90__00",
+          "task_id": "lcbhard_90",
+          "hack": {
+            "id": "lcbhard_90__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 1,
+            "n_response_tokens": 454
+          },
+          "honest": {
+            "id": "lcbhard_90__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 901
+          }
+        }
+      ],
+      "norm": 53.066009521484375,
+      "vector": "/home/heychris/nobackup/autodelete/self-concept-experiments/reward-hack-axis/stagec_muse/split_half_even.pt"
+    },
+    "odd": {
+      "half": "odd",
+      "problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "n_pairs": 9,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_17__00",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__00__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 610
+          },
+          "honest": {
+            "id": "lcbhard_17__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1849
+          }
+        },
+        {
+          "pair_id": "lcbhard_17__01",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__01__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2038
+          },
+          "honest": {
+            "id": "lcbhard_17__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1480
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__00",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__00__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 683
+          },
+          "honest": {
+            "id": "lcbhard_22__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 332
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__01",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__01__hack",
+            "seed": "seed9",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 887
+          },
+          "honest": {
+            "id": "lcbhard_22__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 234
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__00",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 578
+          },
+          "honest": {
+            "id": "lcbhard_35__00__honest",
+            "seed": "seed4",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 419
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__01",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__01__hack",
+            "seed": "seed7",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 533
+          },
+          "honest": {
+            "id": "lcbhard_35__01__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 306
+          }
+        },
+        {
+          "pair_id": "lcbhard_76__00",
+          "task_id": "lcbhard_76",
+          "hack": {
+            "id": "lcbhard_76__00__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 774
+          },
+          "honest": {
+            "id": "lcbhard_76__00__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1045
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__00",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 545
+          },
+          "honest": {
+            "id": "lcbhard_99__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 524
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__01",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__01__hack",
+            "seed": "seed10",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 847
+          },
+          "honest": {
+            "id": "lcbhard_99__01__honest",
+            "seed": "seed3",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1106
+          }
+        }
+      ],
+      "norm": 43.25187683105469,
+      "vector": "/home/heychris/nobackup/autodelete/self-concept-experiments/reward-hack-axis/stagec_muse/split_half_odd.pt"
+    }
+  }
+}

@@ -6,8 +6,8 @@ import unittest
 import torch
 
 from selfconcept.measurement.steering_specifics import (
-    Gemma4SteeringSpecifics, GptOssSteeringSpecifics, MuseGlimmerSteeringSpecifics, Qwen35SteeringSpecifics,
-    split_answer_only, steering_model_specifics)
+    Gemma4SteeringSpecifics, GptOssSteeringSpecifics, MistralSmall4SteeringSpecifics, MuseGlimmerSteeringSpecifics,
+    Qwen35SteeringSpecifics, split_answer_only, steering_model_specifics)
 
 
 class Resolution(unittest.TestCase):
@@ -18,6 +18,7 @@ class Resolution(unittest.TestCase):
             "meta-models/Muse-Glimmer-30B": (MuseGlimmerSteeringSpecifics, "muse-glimmer"),
             "Qwen/Qwen3.8-27B": (Qwen35SteeringSpecifics, "qwen3.5"),
             "Qwen/Qwen3.5-27B": (Qwen35SteeringSpecifics, "qwen3.5"),
+            "mistralai/Mistral-Small-4-119B-2603": (MistralSmall4SteeringSpecifics, "mistral-small-4"),
         }
         for name, (cls, family) in cases.items():
             with self.subTest(name=name):
@@ -28,10 +29,13 @@ class Resolution(unittest.TestCase):
     def test_unknown_model_raises(self):
         with self.assertRaises(ValueError):
             steering_model_specifics("meta-llama/Llama-3.1-8B-Instruct")
+        with self.assertRaises(ValueError):
+            steering_model_specifics("mistralai/Mistral-7B-Instruct-v0.3")
 
     def test_only_gpt_oss_has_an_hf_attention_kernel(self):
         self.assertEqual(GptOssSteeringSpecifics().hf_attn_implementation, "kernels-community/vllm-flash-attn3")
-        for specifics in (Gemma4SteeringSpecifics(), MuseGlimmerSteeringSpecifics(), Qwen35SteeringSpecifics()):
+        for specifics in (Gemma4SteeringSpecifics(), MuseGlimmerSteeringSpecifics(), Qwen35SteeringSpecifics(),
+                          MistralSmall4SteeringSpecifics()):
             self.assertIsNone(specifics.hf_attn_implementation)
 
 
@@ -50,6 +54,18 @@ class Splitters(unittest.TestCase):
         self.assertEqual(qwen.completion_splitter({"enable_thinking": True})("a</think>b"), ("a", "b"))
         self.assertIs(qwen.completion_splitter({"enable_thinking": False}), split_answer_only)
         self.assertEqual(split_answer_only("  the answer\n"), ("", "the answer"))
+
+    def test_mistral_think_tags_and_effort(self):
+        mistral = MistralSmall4SteeringSpecifics()
+        raw = "[THINK]the tests want 2[/THINK]\n```python\nreturn 2\n```</s>"
+        self.assertEqual(mistral.split_completion(raw), ("the tests want 2", "```python\nreturn 2\n```"))
+        self.assertEqual(mistral.completion_splitter({"reasoning_effort": "high"})(raw), ("the tests want 2", "```python\nreturn 2\n```"))
+        self.assertEqual(mistral.split_completion("[THINK]still thinking"), ("still thinking", ""))
+        self.assertEqual(mistral.split_completion("```python\nreturn 1\n```"), ("", "```python\nreturn 1\n```"))
+        self.assertIs(mistral.completion_splitter({}), split_answer_only)
+        self.assertIs(mistral.completion_splitter({"reasoning_effort": "none"}), split_answer_only)
+        with self.assertRaises(ValueError):
+            mistral.completion_splitter({"reasoning_effort": "low"})
 
     def test_fixed_splitters_ignore_chat_kwargs(self):
         for specifics in (GptOssSteeringSpecifics(), Gemma4SteeringSpecifics(), MuseGlimmerSteeringSpecifics()):
@@ -77,13 +93,13 @@ class _StreamLayer:
 class StreamsAndPatches(unittest.TestCase):
     def test_stream_readers(self):
         a, b = torch.ones(2, 3), torch.full((2, 3), 2.0)
-        for specifics in (GptOssSteeringSpecifics(), Qwen35SteeringSpecifics()):
+        for specifics in (GptOssSteeringSpecifics(), Qwen35SteeringSpecifics(), MistralSmall4SteeringSpecifics()):
             torch.testing.assert_close(specifics.vllm_stream((a, b)), a + b)
         for specifics in (Gemma4SteeringSpecifics(), MuseGlimmerSteeringSpecifics()):
             torch.testing.assert_close(specifics.vllm_stream((a, b)), a)
 
     def test_patch_sum_contract(self):
-        for specifics in (GptOssSteeringSpecifics(), Qwen35SteeringSpecifics()):
+        for specifics in (GptOssSteeringSpecifics(), Qwen35SteeringSpecifics(), MistralSmall4SteeringSpecifics()):
             cls = type("Block", (_SumBlock,), {})
             restore = specifics.patch_vllm(cls, {1: lambda stream: stream + 10})
             mlp, residual = cls().forward(torch.ones(2), torch.ones(2))

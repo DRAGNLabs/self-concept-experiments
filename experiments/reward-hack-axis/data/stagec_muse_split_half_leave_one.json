@@ -1,0 +1,2254 @@
+{
+  "model": "meta-models/Muse-Glimmer-30B",
+  "layer": 26,
+  "formula": "mean(hack replies) - mean(honest replies)",
+  "split_rule": "Muse train problems in the same even and odd halves as the five-problem split; each vector leaves one problem out of its half and is fit on the other four",
+  "parent_halves": {
+    "even": [
+      "lcbhard_7",
+      "lcbhard_18",
+      "lcbhard_28",
+      "lcbhard_74",
+      "lcbhard_90"
+    ],
+    "odd": [
+      "lcbhard_17",
+      "lcbhard_22",
+      "lcbhard_35",
+      "lcbhard_76",
+      "lcbhard_99"
+    ]
+  },
+  "source_activations": "/home/heychris/nobackup/autodelete/self-concept-experiments/reward-hack-axis/stagec_muse/response_mean.pt",
+  "source_pairs": "/home/heychris/self-concept-experiments/experiments/reward-hack-axis/data/stagec_muse_pairs.jsonl",
+  "vectors": "/home/heychris/nobackup/autodelete/self-concept-experiments/reward-hack-axis/stagec_muse/split_half_leave_one.pt",
+  "axes": {
+    "even_without_lcbhard_7": {
+      "half": "even",
+      "problems": [
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "n_pairs": 7,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_18__00",
+          "task_id": "lcbhard_18",
+          "hack": {
+            "id": "lcbhard_18__00__hack",
+            "seed": "seed11",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 648
+          },
+          "honest": {
+            "id": "lcbhard_18__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 606
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__00",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 589
+          },
+          "honest": {
+            "id": "lcbhard_28__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 983
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__01",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__01__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 807
+          },
+          "honest": {
+            "id": "lcbhard_28__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 709
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__02",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__02__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 2,
+            "n_response_tokens": 941
+          },
+          "honest": {
+            "id": "lcbhard_28__02__honest",
+            "seed": "seed11",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 829
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__03",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 800
+          },
+          "honest": {
+            "id": "lcbhard_28__03__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 814
+          }
+        },
+        {
+          "pair_id": "lcbhard_74__00",
+          "task_id": "lcbhard_74",
+          "hack": {
+            "id": "lcbhard_74__00__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 564
+          },
+          "honest": {
+            "id": "lcbhard_74__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 734
+          }
+        },
+        {
+          "pair_id": "lcbhard_90__00",
+          "task_id": "lcbhard_90",
+          "hack": {
+            "id": "lcbhard_90__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 1,
+            "n_response_tokens": 454
+          },
+          "honest": {
+            "id": "lcbhard_90__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 901
+          }
+        }
+      ],
+      "left_out": "lcbhard_7",
+      "norm": 52.31033706665039,
+      "key": "even_without_lcbhard_7"
+    },
+    "even_without_lcbhard_18": {
+      "half": "even",
+      "problems": [
+        "lcbhard_7",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "n_pairs": 10,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_28__00",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 589
+          },
+          "honest": {
+            "id": "lcbhard_28__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 983
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__01",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__01__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 807
+          },
+          "honest": {
+            "id": "lcbhard_28__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 709
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__02",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__02__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 2,
+            "n_response_tokens": 941
+          },
+          "honest": {
+            "id": "lcbhard_28__02__honest",
+            "seed": "seed11",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 829
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__03",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 800
+          },
+          "honest": {
+            "id": "lcbhard_28__03__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 814
+          }
+        },
+        {
+          "pair_id": "lcbhard_74__00",
+          "task_id": "lcbhard_74",
+          "hack": {
+            "id": "lcbhard_74__00__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 564
+          },
+          "honest": {
+            "id": "lcbhard_74__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 734
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__00",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__00__hack",
+            "seed": "seed0",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 636
+          },
+          "honest": {
+            "id": "lcbhard_7__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 753
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__01",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__01__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 688
+          },
+          "honest": {
+            "id": "lcbhard_7__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 611
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__02",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__02__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 762
+          },
+          "honest": {
+            "id": "lcbhard_7__02__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 477
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__03",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2743
+          },
+          "honest": {
+            "id": "lcbhard_7__03__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 686
+          }
+        },
+        {
+          "pair_id": "lcbhard_90__00",
+          "task_id": "lcbhard_90",
+          "hack": {
+            "id": "lcbhard_90__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 1,
+            "n_response_tokens": 454
+          },
+          "honest": {
+            "id": "lcbhard_90__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 901
+          }
+        }
+      ],
+      "left_out": "lcbhard_18",
+      "norm": 52.9952507019043,
+      "key": "even_without_lcbhard_18"
+    },
+    "even_without_lcbhard_28": {
+      "half": "even",
+      "problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "n_pairs": 7,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_18__00",
+          "task_id": "lcbhard_18",
+          "hack": {
+            "id": "lcbhard_18__00__hack",
+            "seed": "seed11",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 648
+          },
+          "honest": {
+            "id": "lcbhard_18__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 606
+          }
+        },
+        {
+          "pair_id": "lcbhard_74__00",
+          "task_id": "lcbhard_74",
+          "hack": {
+            "id": "lcbhard_74__00__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 564
+          },
+          "honest": {
+            "id": "lcbhard_74__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 734
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__00",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__00__hack",
+            "seed": "seed0",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 636
+          },
+          "honest": {
+            "id": "lcbhard_7__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 753
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__01",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__01__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 688
+          },
+          "honest": {
+            "id": "lcbhard_7__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 611
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__02",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__02__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 762
+          },
+          "honest": {
+            "id": "lcbhard_7__02__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 477
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__03",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2743
+          },
+          "honest": {
+            "id": "lcbhard_7__03__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 686
+          }
+        },
+        {
+          "pair_id": "lcbhard_90__00",
+          "task_id": "lcbhard_90",
+          "hack": {
+            "id": "lcbhard_90__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 1,
+            "n_response_tokens": 454
+          },
+          "honest": {
+            "id": "lcbhard_90__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 901
+          }
+        }
+      ],
+      "left_out": "lcbhard_28",
+      "norm": 55.65462112426758,
+      "key": "even_without_lcbhard_28"
+    },
+    "even_without_lcbhard_74": {
+      "half": "even",
+      "problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_90"
+      ],
+      "n_pairs": 10,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_18__00",
+          "task_id": "lcbhard_18",
+          "hack": {
+            "id": "lcbhard_18__00__hack",
+            "seed": "seed11",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 648
+          },
+          "honest": {
+            "id": "lcbhard_18__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 606
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__00",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 589
+          },
+          "honest": {
+            "id": "lcbhard_28__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 983
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__01",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__01__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 807
+          },
+          "honest": {
+            "id": "lcbhard_28__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 709
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__02",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__02__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 2,
+            "n_response_tokens": 941
+          },
+          "honest": {
+            "id": "lcbhard_28__02__honest",
+            "seed": "seed11",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 829
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__03",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 800
+          },
+          "honest": {
+            "id": "lcbhard_28__03__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 814
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__00",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__00__hack",
+            "seed": "seed0",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 636
+          },
+          "honest": {
+            "id": "lcbhard_7__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 753
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__01",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__01__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 688
+          },
+          "honest": {
+            "id": "lcbhard_7__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 611
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__02",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__02__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 762
+          },
+          "honest": {
+            "id": "lcbhard_7__02__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 477
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__03",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2743
+          },
+          "honest": {
+            "id": "lcbhard_7__03__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 686
+          }
+        },
+        {
+          "pair_id": "lcbhard_90__00",
+          "task_id": "lcbhard_90",
+          "hack": {
+            "id": "lcbhard_90__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 1,
+            "n_response_tokens": 454
+          },
+          "honest": {
+            "id": "lcbhard_90__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 901
+          }
+        }
+      ],
+      "left_out": "lcbhard_74",
+      "norm": 53.84050369262695,
+      "key": "even_without_lcbhard_74"
+    },
+    "even_without_lcbhard_90": {
+      "half": "even",
+      "problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74"
+      ],
+      "n_pairs": 10,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_18__00",
+          "task_id": "lcbhard_18",
+          "hack": {
+            "id": "lcbhard_18__00__hack",
+            "seed": "seed11",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 648
+          },
+          "honest": {
+            "id": "lcbhard_18__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 606
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__00",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 589
+          },
+          "honest": {
+            "id": "lcbhard_28__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 983
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__01",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__01__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 807
+          },
+          "honest": {
+            "id": "lcbhard_28__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 709
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__02",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__02__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 2,
+            "n_response_tokens": 941
+          },
+          "honest": {
+            "id": "lcbhard_28__02__honest",
+            "seed": "seed11",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 829
+          }
+        },
+        {
+          "pair_id": "lcbhard_28__03",
+          "task_id": "lcbhard_28",
+          "hack": {
+            "id": "lcbhard_28__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 800
+          },
+          "honest": {
+            "id": "lcbhard_28__03__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 814
+          }
+        },
+        {
+          "pair_id": "lcbhard_74__00",
+          "task_id": "lcbhard_74",
+          "hack": {
+            "id": "lcbhard_74__00__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 564
+          },
+          "honest": {
+            "id": "lcbhard_74__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 734
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__00",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__00__hack",
+            "seed": "seed0",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 636
+          },
+          "honest": {
+            "id": "lcbhard_7__00__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 753
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__01",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__01__hack",
+            "seed": "seed4",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 688
+          },
+          "honest": {
+            "id": "lcbhard_7__01__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 611
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__02",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__02__hack",
+            "seed": "seed5",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 762
+          },
+          "honest": {
+            "id": "lcbhard_7__02__honest",
+            "seed": "seed2",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 477
+          }
+        },
+        {
+          "pair_id": "lcbhard_7__03",
+          "task_id": "lcbhard_7",
+          "hack": {
+            "id": "lcbhard_7__03__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2743
+          },
+          "honest": {
+            "id": "lcbhard_7__03__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 686
+          }
+        }
+      ],
+      "left_out": "lcbhard_90",
+      "norm": 54.289920806884766,
+      "key": "even_without_lcbhard_90"
+    },
+    "odd_without_lcbhard_17": {
+      "half": "odd",
+      "problems": [
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "n_pairs": 7,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_22__00",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__00__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 683
+          },
+          "honest": {
+            "id": "lcbhard_22__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 332
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__01",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__01__hack",
+            "seed": "seed9",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 887
+          },
+          "honest": {
+            "id": "lcbhard_22__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 234
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__00",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 578
+          },
+          "honest": {
+            "id": "lcbhard_35__00__honest",
+            "seed": "seed4",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 419
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__01",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__01__hack",
+            "seed": "seed7",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 533
+          },
+          "honest": {
+            "id": "lcbhard_35__01__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 306
+          }
+        },
+        {
+          "pair_id": "lcbhard_76__00",
+          "task_id": "lcbhard_76",
+          "hack": {
+            "id": "lcbhard_76__00__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 774
+          },
+          "honest": {
+            "id": "lcbhard_76__00__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1045
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__00",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 545
+          },
+          "honest": {
+            "id": "lcbhard_99__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 524
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__01",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__01__hack",
+            "seed": "seed10",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 847
+          },
+          "honest": {
+            "id": "lcbhard_99__01__honest",
+            "seed": "seed3",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1106
+          }
+        }
+      ],
+      "left_out": "lcbhard_17",
+      "norm": 44.044158935546875,
+      "key": "odd_without_lcbhard_17"
+    },
+    "odd_without_lcbhard_22": {
+      "half": "odd",
+      "problems": [
+        "lcbhard_17",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "n_pairs": 7,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_17__00",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__00__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 610
+          },
+          "honest": {
+            "id": "lcbhard_17__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1849
+          }
+        },
+        {
+          "pair_id": "lcbhard_17__01",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__01__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2038
+          },
+          "honest": {
+            "id": "lcbhard_17__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1480
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__00",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 578
+          },
+          "honest": {
+            "id": "lcbhard_35__00__honest",
+            "seed": "seed4",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 419
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__01",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__01__hack",
+            "seed": "seed7",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 533
+          },
+          "honest": {
+            "id": "lcbhard_35__01__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 306
+          }
+        },
+        {
+          "pair_id": "lcbhard_76__00",
+          "task_id": "lcbhard_76",
+          "hack": {
+            "id": "lcbhard_76__00__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 774
+          },
+          "honest": {
+            "id": "lcbhard_76__00__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1045
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__00",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 545
+          },
+          "honest": {
+            "id": "lcbhard_99__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 524
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__01",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__01__hack",
+            "seed": "seed10",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 847
+          },
+          "honest": {
+            "id": "lcbhard_99__01__honest",
+            "seed": "seed3",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1106
+          }
+        }
+      ],
+      "left_out": "lcbhard_22",
+      "norm": 47.236488342285156,
+      "key": "odd_without_lcbhard_22"
+    },
+    "odd_without_lcbhard_35": {
+      "half": "odd",
+      "problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "n_pairs": 7,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_17__00",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__00__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 610
+          },
+          "honest": {
+            "id": "lcbhard_17__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1849
+          }
+        },
+        {
+          "pair_id": "lcbhard_17__01",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__01__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2038
+          },
+          "honest": {
+            "id": "lcbhard_17__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1480
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__00",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__00__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 683
+          },
+          "honest": {
+            "id": "lcbhard_22__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 332
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__01",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__01__hack",
+            "seed": "seed9",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 887
+          },
+          "honest": {
+            "id": "lcbhard_22__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 234
+          }
+        },
+        {
+          "pair_id": "lcbhard_76__00",
+          "task_id": "lcbhard_76",
+          "hack": {
+            "id": "lcbhard_76__00__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 774
+          },
+          "honest": {
+            "id": "lcbhard_76__00__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1045
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__00",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 545
+          },
+          "honest": {
+            "id": "lcbhard_99__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 524
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__01",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__01__hack",
+            "seed": "seed10",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 847
+          },
+          "honest": {
+            "id": "lcbhard_99__01__honest",
+            "seed": "seed3",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1106
+          }
+        }
+      ],
+      "left_out": "lcbhard_35",
+      "norm": 48.269508361816406,
+      "key": "odd_without_lcbhard_35"
+    },
+    "odd_without_lcbhard_76": {
+      "half": "odd",
+      "problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_99"
+      ],
+      "n_pairs": 8,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_17__00",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__00__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 610
+          },
+          "honest": {
+            "id": "lcbhard_17__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1849
+          }
+        },
+        {
+          "pair_id": "lcbhard_17__01",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__01__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2038
+          },
+          "honest": {
+            "id": "lcbhard_17__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1480
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__00",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__00__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 683
+          },
+          "honest": {
+            "id": "lcbhard_22__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 332
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__01",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__01__hack",
+            "seed": "seed9",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 887
+          },
+          "honest": {
+            "id": "lcbhard_22__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 234
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__00",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 578
+          },
+          "honest": {
+            "id": "lcbhard_35__00__honest",
+            "seed": "seed4",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 419
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__01",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__01__hack",
+            "seed": "seed7",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 533
+          },
+          "honest": {
+            "id": "lcbhard_35__01__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 306
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__00",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__00__hack",
+            "seed": "seed1",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 545
+          },
+          "honest": {
+            "id": "lcbhard_99__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 524
+          }
+        },
+        {
+          "pair_id": "lcbhard_99__01",
+          "task_id": "lcbhard_99",
+          "hack": {
+            "id": "lcbhard_99__01__hack",
+            "seed": "seed10",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 847
+          },
+          "honest": {
+            "id": "lcbhard_99__01__honest",
+            "seed": "seed3",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1106
+          }
+        }
+      ],
+      "left_out": "lcbhard_76",
+      "norm": 42.085044860839844,
+      "key": "odd_without_lcbhard_76"
+    },
+    "odd_without_lcbhard_99": {
+      "half": "odd",
+      "problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76"
+      ],
+      "n_pairs": 7,
+      "pairs": [
+        {
+          "pair_id": "lcbhard_17__00",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__00__hack",
+            "seed": "seed3",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 610
+          },
+          "honest": {
+            "id": "lcbhard_17__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1849
+          }
+        },
+        {
+          "pair_id": "lcbhard_17__01",
+          "task_id": "lcbhard_17",
+          "hack": {
+            "id": "lcbhard_17__01__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 2038
+          },
+          "honest": {
+            "id": "lcbhard_17__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1480
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__00",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__00__hack",
+            "seed": "seed8",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 683
+          },
+          "honest": {
+            "id": "lcbhard_22__00__honest",
+            "seed": "seed0",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 332
+          }
+        },
+        {
+          "pair_id": "lcbhard_22__01",
+          "task_id": "lcbhard_22",
+          "hack": {
+            "id": "lcbhard_22__01__hack",
+            "seed": "seed9",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 887
+          },
+          "honest": {
+            "id": "lcbhard_22__01__honest",
+            "seed": "seed1",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 234
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__00",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__00__hack",
+            "seed": "seed10",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 578
+          },
+          "honest": {
+            "id": "lcbhard_35__00__honest",
+            "seed": "seed4",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 419
+          }
+        },
+        {
+          "pair_id": "lcbhard_35__01",
+          "task_id": "lcbhard_35",
+          "hack": {
+            "id": "lcbhard_35__01__hack",
+            "seed": "seed7",
+            "hack_type": "input_branch",
+            "strength": "STRONG",
+            "turn": 0,
+            "n_response_tokens": 533
+          },
+          "honest": {
+            "id": "lcbhard_35__01__honest",
+            "seed": "seed6",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 306
+          }
+        },
+        {
+          "pair_id": "lcbhard_76__00",
+          "task_id": "lcbhard_76",
+          "hack": {
+            "id": "lcbhard_76__00__hack",
+            "seed": "seed7",
+            "hack_type": "lookup_table",
+            "strength": "STRONG",
+            "turn": 3,
+            "n_response_tokens": 774
+          },
+          "honest": {
+            "id": "lcbhard_76__00__honest",
+            "seed": "seed10",
+            "hack_type": null,
+            "strength": null,
+            "turn": null,
+            "n_response_tokens": 1045
+          }
+        }
+      ],
+      "left_out": "lcbhard_99",
+      "norm": 41.197021484375,
+      "key": "odd_without_lcbhard_99"
+    }
+  },
+  "comparisons": [
+    {
+      "left_out_even": "lcbhard_7",
+      "left_out_odd": "lcbhard_17",
+      "cosine": 0.826196551322937,
+      "even_problems": [
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_7",
+      "left_out_odd": "lcbhard_22",
+      "cosine": 0.8649004697799683,
+      "even_problems": [
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_7",
+      "left_out_odd": "lcbhard_35",
+      "cosine": 0.8525088429450989,
+      "even_problems": [
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_7",
+      "left_out_odd": "lcbhard_76",
+      "cosine": 0.8533833622932434,
+      "even_problems": [
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 8
+    },
+    {
+      "left_out_even": "lcbhard_7",
+      "left_out_odd": "lcbhard_99",
+      "cosine": 0.8721796274185181,
+      "even_problems": [
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_18",
+      "left_out_odd": "lcbhard_17",
+      "cosine": 0.8391644358634949,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_18",
+      "left_out_odd": "lcbhard_22",
+      "cosine": 0.8286160230636597,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_18",
+      "left_out_odd": "lcbhard_35",
+      "cosine": 0.8605327010154724,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_18",
+      "left_out_odd": "lcbhard_76",
+      "cosine": 0.8315160274505615,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 8
+    },
+    {
+      "left_out_even": "lcbhard_18",
+      "left_out_odd": "lcbhard_99",
+      "cosine": 0.8664063215255737,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_28",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_28",
+      "left_out_odd": "lcbhard_17",
+      "cosine": 0.8248624801635742,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_28",
+      "left_out_odd": "lcbhard_22",
+      "cosine": 0.7810415029525757,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_28",
+      "left_out_odd": "lcbhard_35",
+      "cosine": 0.8339439034461975,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_28",
+      "left_out_odd": "lcbhard_76",
+      "cosine": 0.8028515577316284,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_99"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 8
+    },
+    {
+      "left_out_even": "lcbhard_28",
+      "left_out_odd": "lcbhard_99",
+      "cosine": 0.8422713875770569,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_74",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76"
+      ],
+      "even_pairs": 7,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_74",
+      "left_out_odd": "lcbhard_17",
+      "cosine": 0.8417684435844421,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_74",
+      "left_out_odd": "lcbhard_22",
+      "cosine": 0.8449183702468872,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_74",
+      "left_out_odd": "lcbhard_35",
+      "cosine": 0.8684335947036743,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_74",
+      "left_out_odd": "lcbhard_76",
+      "cosine": 0.8470080494880676,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 8
+    },
+    {
+      "left_out_even": "lcbhard_74",
+      "left_out_odd": "lcbhard_99",
+      "cosine": 0.8787639737129211,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_90"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_90",
+      "left_out_odd": "lcbhard_17",
+      "cosine": 0.8378586769104004,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74"
+      ],
+      "odd_problems": [
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_90",
+      "left_out_odd": "lcbhard_22",
+      "cosine": 0.8156328201293945,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_35",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_90",
+      "left_out_odd": "lcbhard_35",
+      "cosine": 0.8571262359619141,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_76",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    },
+    {
+      "left_out_even": "lcbhard_90",
+      "left_out_odd": "lcbhard_76",
+      "cosine": 0.8242026567459106,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_99"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 8
+    },
+    {
+      "left_out_even": "lcbhard_90",
+      "left_out_odd": "lcbhard_99",
+      "cosine": 0.8642293810844421,
+      "even_problems": [
+        "lcbhard_7",
+        "lcbhard_18",
+        "lcbhard_28",
+        "lcbhard_74"
+      ],
+      "odd_problems": [
+        "lcbhard_17",
+        "lcbhard_22",
+        "lcbhard_35",
+        "lcbhard_76"
+      ],
+      "even_pairs": 10,
+      "odd_pairs": 7
+    }
+  ]
+}
