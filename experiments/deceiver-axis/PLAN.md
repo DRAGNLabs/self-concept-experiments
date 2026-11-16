@@ -2673,6 +2673,9 @@ are not a control) was applied to Gemma only and left open for gpt-oss and Muse;
     at kept capability. Not a named picture-changer, and the opposite of one; it changes how the caps are read (a fall under a
     clamp is not evidence about the sign of the direction). Doses: −0.04 27.8% (−5.0, Holm 0.046), +0.04 39.8% (+7.0, Holm 0.015),
     both inside their bands and inside the rule; the six doses are monotone, as expected.
+  - *Qwen `gix01` (gi_v2 cap p50), read 2:10 pm Nov 16.* 0 judged hacks in 732 episodes (proxy 0 / 0 / 78, hidden-pass 0 / 4 / 84),
+    inside the rule (hidden pass −2.7, no code +3.8): 0%, as expected. The eleven earlier gi_v2 contrasts keep their sides of 0.05
+    with the twelfth multiplier (+0.32: 0.0029).
 
 ## Work order
 
