@@ -3,7 +3,8 @@
 These are the scripts that built, judged and analysed the 16 arms of Koby's coverage batch of 2026-11-13 on 2026-11-16
 (PLAN "Koby's coverage batch of 2026-11-13: judging"; FINDINGS entries of 2026-11-16; run log
 `gfar_vs_gi_v2/steer/jobs.txt`). They were written next to the data on `nobackup/autodelete` and are copied here
-byte for byte (added 2026-11-16, 3:31 pm MST) so that they outlive that storage. `SHA256SUMS` lists the checksums. Every shell script here is also on the group share
+byte for byte (added 2026-11-16, 3:31 pm MST) so that they outlive that storage. `SHA256SUMS` lists the checksums. Every
+shell script here is also on the group share
 (`gfar_vs_gi_v2_jansen05/`, `qwen38_27b_gi_v2_judging_jansen05/qwen_hard61/`,
 `gemma4_31b_gi_v2_judging_jansen05/hard108/`, `gptoss120b/gi_v2/pilot/`), identical when compared on 2026-11-16.
 
