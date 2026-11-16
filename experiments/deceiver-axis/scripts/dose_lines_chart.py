@@ -16,6 +16,11 @@ unsteered), drawn on both of the arm's points; the hack-rate line into and out o
 a hack rate there is not to be trusted like the others). Two axes' markers at one rung are dodged either side of its tick; a
 rung only one axis has sits on its tick.
 
+--rule-ring (draft, 2026-11-16) draws a ring around the hack-rate marker of every arm outside the task-set dose rule (hidden-test
+pass over all episodes or no-code more than 10 points from unsteered; `inside_dose_rule` of pareto_chart.load_axis), so the end of
+a ladder is visible. It is a second mark, not the hollow one: an arm outside on hidden pass alone still submits code and its hack
+rate stays comparable (hidden pass falls when hacking rises), so its marker stays filled and its line solid.
+
 --clamp-scale (with --split; user 2026-11-16, concern that the cap and floor rungs were not to scale) places caps and floors by
 threshold percentile instead of evenly: a cap at p sits (100 − p) points left of the clamp part's unsteered point and a floor at
 p sits p points right of it, so the distance from that point is the share of unsteered positions beyond the threshold (a cap at
@@ -67,6 +72,7 @@ SPLIT_GAP = 1.0  # --split: extra x steps between the steering part and the clam
 ORIGIN_PAD = 0.4  # --split: extra x steps either side of the clamp part's unsteered point (room for its tick label)
 PANEL_WIDTH, LEFT, RIGHT, PLOT_HEIGHT, TITLE_HEIGHT, XAXIS_HEIGHT, GAP = 8.4, 0.8, 0.25, 4.3, 0.62, 0.72, 0.3
 STRIP_GAP, STRIP_HEIGHT, STRIP_MARKER = 0.14, 1.0, 5.8  # --bench-strip: the benchmark strip under each plot (inches, marker size)
+RULE_RING = dict(extra=5.5, width=1.0)  # --rule-ring: ring around the hack-rate marker of an arm outside the dose rule (points)
 DISTRUST_DASH = (0, (1.1, 1.9))  # hack-rate line into or out of an arm where the model stops submitting code (shorter dashes than pc.DASHES)
 # --clamp-scale: x steps per 100 percentile points, padding at the two ends, the reference ticks either side of the unsteered
 # point, and the extra panel width (inches) that keeps rungs 5 percentile points apart from touching
@@ -162,7 +168,7 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False,
 
 
 def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, measures: tuple[str, ...] = tuple(MEASURES),
-              strip: bool = False, x_labels: bool = True, clamp_scale: bool = False) -> None:
+              strip: bool = False, x_labels: bool = True, clamp_scale: bool = False, rule_ring: bool = False) -> None:
     """`measures`: which of MEASURES to draw. `strip`: the axes is a benchmark strip (points and CIs only, no lines, smaller
     markers, its own y label). `x_labels` False: no tick labels or section captions (a plot with a strip underneath).
     A hack-rate line segment that starts or ends at an arm where the model stops submitting code is drawn in DISTRUST_DASH."""
@@ -203,6 +209,9 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
                         axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1,
                                       alpha=0.55 if strip else 0.4, zorder=2)
                         face, edge = (pc.SURFACE, group["color"]) if row["stops_submitting"] else (group["color"], pc.SURFACE)
+                        if rule_ring and not strip and measure is MEASURES["hack"] and row["inside_dose_rule"] is False:
+                            axes.plot(x, y, "o", markersize=measure["size"] + RULE_RING["extra"], markerfacecolor="none",
+                                      markeredgecolor=group["color"], markeredgewidth=RULE_RING["width"], zorder=3.5)
                         axes.plot(x, y, measure["marker"], markersize=STRIP_MARKER if strip else measure["size"], color=face, markeredgecolor=edge,
                                   markeredgewidth=1.3 if strip else 1.6, zorder=4)
     for origin in origins:
@@ -241,6 +250,9 @@ def main() -> None:
     parser.add_argument("--clamp-scale", action="store_true",
                         help="with --split: caps and floors placed to scale by threshold percentile (distance from the unsteered point = "
                              "share of unsteered positions beyond the threshold) instead of evenly spaced")
+    parser.add_argument("--rule-ring", action="store_true",
+                        help="ring the hack-rate marker of every arm outside the task-set dose rule (hidden pass or no-code more than "
+                             "10 points from unsteered)")
     parser.add_argument("--composite", choices=sorted(pc.COMPOSITES), default="pooled")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -299,7 +311,7 @@ def main() -> None:
          "one run per arm; CI = paired bootstrap over items."]
         + ([f"No benchmark run yet (hack-rate point only): {'; '.join(notes)}."] if notes else [])), 7.8, width - 0.3)
     foot_height = 0.14 * (foot.count("\n") + 1) + 0.2
-    head_height = 0.12 + 0.235 * (title.count("\n") + 1) + 0.08 + 0.175 * (subtitle.count("\n") + 1) + 0.1 + 0.215 * len(args.axes) + 0.07 + 0.3
+    head_height = 0.12 + 0.235 * (title.count("\n") + 1) + 0.08 + 0.175 * (subtitle.count("\n") + 1) + 0.1 + 0.215 * len(args.axes) + 0.07 + 0.3 + (0.245 if args.rule_ring else 0.0)
     height = head_height + panel_height * grid_rows + foot_height
     figure = plt.figure(figsize=(width, height), facecolor=pc.SURFACE)
     at = lambda inches: 1 - inches / height
@@ -321,6 +333,14 @@ def main() -> None:
                     dash_capstyle="round", markerfacecolor=pc.SURFACE, markeredgecolor=pc.INK2, markeredgewidth=1.6,
                     label=f"hollow marker, dashed hack-rate line: the model stops submitting code (no-code share more than {pc.RULE_POINTS:g} "
                           "points above unsteered), so the hack rate there is not comparable")]
+    if args.rule_ring:
+        ring = Line2D([], [], color=pc.INK2, marker="o", markersize=7.5 + RULE_RING["extra"], linewidth=0, markerfacecolor="none",
+                      markeredgecolor=pc.INK2, markeredgewidth=RULE_RING["width"],
+                      label=f"ring: the arm is outside the dose rule (hidden-test pass or no-code more than {pc.RULE_POINTS:g} points from "
+                            "unsteered)")
+        figure.legend(handles=extra[:1] + [ring], bbox_to_anchor=(x0, at(cursor)), ncol=2, **legend_style)
+        cursor += 0.215 + 0.03
+        extra = extra[1:]
     figure.legend(handles=extra, bbox_to_anchor=(x0, at(cursor)), ncol=2, **legend_style)
     figure.text(x0, 0.1 / height, foot, fontsize=7.8, color=pc.MUTED, ha="left", va="bottom", linespacing=1.3)
 
@@ -330,12 +350,12 @@ def main() -> None:
         top = head_height + grid_row * panel_height
         plot = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT), plot_width / width, PLOT_HEIGHT / height))
         if args.bench_strip:
-            draw_plot(plot, panel["groups"], kinds, args.split, measures=("hack",), x_labels=False, clamp_scale=args.clamp_scale)
+            draw_plot(plot, panel["groups"], kinds, args.split, measures=("hack",), x_labels=False, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring)
             strip = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT + STRIP_GAP + STRIP_HEIGHT),
                                      plot_width / width, STRIP_HEIGHT / height))
             draw_plot(strip, panel["groups"], kinds, args.split, measures=("bench",), strip=True, clamp_scale=args.clamp_scale)
         else:
-            draw_plot(plot, panel["groups"], kinds, args.split, clamp_scale=args.clamp_scale)
+            draw_plot(plot, panel["groups"], kinds, args.split, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring)
         unsteered = panel["groups"][0]["data"]["unsteered"]
         plot.set_title(f"{panel['model']['name']}\nunsteered: judged hack rate {unsteered['hack']:.1f}%, benchmark score {unsteered['composite']:.1f}%",
                        fontsize=9.6, color=pc.INK, loc="left", pad=8, linespacing=1.35)
@@ -343,7 +363,7 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=pc.SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=pc.SURFACE)
-    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale,
+    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring,
                   omitted_by_preset={f"{panel['model']['name']} / {group['axis_key']}": group["data"]["omitted_by_preset"]
                                      for panel in panels for group in panel["groups"] if group["data"]["omitted_by_preset"]}, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
                   panels=[dict(model=panel["model"]["name"],
