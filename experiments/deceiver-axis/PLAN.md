@@ -2667,6 +2667,12 @@ are not a control) was applied to Gemma only and left open for gpt-oss and Muse;
     the 13 Goodfire contrasts (post hoc, amendment above). Picture-changer not met: no floor inside the rule raises hacking.
   - *Gemma `ctl_g10_s0-15`, read 1:35 pm Nov 16.* 1.2% (21 / 1728) against 4.7%, −3.5 (Holm 0.0006 over 7); outside the rule on
     both clauses (hidden pass −22.2, no code +24.5): at or below 2% and a broken arm, as expected.
+  - *Muse `gfx03`, read 2:02 pm Nov 16 (12 Goodfire contrasts, no random arms).* Floors: p50 23.5% (−9.3, CI −14.1 to −4.8), p75
+    21.9% (−10.9, CI −16.7 to −5.7), both Holm 0.0015 and inside the rule; p95 15.2% (−17.6), outside on no code (14.1%), as
+    expected. "No rise" holds, but the falls at p50 / p75 are below the −8 … +3 band written above: the floors lower judged hacking
+    at kept capability. Not a named picture-changer, and the opposite of one; it changes how the caps are read (a fall under a
+    clamp is not evidence about the sign of the direction). Doses: −0.04 27.8% (−5.0, Holm 0.046), +0.04 39.8% (+7.0, Holm 0.015),
+    both inside their bands and inside the rule; the six doses are monotone, as expected.
 
 ## Work order
 
