@@ -32,6 +32,9 @@ dependencies = [
     "plotly>=7.1.0",
     # WordNet antonym pairs for the control directions (scripts/controls/sample_pairs.py)
     "nltk>=3.10",
+    # IFBench constraint verifiers for the capability evals (scripts/capability_eval_vllm.py); not on PyPI, pinned to the
+    # 2026-10-27 commit (the version the earlier eval runs used) because upstream keeps changing the checkers
+    "ifbench",
 ]
 
 [build-system]
@@ -88,6 +91,7 @@ torchvision = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-
 torchaudio = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
 torchcodec = [{ index = "pytorch-cu130", group = "cu130" }, { index = "pytorch-cu126", group = "p100" }]
 byutils = { git = "https://github.com/Plyb/byutils.git" }
+ifbench = { git = "https://github.com/allenai/IFBench", rev = "20aec206dd9bf7627918ca68c1190ff39016bc46" }
 
 [tool.uv]
 default-groups = ["dev", "cu130"]
