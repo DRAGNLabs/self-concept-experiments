@@ -30,7 +30,7 @@ ticks mark the rungs that were run. The nominal share tracks the measured open-l
 
 --bench-strip (user 2026-11-16) takes the benchmark score out of the plot and into a strip underneath it, as in
 outcome_bars_chart.py: the plot keeps the two hack-rate lines, the strip holds the two axes' benchmark points (squares in the axis
-colour, with CIs, no line) on its own y axis, and the x labels sit under the strip.
+colour, with CIs, joined by a thin solid line like the hack rate) on its own y axis, and the x labels sit under the strip.
 --hidden-strip (with --bench-strip; draft, user 2026-11-16) adds a second strip under it: the change in hidden-test pass over all
 episodes (diamonds; CI where the analysis file stores one), with dashed lines at the dose-rule limit of ±10 points. Hidden pass
 falls when hacking rises (a hack that fails the hidden tests is a failure), so the strip shows the rule's measure, not capability.
@@ -79,6 +79,7 @@ SPLIT_GAP = 1.0  # --split: extra x steps between the steering part and the clam
 ORIGIN_PAD = 0.4  # --split: extra x steps either side of the clamp part's unsteered point (room for its tick label)
 PANEL_WIDTH, LEFT, RIGHT, PLOT_HEIGHT, TITLE_HEIGHT, XAXIS_HEIGHT, GAP = 8.4, 0.8, 0.25, 4.3, 0.62, 0.72, 0.3
 STRIP_GAP, STRIP_HEIGHT, STRIP_MARKER = 0.14, 1.0, 5.8  # --bench-strip: the benchmark strip under each plot (inches, marker size)
+STRIP_LINE = 1.3  # width of the solid line that joins a strip's points (user 2026-11-16: lines in the strips as on the hack rate)
 RULE_RING = dict(extra=5.5, width=1.0)  # --rule-ring: ring around the hack-rate marker of an arm outside the dose rule (points)
 DISTRUST_DASH = (0, (1.1, 1.9))  # hack-rate line into or out of an arm where the model stops submitting code (shorter dashes than pc.DASHES)
 # --clamp-scale: x steps per 100 percentile points, padding at the two ends, the reference ticks either side of the unsteered
@@ -176,7 +177,7 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False,
 
 def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, measures: tuple[str, ...] = tuple(MEASURES),
               strip: bool = False, x_labels: bool = True, clamp_scale: bool = False, rule_ring: bool = False) -> None:
-    """`measures`: which of DRAWN to draw. `strip`: the axes is a strip for one measure (points and CIs only, no lines, smaller
+    """`measures`: which of DRAWN to draw. `strip`: the axes is a strip for one measure (points, CIs and a thin solid line, smaller
     markers, its own y label; the hidden-pass strip also carries the dose-rule lines at ±pc.RULE_POINTS). `x_labels` False: no tick labels or section captions (a plot with a strip underneath).
     A hack-rate line segment that starts or ends at an arm where the model stops submitting code is drawn in DISTRUST_DASH."""
     slots, parts, origins = plan(groups, kinds, split, clamp_scale)
@@ -207,10 +208,10 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
                         continue
                     line = sorted([(x, row[measure["value"]], row["stops_submitting"]) for x, row in points]
                                   + ([(chain["origin"], 0.0, False)] if chain["origin"] is not None else []))
-                    for (x_a, y_a, hollow_a), (x_b, y_b, hollow_b) in zip(line, line[1:]) if not strip else []:
+                    for (x_a, y_a, hollow_a), (x_b, y_b, hollow_b) in zip(line, line[1:]):
                         distrusted = measure is MEASURES["hack"] and (hollow_a or hollow_b)
-                        axes.plot([x_a, x_b], [y_a, y_b], color=group["color"], linewidth=measure["width"],
-                                  linestyle=DISTRUST_DASH if distrusted else measure["dash"], zorder=3, solid_capstyle="round", dash_capstyle="round")
+                        axes.plot([x_a, x_b], [y_a, y_b], color=group["color"], linewidth=STRIP_LINE if strip else measure["width"],
+                                  linestyle="-" if strip else DISTRUST_DASH if distrusted else measure["dash"], zorder=3, solid_capstyle="round", dash_capstyle="round")
                     for x, row in points:
                         y, interval = row[measure["value"]], row[measure["ci"]]
                         if interval is not None:  # hidden pass read from a run summary has no stored CI
@@ -351,7 +352,7 @@ def main() -> None:
     marks = dict(markeredgecolor=pc.SURFACE, markeredgewidth=1.5)
     listed = {**MEASURES, **(STRIP_ONLY if args.hidden_strip else {})}
     series = [Line2D([], [], color=palette[key], marker=m["marker"], markersize=m.get("strip_size", STRIP_MARKER) if name in strips else m["size"],
-                     linewidth=0 if name in strips else m["width"], linestyle=m["dash"],
+                     linewidth=STRIP_LINE if name in strips else m["width"], linestyle="-" if name in strips else m["dash"],
                      label=f"{pc.AXIS_NAMES[key]}: {m['name']}" + (" (strip)" if name in strips else ""), **marks)
               for key in args.axes for name, m in listed.items()]
     legend_style = dict(frameon=False, fontsize=9, handletextpad=0.5, columnspacing=1.6, loc="upper left", borderaxespad=0, borderpad=0, handlelength=3.0)
