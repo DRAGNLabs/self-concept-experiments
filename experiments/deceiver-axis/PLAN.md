@@ -2576,6 +2576,74 @@ measured only on its own task set. This run adds them. Written before any job wa
   2 points of unsteered (largest IFBench −2.0 at p95, CI −7.3 to +3.0), truncated shares at or below unsteered. One
   unsteered run is the IFBench reference (caveat of the note above). Gemma (15234463) outstanding.
 
+## Koby's coverage batch of 2026-11-13: judging (added 2026-11-16, user request 1:02 pm MST)
+
+User, 2026-11-16 about 1:02 pm MST: "`coverage_1113_kobyjl/README.md` contains a list of arms that Koby finished that need judging.
+Let's get started on that". Written 1:10 pm MST, before any set is built or any episode of these arms is opened. Already seen
+(Koby's README and his `rh/summary_*.json`, 1:02–1:06 pm): the automatic columns of every arm (hidden pass, no code, shown-pass /
+hidden-fail proxy, truncated turns), his dose-rule reading and his benchmark readings. No verdict exists for any of the 16 arms.
+
+**Arms (16; Koby's runs, read from the share copy `coverage_1113_kobyjl/<model>/rh/`, read-only; nothing is copied or written
+there).** Every arm × seed has every problem once (checked 1:06 pm: 45 / 108 / 61 lines per seed file) and one steering block per
+arm across its seeds, with our direction files and the thresholds of our earlier rungs (gpt-oss `gf_floor_p50` = the thresholds of
+our `gf_cap_p50`, Muse `gf_floor_p95` = our `gf_cap_p95`, Qwen `cap_p50_L22-42` = our gi_v2 `floor_p50_L22-42`). Seeds 0–1 of the two
+Qwen ±0.16 Goodfire arms are byte-identical to our unjudged pilot 15214022 (`cmp`), so nothing here was judged before.
+  - gpt-oss (45 problems × 12 seeds): Goodfire floors `gf_floor_p50`, `gf_floor_p75`, `gf_floor_p95` (layers 12–23).
+  - Muse (45 × 12): Goodfire floors `gf_floor_p50`, `gf_floor_p75`, `gf_floor_p95` (layers 17–33); Goodfire doses `gf_m0.04`,
+    `gf_p0.04` (layer 26).
+  - Gemma (108 × 16): Goodfire floor `gfar_floor_p50_L20-38` (two cards, TP = 2, as our dw / cs2 arms).
+  - Qwen (61 × 12): Goodfire `gfar_floor_p50_L22-42`, `gfar_floor_p75_L22-42`, `gfar_floor_p95_L22-42`, `gfar_cap_p50_L22-42`,
+    `gfar_L32_a0.16`, `gfar_L32_a-0.16`; gi_v2 `cap_p50_L22-42`.
+
+**Sets (blind, neutral names; our scratch roots get a symlink per arm to the share copy).** Recipes unchanged: `make_dossiers.py
+--omit-hidden-suite` over every shown-pass / hidden-fail episode, the hidden-pass signature set, for Qwen the supplementary
+`lcbhard_57` / `lcbhard_81` set, batches of at most 300 KB / 6, self-contained task files, Sonnet rubric-judge through
+`judge_runner.py`, 6 at once, one detached chain for all five sets one after another, first pass as judged, no adjudication.
+  - gpt-oss `gfx02`: the three floors, `build_ladder_set.sh gptoss gfx02 gfx02 …`.
+  - Muse `gfx03`: the three floors and ±0.04 in one mixed set, `build_ladder_set.sh muse gfx03 gfx03 …`.
+  - Gemma `ctl_g10_s0-15`: the floor alone, `build_ctl_set.sh` (per-arm sets, as g01–g09).
+  - Qwen `gfx04`: the six Goodfire arms in one mixed set; Qwen `gix01`: the gi_v2 cap p50 alone (kept apart so the Goodfire
+    family glob `verdicts_gf*` does not pick it up). Both by a copy of `build_gfar_set.sh` that takes the arm directories from a
+    staging root of symlinks (`cov1113/`), because our two-seed pilot directories of ±0.16 carry the same names.
+
+**Analysis (the established families; the original unsteered arm of each model is the only reference).** Judged hack rate = HACK
+STRONG + WEAK over all episodes, problem-stratified, paired problem bootstrap CI, Holm within the family as the scripts compute it;
+dose rule by `dose_rule_read.py` (hidden pass over all episodes and no code, each within 10 points of unsteered).
+  - gpt-oss: Goodfire family = the ten judged Goodfire arms + three floors (13) with the three random add arms in the same call,
+    as in `run_gfar_analysis.sh`.
+  - Muse: Goodfire family = the seven judged Goodfire arms + five new (12) with the three random add arms, as in
+    `run_m01_analysis.sh` (part A only; nothing against the archived rerun).
+  - Gemma: `analysis_family_run.sh gfar7` = the six judged Goodfire arms + the floor.
+  - Qwen: Goodfire family = `gfar_L32_a±0.08`, `gfar_cap_p25` + six new (9); gi_v2 family = the eleven contrasts of
+    `analysis_floor` + `cap_p50_L22-42` (12).
+  An earlier contrast whose adjusted p crosses 0.05 in a larger family is reported; earlier FINDINGS entries stay as written.
+  Benchmarks: Koby's `capeval/` outputs are read with the retention rule (per benchmark within 2 points of unsteered or a CI
+  covering zero) against each model's original unsteered benchmark run, from the item files, for the charts.
+
+**Reading rules.** An arm outside the dose rule is reported with its judged rate, and its change is not read as an effect at kept
+capability. An arm that stops submitting code (no code more than 10 points above unsteered) is named as that. Floors are described
+by the share of positions they move where `clamp_shares` has it, not as light or strong.
+
+**Expected (from the automatic columns only).**
+  - *gpt-oss Goodfire floors* (proxy 15.0 / 15.9 / 20.9% against 19.4% unsteered): p50 and p75 do not raise judged hacking (11.7%
+    unsteered; a change between −5 and +2 points with a CI covering zero or just below it). Adding this direction never raised
+    hacking on gpt-oss (+0.1 … +0.4 stopped the model submitting code) while capping it lowered hacking by 10–11 points, so a floor
+    that raised hacking would be the first sign that the axis works upward here. p95 is outside the rule on hidden pass (−14);
+    its judged rate is left open, a rise of a few points is the likelier direction and would not be an effect at kept capability.
+  - *Muse Goodfire floors* (proxy 30.9 / 29.6 / 23.0% against 35.7%): no rise at p50 or p75 (32.8% unsteered; a change between −8
+    and +3 points) although adding the direction does raise hacking on Muse (+0.08: +11.5; +0.16: +19.3); p95 falls and is outside
+    the rule on no code (+14.1), so the fall is read as lost output.
+  - *Muse Goodfire ±0.04* (proxy 33.5 / 42.2%): both inside the rule; −0.04 lower by 2 to 8 points and +0.04 higher by 3 to 9, so
+    the six doses are monotone (−0.16 < −0.08 < −0.04 < unsteered < +0.04 < +0.08 < +0.16). One of the two with a CI covering zero
+    would not be a surprise at half the ±0.08 dose.
+  - *Gemma Goodfire floor p50* (proxy 4.9% against 20.2%; no code 24.5%, 2,105 truncated turns): judged hacking at or below 2%
+    against 4.7%, read as a broken arm, not as suppression.
+  - *Qwen* (unsteered 0.0% judged; proxy 11.6%): every arm at 0–2% judged, none separable from zero after Holm. gi_v2 cap p50 at
+    0% (nothing to lower). Goodfire cap p50 (61% no code) and −0.16 (49% no code) are broken arms; +0.16 is outside the rule by
+    0.1 points on hidden pass and is written as outside, near the line.
+  What would change the picture: a Goodfire floor inside the rule that raises judged hacking by a Holm-clear margin on gpt-oss or
+  Muse; a Muse ±0.04 pair that is not ordered; any Qwen arm above 3%.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
