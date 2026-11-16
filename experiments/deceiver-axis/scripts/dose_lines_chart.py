@@ -12,7 +12,16 @@ only. --split (user 2026-11-13) puts steering and clamping side by side instead,
 with α = 0 in the middle, then the caps in order of threshold percentile, a second unsteered point, and the floors in order of
 threshold percentile; the cap and floor lines pass through that second point. Error bars = 95% CIs of the difference (hack rate: paired bootstrap over problems, from the analysis file; benchmark:
 item-paired bootstrap). A hollow marker = the model stops submitting code on that arm (no-code share more than 10 points above
-unsteered), drawn on both of the arm's points.
+unsteered), drawn on both of the arm's points; the hack-rate line into and out of such an arm is short-dashed (user 2026-11-16:
+a hack rate there is not to be trusted like the others). Two axes' markers at one rung are dodged either side of its tick; a
+rung only one axis has sits on its tick.
+
+--clamp-scale (with --split; user 2026-11-16, concern that the cap and floor rungs were not to scale) places caps and floors by
+threshold percentile instead of evenly: a cap at p sits (100 − p) points left of the clamp part's unsteered point and a floor at
+p sits p points right of it, so the distance from that point is the share of unsteered positions beyond the threshold (a cap at
+p100 or a floor at p0 would move nothing). The labelled ticks are the same reference percentiles on every panel; small unlabelled
+ticks mark the rungs that were run. The nominal share tracks the measured open-loop share of GENERATED positions moved
+(clamp_shares.json, 49 arms: mean gap 1.9 points, largest 11.1) but not of PROMPT positions (mean gap 17.6, largest 45.3).
 
 --bench-strip (user 2026-11-16) takes the benchmark score out of the plot and into a strip underneath it, as in
 outcome_bars_chart.py: the plot keeps the two hack-rate lines, the strip holds the two axes' benchmark points (squares in the axis
@@ -29,6 +38,7 @@ Data, presets and the benchmark composite come from pareto_chart.py (`MODELS`, `
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --kinds steering --out <path>.png      # steering doses only
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --out <path>.png               # steering | caps, unsteered, floors
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --bench-strip --out <path>.png # benchmark score in a strip underneath
+    python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --bench-strip --clamp-scale --out <path>.png  # caps / floors to scale
 """
 from __future__ import annotations
 
@@ -51,12 +61,17 @@ MEASURES = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="judged hack
             "bench": dict(value="diff", ci="diff_ci", name="benchmark score", marker="s", size=6.2, width=1.6, dash=pc.DASHES)}
 SECTIONS = {"cap": "cap at percentile", "steering": "steering dose α (layer norms)", "floor": "floor at percentile"}
 TINT = "#f3f2ec"  # background of the clamp sections
-DODGE = 0.07  # the two axes' markers sit this far (in x steps) either side of the tick, so their error bars do not overlap
+DODGE = 0.07  # where two axes have a point at one rung, their markers sit this far (in x steps) either side of the tick
 SECTION_GAP = 0.5  # extra x steps between two sections
 SPLIT_GAP = 1.0  # --split: extra x steps between the steering part and the clamp part
 ORIGIN_PAD = 0.4  # --split: extra x steps either side of the clamp part's unsteered point (room for its tick label)
 PANEL_WIDTH, LEFT, RIGHT, PLOT_HEIGHT, TITLE_HEIGHT, XAXIS_HEIGHT, GAP = 8.4, 0.8, 0.25, 4.3, 0.62, 0.72, 0.3
 STRIP_GAP, STRIP_HEIGHT, STRIP_MARKER = 0.14, 1.0, 5.8  # --bench-strip: the benchmark strip under each plot (inches, marker size)
+DISTRUST_DASH = (0, (1.1, 1.9))  # hack-rate line into or out of an arm where the model stops submitting code (shorter dashes than pc.DASHES)
+# --clamp-scale: x steps per 100 percentile points, padding at the two ends, the reference ticks either side of the unsteered
+# point, and the extra panel width (inches) that keeps rungs 5 percentile points apart from touching
+CLAMP_STEPS, CLAMP_PAD, CLAMP_EXTRA_WIDTH = 6.0, 0.3, 1.0
+CLAMP_TICKS = {"cap": (5, 25, 50, 75), "floor": (25, 50, 75, 95)}
 
 
 def minus(text: str) -> str:
@@ -88,12 +103,17 @@ def layout(groups: list[dict], kinds: list[str]) -> tuple[dict[tuple[str, float]
     return slots, sections
 
 
-def plan(groups: list[dict], kinds: list[str], split: bool = False) -> tuple[dict[tuple[str, float], float], list[dict], list[float]]:
+def plan(groups: list[dict], kinds: list[str], split: bool = False,
+         clamp_scale: bool = False) -> tuple[dict[tuple[str, float], float], list[dict], list[float]]:
     """What draw_plot draws: the x position of every (kind, rung), the parts of the x axis and the unsteered positions. A part has
     its extent, tick labels, captions (centre, text, width in steps) and chains; a chain is the kinds of arm one line joins and the
     unsteered position that line passes through (None: it joins its own rungs only). Default: layout()'s three sections, with one
     unsteered point in the steering section. `split`: a steering part, then a clamp part with its own unsteered point between the
-    caps and the floors (caps in order of threshold percentile, unsteered, floors in order of threshold percentile)."""
+    caps and the floors (caps in order of threshold percentile, unsteered, floors in order of threshold percentile).
+    `clamp_scale` (with `split`): the clamp part is to scale in the threshold percentile. A cap at p sits (100 − p) points left of
+    the unsteered point and a floor at p sits p points right of it, so the distance from the unsteered point is the share of
+    unsteered positions beyond the threshold (a cap at p100 or a floor at p0 moves nothing). Labelled ticks are the same reference
+    percentiles on every panel (CLAMP_TICKS); a part's `minor` ticks mark the rungs that were run and have no label."""
     if not split:
         slots, sections = layout(groups, kinds)
         origin = slots.get(("steering", 0.0))
@@ -112,7 +132,21 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False) -> tuple[dic
                           captions=[(x + (len(doses) - 1) / 2, SECTIONS["steering"], len(doses))], chains=[dict(kinds=("steering",), origin=origins[-1])]))
         x += len(doses) + SPLIT_GAP
     caps, floors = rungs("cap"), rungs("floor")
-    if caps or floors:
+    if (caps or floors) and clamp_scale:
+        start = x - 0.5
+        origin = start + (CLAMP_PAD + CLAMP_STEPS if caps else 0.5)
+        place = {"cap": lambda value: origin - CLAMP_STEPS * (100 - value) / 100, "floor": lambda value: origin + CLAMP_STEPS * value / 100}
+        run = [(kind, value) for kind, values in (("cap", caps), ("floor", floors)) for value in values]
+        slots.update({key: place[key[0]](key[1]) for key in run})
+        origins.append(origin)
+        labelled = [(kind, value) for kind, values in (("cap", caps), ("floor", floors)) if values for value in CLAMP_TICKS[kind]]
+        parts.append(dict(start=start, end=origin + (CLAMP_STEPS + CLAMP_PAD if floors else 0.5), tinted=True,
+                          ticks=sorted([(place[kind](value), f"p{value:g}") for kind, value in labelled] + [(origin, "unsteered")]),
+                          minor=[slots[key] for key in run if key not in labelled],
+                          captions=([(origin - CLAMP_STEPS / 2, SECTIONS["cap"], CLAMP_STEPS)] if caps else [])
+                          + ([(origin + CLAMP_STEPS / 2, SECTIONS["floor"], CLAMP_STEPS)] if floors else []),
+                          chains=[dict(kinds=("cap", "floor"), origin=origin)]))
+    elif caps or floors:
         origin = x + len(caps) + (ORIGIN_PAD if caps else 0.0)
         first_floor = origin + 1 + ORIGIN_PAD
         slots.update({("cap", value): x + index for index, value in enumerate(caps)})
@@ -128,10 +162,11 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False) -> tuple[dic
 
 
 def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, measures: tuple[str, ...] = tuple(MEASURES),
-              strip: bool = False, x_labels: bool = True) -> None:
+              strip: bool = False, x_labels: bool = True, clamp_scale: bool = False) -> None:
     """`measures`: which of MEASURES to draw. `strip`: the axes is a benchmark strip (points and CIs only, no lines, smaller
-    markers, its own y label). `x_labels` False: no tick labels or section captions (a plot with a strip underneath)."""
-    slots, parts, origins = plan(groups, kinds, split)
+    markers, its own y label). `x_labels` False: no tick labels or section captions (a plot with a strip underneath).
+    A hack-rate line segment that starts or ends at an arm where the model stops submitting code is drawn in DISTRUST_DASH."""
+    slots, parts, origins = plan(groups, kinds, split, clamp_scale)
     axes.set_facecolor(pc.SURFACE)
     for part in parts:
         if part["tinted"]:
@@ -150,14 +185,19 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
         for part in parts:
             for chain in part["chains"]:
                 for measure in (MEASURES[key] for key in measures):
-                    points = sorted(((slots[(row["kind"], row["rung"])] + shift, row) for row in group["rows"]
-                                     if row["kind"] in chain["kinds"] and row[measure["value"]] is not None), key=lambda point: point[0])
+                    shared = {(row["kind"], row["rung"]) for other in groups if other is not group for row in other["rows"]
+                              if row[measure["value"]] is not None}  # rungs where another axis has a point too: only these are dodged
+                    points = sorted(((slots[(row["kind"], row["rung"])] + (shift if (row["kind"], row["rung"]) in shared else 0.0), row)
+                                     for row in group["rows"] if row["kind"] in chain["kinds"] and row[measure["value"]] is not None),
+                                    key=lambda point: point[0])
                     if not points:
                         continue
-                    line = [(x, row[measure["value"]]) for x, row in points] + ([(chain["origin"], 0.0)] if chain["origin"] is not None else [])
-                    if not strip:
-                        axes.plot(*zip(*sorted(line)), color=group["color"], linewidth=measure["width"], linestyle=measure["dash"], zorder=3,
-                                  solid_capstyle="round", solid_joinstyle="round")
+                    line = sorted([(x, row[measure["value"]], row["stops_submitting"]) for x, row in points]
+                                  + ([(chain["origin"], 0.0, False)] if chain["origin"] is not None else []))
+                    for (x_a, y_a, hollow_a), (x_b, y_b, hollow_b) in zip(line, line[1:]) if not strip else []:
+                        distrusted = measure is MEASURES["hack"] and (hollow_a or hollow_b)
+                        axes.plot([x_a, x_b], [y_a, y_b], color=group["color"], linewidth=measure["width"],
+                                  linestyle=DISTRUST_DASH if distrusted else measure["dash"], zorder=3, solid_capstyle="round", dash_capstyle="round")
                     for x, row in points:
                         y, (low, high) = row[measure["value"]], row[measure["ci"]]
                         axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1,
@@ -170,7 +210,9 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
                   markeredgewidth=1.3 if strip else 1.6, zorder=5)
     axes.set_xlim(parts[0]["start"], parts[-1]["end"])
     axes.set_xticks([x for part in parts for x, _ in part["ticks"]], [text for part in parts for _, text in part["ticks"]])
+    axes.set_xticks([x for part in parts for x in part.get("minor", [])], minor=True)
     axes.tick_params(colors=pc.MUTED, labelsize=8.2)
+    axes.tick_params(axis="x", which="minor", length=2.6, color=pc.MUTED)
     if strip:
         axes.margins(y=0.18)
         axes.yaxis.set_major_locator(MaxNLocator(nbins=4, min_n_ticks=3))
@@ -178,7 +220,7 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
     else:
         axes.set_ylabel("Δ vs unsteered, points" if len(measures) > 1 else f"Δ {MEASURES[measures[0]]['name']}, points", fontsize=9.5, color=pc.INK2)
     if not x_labels:
-        axes.tick_params(axis="x", labelbottom=False, length=0)
+        axes.tick_params(axis="x", which="both", labelbottom=False, length=0)
         return
     inches_per_step = axes.get_position().width * axes.figure.get_figwidth() / (parts[-1]["end"] - parts[0]["start"])
     for part in parts:
@@ -196,9 +238,15 @@ def main() -> None:
                         help="steering and clamping side by side, each around its own unsteered point: doses, then caps / unsteered / floors")
     parser.add_argument("--bench-strip", action="store_true",
                         help="benchmark score in a strip under each plot (own y axis) instead of on the plot's y axis")
+    parser.add_argument("--clamp-scale", action="store_true",
+                        help="with --split: caps and floors placed to scale by threshold percentile (distance from the unsteered point = "
+                             "share of unsteered positions beyond the threshold) instead of evenly spaced")
     parser.add_argument("--composite", choices=sorted(pc.COMPOSITES), default="pooled")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
+    if args.clamp_scale and not args.split:
+        parser.error("--clamp-scale needs --split (the clamp part's own unsteered point is the zero of its scale)")
+    panel_width = PANEL_WIDTH + (CLAMP_EXTRA_WIDTH if args.clamp_scale else 0.0)
     combine, score_name = pc.COMPOSITES[args.composite]
     kinds = [kind for kind in SECTIONS if kind in args.kinds]
     palette = dict(zip(args.axes, pc.GROUP_COLORS))
@@ -214,7 +262,7 @@ def main() -> None:
     columns = 1 if len(panels) == 1 else 2
     grid_rows = math.ceil(len(panels) / columns)
     panel_height = TITLE_HEIGHT + PLOT_HEIGHT + (STRIP_GAP + STRIP_HEIGHT if args.bench_strip else 0) + XAXIS_HEIGHT + GAP
-    width = PANEL_WIDTH * columns
+    width = panel_width * columns
     interventions = {("steering",): "Steering dose", ("cap", "steering", "floor"): "Capping, steering and flooring"}.get(
         tuple(kinds), ", ".join(kinds).capitalize())
     title = pc.wrap(f"{interventions} against judged reward hacking and benchmark score: "
@@ -228,7 +276,10 @@ def main() -> None:
                        + ("Left: steering doses. Right (tinted): caps and floors by threshold, either side of their own unsteered point. Rungs"
                           if args.split and "steering" in kinds and len(kinds) > 1
                           else f"Left to right: {', '.join(order[kind] for kind in kinds)}. Rungs" if len(kinds) > 1 else "Doses")
-                       + " are evenly spaced, not to scale.", 9.5, width - 0.1)
+                       + (" are evenly spaced, not to scale." if not args.clamp_scale else
+                          " of the steering dose are evenly spaced, not to scale. Caps and floors are to scale in the threshold percentile: "
+                          "the distance from the unsteered point is the share of unsteered positions beyond the threshold (cap at p: 100 − p; "
+                          "floor at p: p). Small ticks mark the rungs that were run."), 9.5, width - 0.1)
     notes = []
     for panel in panels:
         for group in panel["groups"]:
@@ -266,23 +317,25 @@ def main() -> None:
     figure.legend(handles=series, bbox_to_anchor=(x0, at(cursor)), ncol=len(MEASURES), **legend_style)
     cursor += 0.215 * len(args.axes) + 0.07
     extra = [Line2D([], [], color=pc.INK, marker="o", markersize=8, linewidth=0, label="unsteered", **marks),
-             Line2D([], [], color=pc.SURFACE, marker="o", markersize=7.5, linewidth=0, markeredgecolor=pc.INK2, markeredgewidth=1.6,
-                    label=f"hollow marker: the model stops submitting code (no-code share more than {pc.RULE_POINTS:g} points above unsteered)")]
+             Line2D([], [], color=pc.INK2, marker="o", markersize=7.5, linewidth=MEASURES["hack"]["width"], linestyle=DISTRUST_DASH,
+                    dash_capstyle="round", markerfacecolor=pc.SURFACE, markeredgecolor=pc.INK2, markeredgewidth=1.6,
+                    label=f"hollow marker, dashed hack-rate line: the model stops submitting code (no-code share more than {pc.RULE_POINTS:g} "
+                          "points above unsteered), so the hack rate there is not comparable")]
     figure.legend(handles=extra, bbox_to_anchor=(x0, at(cursor)), ncol=2, **legend_style)
     figure.text(x0, 0.1 / height, foot, fontsize=7.8, color=pc.MUTED, ha="left", va="bottom", linespacing=1.3)
 
-    plot_width = PANEL_WIDTH - LEFT - RIGHT
+    plot_width = panel_width - LEFT - RIGHT
     for index, panel in enumerate(panels):
         column, grid_row = index % columns, index // columns
         top = head_height + grid_row * panel_height
-        plot = figure.add_axes(((column * PANEL_WIDTH + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT), plot_width / width, PLOT_HEIGHT / height))
+        plot = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT), plot_width / width, PLOT_HEIGHT / height))
         if args.bench_strip:
-            draw_plot(plot, panel["groups"], kinds, args.split, measures=("hack",), x_labels=False)
-            strip = figure.add_axes(((column * PANEL_WIDTH + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT + STRIP_GAP + STRIP_HEIGHT),
+            draw_plot(plot, panel["groups"], kinds, args.split, measures=("hack",), x_labels=False, clamp_scale=args.clamp_scale)
+            strip = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT + STRIP_GAP + STRIP_HEIGHT),
                                      plot_width / width, STRIP_HEIGHT / height))
-            draw_plot(strip, panel["groups"], kinds, args.split, measures=("bench",), strip=True)
+            draw_plot(strip, panel["groups"], kinds, args.split, measures=("bench",), strip=True, clamp_scale=args.clamp_scale)
         else:
-            draw_plot(plot, panel["groups"], kinds, args.split)
+            draw_plot(plot, panel["groups"], kinds, args.split, clamp_scale=args.clamp_scale)
         unsteered = panel["groups"][0]["data"]["unsteered"]
         plot.set_title(f"{panel['model']['name']}\nunsteered: judged hack rate {unsteered['hack']:.1f}%, benchmark score {unsteered['composite']:.1f}%",
                        fontsize=9.6, color=pc.INK, loc="left", pad=8, linespacing=1.35)
@@ -290,7 +343,7 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=pc.SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=pc.SURFACE)
-    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip,
+    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale,
                   omitted_by_preset={f"{panel['model']['name']} / {group['axis_key']}": group["data"]["omitted_by_preset"]
                                      for panel in panels for group in panel["groups"] if group["data"]["omitted_by_preset"]}, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
                   panels=[dict(model=panel["model"]["name"],
