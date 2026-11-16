@@ -1,6 +1,6 @@
 """Do named directions separate judged-hack from non-hack unsteered episodes better than random directions? (CPU)
 
-Reads the per-episode token means cached by `axis_acts_extract.py` (`<acts>/unsteered__seed<N>.pt`, reasoning and answer
+Reads the per-episode token means cached by `axis_acts_extract.py` (`<acts>/<arm>__seed<N>.pt`, steering on for a steered arm; reasoning and answer
 tokens at every layer), labels each episode HACK (judged STRONG or WEAK) or not from a verdicts JSON keyed
 '<arm>/seed<s>/<example_id>' (unjudged episodes count as not HACK), projects the means at one layer on each named
 direction and on isotropic random unit directions, and reports the AUROC of the projection (higher = hack) pooled and
@@ -56,8 +56,8 @@ class SeparationRow(TypedDict):
     within_problem: AurocWithNull
 
 
-def load_episodes(acts_dir: Path, layer: int) -> Episodes:
-    seed_files = sorted(acts_dir.glob("unsteered__seed*.pt"), key=lambda path: int(path.stem.split("seed")[1]))
+def load_episodes(acts_dir: Path, arm: str, layer: int) -> Episodes:
+    seed_files = sorted(acts_dir.glob(f"{arm}__seed*.pt"), key=lambda path: int(path.stem.split("seed")[1]))
     caches = [torch.load(path, weights_only=False, map_location="cpu") for path in seed_files]
     layer_index = caches[0]["record_layers"].index(layer)
     return {
@@ -135,7 +135,8 @@ def format_row(row: SeparationRow) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--acts", type=Path, required=True, help="directory of unsteered__seed<N>.pt caches")
+    parser.add_argument("--acts", type=Path, required=True, help="directory of <arm>__seed<N>.pt caches")
+    parser.add_argument("--arm", default="unsteered", help="cache file stem; steered caches hold the steering-on means")
     parser.add_argument("--verdicts", type=Path, required=True, help="as_judged.json keyed '<arm>/seed<s>/<example_id>'")
     parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--direction", action="append", required=True, help="name=path[:key]; (layers, hidden) artifact")
@@ -143,14 +144,14 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
-    episodes = load_episodes(args.acts, args.layer)
+    episodes = load_episodes(args.acts, args.arm, args.layer)
     unit_directions_by_name = dict(load_unit_direction(spec, args.layer) for spec in args.direction)
     hidden_size = episodes["means_by_segment"]["reasoning"].shape[1]
     random_unit_directions = random_directions(hidden_size, args.random_directions, RANDOM_SEED, args.layer)
     rows = separation_rows(episodes, json.loads(args.verdicts.read_text()), unit_directions_by_name, random_unit_directions)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps({"acts": str(args.acts), "verdicts": str(args.verdicts), "layer": args.layer,
+    args.out.write_text(json.dumps({"acts": str(args.acts), "arm": args.arm, "verdicts": str(args.verdicts), "layer": args.layer,
                                     "directions": args.direction, "random_directions": args.random_directions,
                                     "random_seed": RANDOM_SEED, "episodes": len(episodes["verdict_keys"]), "rows": rows}, indent=1))
     print("AUROC [random 2.5-97.5 pct] percentile among random")
