@@ -194,6 +194,55 @@ class MistralSmall4SteeringSpecifics:
         raise ValueError(f"Mistral-Small-4 reasoning_effort must be 'none' or 'high', got {effort!r}")
 
 
+# Beam's chat template maps these labels onto a token budget. ``minimal`` is the smallest budget the
+# model was trained to respect. The template's own default, when the argument is omitted, is ``max``.
+_BEAM_EFFORT_LABELS: Final[dict[str, int]] = {
+    "minimal": 8,
+    "low": 32,
+    "medium": 64,
+    "high": 128,
+    "xhigh": 256,
+    "max": 512,
+}
+
+
+@dataclass(frozen=True)
+class BeamSteeringSpecifics:
+    """Reflection Beam (``BeamForCausalLM``). Needs vLLM 0.33 or newer; 0.28 has no Beam class.
+    ``BeamDecoderLayer.forward`` returns ``(hidden, normalized)`` with the residual stream first.
+    The chat template is modified Harmony: an ``analysis`` channel and a ``final`` channel.
+    ``reasoning_effort`` is ``minimal``/``low``/``medium``/``high``/``xhigh``/``max`` (budgets
+    8/32/64/128/256/512) or an int. A collection that should keep the trace short sets
+    ``reasoning_effort`` to ``minimal``."""
+
+    family: str = "beam"
+    hf_attn_implementation: str | None = None
+    vllm_block: tuple[str, str] = ("vllm.models.beam.nvidia.model", "BeamDecoderLayer")
+
+    def patch_vllm(self, block_cls: type, transforms_by_layer: dict[int, object]) -> Restore:
+        return patch_vllm_stream_layers(block_cls, transforms_by_layer)
+
+    def vllm_stream(self, output: object) -> torch.Tensor:
+        return _first_stream(output)
+
+    def split_completion(self, raw_completion: str) -> tuple[str, str]:
+        return split_harmony_completion(raw_completion)
+
+    def completion_splitter(self, chat_kwargs: Mapping[str, object]) -> CompletionSplitter:
+        effort = chat_kwargs.get("reasoning_effort", "max")
+        if effort is None:
+            effort = "max"
+        if isinstance(effort, bool) or not isinstance(effort, (int, str)):
+            raise ValueError(f"Beam reasoning_effort must be an int or a label, got {effort!r}")
+        if isinstance(effort, str) and effort not in _BEAM_EFFORT_LABELS:
+            raise ValueError(
+                "Beam reasoning_effort must be an int or one of: "
+                + ", ".join(_BEAM_EFFORT_LABELS)
+                + f", got {effort!r}"
+            )
+        return self.split_completion
+
+
 # First substring match (on the lower-cased model name) wins.
 STEERING_SPECIFICS_FACTORY_BY_NAME_SUBSTRING: Final[dict[str, Callable[[], SteeringModelSpecifics]]] = {
     "gpt-oss": GptOssSteeringSpecifics,
@@ -206,6 +255,7 @@ STEERING_SPECIFICS_FACTORY_BY_NAME_SUBSTRING: Final[dict[str, Callable[[], Steer
     "qwen3.8": Qwen35SteeringSpecifics,
     "qwen3_8": Qwen35SteeringSpecifics,
     "mistral-small-4": MistralSmall4SteeringSpecifics,
+    "beam": BeamSteeringSpecifics,
 }
 
 

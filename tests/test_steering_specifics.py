@@ -6,8 +6,8 @@ import unittest
 import torch
 
 from selfconcept.measurement.steering_specifics import (
-    Gemma4SteeringSpecifics, GptOssSteeringSpecifics, MistralSmall4SteeringSpecifics, MuseGlimmerSteeringSpecifics,
-    Qwen35SteeringSpecifics, split_answer_only, steering_model_specifics)
+    BeamSteeringSpecifics, Gemma4SteeringSpecifics, GptOssSteeringSpecifics, MistralSmall4SteeringSpecifics,
+    MuseGlimmerSteeringSpecifics, Qwen35SteeringSpecifics, split_answer_only, steering_model_specifics)
 
 
 class Resolution(unittest.TestCase):
@@ -19,6 +19,7 @@ class Resolution(unittest.TestCase):
             "Qwen/Qwen3.8-27B": (Qwen35SteeringSpecifics, "qwen3.5"),
             "Qwen/Qwen3.5-27B": (Qwen35SteeringSpecifics, "qwen3.5"),
             "mistralai/Mistral-Small-4-119B-2603": (MistralSmall4SteeringSpecifics, "mistral-small-4"),
+            "reflection/Beam-1.0-501B-A23B-NVFP4": (BeamSteeringSpecifics, "beam"),
         }
         for name, (cls, family) in cases.items():
             with self.subTest(name=name):
@@ -35,7 +36,7 @@ class Resolution(unittest.TestCase):
     def test_only_gpt_oss_has_an_hf_attention_kernel(self):
         self.assertEqual(GptOssSteeringSpecifics().hf_attn_implementation, "kernels-community/vllm-flash-attn3")
         for specifics in (Gemma4SteeringSpecifics(), MuseGlimmerSteeringSpecifics(), Qwen35SteeringSpecifics(),
-                          MistralSmall4SteeringSpecifics()):
+                          MistralSmall4SteeringSpecifics(), BeamSteeringSpecifics()):
             self.assertIsNone(specifics.hf_attn_implementation)
 
 
@@ -66,6 +67,18 @@ class Splitters(unittest.TestCase):
         self.assertIs(mistral.completion_splitter({"reasoning_effort": "none"}), split_answer_only)
         with self.assertRaises(ValueError):
             mistral.completion_splitter({"reasoning_effort": "low"})
+
+    def test_beam_harmony_and_minimal_effort(self):
+        beam = BeamSteeringSpecifics()
+        raw = "<|channel|>analysis<|message|>brief<|end|><|start|>assistant<|channel|>final<|message|>ready<|return|>"
+        self.assertEqual(beam.split_completion(raw), ("brief", "ready"))
+        self.assertEqual(beam.completion_splitter({"reasoning_effort": "minimal"})(raw), ("brief", "ready"))
+        self.assertEqual(beam.completion_splitter({})(raw), ("brief", "ready"))
+        self.assertEqual(beam.completion_splitter({"reasoning_effort": 8})(raw), ("brief", "ready"))
+        with self.assertRaises(ValueError):
+            beam.completion_splitter({"reasoning_effort": "none"})
+        with self.assertRaises(ValueError):
+            beam.completion_splitter({"reasoning_effort": True})
 
     def test_fixed_splitters_ignore_chat_kwargs(self):
         for specifics in (GptOssSteeringSpecifics(), Gemma4SteeringSpecifics(), MuseGlimmerSteeringSpecifics()):

@@ -50,6 +50,9 @@ SOO_CHAT_KWARGS='{"reasoning_effort":"high"}' or the reasoning sidecar is empty.
 ``--engine-kwargs '{"limit_mm_per_prompt": {"image": 0}, "attention_backend": "TRITON_MLA"}'``
 so the vision tower is not given a profiling budget and B200 does not select FLASHINFER_MLA
 (that backend downloads a cubin, and compute nodes have no outbound network).
+``beam`` (reflection/Beam-1.0-501B-A23B, including the NVFP4 copy) uses a modified Harmony template.
+SOO_CHAT_KWARGS='{"reasoning_effort":"minimal"}' asks for the shortest trained trace (budget 8).
+The template default is ``max`` (512). Labels are minimal/low/medium/high/xhigh/max.
 Set VLLM_ENABLE_V1_MULTIPROCESSING=0 so apply_model runs in this process (closures
 over tensors then need no pickling).
 """
@@ -395,7 +398,11 @@ def main() -> None:
         from selfconcept.measurement.mistral_vllm_shim import use_mistral_vllm_shim
 
         use_mistral_vllm_shim(Path(__file__).resolve().parent.parent / "vllm_shim")
-    os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
+    # Single-GPU steering patches the block class in this process, so the engine has to
+    # stay in-process. Tensor parallel loads in spawned workers (the Beam NVFP4 smoke did,
+    # with multiprocessing left on); forcing it off there selects a different executor.
+    if args.tensor_parallel_size == 1:
+        os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
     # vLLM keys its torch.compile cache on the model config, not on the patched block forward, so a cached
     # graph from a differently-steered run gets served to this one (smokes 14028603 and 14029300 crashed that way).
     os.environ["VLLM_DISABLE_COMPILE_CACHE"] = "1"
