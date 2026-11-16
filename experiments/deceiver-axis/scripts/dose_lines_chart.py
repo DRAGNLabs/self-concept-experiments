@@ -14,8 +14,13 @@ threshold percentile; the cap and floor lines pass through that second point. Er
 item-paired bootstrap). A hollow marker = the model stops submitting code on that arm (no-code share more than 10 points above
 unsteered), drawn on both of the arm's points.
 
-An arm with no benchmark run yet keeps its hack-rate point and is named in the footnote (2026-11-13: gi_v2 ±0.16 and the three
-gi_v2 floors on Gemma, the Goodfire p25 cap on Muse and on Qwen). No table under the panels (user 2026-11-13: tables of the data
+--bench-strip (user 2026-11-16) takes the benchmark score out of the plot and into a strip underneath it, as in
+outcome_bars_chart.py: the plot keeps the two hack-rate lines, the strip holds the two axes' benchmark points (squares in the axis
+colour, with CIs, no line) on its own y axis, and the x labels sit under the strip.
+
+An arm with no benchmark run yet keeps its hack-rate point and is named in the footnote. Rungs past the least extreme failing rung
+of their ladder are left out by the presets (`omit` in pareto_chart.py: the Goodfire p25 caps on Muse and Qwen, user 2026-11-16).
+No table under the panels (user 2026-11-13: tables of the data
 are handled separately); every plotted number is in the .json.
 
 Data, presets and the benchmark composite come from pareto_chart.py (`MODELS`, `load_axis`). Writes <out>.png, .pdf and .json.
@@ -23,6 +28,7 @@ Data, presets and the benchmark composite come from pareto_chart.py (`MODELS`, `
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --model gptoss muse gemma qwen --out <path>.png
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --kinds steering --out <path>.png      # steering doses only
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --out <path>.png               # steering | caps, unsteered, floors
+    python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --bench-strip --out <path>.png # benchmark score in a strip underneath
 """
 from __future__ import annotations
 
@@ -36,6 +42,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.ticker import MaxNLocator
 
 import pareto_chart as pc
 
@@ -49,6 +56,7 @@ SECTION_GAP = 0.5  # extra x steps between two sections
 SPLIT_GAP = 1.0  # --split: extra x steps between the steering part and the clamp part
 ORIGIN_PAD = 0.4  # --split: extra x steps either side of the clamp part's unsteered point (room for its tick label)
 PANEL_WIDTH, LEFT, RIGHT, PLOT_HEIGHT, TITLE_HEIGHT, XAXIS_HEIGHT, GAP = 8.4, 0.8, 0.25, 4.3, 0.62, 0.72, 0.3
+STRIP_GAP, STRIP_HEIGHT, STRIP_MARKER = 0.14, 1.0, 5.8  # --bench-strip: the benchmark strip under each plot (inches, marker size)
 
 
 def minus(text: str) -> str:
@@ -119,7 +127,10 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False) -> tuple[dic
     return slots, parts, origins
 
 
-def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False) -> None:
+def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, measures: tuple[str, ...] = tuple(MEASURES),
+              strip: bool = False, x_labels: bool = True) -> None:
+    """`measures`: which of MEASURES to draw. `strip`: the axes is a benchmark strip (points and CIs only, no lines, smaller
+    markers, its own y label). `x_labels` False: no tick labels or section captions (a plot with a strip underneath)."""
     slots, parts, origins = plan(groups, kinds, split)
     axes.set_facecolor(pc.SURFACE)
     for part in parts:
@@ -138,29 +149,41 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False) -
         shift = (index - (len(groups) - 1) / 2) * 2 * DODGE
         for part in parts:
             for chain in part["chains"]:
-                for measure in MEASURES.values():
+                for measure in (MEASURES[key] for key in measures):
                     points = sorted(((slots[(row["kind"], row["rung"])] + shift, row) for row in group["rows"]
                                      if row["kind"] in chain["kinds"] and row[measure["value"]] is not None), key=lambda point: point[0])
                     if not points:
                         continue
                     line = [(x, row[measure["value"]]) for x, row in points] + ([(chain["origin"], 0.0)] if chain["origin"] is not None else [])
-                    axes.plot(*zip(*sorted(line)), color=group["color"], linewidth=measure["width"], linestyle=measure["dash"], zorder=3,
-                              solid_capstyle="round", solid_joinstyle="round")
+                    if not strip:
+                        axes.plot(*zip(*sorted(line)), color=group["color"], linewidth=measure["width"], linestyle=measure["dash"], zorder=3,
+                                  solid_capstyle="round", solid_joinstyle="round")
                     for x, row in points:
                         y, (low, high) = row[measure["value"]], row[measure["ci"]]
-                        axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1, alpha=0.4, zorder=2)
+                        axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1,
+                                      alpha=0.55 if strip else 0.4, zorder=2)
                         face, edge = (pc.SURFACE, group["color"]) if row["stops_submitting"] else (group["color"], pc.SURFACE)
-                        axes.plot(x, y, measure["marker"], markersize=measure["size"], color=face, markeredgecolor=edge, markeredgewidth=1.6, zorder=4)
+                        axes.plot(x, y, measure["marker"], markersize=STRIP_MARKER if strip else measure["size"], color=face, markeredgecolor=edge,
+                                  markeredgewidth=1.3 if strip else 1.6, zorder=4)
     for origin in origins:
-        axes.plot(origin, 0, "o", markersize=8, color=pc.INK, markeredgecolor=pc.SURFACE, markeredgewidth=1.6, zorder=5)
+        axes.plot(origin, 0, "s" if strip else "o", markersize=STRIP_MARKER if strip else 8, color=pc.INK, markeredgecolor=pc.SURFACE,
+                  markeredgewidth=1.3 if strip else 1.6, zorder=5)
     axes.set_xlim(parts[0]["start"], parts[-1]["end"])
     axes.set_xticks([x for part in parts for x, _ in part["ticks"]], [text for part in parts for _, text in part["ticks"]])
     axes.tick_params(colors=pc.MUTED, labelsize=8.2)
-    axes.set_ylabel("Δ vs unsteered, points", fontsize=9.5, color=pc.INK2)
+    if strip:
+        axes.margins(y=0.18)
+        axes.yaxis.set_major_locator(MaxNLocator(nbins=4, min_n_ticks=3))
+        axes.set_ylabel("Δ benchmark,\npoints", fontsize=8.6, color=pc.INK2, linespacing=1.15)
+    else:
+        axes.set_ylabel("Δ vs unsteered, points" if len(measures) > 1 else f"Δ {MEASURES[measures[0]]['name']}, points", fontsize=9.5, color=pc.INK2)
+    if not x_labels:
+        axes.tick_params(axis="x", labelbottom=False, length=0)
+        return
     inches_per_step = axes.get_position().width * axes.figure.get_figwidth() / (parts[-1]["end"] - parts[0]["start"])
     for part in parts:
         for centre, text, steps in part["captions"]:
-            axes.text(centre, -0.075, pc.wrap(text, 9, max(1.25 * steps * inches_per_step, 0.9)), fontsize=9,
+            axes.text(centre, -0.075 * PLOT_HEIGHT / STRIP_HEIGHT if strip else -0.075, pc.wrap(text, 9, max(1.25 * steps * inches_per_step, 1.35)), fontsize=9,
                       color=pc.INK2, ha="center", va="top", linespacing=1.2, transform=axes.get_xaxis_transform(), clip_on=False)
 
 
@@ -171,6 +194,8 @@ def main() -> None:
     parser.add_argument("--kinds", nargs="+", choices=list(SECTIONS), default=list(SECTIONS), help="sections to draw (default: all three)")
     parser.add_argument("--split", action="store_true",
                         help="steering and clamping side by side, each around its own unsteered point: doses, then caps / unsteered / floors")
+    parser.add_argument("--bench-strip", action="store_true",
+                        help="benchmark score in a strip under each plot (own y axis) instead of on the plot's y axis")
     parser.add_argument("--composite", choices=sorted(pc.COMPOSITES), default="pooled")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -188,7 +213,7 @@ def main() -> None:
 
     columns = 1 if len(panels) == 1 else 2
     grid_rows = math.ceil(len(panels) / columns)
-    panel_height = TITLE_HEIGHT + PLOT_HEIGHT + XAXIS_HEIGHT + GAP
+    panel_height = TITLE_HEIGHT + PLOT_HEIGHT + (STRIP_GAP + STRIP_HEIGHT if args.bench_strip else 0) + XAXIS_HEIGHT + GAP
     width = PANEL_WIDTH * columns
     interventions = {("steering",): "Steering dose", ("cap", "steering", "floor"): "Capping, steering and flooring"}.get(
         tuple(kinds), ", ".join(kinds).capitalize())
@@ -197,7 +222,9 @@ def main() -> None:
                                                                                  if len(panels) > 1 else f" on {panels[0]['model']['name']}"),
                     12.5, width - 0.3)
     order = {"cap": "caps by threshold", "steering": "steering doses", "floor": "floors by threshold"}
-    subtitle = pc.wrap("Both measures are the change from the model's unsteered arm, in points, on one y axis. Bars = 95% CI. "
+    subtitle = pc.wrap(("Change from the model's unsteered arm, in points: judged hack rate in the plot, benchmark score in the strip underneath "
+                        "(its own y axis). Bars = 95% CI. " if args.bench_strip else
+                        "Both measures are the change from the model's unsteered arm, in points, on one y axis. Bars = 95% CI. ")
                        + ("Left: steering doses. Right (tinted): caps and floors by threshold, either side of their own unsteered point. Rungs"
                           if args.split and "steering" in kinds and len(kinds) > 1
                           else f"Left to right: {', '.join(order[kind] for kind in kinds)}. Rungs" if len(kinds) > 1 else "Doses")
@@ -231,8 +258,10 @@ def main() -> None:
     figure.text(x0, at(cursor), subtitle, fontsize=9.5, color=pc.INK2, ha="left", va="top", linespacing=1.3)
     cursor += 0.175 * (subtitle.count("\n") + 1) + 0.1
     marks = dict(markeredgecolor=pc.SURFACE, markeredgewidth=1.5)
-    series = [Line2D([], [], color=palette[key], marker=m["marker"], markersize=m["size"], linewidth=m["width"], linestyle=m["dash"],
-                     label=f"{pc.AXIS_NAMES[key]}: {m['name']}", **marks) for key in args.axes for m in MEASURES.values()]
+    series = [Line2D([], [], color=palette[key], marker=m["marker"], markersize=STRIP_MARKER if args.bench_strip and name == "bench" else m["size"],
+                     linewidth=0 if args.bench_strip and name == "bench" else m["width"], linestyle=m["dash"],
+                     label=f"{pc.AXIS_NAMES[key]}: {m['name']}" + (" (strip)" if args.bench_strip and name == "bench" else ""), **marks)
+              for key in args.axes for name, m in MEASURES.items()]
     legend_style = dict(frameon=False, fontsize=9, handletextpad=0.5, columnspacing=1.6, loc="upper left", borderaxespad=0, borderpad=0, handlelength=3.0)
     figure.legend(handles=series, bbox_to_anchor=(x0, at(cursor)), ncol=len(MEASURES), **legend_style)
     cursor += 0.215 * len(args.axes) + 0.07
@@ -247,7 +276,13 @@ def main() -> None:
         column, grid_row = index % columns, index // columns
         top = head_height + grid_row * panel_height
         plot = figure.add_axes(((column * PANEL_WIDTH + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT), plot_width / width, PLOT_HEIGHT / height))
-        draw_plot(plot, panel["groups"], kinds, args.split)
+        if args.bench_strip:
+            draw_plot(plot, panel["groups"], kinds, args.split, measures=("hack",), x_labels=False)
+            strip = figure.add_axes(((column * PANEL_WIDTH + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT + STRIP_GAP + STRIP_HEIGHT),
+                                     plot_width / width, STRIP_HEIGHT / height))
+            draw_plot(strip, panel["groups"], kinds, args.split, measures=("bench",), strip=True)
+        else:
+            draw_plot(plot, panel["groups"], kinds, args.split)
         unsteered = panel["groups"][0]["data"]["unsteered"]
         plot.set_title(f"{panel['model']['name']}\nunsteered: judged hack rate {unsteered['hack']:.1f}%, benchmark score {unsteered['composite']:.1f}%",
                        fontsize=9.6, color=pc.INK, loc="left", pad=8, linespacing=1.35)
@@ -255,7 +290,9 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=pc.SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=pc.SURFACE)
-    record = dict(composite=args.composite, kinds=kinds, split=args.split, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
+    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip,
+                  omitted_by_preset={f"{panel['model']['name']} / {group['axis_key']}": group["data"]["omitted_by_preset"]
+                                     for panel in panels for group in panel["groups"] if group["data"]["omitted_by_preset"]}, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
                   panels=[dict(model=panel["model"]["name"],
                                axes=[dict(axis=group["axis_key"], color=group["color"], analysis=group["data"]["analysis"],
                                           unsteered=group["data"]["unsteered"], arms=group["rows"]) for group in panel["groups"]])
