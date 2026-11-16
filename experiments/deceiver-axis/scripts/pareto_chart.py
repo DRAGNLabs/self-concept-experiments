@@ -217,6 +217,16 @@ def hidden_pass_diffs(analysis: dict, axis: dict, arms: list[str]) -> dict[str, 
     return {arm: rate[arm] - rate["unsteered"] for arm in arms}
 
 
+def hidden_pass_unsteered(analysis: dict, axis: dict) -> float | None:
+    """Unsteered hidden-test pass over all episodes, in %, from the same source as `hidden_pass_diffs`."""
+    if "hidden_pass" in analysis:
+        return 100 * analysis["hidden_pass"]["arms"]["unsteered"]["rate"]
+    if "summary" not in axis:
+        return None
+    row = json.loads(axis["summary"].read_text())["unsteered"]
+    return 100 * row["honest_hidden_pass_rate"] * (1 - row["shown_pass_hidden_fail_rate"])
+
+
 def relative_change(judged: dict, arm: str) -> dict:
     """Change in the judged hack rate as % of the unsteered rate (-100 = no judged hack left), with a paired bootstrap over
     problems of the ratio (both rates recomputed in every draw). Not defined when the unsteered rate is zero."""
@@ -255,12 +265,14 @@ def load_axis(model: dict, axis: dict, combine, keep_without_benchmark: bool = F
         bench = composite(model["capeval"], arm, combine) if has_run else NO_BENCHMARK
         contrast = judged["contrasts"][source]
         hidden_diff = hidden_diffs[source]
+        hidden_ci = [100 * bound for bound in analysis["hidden_pass"]["contrasts"][source]["ci95"]] if "hidden_pass" in analysis else None
         no_code_diff = 100 * no_code["arms"][source]["diff_vs_unsteered"]
         measures = [("no_code", no_code_diff)] + ([("hidden_pass", hidden_diff)] if hidden_diff is not None else [])
         rows[arm] = dict(kind=kind(arm), label=label(arm), analysis_arm=source, hack=100 * judged["arms"][source]["rate"],
                          hack_diff=100 * contrast["diff"], hack_diff_ci=[100 * contrast["ci95"][0], 100 * contrast["ci95"][1]],
                          hack_p_holm=contrast.get("p_holm"),
-                         episodes=judged["arms"][source]["episodes"], hidden_pass_diff=hidden_diff, no_code_diff=no_code_diff,
+                         episodes=judged["arms"][source]["episodes"], hidden_pass_diff=hidden_diff, hidden_pass_diff_ci=hidden_ci,
+                         no_code_diff=no_code_diff,
                          inside_dose_rule=None if hidden_diff is None else all(abs(value) <= RULE_POINTS for _, value in measures),
                          outside_on=[name for name, value in measures if abs(value) > RULE_POINTS],
                          stops_submitting=no_code_diff > RULE_POINTS, **relative_change(judged, source), **bench)
@@ -268,6 +280,7 @@ def load_axis(model: dict, axis: dict, combine, keep_without_benchmark: bool = F
     unsteered_composite = {round(row["composite_unsteered"], 9) for row in scored}
     assert len(unsteered_composite) == 1, unsteered_composite
     unsteered = dict(hack=100 * judged["arms"]["unsteered"]["rate"], episodes=judged["arms"]["unsteered"]["episodes"],
+                     hidden_pass=hidden_pass_unsteered(analysis, axis),
                      composite=scored[0]["composite_unsteered"], accuracy={t: scored[0]["accuracy"][t]["unsteered"] for t in TASKS})
     items = sum(row["n"] for row in scored[0]["accuracy"].values())
     return dict(unsteered=unsteered, arms=rows, omitted_no_benchmark_run=omitted, omitted_by_preset=omitted_by_preset, analysis=str(axis["analysis"]), problems=judged["problems"],

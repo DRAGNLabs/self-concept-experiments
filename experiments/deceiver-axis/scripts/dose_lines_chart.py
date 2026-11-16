@@ -31,6 +31,9 @@ ticks mark the rungs that were run. The nominal share tracks the measured open-l
 --bench-strip (user 2026-11-16) takes the benchmark score out of the plot and into a strip underneath it, as in
 outcome_bars_chart.py: the plot keeps the two hack-rate lines, the strip holds the two axes' benchmark points (squares in the axis
 colour, with CIs, no line) on its own y axis, and the x labels sit under the strip.
+--hidden-strip (with --bench-strip; draft, user 2026-11-16) adds a second strip under it: the change in hidden-test pass over all
+episodes (diamonds; CI where the analysis file stores one), with dashed lines at the dose-rule limit of ±10 points. Hidden pass
+falls when hacking rises (a hack that fails the hidden tests is a failure), so the strip shows the rule's measure, not capability.
 
 An arm with no benchmark run yet keeps its hack-rate point and is named in the footnote. Rungs past the least extreme failing rung
 of their ladder are left out by the presets (`omit` in pareto_chart.py: the Goodfire p25 caps on Muse and Qwen, user 2026-11-16).
@@ -64,6 +67,10 @@ import pareto_chart as pc
 AXIS_SHORT = {"gi_v2": "gi_v2", "gfar": "Goodfire"}
 MEASURES = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="judged hack rate", marker="o", size=7.5, width=2.0, dash="-"),
             "bench": dict(value="diff", ci="diff_ci", name="benchmark score", marker="s", size=6.2, width=1.6, dash=pc.DASHES)}
+# --hidden-strip: hidden-test pass over all episodes, the measure of the task-set dose rule; strip only, never a line in the plot
+STRIP_ONLY = {"hidden": dict(value="hidden_pass_diff", ci="hidden_pass_diff_ci", name="hidden-test pass", marker="D", size=5.2, strip_size=4.9, width=0, dash="-")}
+DRAWN = {**MEASURES, **STRIP_ONLY}
+STRIP_LABELS = {"bench": "Δ benchmark,\npoints", "hidden": "Δ hidden pass,\npoints"}
 SECTIONS = {"cap": "cap at percentile", "steering": "steering dose α (layer norms)", "floor": "floor at percentile"}
 TINT = "#f3f2ec"  # background of the clamp sections
 DODGE = 0.07  # where two axes have a point at one rung, their markers sit this far (in x steps) either side of the tick
@@ -169,8 +176,8 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False,
 
 def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, measures: tuple[str, ...] = tuple(MEASURES),
               strip: bool = False, x_labels: bool = True, clamp_scale: bool = False, rule_ring: bool = False) -> None:
-    """`measures`: which of MEASURES to draw. `strip`: the axes is a benchmark strip (points and CIs only, no lines, smaller
-    markers, its own y label). `x_labels` False: no tick labels or section captions (a plot with a strip underneath).
+    """`measures`: which of DRAWN to draw. `strip`: the axes is a strip for one measure (points and CIs only, no lines, smaller
+    markers, its own y label; the hidden-pass strip also carries the dose-rule lines at ±pc.RULE_POINTS). `x_labels` False: no tick labels or section captions (a plot with a strip underneath).
     A hack-rate line segment that starts or ends at an arm where the model stops submitting code is drawn in DISTRUST_DASH."""
     slots, parts, origins = plan(groups, kinds, split, clamp_scale)
     axes.set_facecolor(pc.SURFACE)
@@ -190,7 +197,7 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
         shift = (index - (len(groups) - 1) / 2) * 2 * DODGE
         for part in parts:
             for chain in part["chains"]:
-                for measure in (MEASURES[key] for key in measures):
+                for measure in (DRAWN[key] for key in measures):
                     shared = {(row["kind"], row["rung"]) for other in groups if other is not group for row in other["rows"]
                               if row[measure["value"]] is not None}  # rungs where another axis has a point too: only these are dodged
                     points = sorted(((slots[(row["kind"], row["rung"])] + (shift if (row["kind"], row["rung"]) in shared else 0.0), row)
@@ -205,17 +212,20 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
                         axes.plot([x_a, x_b], [y_a, y_b], color=group["color"], linewidth=measure["width"],
                                   linestyle=DISTRUST_DASH if distrusted else measure["dash"], zorder=3, solid_capstyle="round", dash_capstyle="round")
                     for x, row in points:
-                        y, (low, high) = row[measure["value"]], row[measure["ci"]]
-                        axes.errorbar(x, y, yerr=[[y - low], [high - y]], fmt="none", ecolor=group["color"], elinewidth=1,
-                                      alpha=0.55 if strip else 0.4, zorder=2)
+                        y, interval = row[measure["value"]], row[measure["ci"]]
+                        if interval is not None:  # hidden pass read from a run summary has no stored CI
+                            axes.errorbar(x, y, yerr=[[y - interval[0]], [interval[1] - y]], fmt="none", ecolor=group["color"], elinewidth=1,
+                                          alpha=0.55 if strip else 0.4, zorder=2)
                         face, edge = (pc.SURFACE, group["color"]) if row["stops_submitting"] else (group["color"], pc.SURFACE)
                         if rule_ring and not strip and measure is MEASURES["hack"] and row["inside_dose_rule"] is False:
                             axes.plot(x, y, "o", markersize=measure["size"] + RULE_RING["extra"], markerfacecolor="none",
                                       markeredgecolor=group["color"], markeredgewidth=RULE_RING["width"], zorder=3.5)
-                        axes.plot(x, y, measure["marker"], markersize=STRIP_MARKER if strip else measure["size"], color=face, markeredgecolor=edge,
+                        axes.plot(x, y, measure["marker"], markersize=measure.get("strip_size", STRIP_MARKER) if strip else measure["size"],
+                                  color=face, markeredgecolor=edge,
                                   markeredgewidth=1.3 if strip else 1.6, zorder=4)
     for origin in origins:
-        axes.plot(origin, 0, "s" if strip else "o", markersize=STRIP_MARKER if strip else 8, color=pc.INK, markeredgecolor=pc.SURFACE,
+        axes.plot(origin, 0, DRAWN[measures[0]]["marker"] if strip else "o",
+                  markersize=DRAWN[measures[0]].get("strip_size", STRIP_MARKER) if strip else 8, color=pc.INK, markeredgecolor=pc.SURFACE,
                   markeredgewidth=1.3 if strip else 1.6, zorder=5)
     axes.set_xlim(parts[0]["start"], parts[-1]["end"])
     axes.set_xticks([x for part in parts for x, _ in part["ticks"]], [text for part in parts for _, text in part["ticks"]])
@@ -225,7 +235,12 @@ def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, m
     if strip:
         axes.margins(y=0.18)
         axes.yaxis.set_major_locator(MaxNLocator(nbins=4, min_n_ticks=3))
-        axes.set_ylabel("Δ benchmark,\npoints", fontsize=8.6, color=pc.INK2, linespacing=1.15)
+        axes.set_ylabel(STRIP_LABELS[measures[0]], fontsize=8.6, color=pc.INK2, linespacing=1.15)
+        if measures[0] == "hidden":  # the dose-rule lines; the lower one is always inside the y range
+            low, high = axes.get_ylim()
+            axes.set_ylim(min(low, -pc.RULE_POINTS - 2.5), max(high, 2.5))
+            for limit in (-pc.RULE_POINTS, pc.RULE_POINTS):
+                axes.axhline(limit, color=pc.INK2, linewidth=0.9, linestyle=(0, (4, 3)), zorder=1.6)
     else:
         axes.set_ylabel("Δ vs unsteered, points" if len(measures) > 1 else f"Δ {MEASURES[measures[0]]['name']}, points", fontsize=9.5, color=pc.INK2)
     if not x_labels:
@@ -250,6 +265,9 @@ def main() -> None:
     parser.add_argument("--clamp-scale", action="store_true",
                         help="with --split: caps and floors placed to scale by threshold percentile (distance from the unsteered point = "
                              "share of unsteered positions beyond the threshold) instead of evenly spaced")
+    parser.add_argument("--hidden-strip", action="store_true",
+                        help="with --bench-strip: a second strip under the benchmark strip with the change in hidden-test pass over all "
+                             "episodes and the dose-rule line at -10 points")
     parser.add_argument("--rule-ring", action="store_true",
                         help="ring the hack-rate marker of every arm outside the task-set dose rule (hidden pass or no-code more than "
                              "10 points from unsteered)")
@@ -258,6 +276,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.clamp_scale and not args.split:
         parser.error("--clamp-scale needs --split (the clamp part's own unsteered point is the zero of its scale)")
+    if args.hidden_strip and not args.bench_strip:
+        parser.error("--hidden-strip needs --bench-strip (it sits under the benchmark strip)")
+    legend_rows = len(MEASURES) + (len(STRIP_ONLY) if args.hidden_strip else 0)
+    strips = (["bench"] if args.bench_strip else []) + (["hidden"] if args.hidden_strip else [])
     panel_width = PANEL_WIDTH + (CLAMP_EXTRA_WIDTH if args.clamp_scale else 0.0)
     combine, score_name = pc.COMPOSITES[args.composite]
     kinds = [kind for kind in SECTIONS if kind in args.kinds]
@@ -273,7 +295,7 @@ def main() -> None:
 
     columns = 1 if len(panels) == 1 else 2
     grid_rows = math.ceil(len(panels) / columns)
-    panel_height = TITLE_HEIGHT + PLOT_HEIGHT + (STRIP_GAP + STRIP_HEIGHT if args.bench_strip else 0) + XAXIS_HEIGHT + GAP
+    panel_height = TITLE_HEIGHT + PLOT_HEIGHT + len(strips) * (STRIP_GAP + STRIP_HEIGHT) + XAXIS_HEIGHT + GAP
     width = panel_width * columns
     interventions = {("steering",): "Steering dose", ("cap", "steering", "floor"): "Capping, steering and flooring"}.get(
         tuple(kinds), ", ".join(kinds).capitalize())
@@ -282,8 +304,9 @@ def main() -> None:
                                                                                  if len(panels) > 1 else f" on {panels[0]['model']['name']}"),
                     12.5, width - 0.3)
     order = {"cap": "caps by threshold", "steering": "steering doses", "floor": "floors by threshold"}
-    subtitle = pc.wrap(("Change from the model's unsteered arm, in points: judged hack rate in the plot, benchmark score in the strip underneath "
-                        "(its own y axis). Bars = 95% CI. " if args.bench_strip else
+    subtitle = pc.wrap(("Change from the model's unsteered arm, in points: judged hack rate in the plot, benchmark score "
+                        + ("and hidden-test pass in the two strips underneath (each its own y axis). " if args.hidden_strip else
+                           "in the strip underneath (its own y axis). ") + "Bars = 95% CI. " if args.bench_strip else
                         "Both measures are the change from the model's unsteered arm, in points, on one y axis. Bars = 95% CI. ")
                        + ("Left: steering doses. Right (tinted): caps and floors by threshold, either side of their own unsteered point. Rungs"
                           if args.split and "steering" in kinds and len(kinds) > 1
@@ -293,6 +316,8 @@ def main() -> None:
                           "the distance from the unsteered point is the share of unsteered positions beyond the threshold (cap at p: 100 − p; "
                           "floor at p: p). Small ticks mark the rungs that were run."), 9.5, width - 0.1)
     notes = []
+    no_ci = [f"{panel['model']['name']} {AXIS_SHORT[group['axis_key']]}" for panel in panels for group in panel["groups"]
+             if any(row["hidden_pass_diff_ci"] is None for row in group["rows"])]
     for panel in panels:
         for group in panel["groups"]:
             missing = [rung_label(row["kind"], row["rung"]) if row["kind"] == "steering" else f"{row['kind']} {rung_label(row['kind'], row['rung'])}"
@@ -309,9 +334,12 @@ def main() -> None:
          "CI = paired bootstrap over problems. Clamp thresholds are percentiles of the unsteered projection.",
          f"Benchmark score = {score_name.format(items=items)}: GSM8K (1,319 items), MMLU-Pro (1,400), HumanEval (164), IFBench (300), "
          "one run per arm; CI = paired bootstrap over items."]
+        + ([f"Hidden-test pass = share of all episodes whose final code passes the hidden tests; dashed line = the dose-rule limit, "
+            f"{pc.RULE_POINTS:g} points from unsteered. A hack that fails the hidden tests counts as a failure, so this measure falls when hacking "
+            "rises and is not read alone as capability." + (f" No stored CI: {', '.join(no_ci)}." if no_ci else "")] if args.hidden_strip else [])
         + ([f"No benchmark run yet (hack-rate point only): {'; '.join(notes)}."] if notes else [])), 7.8, width - 0.3)
     foot_height = 0.14 * (foot.count("\n") + 1) + 0.2
-    head_height = 0.12 + 0.235 * (title.count("\n") + 1) + 0.08 + 0.175 * (subtitle.count("\n") + 1) + 0.1 + 0.215 * len(args.axes) + 0.07 + 0.3 + (0.245 if args.rule_ring else 0.0)
+    head_height = 0.12 + 0.235 * (title.count("\n") + 1) + 0.08 + 0.175 * (subtitle.count("\n") + 1) + 0.1 + 0.215 * legend_rows + 0.07 + 0.3 + (0.245 if args.rule_ring or args.hidden_strip else 0.0)
     height = head_height + panel_height * grid_rows + foot_height
     figure = plt.figure(figsize=(width, height), facecolor=pc.SURFACE)
     at = lambda inches: 1 - inches / height
@@ -321,24 +349,30 @@ def main() -> None:
     figure.text(x0, at(cursor), subtitle, fontsize=9.5, color=pc.INK2, ha="left", va="top", linespacing=1.3)
     cursor += 0.175 * (subtitle.count("\n") + 1) + 0.1
     marks = dict(markeredgecolor=pc.SURFACE, markeredgewidth=1.5)
-    series = [Line2D([], [], color=palette[key], marker=m["marker"], markersize=STRIP_MARKER if args.bench_strip and name == "bench" else m["size"],
-                     linewidth=0 if args.bench_strip and name == "bench" else m["width"], linestyle=m["dash"],
-                     label=f"{pc.AXIS_NAMES[key]}: {m['name']}" + (" (strip)" if args.bench_strip and name == "bench" else ""), **marks)
-              for key in args.axes for name, m in MEASURES.items()]
+    listed = {**MEASURES, **(STRIP_ONLY if args.hidden_strip else {})}
+    series = [Line2D([], [], color=palette[key], marker=m["marker"], markersize=m.get("strip_size", STRIP_MARKER) if name in strips else m["size"],
+                     linewidth=0 if name in strips else m["width"], linestyle=m["dash"],
+                     label=f"{pc.AXIS_NAMES[key]}: {m['name']}" + (" (strip)" if name in strips else ""), **marks)
+              for key in args.axes for name, m in listed.items()]
     legend_style = dict(frameon=False, fontsize=9, handletextpad=0.5, columnspacing=1.6, loc="upper left", borderaxespad=0, borderpad=0, handlelength=3.0)
-    figure.legend(handles=series, bbox_to_anchor=(x0, at(cursor)), ncol=len(MEASURES), **legend_style)
-    cursor += 0.215 * len(args.axes) + 0.07
+    figure.legend(handles=series, bbox_to_anchor=(x0, at(cursor)), ncol=len(args.axes), **legend_style)  # one column per axis
+    cursor += 0.215 * legend_rows + 0.07
     extra = [Line2D([], [], color=pc.INK, marker="o", markersize=8, linewidth=0, label="unsteered", **marks),
              Line2D([], [], color=pc.INK2, marker="o", markersize=7.5, linewidth=MEASURES["hack"]["width"], linestyle=DISTRUST_DASH,
                     dash_capstyle="round", markerfacecolor=pc.SURFACE, markeredgecolor=pc.INK2, markeredgewidth=1.6,
                     label=f"hollow marker, dashed hack-rate line: the model stops submitting code (no-code share more than {pc.RULE_POINTS:g} "
                           "points above unsteered), so the hack rate there is not comparable")]
+    second = []
     if args.rule_ring:
-        ring = Line2D([], [], color=pc.INK2, marker="o", markersize=7.5 + RULE_RING["extra"], linewidth=0, markerfacecolor="none",
-                      markeredgecolor=pc.INK2, markeredgewidth=RULE_RING["width"],
-                      label=f"ring: the arm is outside the dose rule (hidden-test pass or no-code more than {pc.RULE_POINTS:g} points from "
-                            "unsteered)")
-        figure.legend(handles=extra[:1] + [ring], bbox_to_anchor=(x0, at(cursor)), ncol=2, **legend_style)
+        second.append(Line2D([], [], color=pc.INK2, marker="o", markersize=7.5 + RULE_RING["extra"], linewidth=0, markerfacecolor="none",
+                             markeredgecolor=pc.INK2, markeredgewidth=RULE_RING["width"],
+                             label=f"ring: the arm is outside the dose rule (hidden-test pass or no-code more than {pc.RULE_POINTS:g} points "
+                                   "from unsteered)"))
+    if args.hidden_strip:
+        second.append(Line2D([], [], color=pc.INK2, linewidth=0.9, linestyle=(0, (4, 3)),
+                             label=f"dose-rule limit on hidden-test pass ({pc.RULE_POINTS:g} points from unsteered)"))
+    if second:
+        figure.legend(handles=extra[:1] + second, bbox_to_anchor=(x0, at(cursor)), ncol=1 + len(second), **legend_style)
         cursor += 0.215 + 0.03
         extra = extra[1:]
     figure.legend(handles=extra, bbox_to_anchor=(x0, at(cursor)), ncol=2, **legend_style)
@@ -351,19 +385,22 @@ def main() -> None:
         plot = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT), plot_width / width, PLOT_HEIGHT / height))
         if args.bench_strip:
             draw_plot(plot, panel["groups"], kinds, args.split, measures=("hack",), x_labels=False, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring)
-            strip = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT + STRIP_GAP + STRIP_HEIGHT),
-                                     plot_width / width, STRIP_HEIGHT / height))
-            draw_plot(strip, panel["groups"], kinds, args.split, measures=("bench",), strip=True, clamp_scale=args.clamp_scale)
+            for position, name in enumerate(strips, start=1):
+                strip = figure.add_axes(((column * panel_width + LEFT) / width, at(top + TITLE_HEIGHT + PLOT_HEIGHT + position * (STRIP_GAP + STRIP_HEIGHT)),
+                                         plot_width / width, STRIP_HEIGHT / height))
+                draw_plot(strip, panel["groups"], kinds, args.split, measures=(name,), strip=True, x_labels=name == strips[-1],
+                          clamp_scale=args.clamp_scale)
         else:
             draw_plot(plot, panel["groups"], kinds, args.split, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring)
         unsteered = panel["groups"][0]["data"]["unsteered"]
-        plot.set_title(f"{panel['model']['name']}\nunsteered: judged hack rate {unsteered['hack']:.1f}%, benchmark score {unsteered['composite']:.1f}%",
+        plot.set_title(f"{panel['model']['name']}\nunsteered: judged hack rate {unsteered['hack']:.1f}%, benchmark score {unsteered['composite']:.1f}%"
+                       + (f", hidden-test pass {unsteered['hidden_pass']:.1f}%" if args.hidden_strip else ""),
                        fontsize=9.6, color=pc.INK, loc="left", pad=8, linespacing=1.35)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=pc.SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=pc.SURFACE)
-    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring,
+    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale, rule_ring=args.rule_ring, hidden_strip=args.hidden_strip,
                   omitted_by_preset={f"{panel['model']['name']} / {group['axis_key']}": group["data"]["omitted_by_preset"]
                                      for panel in panels for group in panel["groups"] if group["data"]["omitted_by_preset"]}, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
                   panels=[dict(model=panel["model"]["name"],
