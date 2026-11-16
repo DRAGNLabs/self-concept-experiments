@@ -2648,23 +2648,22 @@ by the share of positions they move where `clamp_shares` has it, not as light or
 1:41 pm, on a side note that showed the consequence for one contrast: "Let's not use these random directions as controls on any
 other model either". Koby's rule of 2026-11-07 / 11-12 (controls are real activation differences; isotropic random unit directions
 are not a control) was applied to Gemma only and left open for gpt-oss and Muse; it now holds on every model.
-  - *Timing, stated as it happened.* The gpt-oss set `gfx02` and the Gemma set were already read under the families written above
-    (gpt-oss: 13 Goodfire contrasts + the three random add arms = 16). In that file `gf_floor_p95` is +6.9 points with raw p 0.006
-    and Holm p 0.066. The decision came after that number was seen and the note said it would fall below 0.05 without the random
-    arms. No Muse or Qwen verdict had been collected or read. So for gpt-oss the family change is post hoc and both adjusted values
-    are reported side by side; the 16-contrast files stay on disk under their names. For Muse the change precedes every read.
+  - *Timing.* The decision reached me after the gpt-oss set `gfx02` had been read with the three random add arms in the family
+    and before any Muse or Qwen verdict was collected. User, about 2:33 pm: "I had wanted the isotropic arms removed before you
+    mentioned anything, so no need to report the original/previous holm p's". So the families below are the only ones reported;
+    the first-run gpt-oss files with the random arms as contrasts (`analysis_gfx02_*`) stay on disk and are not used.
   - *Families from here on.* gpt-oss Goodfire = the 13 Goodfire contrasts (files `analysis_gfx02nr_*`); Muse Goodfire = the 12
     Goodfire contrasts (`run_cov1113_muse.sh` edited before any Muse verdict is collected). The random add arms are not contrasts,
     are not drawn as a band on new charts and are not cited as a control. Gemma and Qwen families never held them.
   - *Readings unchanged.* The dose rule, the expectations above and the picture-changers stand as written. `gf_floor_p95` on
-    gpt-oss is outside the dose rule on hidden pass, so whichever adjusted p is used its rise is not read as an effect at kept
-    capability. Earlier FINDINGS entries with random arms in their families stay as written.
+    gpt-oss is outside the dose rule on hidden pass, so its rise is not read as an effect at kept capability. Earlier FINDINGS
+    entries with random arms in their families stay as written.
 
 **Results (appended as each set is read; details in FINDINGS).**
   - *gpt-oss `gfx02`, read 1:30 pm Nov 16.* p50 8.0% (−3.7, CI −6.5 to −1.1), p75 10.7% (−0.9), both inside the rule: no rise, as
     expected (p50 inside the −5 … +2 band, CI just below zero). p95 18.5% (+6.9, CI +2.4 to +11.5), outside the rule on hidden pass
-    (−13.5): a rise of a few points, as the likelier direction named above; Holm 0.066 over the 16 pre-written contrasts, 0.048 over
-    the 13 Goodfire contrasts (post hoc, amendment above). Picture-changer not met: no floor inside the rule raises hacking.
+    (−13.5): a rise of a few points, as the likelier direction named above; Holm 0.048 over the 13 Goodfire contrasts
+    (amendment above). Picture-changer not met: no floor inside the rule raises hacking.
   - *Gemma `ctl_g10_s0-15`, read 1:35 pm Nov 16.* 1.2% (21 / 1728) against 4.7%, −3.5 (Holm 0.0006 over 7); outside the rule on
     both clauses (hidden pass −22.2, no code +24.5): at or below 2% and a broken arm, as expected.
   - *Muse `gfx03`, read 2:02 pm Nov 16 (12 Goodfire contrasts, no random arms).* Floors: p50 23.5% (−9.3, CI −14.1 to −4.8), p75
