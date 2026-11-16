@@ -90,6 +90,7 @@ setup first: [experiments/codebench/reward_hack_recipe.md](../codebench/reward_h
 | `slurm/capability_eval.sbatch` | Public benchmarks per arm. |
 | `slurm/checks/` | One-off backend checks that were run once (HF smoke, eager vs compiled vLLM, prompt log-prob check, CoT activation rerun). Keep for a new family: they are the evidence that a hook site and a compiled patch agree. |
 | `post/figures/`, `results/` | Write-up figures and small result JSONs. `slurm-logs/` is gitignored. |
+| `runs/<run>/` | Byte-for-byte copies of the wrapper scripts that built, judged and analysed a run on scratch (records with absolute paths, not tools), with a README giving the typed commands and a `SHA256SUMS`. First one: `runs/coverage_1113_judging/` (2026-11-16). |
 
 Outputs go to scratch, `~/nobackup/autodelete/self-concept-experiments/schemer-axis/` (autodelete: copy what matters).
 Shared data (Koby's): `/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/` with `rh_hillclimb/data/*.jsonl`
