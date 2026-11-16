@@ -116,9 +116,9 @@ MODELS = {
     "qwen": dict(
         name="Qwen3.8-27B", task_set="61 problems × 12 seeds", capeval=N / "qwen38_27b_gi_v2/capeval",
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 32; clamps on layers 22–42)", prefix="gi_",
-                            analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_floor/analysis_all_as_judged.json"),
+                            analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gicap50/analysis_all_as_judged.json"),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 32; clamps on layers 22–42)", prefix="gf_",
-                           analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gfar_gfdose/analysis_all_as_judged.json")}),
+                           analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gfar_gfx04/analysis_all_as_judged.json")}),
 }
 AXIS_NAMES = {"gi_v2": "gi_v2 persona-contrast vector", "gfar": "Goodfire reward-hacking axis"}
 

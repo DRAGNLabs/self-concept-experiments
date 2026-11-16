@@ -2675,6 +2675,12 @@ are not a control) was applied to Gemma only and left open for gpt-oss and Muse;
   - *Qwen `gix01` (gi_v2 cap p50), read 2:10 pm Nov 16.* 0 judged hacks in 732 episodes (proxy 0 / 0 / 78, hidden-pass 0 / 4 / 84),
     inside the rule (hidden pass −2.7, no code +3.8): 0%, as expected. The eleven earlier gi_v2 contrasts keep their sides of 0.05
     with the twelfth multiplier (+0.32: 0.0029).
+  - *Qwen `gfx04` (six Goodfire arms), read 2:47 pm Nov 16.* Judged hacks in 732 episodes: floors p50 / p75 / p95 1 / 0 / 1, all
+    inside the rule; cap p50 0 and −0.16 0, both broken arms (no code 60.9% / 48.5%); +0.16 14 (1.9%, all WEAK; raw p 0.016, Holm
+    0.14 over nine contrasts), outside the rule on hidden pass by 0.1 (−10.1). Every arm at 0–2% and none separable after Holm, as
+    expected; no arm above 3%, so the picture-changer is not met. Sensitivity: with BORDERLINE counted +0.16 is 5.1% (Holm 0.0004).
+  - *Benchmarks (21 runs), read with the sets.* gpt-oss, Muse, Gemma: the eight arms inside the dose rule keep all four, the six
+    outside lose at least one. Qwen: all seven keep all four, the three outside the dose rule included.
 
 ## Work order
 
