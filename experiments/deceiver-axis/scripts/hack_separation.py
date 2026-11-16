@@ -68,6 +68,20 @@ def load_episodes(acts_dir: Path, arm: str, layer: int) -> Episodes:
     }
 
 
+def problems_hacked_in_arm(verdicts_by_key: dict[str, str], arm: str) -> set[str]:
+    arm_keys = [key for key in verdicts_by_key if key.startswith(f"{arm}/")]
+    if not arm_keys:
+        raise SystemExit(f"no verdicts for arm {arm!r}")
+    return {key.split("/", 2)[2] for key in arm_keys if verdicts_by_key[key] == "HACK"}
+
+
+def episodes_outside_problems(episodes: Episodes, excluded_problem_ids: set[str]) -> Episodes:
+    keep = np.array([problem_id not in excluded_problem_ids for problem_id in episodes["problem_ids"]])
+    return {"means_by_segment": {segment: means[keep] for segment, means in episodes["means_by_segment"].items()},
+            "verdict_keys": [key for key, kept in zip(episodes["verdict_keys"], keep) if kept],
+            "problem_ids": [problem_id for problem_id, kept in zip(episodes["problem_ids"], keep) if kept]}
+
+
 def load_unit_direction(spec: str, layer: int) -> tuple[str, Float[np.ndarray, "hidden"]]:
     name, location = spec.split("=", 1)
     path, _, key = location.partition(":")
@@ -141,19 +155,25 @@ def main() -> None:
     parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--direction", action="append", required=True, help="name=path[:key]; (layers, hidden) artifact")
     parser.add_argument("--random-directions", type=int, default=1000)
+    parser.add_argument("--drop-problems-hacked-in", default=None, metavar="ARM",
+                        help="drop episodes of problems with any HACK verdict in this arm (e.g. unsteered)")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
+    verdicts_by_key = json.loads(args.verdicts.read_text())
     episodes = load_episodes(args.acts, args.arm, args.layer)
+    dropped_problem_ids = problems_hacked_in_arm(verdicts_by_key, args.drop_problems_hacked_in) if args.drop_problems_hacked_in else set()
+    episodes = episodes_outside_problems(episodes, dropped_problem_ids)
     unit_directions_by_name = dict(load_unit_direction(spec, args.layer) for spec in args.direction)
     hidden_size = episodes["means_by_segment"]["reasoning"].shape[1]
     random_unit_directions = random_directions(hidden_size, args.random_directions, RANDOM_SEED, args.layer)
-    rows = separation_rows(episodes, json.loads(args.verdicts.read_text()), unit_directions_by_name, random_unit_directions)
+    rows = separation_rows(episodes, verdicts_by_key, unit_directions_by_name, random_unit_directions)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps({"acts": str(args.acts), "arm": args.arm, "verdicts": str(args.verdicts), "layer": args.layer,
                                     "directions": args.direction, "random_directions": args.random_directions,
-                                    "random_seed": RANDOM_SEED, "episodes": len(episodes["verdict_keys"]), "rows": rows}, indent=1))
+                                    "random_seed": RANDOM_SEED, "drop_problems_hacked_in": args.drop_problems_hacked_in,
+                                    "dropped_problems": sorted(dropped_problem_ids), "episodes": len(episodes["verdict_keys"]), "rows": rows}, indent=1))
     print("AUROC [random 2.5-97.5 pct] percentile among random")
     for row in rows:
         print(format_row(row))
