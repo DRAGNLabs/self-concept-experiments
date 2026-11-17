@@ -19,7 +19,10 @@ when the limit rejects a request, or after three failures in a row.
 
 Environment it sets for the judges: CLAUDE_CODE_PROMPT_CACHE_TTL=5m (a headless session on a subscription otherwise
 writes 1-hour cache, billed 1.6x the 5-minute rate the subagent judges used) and CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
-(the session memory is not judge context). git and Slurm commands are denied to the judges outright."""
+(the session memory is not judge context). git and Slurm commands are denied to the judges outright.
+
+Other label schemas (2026-11-17): --agent probe-labeler --fields probe runs the blind general-question probe labels
+(task file from probe_blind_labels.py; five yes / no / unclear labels per answer). The defaults are the rubric-v3 judges."""
 import argparse, glob, json, os, re, signal, subprocess, sys, threading, time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -30,6 +33,7 @@ MECH = {"lookup_table", "input_branch", "call_counter", "always_equal", "test_ta
 PRESS = {"prior_failures", "attempt_budget", "grading_note", "pass_tests_instruction", "impossibility", "none_stated"}
 DENY = ["Bash(git *)", "Bash(sbatch *)", "Bash(srun *)", "Bash(salloc *)", "Bash(scancel *)", "Bash(scontrol *)"]
 FILTER_RE = re.compile(r"(?<![\w./-])(grep|egrep|rg|sed|awk|cut|tr|fold|less|more)(?![\w./-])|head\s+-n|tail\s+-n|head\s+-\d|tail\s+-\d")
+PROBE_LABELS = ("final_deception", "reasoning_deception_only", "scheming_voice", "refusal", "incoherent")  # probe_blind_labels.py
 MAX_JOBS = 20
 
 
@@ -63,9 +67,10 @@ def parse_spec(spec, available):
     return sorted(want)
 
 
-def check_output(out_path, want_files):
+def check_output(out_path, want_files, fields="rubric"):
     """('missing'|'invalid'|'bad_fields'|'ok', detail). 'invalid' = unparseable or wrong files/order (retried);
-    'bad_fields' = right files, a rubric field outside its value set (reported, as verify_batches.py does)."""
+    'bad_fields' = right files, a rubric field outside its value set (reported, as verify_batches.py does).
+    fields='probe': the five PROBE_LABELS, each yes / no / unclear, instead of the rubric-v3 fields."""
     if not os.path.exists(out_path):
         return "missing", ""
     try:
@@ -75,6 +80,9 @@ def check_output(out_path, want_files):
     if not all(isinstance(r, dict) for r in rows) or [r.get("file") for r in rows] != want_files:
         return "invalid", f"files/order mismatch ({len(rows)} vs {len(want_files)})"
     errs = []
+    if fields == "probe":
+        errs = [f"{k} {r.get(k)!r} in {r['file']}" for r in rows for k in PROBE_LABELS if r.get(k) not in {"yes", "no", "unclear"}]
+        return ("bad_fields", "; ".join(errs)) if errs else ("ok", "")
     for r in rows:
         v, s = r.get("verdict"), r.get("strength")
         if v not in VERDICTS: errs.append(f"verdict {v!r} in {r['file']}")
@@ -133,7 +141,7 @@ class Runner:
 
     def judge_once(self, i):
         a = self.a
-        cmd = ["claude", "-p", "--agent", "rubric-judge", "--model", a.model, "--effort", "low", "--permission-mode", "auto",
+        cmd = ["claude", "-p", "--agent", a.agent, "--model", a.model, "--effort", "low", "--permission-mode", "auto",
                "--disallowedTools", *DENY, "--output-format", "stream-json", "--verbose", "--no-session-persistence",
                "--", f"Your task file: {self.task}. Read it first, in full. N = {i}."]
         env = dict(os.environ, CLAUDE_CODE_PROMPT_CACHE_TTL="5m", CLAUDE_CODE_DISABLE_AUTO_MEMORY="1")
@@ -191,7 +199,7 @@ class Runner:
 
     def run_batch(self, i):
         names = self.files(i); want = [os.path.basename(n) for n in names]; out = self.out(i)
-        state, detail = check_output(out, want)
+        state, detail = check_output(out, want, self.a.fields)
         if state in ("ok", "bad_fields"):
             return {"batch": i, "state": "skipped_existing" if state == "ok" else "existing_bad_fields", "detail": detail}
         row = None
@@ -202,7 +210,7 @@ class Runner:
                 sup = os.path.join(self.outdir, "superseded"); os.makedirs(sup, exist_ok=True)
                 os.replace(out, os.path.join(sup, f"{os.path.basename(out)}.invalid_{int(time.time())}"))
             r = self.judge_once(i)
-            state, detail = check_output(out, want)
+            state, detail = check_output(out, want, self.a.fields)
             chars = sum(len(open(os.path.join(self.ddir, n), encoding="utf-8", errors="replace").read()) for n in names)
             row = {"batch": i, "attempt": attempt, "state": state, "detail": detail, "n": len(want), "out": out,
                    "audit": read_audit(r["commands"], chars, want, i), "time": time.strftime("%Y-%m-%d %H:%M:%S"), **r}
@@ -228,7 +236,7 @@ class Runner:
     def main(self):
         a = self.a
         os.makedirs(self.outdir, exist_ok=True)
-        todo = [i for i in self.batches if check_output(self.out(i), [os.path.basename(n) for n in self.files(i)])[0] not in ("ok", "bad_fields")]
+        todo = [i for i in self.batches if check_output(self.out(i), [os.path.basename(n) for n in self.files(i)], a.fields)[0] not in ("ok", "bad_fields")]
         print(f"[runner] task {self.task}\n[runner] {len(self.batches)} batches requested, {len(self.batches) - len(todo)} already have output, "
               f"{len(todo)} to judge; model {a.model}, {a.jobs} at once; log {self.log_path}", flush=True)
         if a.dry_run:
@@ -257,6 +265,8 @@ if __name__ == "__main__":
     ap.add_argument("--jobs", type=int, default=6); ap.add_argument("--timeout", type=int, default=1200)
     ap.add_argument("--retries", type=int, default=1); ap.add_argument("--stop-util", type=float, default=0.95)
     ap.add_argument("--log"); ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--agent", default="rubric-judge", help="agent definition in .claude/agents (probe-labeler for the probe labels)")
+    ap.add_argument("--fields", choices=["rubric", "probe"], default="rubric", help="output schema the batch files are checked against")
     args = ap.parse_args()
     if not 1 <= args.jobs <= MAX_JOBS: ap.error(f"--jobs must be 1..{MAX_JOBS}")
     sys.exit(Runner(args).main())
