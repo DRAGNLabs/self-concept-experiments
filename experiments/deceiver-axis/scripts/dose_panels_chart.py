@@ -4,10 +4,10 @@ to the judged hack rate, the benchmark score and hidden-test pass. A rebuild of 
 that chart was busy with text; more compact, cleaner).
 
 One panel per model, three rows per panel on one x axis: judged hack rate (tall), benchmark score and hidden-test pass (short).
-Every value is the change from the model's unsteered arm in points; each row has its own y axis and a heading that names the
-measure and gives the unsteered level. Colour = steering axis; the measure is the row, so every row uses the same marker. Bars =
-95% CIs of the difference (hack rate and hidden pass: paired bootstrap over problems, from the analysis file; benchmark:
-item-paired bootstrap), drawn where one is stored.
+Every value is the change from the model's unsteered arm in points; each row has its own y axis and a heading "Δ <measure>
+vs. unsteered <level>" (user 2026-11-17: the Δ says the row is not the measure's level). Colour = steering axis; the measure is
+the row, so every row uses the same marker. Bars = 95% CIs of the difference (hack rate and hidden pass: paired bootstrap over
+problems, from the analysis file; benchmark: item-paired bootstrap), drawn where one is stored.
 
 The x axis has two halves of equal width, each around its own unsteered point (black):
   left     steering doses α in layer norms, α = 0 in the middle, every dose that was run labelled. --dose-spacing linear (default):
@@ -328,10 +328,11 @@ def draw(record: dict, out: Path, spacing: str) -> None:
         for position, (key, row) in enumerate(ROWS.items()):
             last = position == rows - 1
             baseline = fy(cursor + HEAD - 0.08)
-            figure.text(fx(x), baseline, row["name"], fontsize=SIZE["row"], fontweight="bold", color=TEXT, ha="left", va="baseline")
+            heading = f"Δ {row['name']}"  # the row plots the change, not the level
+            figure.text(fx(x), baseline, heading, fontsize=SIZE["row"], fontweight="bold", color=TEXT, ha="left", va="baseline")
             level = unsteered[UNSTEERED[key]]
             if level is not None:
-                figure.text(fx(x + ruler.width(row["name"], SIZE["row"], "bold") + 0.11), baseline, f"unsteered {level:.1f}%",
+                figure.text(fx(x + ruler.width(heading, SIZE["row"], "bold") + 0.09), baseline, f"vs. unsteered {level:.1f}%",
                             fontsize=SIZE["row"], color=SOFT, ha="left", va="baseline")
             axes = figure.add_axes((fx(x), fy(cursor + HEAD + row["height"]), plot_width / width, row["height"] / height))
             draw_row(axes, panel, key, spot, colors, record["rule_points"], x_tick_size)
