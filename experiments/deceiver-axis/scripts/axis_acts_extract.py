@@ -18,6 +18,7 @@ markup) and record at every layer, per episode and per segment (reasoning tokens
 Generalises hack_lens_extract.py (Gemma only, record layers 30-59, steered pairs) to the unsteered arm of every
 family; the output keeps that script's keys (reasoning_mean, answer_mean, record_layers, example_id, stats) so
 hack_lens caches and these read the same way. --dry-run renders and counts every turn without loading the model.
+--steer-direction records a steered arm with its steering on (additive, at the layer and coefficient of the run summary).
 Writes <out>/<arm>__seed<N>.pt per seed; existing files are skipped. A turn that runs out of GPU memory is retried on
 its first 80% of tokens (recorded in oom_truncated). Analysis: axis_acts_analysis.py.
 """
@@ -27,6 +28,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Literal, TypedDict
 
 import numpy as np
 import torch
@@ -34,7 +36,9 @@ from transformers import AutoTokenizer
 
 from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.correlation.random_vectors import random_directions
+from selfconcept.measurement.intervene import _hooks, add_transform
 from selfconcept.measurement.steering_specifics import steering_model_specifics
+from selfconcept.measurement.unit_axes import load_unit_axes
 
 _spec = importlib.util.spec_from_file_location("hack_lens_extract", Path(__file__).with_name("hack_lens_extract.py"))
 hack_lens = importlib.util.module_from_spec(_spec)
@@ -66,6 +70,8 @@ def parse_args():
     ap.add_argument("--run", type=Path, required=True, help="arm directory holding seed<N>/ subdirectories")
     ap.add_argument("--arm", default="unsteered", help="arm name for the output files")
     ap.add_argument("--seeds", nargs="+", type=int, required=True)
+    ap.add_argument("--steer-direction", type=Path, default=None,
+                    help="axis artifact the arm was steered with: record with steering on, layer and coefficient read from each seed's run summary")
     ap.add_argument("--record-layers", nargs="+", type=int, default=None, help="default: every layer")
     ap.add_argument("--direction", action="append", default=[], help="name=path[:key]; (num_layers, hidden) artifact, unit-normalised per layer here")
     ap.add_argument("--null-directions", type=int, default=32, help=f"random unit directions per layer (seed {NULL_SEED})")
@@ -205,6 +211,26 @@ def forward_turn(runner, runner_kwargs: dict, layers_module, layers: list[int], 
                 handle.remove()
 
 
+class RunSteering(TypedDict):
+    mode: Literal["add"]
+    layer: int
+    coefficient: float
+
+
+def run_steering(run_dir: Path, tag: str) -> RunSteering:
+    steering = json.loads((run_dir / f"{tag}_impossible_original_summary.json").read_text())["steering"]
+    if steering["mode"] != "add":
+        raise SystemExit(f"{run_dir}: steering mode {steering['mode']!r}, only additive steering is reproduced here")
+    return {"mode": "add", "layer": int(steering["layer"]), "coefficient": float(steering["coefficient"])}
+
+
+def steering_transforms(direction_path: Path, steering: RunSteering, num_layers: int, hidden: int, model_name: str,
+                        device: torch.device) -> dict[int, object]:
+    unit_axes = load_unit_axes(direction_path, [steering["layer"]], num_layers, hidden, model_name)
+    unit_direction = torch.as_tensor(unit_axes[steering["layer"]]["direction"]).float().to(device)
+    return {steering["layer"]: add_transform(unit_direction, steering["coefficient"])}
+
+
 def main() -> None:
     args = parse_args()
     specifics = steering_model_specifics(args.model)
@@ -257,6 +283,8 @@ def main() -> None:
         run_dir = args.run / f"seed{seed}"
         records = [json.loads(line) for line in (run_dir / f"{args.tag}_impossible_original.jsonl").open()][: args.n]
         sidecar = load_sidecar(run_dir, args.tag)
+        steering = run_steering(run_dir, args.tag) if args.steer_direction else None
+        transforms_by_layer = steering_transforms(args.steer_direction, steering, num_layers, hidden, args.model, device) if steering else {}
         E = len(records)
         store = {
             "keys": [], "example_id": [], "verdict_key": [], "passed": [], "passed_original": [], "n_attempts": [],
@@ -266,45 +294,47 @@ def main() -> None:
                           "proj_square_sum": np.zeros((E, L, K), np.float64), "proj_cross_sum": np.zeros((E, L, named, K), np.float64)} for s in SEGMENTS},
         }
         t0 = time.time()
-        for e, record in enumerate(records):
-            example = make_dossiers.find_example(args.data, args.tag, record["example_id"], run_dir)
-            turns, missing, full_lengths = episode_turns(tokenizer, family, example, record, sidecar.get(record["example_id"], {}), args.max_length, chat_kwargs)
-            store["keys"].append(f"{args.arm}/seed{seed}/{record['example_id']}")
-            store["example_id"].append(record["example_id"])
-            store["verdict_key"].append(f"{args.run.name}/seed{seed}/{record['example_id']}")
-            store["passed"].append(bool(record.get("passed"))); store["passed_original"].append(bool(record.get("passed_original")))
-            store["n_attempts"].append(int(record.get("n_attempts") or len(record["attempts"])))
-            store["turn_lengths"].append(full_lengths); store["truncated_turns"].append([t for t, n in enumerate(full_lengths) if n > args.max_length])
-            store["missing_reasoning"].append(missing)
-            totals = TurnSums(L, hidden, K, named, device)
-            oom = []
-            for ids, segments, turn in turns:
-                sums, kept = forward_turn(runner, runner_kwargs, layers_module, layers, ids, segments, dmat, hidden, K, named, device)
-                if kept < len(ids):
-                    oom.append((turn, kept))
+        with _hooks(model, transforms_by_layer):  # registered before forward_turn's recording hooks, which then read the steered stream
+            for e, record in enumerate(records):
+                example = make_dossiers.find_example(args.data, args.tag, record["example_id"], run_dir)
+                turns, missing, full_lengths = episode_turns(tokenizer, family, example, record, sidecar.get(record["example_id"], {}), args.max_length, chat_kwargs)
+                store["keys"].append(f"{args.arm}/seed{seed}/{record['example_id']}")
+                store["example_id"].append(record["example_id"])
+                store["verdict_key"].append(f"{args.run.name}/seed{seed}/{record['example_id']}")
+                store["passed"].append(bool(record.get("passed"))); store["passed_original"].append(bool(record.get("passed_original")))
+                store["n_attempts"].append(int(record.get("n_attempts") or len(record["attempts"])))
+                store["turn_lengths"].append(full_lengths); store["truncated_turns"].append([t for t, n in enumerate(full_lengths) if n > args.max_length])
+                store["missing_reasoning"].append(missing)
+                totals = TurnSums(L, hidden, K, named, device)
+                oom = []
+                for ids, segments, turn in turns:
+                    sums, kept = forward_turn(runner, runner_kwargs, layers_module, layers, ids, segments, dmat, hidden, K, named, device)
+                    if kept < len(ids):
+                        oom.append((turn, kept))
+                    for s in SEGMENTS:
+                        totals.n[s] += sums.n[s]
+                        for field in ("sum", "norm", "proj", "square", "cross"):
+                            getattr(totals, field)[s] += getattr(sums, field)[s]
+                    del sums
+                store["oom_truncated"].append(oom)
                 for s in SEGMENTS:
-                    totals.n[s] += sums.n[s]
-                    for field in ("sum", "norm", "proj", "square", "cross"):
-                        getattr(totals, field)[s] += getattr(sums, field)[s]
-                del sums
-            store["oom_truncated"].append(oom)
-            for s in SEGMENTS:
-                n = max(totals.n[s], 1)
-                stats = store["stats"][s]
-                stats["n"][e] = totals.n[s]
-                store[f"{s}_mean"][e] = (totals.sum[s] / n).cpu()
-                if totals.n[s]:
-                    stats["h_norm"][e] = (totals.norm[s] / n).cpu().numpy(); stats["proj"][e] = (totals.proj[s] / n).cpu().numpy()
-                stats["proj_square_sum"][e] = totals.square[s].cpu().numpy(); stats["proj_cross_sum"][e] = totals.cross[s].cpu().numpy()
-            del totals
-            if e % 10 == 0 or e == E - 1:
-                print(f"{args.arm} seed {seed}: {e + 1}/{E} episodes ({len(turns)} turns, {sum(full_lengths)} tokens), {time.time() - t0:.0f} s", file=sys.stderr, flush=True)
+                    n = max(totals.n[s], 1)
+                    stats = store["stats"][s]
+                    stats["n"][e] = totals.n[s]
+                    store[f"{s}_mean"][e] = (totals.sum[s] / n).cpu()
+                    if totals.n[s]:
+                        stats["h_norm"][e] = (totals.norm[s] / n).cpu().numpy(); stats["proj"][e] = (totals.proj[s] / n).cpu().numpy()
+                    stats["proj_square_sum"][e] = totals.square[s].cpu().numpy(); stats["proj_cross_sum"][e] = totals.cross[s].cpu().numpy()
+                del totals
+                if e % 10 == 0 or e == E - 1:
+                    print(f"{args.arm} seed {seed}: {e + 1}/{E} episodes ({len(turns)} turns, {sum(full_lengths)} tokens), {time.time() - t0:.0f} s", file=sys.stderr, flush=True)
         for s in SEGMENTS:  # fp16 unless a coordinate would overflow it
             if float(store[f"{s}_mean"].abs().max()) < 3e4:
                 store[f"{s}_mean"] = store[f"{s}_mean"].to(torch.float16)
         store.update({"arm": args.arm, "seed": seed, "run": str(args.run), "tag": args.tag, "model": args.model, "revision": args.revision, "family": family,
                       "chat_kwargs": chat_kwargs, "record_layers": layers, "directions": names, "named_directions": names[:named],
-                      "direction_specs": args.direction, "null_seed": NULL_SEED, "max_length": args.max_length, "seconds": time.time() - t0})
+                      "direction_specs": args.direction, "null_seed": NULL_SEED,
+                      "steering": steering, "steer_direction": str(args.steer_direction) if args.steer_direction else None, "max_length": args.max_length, "seconds": time.time() - t0})
         temporary = out_path.with_suffix(".pt.tmp")
         torch.save(store, temporary)
         temporary.rename(out_path)
