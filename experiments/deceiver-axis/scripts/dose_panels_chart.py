@@ -62,6 +62,9 @@ FONTS = ["Liberation Sans", "Arial", "Helvetica", "Nimbus Sans", "DejaVu Sans"] 
 SIZE = dict(title=17, subtitle=11, legend=10.5, model=13.5, row=10.5, tick=9.5, caption=10, note=9)  # points
 TEXT, SOFT, GRID, RULE, TINT = "#2e2d2a", pc.INK2, "#d9d8cf", "#9a998f", "#f1f0e9"
 AXIS_SHORT = {"gi_v2": "gi_v2", "gfar": "Goodfire"}
+# model names on this chart where they differ from the preset names in pareto_chart.py (user 2026-11-17: the instruction-tuned
+# Gemma, google/gemma-4-31B-it, is named with its "IT"); applied to the record, so the .json carries the drawn name
+MODEL_NAMES = {"Gemma 4 31B": "Gemma 4 31B IT"}
 # rows of a panel: record key of the value and of its CI, heading, height in inches, marker size, line width, most y intervals
 # (`ticks`), half-width of the CI caps in points (`cap`)
 ROWS = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="Judged hack rate", height=2.45, marker=7.2, line=2.0, ticks=9, cap=2.6),
@@ -373,6 +376,8 @@ def main() -> None:
     args = parser.parse_args()
     record = json.loads(args.data.read_text()) if args.data else collect(args.model, args.axes, args.composite)
     record["dose_spacing"] = args.dose_spacing
+    for panel in record["panels"]:
+        panel["model"] = MODEL_NAMES.get(panel["model"], panel["model"])
     draw(record, args.out, args.dose_spacing)
     args.out.with_suffix(".json").write_text(json.dumps(record, indent=1))
     for panel in record["panels"]:
