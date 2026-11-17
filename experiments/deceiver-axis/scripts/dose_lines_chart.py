@@ -33,6 +33,10 @@ part as wide as the clamp part, with the doses evenly spaced across it, and star
 halves of every panel are equally wide. The doses are spaced by rank, so a model with more doses on one side (Qwen: three
 negative, four positive) has α = 0 slightly off the centre of its half.
 
+--dose-scale (with --split; draft, user 2026-11-16: the evenly spaced doses read like a log scale, since most ladders double)
+places the steering doses to scale instead: linear in α, with α = 0 in the middle of the steering part and the panel's largest |α|
+just inside its edge on both sides. The scale is each model's own (the dose ranges differ between models).
+
 Text sizes and greys (FONT, TEXT, GRID, SPINE; user 2026-11-16: bigger titles, more contrast) are set here, larger and darker than
 pareto_chart.py's; the model name is a bold line above each panel. One tick-label size is used for the whole figure, the largest
 that keeps neighbouring labels apart on the most crowded panel. With --clamp-scale the word "unsteered" is written above the plot
@@ -59,6 +63,8 @@ Data, presets and the benchmark composite come from pareto_chart.py (`MODELS`, `
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --bench-strip --clamp-scale --out <path>.png  # caps / floors to scale
     python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --bench-strip --hidden-strip --clamp-scale --equal-parts \
         --out <path>.png                                                                                # the layout in use since 2026-11-16
+    python experiments/deceiver-axis/scripts/dose_lines_chart.py --split --bench-strip --hidden-strip --clamp-scale --equal-parts \
+        --dose-scale --out <path>.png                                                                   # steering doses to scale as well
 """
 from __future__ import annotations
 
@@ -103,6 +109,7 @@ DISTRUST_DASH = (0, (1.1, 1.9))  # hack-rate line into or out of an arm where th
 # --clamp-scale: x steps per 100 percentile points, padding at the two ends, and the reference ticks either side of the unsteered
 # point
 CLAMP_STEPS, CLAMP_PAD = 6.0, 0.3
+DOSE_PAD = 0.4  # --dose-scale: x steps between the largest |α| and the edge of the steering part
 CLAMP_TICKS = {"cap": (5, 25, 50, 75), "floor": (25, 50, 75, 95)}
 
 
@@ -141,8 +148,8 @@ def fitting_tick_size(ticks: list[tuple[float, str]], inches_per_step: float) ->
     return min([FONT["tick"]] + [(b[0] - a[0]) * inches_per_step * 72 / (0.6 * ((len(a[1]) + len(b[1])) / 2 + 1)) for a, b in zip(ticks, ticks[1:])])
 
 
-def plan(groups: list[dict], kinds: list[str], split: bool = False, clamp_scale: bool = False,
-         equal: bool = False) -> tuple[dict[tuple[str, float], float], list[dict], list[float]]:
+def plan(groups: list[dict], kinds: list[str], split: bool = False, clamp_scale: bool = False, equal: bool = False,
+         dose_scale: bool = False) -> tuple[dict[tuple[str, float], float], list[dict], list[float]]:
     """What draw_plot draws: the x position of every (kind, rung), the parts of the x axis and the unsteered positions. A part has
     its extent, tick labels, captions (centre, text, width in steps) and chains; a chain is the kinds of arm one line joins and the
     unsteered position that line passes through (None: it joins its own rungs only). Default: layout()'s three sections, with one
@@ -154,7 +161,9 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False, clamp_scale:
     percentiles on every panel (CLAMP_TICKS); a part's `minor` ticks mark the rungs that were run and have no label. The tick of
     the unsteered point has no label there (draw_plot writes "unsteered" above the plot instead: the label does not fit between
     cap p75 and floor p25).
-    `equal` (with `split`): the steering part is as wide as the clamp part, its doses evenly spaced across it."""
+    `equal` (with `split`): the steering part is as wide as the clamp part, its doses evenly spaced across it.
+    `dose_scale` (with `split`): the steering part is linear in α instead. α = 0 is in the middle of the part and the largest |α|
+    of the panel sits DOSE_PAD steps inside its edge, on both sides, so the scale is the panel's own."""
     if not split:
         slots, sections = layout(groups, kinds)
         origin = slots.get(("steering", 0.0))
@@ -200,7 +209,11 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False, clamp_scale:
             clamp = clamp_part(0.0)[1]
             width = clamp["end"] - clamp["start"]
         start, step = x - 0.5, width / len(doses)
-        slots.update({("steering", value): start + (index + 0.5) * step for index, value in enumerate(doses)})
+        if dose_scale:
+            reach = max(abs(value) for value in doses) or 1.0
+            slots.update({("steering", value): start + width / 2 + (width / 2 - DOSE_PAD) * value / reach for value in doses})
+        else:
+            slots.update({("steering", value): start + (index + 0.5) * step for index, value in enumerate(doses)})
         origins.append(slots[("steering", 0.0)])
         parts.append(dict(start=start, end=start + width, tinted=False, ticks=[(slots[("steering", value)], rung_label("steering", value)) for value in doses],
                           captions=[(start + width / 2, SECTIONS["steering"], width)], chains=[dict(kinds=("steering",), origin=origins[-1])]))
@@ -217,13 +230,13 @@ def plan(groups: list[dict], kinds: list[str], split: bool = False, clamp_scale:
 
 def draw_plot(axes, groups: list[dict], kinds: list[str], split: bool = False, measures: tuple[str, ...] = tuple(MEASURES),
               strip: bool = False, x_labels: bool = True, clamp_scale: bool = False, rule_ring: bool = False, equal: bool = False,
-              tick_font: float | None = None) -> None:
+              tick_font: float | None = None, dose_scale: bool = False) -> None:
     """`measures`: which of DRAWN to draw. `strip`: the axes is a strip for one measure (points, CIs and a thin solid line, smaller
     markers, its own y label; the hidden-pass strip also carries the dose-rule lines at ±pc.RULE_POINTS). `x_labels` False: no tick labels or section captions (a plot with a strip underneath).
     A hack-rate line segment that starts or ends at an arm where the model stops submitting code is drawn in DISTRUST_DASH.
-    `equal`: plan()'s equal parts. `tick_font`: tick-label size (default FONT["tick"]). With `clamp_scale` the plot (not a strip)
+    `equal`, `dose_scale`: plan()'s equal parts and linear dose axis. `tick_font`: tick-label size (default FONT["tick"]). With `clamp_scale` the plot (not a strip)
     carries "unsteered" above each unsteered position."""
-    slots, parts, origins = plan(groups, kinds, split, clamp_scale, equal)
+    slots, parts, origins = plan(groups, kinds, split, clamp_scale, equal, dose_scale)
     axes.set_facecolor(pc.SURFACE)
     for part in parts:
         if part["tinted"]:
@@ -318,6 +331,9 @@ def main() -> None:
     parser.add_argument("--equal-parts", action="store_true",
                         help="with --split: the steering part and the clamp part each take half of the panel (doses evenly spaced "
                              "across their half)")
+    parser.add_argument("--dose-scale", action="store_true",
+                        help="with --split: steering doses placed to scale (linear in α, each panel's own range, α = 0 in the middle "
+                             "of the steering part) instead of evenly spaced")
     parser.add_argument("--hidden-strip", action="store_true",
                         help="with --bench-strip: a second strip under the benchmark strip with the change in hidden-test pass over all "
                              "episodes and the dose-rule line at -10 points")
@@ -331,6 +347,8 @@ def main() -> None:
         parser.error("--clamp-scale needs --split (the clamp part's own unsteered point is the zero of its scale)")
     if args.equal_parts and not args.split:
         parser.error("--equal-parts needs --split (it sizes the two parts of the split x axis)")
+    if args.dose_scale and not args.split:
+        parser.error("--dose-scale needs --split (it lays out the steering part of the split x axis)")
     if args.hidden_strip and not args.bench_strip:
         parser.error("--hidden-strip needs --bench-strip (it sits under the benchmark strip)")
     legend_rows = len(MEASURES) + (len(STRIP_ONLY) if args.hidden_strip else 0)
@@ -366,8 +384,12 @@ def main() -> None:
                        + ("Left: steering doses. Right (tinted): caps and floors by threshold, either side of their own unsteered point. Rungs"
                           if args.split and "steering" in kinds and len(kinds) > 1
                           else f"Left to right: {', '.join(order[kind] for kind in kinds)}. Rungs" if len(kinds) > 1 else "Doses")
-                       + (" are evenly spaced, not to scale." if not args.clamp_scale else
-                          " of the steering dose are evenly spaced, not to scale. Caps and floors are to scale in the threshold percentile: "
+                       + (" are evenly spaced, not to scale." if not args.clamp_scale and not args.dose_scale else
+                          " of caps and floors are evenly spaced, not to scale. Steering doses are to scale (linear in α, each model's own range)."
+                          if not args.clamp_scale else
+                          (" of the steering dose are evenly spaced, not to scale. " if not args.dose_scale else
+                           " are to scale. Steering doses are linear in α (each model's own range). ")
+                          + "Caps and floors are to scale in the threshold percentile: "
                           "the distance from the unsteered point is the share of unsteered positions beyond the threshold (cap at p: 100 − p; "
                           "floor at p: p). Small ticks mark the rungs that were run."), FONT["subtitle"], width - 0.3)
     notes = []
@@ -440,9 +462,9 @@ def main() -> None:
     plot_width = panel_width - LEFT - RIGHT
     tick_font = FONT["tick"]  # one tick-label size for the figure: the largest that fits the most crowded panel
     for panel in panels:
-        parts = plan(panel["groups"], kinds, args.split, args.clamp_scale, args.equal_parts)[1]
+        parts = plan(panel["groups"], kinds, args.split, args.clamp_scale, args.equal_parts, args.dose_scale)[1]
         tick_font = min(tick_font, fitting_tick_size([tick for part in parts for tick in part["ticks"]], plot_width / (parts[-1]["end"] - parts[0]["start"])))
-    shared = dict(clamp_scale=args.clamp_scale, equal=args.equal_parts, tick_font=tick_font)
+    shared = dict(clamp_scale=args.clamp_scale, equal=args.equal_parts, dose_scale=args.dose_scale, tick_font=tick_font)
     for index, panel in enumerate(panels):
         column, grid_row = index % columns, index // columns
         top = head_height + grid_row * panel_height
@@ -466,7 +488,7 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor=pc.SURFACE)
     figure.savefig(args.out.with_suffix(".pdf"), facecolor=pc.SURFACE)
-    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale, equal_parts=args.equal_parts, rule_ring=args.rule_ring, hidden_strip=args.hidden_strip,
+    record = dict(composite=args.composite, kinds=kinds, split=args.split, bench_strip=args.bench_strip, clamp_scale=args.clamp_scale, equal_parts=args.equal_parts, dose_scale=args.dose_scale, rule_ring=args.rule_ring, hidden_strip=args.hidden_strip,
                   omitted_by_preset={f"{panel['model']['name']} / {group['axis_key']}": group["data"]["omitted_by_preset"]
                                      for panel in panels for group in panel["groups"] if group["data"]["omitted_by_preset"]}, boot_draws=pc.BOOT_DRAWS, boot_seed=pc.BOOT_SEED,
                   panels=[dict(model=panel["model"]["name"],
