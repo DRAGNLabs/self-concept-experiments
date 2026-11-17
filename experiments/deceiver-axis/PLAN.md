@@ -2691,7 +2691,8 @@ User: "let's do the existing probe prompts with the goodfire axis on gpt and mus
 did little on the Muse probes (the 10-30 digest: Muse +0.04 / +0.08 read like unsteered, a clear change only at +0.32), so a Muse
 comparison would set one weak result against another. Muse settings files were written and are not submitted.
 
-**Run.** The 2026-10-30 recipe unchanged (`slurm/neutral_probe.sbatch`, temperature 1.0, seeds 0 and 1, 2,048 tokens per answer):
+**Run.** The 2026-10-30 recipe unchanged (`slurm/neutral_probe.sbatch`, temperature 1.0, seeds 0 and 1; token limit per answer
+2,048 on the low-effort questions, 8,192 at high effort, 16,384 on the striking prompts, as on 10-30):
 the 25 general questions at low and at high reasoning effort and the 30 striking prompts at low effort
 (`gi_v2/anecdotes/questions_25.txt`, `questions_striking30.txt`). Settings: the six judged Goodfire doses `gf_m0.4`, `gf_m0.2`,
 `gf_m0.1`, `gf_p0.1`, `gf_p0.2`, `gf_p0.4` (add at layer 17; the lines of `gi_v2/pilot/arms_gfar.tsv` with the probes'
