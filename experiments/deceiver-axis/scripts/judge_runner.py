@@ -139,11 +139,27 @@ class Runner:
                 self.stop_reason = why; self.stop.set()
                 print(f"[runner] stopping new launches: {why}", flush=True)
 
+    # Hooks a subclass with another bundle layout overrides (audit_label_runner.py): command, check, audit, size.
+    def command(self, i):
+        a = self.a
+        return ["claude", "-p", "--agent", a.agent, "--model", a.model, "--effort", "low", "--permission-mode", "auto",
+                "--disallowedTools", *DENY, "--output-format", "stream-json", "--verbose", "--no-session-persistence",
+                "--", f"Your task file: {self.task}. Read it first, in full. N = {i}."]
+
+    def check(self, i):
+        return check_output(self.out(i), [os.path.basename(n) for n in self.files(i)], self.a.fields)
+
+    def audit(self, i, commands):
+        names = self.files(i)
+        chars = sum(len(open(os.path.join(self.ddir, n), encoding="utf-8", errors="replace").read()) for n in names)
+        return read_audit(commands, chars, [os.path.basename(n) for n in names], i)
+
+    def size(self, i):
+        return len(self.files(i))
+
     def judge_once(self, i):
         a = self.a
-        cmd = ["claude", "-p", "--agent", a.agent, "--model", a.model, "--effort", "low", "--permission-mode", "auto",
-               "--disallowedTools", *DENY, "--output-format", "stream-json", "--verbose", "--no-session-persistence",
-               "--", f"Your task file: {self.task}. Read it first, in full. N = {i}."]
+        cmd = self.command(i)
         env = dict(os.environ, CLAUDE_CODE_PROMPT_CACHE_TTL="5m", CLAUDE_CODE_DISABLE_AUTO_MEMORY="1")
         t0 = time.time()
         p = subprocess.Popen(cmd, cwd=REPO, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -167,7 +183,9 @@ class Runner:
                     if msg.get("id") and msg.get("usage"): req[msg["id"]] = msg["usage"]
                     for b in msg.get("content") or []:
                         if isinstance(b, dict) and b.get("type") == "tool_use":
-                            cmds[b.get("id")] = {"command": str((b.get("input") or {}).get("command", "")), "result_chars": 0, "is_error": False}
+                            inp = b.get("input") or {}  # Bash: the command; another tool (Read, Write): its name and input
+                            shown = str(inp["command"]) if "command" in inp else f"{b.get('name')} {json.dumps(inp)[:400]}"
+                            cmds[b.get("id")] = {"command": shown, "result_chars": 0, "is_error": False}
                             order.append(b.get("id"))
                 elif t == "user":
                     content = (ev.get("message") or {}).get("content")
@@ -198,8 +216,8 @@ class Runner:
                 "report": (result or {}).get("result"), "stderr_tail": err if not result else "", "rate_limit": rl}
 
     def run_batch(self, i):
-        names = self.files(i); want = [os.path.basename(n) for n in names]; out = self.out(i)
-        state, detail = check_output(out, want, self.a.fields)
+        out = self.out(i)
+        state, detail = self.check(i)
         if state in ("ok", "bad_fields"):
             return {"batch": i, "state": "skipped_existing" if state == "ok" else "existing_bad_fields", "detail": detail}
         row = None
@@ -210,10 +228,9 @@ class Runner:
                 sup = os.path.join(self.outdir, "superseded"); os.makedirs(sup, exist_ok=True)
                 os.replace(out, os.path.join(sup, f"{os.path.basename(out)}.invalid_{int(time.time())}"))
             r = self.judge_once(i)
-            state, detail = check_output(out, want, self.a.fields)
-            chars = sum(len(open(os.path.join(self.ddir, n), encoding="utf-8", errors="replace").read()) for n in names)
-            row = {"batch": i, "attempt": attempt, "state": state, "detail": detail, "n": len(want), "out": out,
-                   "audit": read_audit(r["commands"], chars, want, i), "time": time.strftime("%Y-%m-%d %H:%M:%S"), **r}
+            state, detail = self.check(i)
+            row = {"batch": i, "attempt": attempt, "state": state, "detail": detail, "n": self.size(i), "out": out,
+                   "audit": self.audit(i, r["commands"]), "time": time.strftime("%Y-%m-%d %H:%M:%S"), **r}
             rl = r["rate_limit"] or {}
             with self.lock:
                 with open(self.log_path, "a") as f: f.write(json.dumps(row) + "\n")
@@ -236,7 +253,7 @@ class Runner:
     def main(self):
         a = self.a
         os.makedirs(self.outdir, exist_ok=True)
-        todo = [i for i in self.batches if check_output(self.out(i), [os.path.basename(n) for n in self.files(i)], a.fields)[0] not in ("ok", "bad_fields")]
+        todo = [i for i in self.batches if self.check(i)[0] not in ("ok", "bad_fields")]
         print(f"[runner] task {self.task}\n[runner] {len(self.batches)} batches requested, {len(self.batches) - len(todo)} already have output, "
               f"{len(todo)} to judge; model {a.model}, {a.jobs} at once; log {self.log_path}", flush=True)
         if a.dry_run:
