@@ -2747,6 +2747,14 @@ probes_striking}/<setting>/seed<s>/probe.jsonl`. No cap or floor arm and no rand
   - Expected: gfar minus doses like unsteered. For the plus doses I have no firm expectation; a break (as on the coding task) or
     hedging without deception seem more likely than the gi_v2 persona. gi_v2 by the 10-30 digest: +0.1 near unsteered, +0.2 and
     +0.4 raised.
+  - **Result 2026-11-17 (labels 1:49 to 2:03 pm MST, 147 batches, all read in full; FINDINGS entry of that date).** Usable: every
+    plus dose of both axes in every set; `gf_m0.4` degraded in the low-effort set (42% cut or empty against 18% unsteered) and the
+    high-effort set (64% against 0%), compared on the striking prompts only. Label (a), change from unsteered in points [95% CI],
+    Holm p: gi_v2 +0.1 +1.2 [0.0, +3.2] 1.0, +0.2 +15.0 [+7.1, +24.0] 0.005, +0.4 +43.1 [+29.6, +56.8] < 0.001; Goodfire +0.1 0.0
+    [-1.8, +1.9], +0.2 +1.2 [0.0, +3.3], +0.4 0.0 [-1.9, +1.9], Holm p 1.0 each. No Goodfire or gi_v2 minus dose differs from
+    unsteered. By the outcome list this is the first reading at +0.2 and +0.4: gi_v2 raises the label and the Goodfire axis does not
+    (interval reaches zero, change under half of gi_v2's), on one model. Correction to amendment 5: the prompt texts number 50, not
+    51 (five striking prompts repeat general questions); the analysis draws the 50.
 
 ### Muse: Goodfire plus doses up to +0.32 (added 2026-11-17, user 1:14 pm MST)
 
@@ -2762,6 +2770,10 @@ minus doses (gi_v2 has no -0.32 probe; the question is about the plus side).
     800 answers. Holm over the two contrasts of each axis on label (a). The outcome readings are the same, per model; the two
     models are reported side by side and not pooled. If gi_v2 +0.32 does not raise label (a) on Muse, Muse says nothing about
     the contrast.
+  - **Result 2026-11-17 (job 15479559 done 2:20 pm MST; labels 2:24 to 2:30 pm, 34 batches).** No arm has a cut or empty answer.
+    Label (a): gi_v2 +0.16 +3.1 [+0.6, +6.7] Holm p 0.12, +0.32 +27.5 [+15.5, +39.9] < 0.001; Goodfire +0.16 +0.6 [0.0, +2.0], +0.32
+    0.0 [0.0, 0.0] (2 of 160, as unsteered), Holm p 1.0 each. gi_v2 +0.32 raises the label, so Muse bears on the contrast, and it
+    gives the first reading at +0.32 as gpt-oss does at +0.2 and +0.4.
 
 ## Explanation-mismatch audit, 50 episodes per arm (added 2026-11-17 about 1:36 pm MST; Koby's request via the user)
 
