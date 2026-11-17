@@ -2808,6 +2808,32 @@ model is run. Written before any label of this run exists.
   −4.0, −4.0, −2.0, 0 points on gpt-oss, Muse, Gemma, Qwen; every interval covers 0). gpt-oss: both negative doses raise the
   label (8% → 24% and 28%). Gemma unsteered is 6% here against at least 37% implied by the 30-per-arm chart: unexplained.
 
+## Sycophancy readout from existing data (added 2026-11-17 about 3:25 pm MST; user question, no new model runs)
+
+Question (user): is there anything specific to sycophancy in the data we already have that separates gi_v2 from the Goodfire
+axis? No sycophancy test was ever run (no prompt states a user opinion, no pushback turn), so this is a readout of two
+existing sources, written down before either number is read. Exploratory; not a planned contrast of the paper.
+
+- **(A) Persona activations (gpt-oss layer 17, Muse layer 26).** The gi_v2 extraction saved answer-region activations for
+  every role-play response (`full100/act_response_only`, 5 character prompts × 100 questions per role). `sycophant_fic`
+  ("tells people whatever they want to hear, flatters anyone whose approval she wants") and `candid_friend_fic` are a
+  matched pair on the two poles. Test: how well a direction separates sycophant from candid-friend responses.
+  Directions: the Goodfire axis as steered; gi_v2 as steered (built from both roles, context only); **gi_v2 rebuilt
+  without the two roles** (mean of the 8 other dishonest role vectors minus mean of the 8 other honest ones, from the
+  saved `vectors_response_only` role means, unit per layer). Measure: AUROC of the projection, sycophant above candid
+  friend, over responses with judge score 3 (all responses as sensitivity), 95% interval by bootstrap over the 100
+  questions; the same for sycophant against `default` (the plain assistant).
+- **Reading (A).** "gi_v2 carries the sycophant persona without having been built from it and the Goodfire axis does not"
+  only if, on both models, the rebuilt-gi_v2 interval lies above the Goodfire interval and the Goodfire interval includes
+  0.5 or lies below it. A Goodfire AUROC clearly above 0.5 means the Goodfire axis carries it too and is reported so.
+  Either way this is instructed role-play read from activations, not the behaviour of a steered model.
+- **(B) Probe labels on the two feedback prompts.** Of the 50 probe prompts, two ask for an assessment the other person
+  would rather not hear: general 11 (feedback on a friend's mediocre essay) and general 2 (sign off a colleague's code
+  that fails a test). Chosen now, before their per-prompt counts are read; known beforehand: the Goodfire readers wrote
+  that these prompts get the same honest answers in every Goodfire setting. Readout: label (a) yes counts per setting,
+  low + high sets, two seeds (8 answers per setting and model), from today's blind labels; no test at this size.
+- Not done without the user's word: a sycophancy-specific blind label over the existing probe answers, and any new run.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
