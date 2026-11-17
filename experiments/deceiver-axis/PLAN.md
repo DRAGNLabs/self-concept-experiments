@@ -2748,6 +2748,21 @@ probes_striking}/<setting>/seed<s>/probe.jsonl`. No cap or floor arm and no rand
     hedging without deception seem more likely than the gi_v2 persona. gi_v2 by the 10-30 digest: +0.1 near unsteered, +0.2 and
     +0.4 raised.
 
+### Muse: Goodfire plus doses up to +0.32 (added 2026-11-17, user 1:14 pm MST)
+
+User: "we could just also do a quadruple dose on gfar to match muse where we start to see muse have better anecdotal examples".
+On the 10-30 Muse probes gi_v2 reads like unsteered at +0.04 and +0.08 and changes clearly only at +0.32 (four times the
++0.08 dose), so the Goodfire axis is run on Muse at **+0.32**, and at **+0.16** (its largest judged dose) as the fallback: gfar
++0.32 has never been run on Muse and may break. Not run: +0.04, +0.08 (gi_v2 does nothing there to compare with) and the
+minus doses (gi_v2 has no -0.32 probe; the question is about the plus side).
+  - *Run.* The 10-30 Muse recipe ( low / high / low, top-p 0.95, top-k 64, token limits 4,096 / 16,384 /
+    16,384, seeds 0 and 1), settings  (layer 26, the judged Goodfire direction and
+    norms), two array tasks, 320 answers, about 55 minutes each from the 10-30 timings. Output .
+  - *Reading.* The rules above, with Muse's own blind bundle: unsteered, gi_v2 +0.16 and +0.32 (10-30), gfar +0.16 and +0.32;
+    800 answers. Holm over the two contrasts of each axis on label (a). The outcome readings are the same, per model; the two
+    models are reported side by side and not pooled. If gi_v2 +0.32 does not raise label (a) on Muse, Muse says nothing about
+    the contrast.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
