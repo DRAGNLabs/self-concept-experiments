@@ -2792,6 +2792,9 @@ model is run. Written before any label of this run exists.
   between the axes will be distinguishable. A hollow marker means "not distinguishable at this sample size", not "equal".
 - **Direction of interest:** the Deceiver Axis reading predicts fewer mismatched explanations under gi_v2 − than under
   Goodfire − (contrast below 0). His 30-per-arm labels had that on Gemma only (filled) and the same sign on Muse and gpt-oss.
+- **Result 2026-11-17** (FINDINGS "Explanation-mismatch audit, 50 episodes per arm"): no model separates the two axes (contrast
+  −4.0, −4.0, −2.0, 0 points on gpt-oss, Muse, Gemma, Qwen; every interval covers 0). gpt-oss: both negative doses raise the
+  label (8% → 24% and 28%). Gemma unsteered is 6% here against at least 37% implied by the 30-per-arm chart: unexplained.
 
 ## Work order
 

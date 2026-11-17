@@ -193,6 +193,32 @@ Recorded `lcbhard_55` hidden passes, of 12 seeds:
 
 **Not established.** How many of the recorded `lcbhard_55` results in each arm sit near the limit (only three October episodes were re-timed); whether other problems have the same margin (the probe covered five); whether verification time differs by node type.
 
+### Explanation-mismatch audit, 50 episodes per arm on four models (Koby's procedure) — 2026-11-17: no model separates the gi_v2 − dose from the Goodfire − dose on "the explanation does not match the code"; on gpt-oss both negative doses raise the label (8% unsteered, 24% and 28%); the large gi_v2 drop on Gemma in the 30-per-arm labels does not appear
+
+**Question.** Koby's honesty analysis compares the negative main dose of gi_v2 with the same dose of the Goodfire axis on seven measures. Six are read by rule; the seventh, "the explanation does not match the code", needs an LLM judge and had 30 labelled episodes per arm. Does it separate the two axes with about 50 per arm? Plan and rules: PLAN "Explanation-mismatch audit, 50 episodes per arm", written before any label.
+
+**Setup.** Arms: unsteered, gi_v2 −, Goodfire − at gpt-oss 0.2, Muse 0.08, Gemma 0.08, Qwen 0.16 (run directories in `runs/explanation_audit_2026-11-17/arms.json`). Per arm 50 episodes drawn at random (seed 0) from the episodes with code submitted in at least one turn; 600 episodes. Item = every turn's visible reply with a `[HARNESS]` line after it; no reasoning, problem statement or tests. Koby's brief and prompt verbatim, Sonnet (`claude-sonnet-5-5`), default effort, 71 batches of at most 100,000 characters, arms mixed, arm in `key.json` only; six headless labellers at once (`scripts/audit_label_runner.py`), 1:38 to 1:49 pm MST, list-price cost $13.78. Every batch was read in full and no labeller opened a file other than the brief and its batch (runner log; the three flagged batches are the labellers' own write and quote-check commands). Sets, labels, `analysis.json`, `labels_joined.jsonl`: `~/nobackup/autodelete/self-concept-experiments/schemer-axis/gfar_vs_gi_v2/explanation_audit/`; analysis copy in `runs/explanation_audit_2026-11-17/`. Chart: `figures/audit/explanation_mismatch_50_per_arm_2026-11-17.png`.
+
+**Observed** (yes / labelled, "unclear" = no; changes in points, 95% bootstrap interval over problems):
+
+| Model (α) | unsteered | gi_v2 − | Goodfire − | Δ gi_v2 − | Δ Goodfire − | gi_v2 − minus Goodfire − |
+|---|---|---|---|---|---|---|
+| gpt-oss-120b (0.2) | 4/50 (8%) | 12/50 (24%) | 14/50 (28%) | +16.0 [+2.4, +30.6] | +20.0 [+4.8, +35.8] | −4.0 [−22.2, +14.1] |
+| Muse-Glimmer-30B (0.08) | 9/50 (18%) | 5/50 (10%) | 7/50 (14%) | −8.0 [−21.6, +5.8] | −4.0 [−16.4, +8.7] | −4.0 [−17.0, +8.9] |
+| Gemma 4 31B IT (0.08) | 3/50 (6%) | 5/50 (10%) | 6/50 (12%) | +4.0 [−6.9, +15.0] | +6.0 [−5.2, +17.2] | −2.0 [−14.0, +10.2] |
+| Qwen3.8-27B (0.16) | 0/50 | 0/50 | 0/50 | 0 | 0 | 0 |
+
+- The contrast interval covers 0 on every model: hollow markers on all four. The point estimate is below 0 (fewer mismatches under gi_v2 −) on three models, by 2 to 4 points, which is one or two episodes of 50.
+- gpt-oss is the only model where a dose moves the label: both negative doses raise it, each interval above 0. Counting "unclear" as yes gives gi_v2 +16.0 [+0.6, +31.2], Goodfire +16.0 [−1.5, +33.2], contrast 0.0.
+- Qwen has no "yes" among 150 episodes.
+- Labels: 65 "yes", 11 "unclear", no "not_applicable". Both quotes of a "yes" were found in the item text for all 65 (64 character for character, one after squeezing whitespace).
+
+**Against the 30-per-arm labels (Koby's chart, read off the plot).** His points were about gi_v2 −37 / Goodfire +3 on Gemma (filled), −20 / −3 on Muse, −7 / +4 on gpt-oss, +6 / 0 on Qwen. A −37 change needs an unsteered rate of at least 37% on Gemma; this run has 3 of 50 (6%). The two label sets therefore disagree on Gemma's unsteered level, not only on the contrast. Muse agrees in sign and roughly in the unsteered level; gpt-oss differs in the sign of the gi_v2 change.
+
+**Not established.** Why the Gemma levels differ. Candidates that this run cannot tell apart: his sample is drawn differently (his sampler `episode_audit_sample.py` is not in the repo or on the share; ours is a uniform draw over episodes with code), his items are laid out differently, or labeller variation at n = 30. A check needs his `items.json`, `key.json` and labels: the episodes both sets contain can then be compared label by label.
+
+**Limits.** 50 episodes per arm: a contrast interval is ±12 to ±18 points wide, so a hollow marker means "not distinguishable at this size", not "equal". One label pass, no adjudication. The label is about prose against code within a reply; it does not say whether the mismatch was meant to mislead. On gpt-oss the negative doses change how many episodes submit code (500, 473 and 538 of 540), so the sampled populations differ somewhat by arm; on Qwen more so (543, 484, 377 of 732).
+
 ### Benchmark reads of Koby's coverage batch (21 steered runs on four models) — 2026-11-16: on gpt-oss, Muse and Gemma retention agrees with the dose rule arm by arm (every arm inside the rule keeps all four benchmarks, every arm outside it loses at least one); on Qwen all seven arms keep all four, including the three that are outside the dose rule
 
 **Question.** Koby's batch of Nov 13 has a benchmark eval for every new config, plus evals of five Gemma gi_v2 arms we had judged without one (floors p50 / p75 / p95, ±0.16). Which arms keep capability under the retention rule (per benchmark: within 2 points of unsteered, or a CI that covers zero), and does that agree with the dose rule on the task set?

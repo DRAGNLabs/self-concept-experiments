@@ -207,9 +207,11 @@ def analyze(args: argparse.Namespace) -> None:
                                                 quotes=quotes, main=main, unclear_as_yes=sensitivity)
     order = [m for m in ("gptoss", "muse", "gemma", "qwen") if m in result["models"]] + sorted(set(result["models"]) - {"gptoss", "muse", "gemma", "qwen"})
     result["models"] = {m: result["models"][m] for m in order}
-    cell = lambda arm: f"{arm['yes']}/{arm['n'] - arm['not_applicable']} ({arm['rate']:.1f}%)"
     span = lambda ci: f"[{ci[0]:+.1f}, {ci[1]:+.1f}]"
     for mode, title in (("main", 'Main reading ("unclear" = no)'), ("unclear_as_yes", 'Sensitivity ("unclear" = yes)')):
+        extra = "unclear" if mode == "unclear_as_yes" else "not_applicable"  # counted as a hit only in the sensitivity reading
+        cell = lambda arm: (f"{arm['yes'] + (arm[extra] if extra == 'unclear' else 0)}/{arm['n'] - arm['not_applicable']} "
+                            f"({arm['rate']:.1f}%)")
         print(f"\n{title}\n")
         print("| Model (α) | unsteered | gi_v2 − | Goodfire − | Δ gi_v2 − (95% CI) | Δ Goodfire − (95% CI) | gi_v2 − minus Goodfire − (95% CI) | differ |")
         print("|---|---|---|---|---|---|---|---|")
@@ -246,8 +248,9 @@ def chart(args: argparse.Namespace) -> None:
     styles = {"gptoss": ("#2a78d6", "o"), "muse": ("#eb6834", "s"), "gemma": ("#1baf7a", "^"), "qwen": ("#eda100", "D")}
     ink, soft = "#1f1e1c", "#52514e"
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10})
-    figure = plt.figure(figsize=(13.6, 7.4), facecolor="white")
-    axes = figure.add_axes([0.065, 0.2, 0.40, 0.62])
+    figure = plt.figure(figsize=(15.2, 7.4), facecolor="white")
+    axes = figure.add_axes([0.05, 0.2, 0.36, 0.62])
+    offsets = {"gptoss": (12, 9, "left"), "muse": (13, -15, "left"), "gemma": (30, -7, "left"), "qwen": (-12, 10, "right")}
     models = result["models"]
     reach = max(max(abs(s["main"]["change_gi_v2"]), abs(s["main"]["change_gfar"])) + abs(s["main"]["difference_ci"][1] - s["main"]["difference_ci"][0]) / 2
                 for s in models.values())
@@ -267,7 +270,8 @@ def chart(args: argparse.Namespace) -> None:
         differ = low > 0 or high < 0
         axes.plot(x, y, marker=marker, markersize=11, markerfacecolor=color if differ else "white", markeredgecolor=color,
                   markeredgewidth=2.2, linewidth=0, zorder=3)
-        axes.annotate(entry["name"], (x, y), xytext=(11, 8), textcoords="offset points", fontsize=9.5, color=ink)
+        dx, dy, align = offsets.get(key, (11, 8, "left"))
+        axes.annotate(entry["name"], (x, y), xytext=(dx, dy), textcoords="offset points", fontsize=9.5, color=ink, ha=align)
     axes.set_xlim(-limit, limit); axes.set_ylim(-limit, limit); axes.set_aspect("equal")
     axes.set_xlabel("change under Goodfire − (points)", color=soft); axes.set_ylabel("change under gi_v2 − (points)", color=soft)
     axes.tick_params(colors=soft, labelsize=9)
@@ -284,8 +288,8 @@ def chart(args: argparse.Namespace) -> None:
     figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.03, 0.895), ncol=len(handles), frameon=False, fontsize=9.2,
                   handletextpad=0.3, columnspacing=1.3)
     # data table to the right of the plot
-    table_axes = figure.add_axes([0.52, 0.2, 0.465, 0.62]); table_axes.axis("off")
-    header = ["Model (α)", "unsteered", "gi_v2 −", "Goodfire −", "Δ gi_v2 −", "Δ Goodfire −", "gi_v2 − minus\nGoodfire − (95% CI)"]
+    table_axes = figure.add_axes([0.455, 0.2, 0.535, 0.62]); table_axes.axis("off")
+    header = ["Model (α)", "unsteered", "gi_v2 −", "Goodfire −", "Δ gi_v2 −\n[95% CI]", "Δ Goodfire −\n[95% CI]", "gi_v2 − minus\nGoodfire − [95% CI]"]
     rows = []
     cell = lambda arm: f"{arm['yes']}/{arm['n'] - arm['not_applicable']}\n{arm['rate']:.0f}%"
     for entry in models.values():
@@ -295,8 +299,8 @@ def chart(args: argparse.Namespace) -> None:
                      f"{s['change_gfar']:+.0f}\n[{s['change_gfar_ci'][0]:+.0f}, {s['change_gfar_ci'][1]:+.0f}]",
                      f"{s['difference']:+.0f}\n[{s['difference_ci'][0]:+.0f}, {s['difference_ci'][1]:+.0f}]"])
     table = table_axes.table(cellText=rows, colLabels=header, loc="upper center", cellLoc="center",
-                             colWidths=[0.19, 0.12, 0.12, 0.12, 0.14, 0.14, 0.17])
-    table.auto_set_font_size(False); table.set_fontsize(9.2); table.scale(1, 3.1)
+                             colWidths=[0.2, 0.105, 0.105, 0.115, 0.14, 0.15, 0.185])
+    table.auto_set_font_size(False); table.set_fontsize(9.2); table.scale(1, 3.3)
     for (row, _), patch in table.get_celld().items():
         patch.set_edgecolor("#c9c7c1"); patch.set_linewidth(0.7)
         patch.get_text().set_color(ink)
