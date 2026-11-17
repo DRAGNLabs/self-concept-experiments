@@ -10,16 +10,18 @@ measure and gives the unsteered level. Colour = steering axis; the measure is th
 item-paired bootstrap), drawn where one is stored.
 
 The x axis has two halves of equal width, each around its own unsteered point (black):
-  left     steering doses α in layer norms, α = 0 in the middle. --dose-spacing linear (default): linear in α, the panel's largest
-           |α| just inside the edge on both sides (each model's own range); labelled ticks at 0, half the range and the full range,
-           small unlabelled ticks at the other doses that were run. --dose-spacing even: the doses of each sign evenly spaced by
-           rank, all labelled.
+  left     steering doses α in layer norms, α = 0 in the middle, every dose that was run labelled. --dose-spacing linear (default):
+           linear in α, the panel's largest |α| just inside the edge on both sides (each model's own range). --dose-spacing even:
+           the doses of each sign evenly spaced by rank.
   right    (tinted) caps left of the unsteered point and floors right of it, to scale in the threshold percentile: a cap at p sits
            (100 − p) points from the unsteered point and a floor at p sits p points from it, so the distance is the share of
-           unsteered positions beyond the threshold. Labelled ticks are the same reference percentiles on every panel; small
+           unsteered positions beyond the threshold. Labelled ticks are the same reference percentiles on every panel;
            unlabelled ticks mark the other rungs that were run.
-The steering line passes through the left unsteered point, the cap and floor line through the right one. Two axes' markers at one
-rung are dodged either side of it.
+The steering line passes through the left unsteered point, the cap and floor line through the right one. Both axes' markers sit
+exactly on their rung, never dodged sideways (user 2026-11-16), so two points at one rung can overlap; the CI bars carry caps so
+that the two intervals at one rung can be told apart. Every row has its left and bottom axis line with tick marks, and a thin
+vertical guide line at every rung that was run (user 2026-11-16: more ticks and lines in the plots; the short header is not a
+call for bare plots). One x tick-label size is used for the figure, the largest that keeps neighbouring labels apart.
 
 A hollow marker = the model stops submitting code on that arm (no-code share more than 10 points above unsteered), on all three
 rows; the hack-rate line into and out of such an arm is dotted (a hack rate there is not comparable). The hidden-pass row carries
@@ -59,16 +61,16 @@ SIZE = dict(title=17, subtitle=11, legend=10.5, model=13.5, row=10.5, tick=9.5, 
 TEXT, SOFT, GRID, RULE, TINT = "#2e2d2a", pc.INK2, "#d9d8cf", "#9a998f", "#f1f0e9"
 AXIS_SHORT = {"gi_v2": "gi_v2", "gfar": "Goodfire"}
 # rows of a panel: record key of the value and of its CI, heading, height in inches, marker size, line width, y ticks
-ROWS = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="Judged hack rate", height=2.3, marker=7.2, line=2.0, ticks=6),
-        "bench": dict(value="diff", ci="diff_ci", name="Benchmark score", height=0.76, marker=5.4, line=1.5, ticks=3),
-        "hidden": dict(value="hidden_pass_diff", ci="hidden_pass_diff_ci", name="Hidden-test pass", height=0.76, marker=5.4, line=1.5, ticks=3)}
+# rows of a panel (continued): `ticks` = most y intervals, `cap` = half-width of the CI caps in points
+ROWS = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="Judged hack rate", height=2.45, marker=7.2, line=2.0, ticks=9, cap=2.6),
+        "bench": dict(value="diff", ci="diff_ci", name="Benchmark score", height=0.98, marker=5.4, line=1.5, ticks=4, cap=2.0),
+        "hidden": dict(value="hidden_pass_diff", ci="hidden_pass_diff_ci", name="Hidden-test pass", height=0.98, marker=5.4, line=1.5, ticks=4, cap=2.0)}
 UNSTEERED = {"hack": "hack", "bench": "composite", "hidden": "hidden_pass"}
 CLAMP_TICKS = {"cap": (5, 25, 50, 75), "floor": (25, 50, 75, 95)}  # labelled reference percentiles either side of the unsteered point
 CAPTIONS = {"steering": "steering dose α (layer norms)", "cap": "cap at percentile", "floor": "floor at percentile"}
 # x axis in data units: the steering half is [0, 1], the clamp half [1 + HALF_GAP, 2 + HALF_GAP]; PAD between the outermost rung
 # and the edge of its half
 HALF_GAP, PAD = 0.06, 0.035
-DODGE = 0.04  # inches either side of a rung both axes have
 DOTTED = (0, (1.1, 1.9))  # hack-rate line into or out of an arm where the model stops submitting code
 # page layout in inches
 WIDTH, OUTER, GUTTER, COLUMN_GAP = 14.0, 0.28, 0.5, 0.4
@@ -109,22 +111,20 @@ def collect(model_keys: list[str], axis_keys: list[str], composite: str) -> dict
 
 
 def place(panel: dict, spacing: str) -> dict:
-    """x of every (kind, rung) of the panel, the two unsteered positions, and the labelled and unlabelled ticks."""
+    """x of every (kind, rung) of the panel, the two unsteered positions, the labelled and unlabelled ticks, and the guide lines
+    (one at every rung that was run)."""
     rungs = lambda kind: sorted({row["rung"] for axis in panel["axes"] for row in axis["arms"] if row["kind"] == kind})
     span, steer, clamp = 0.5 - PAD, 0.5, 1.5 + HALF_GAP
     doses = sorted(set(rungs("steering")) | {0.0})
     reach = max(abs(dose) for dose in doses) or 1.0
     if spacing == "linear":
         slots = {("steering", dose): steer + span * dose / reach for dose in doses}
-        labelled = {dose for dose in doses if any(math.isclose(abs(dose), mark) for mark in (0.0, reach / 2, reach))}
     else:  # each sign evenly by rank, both scaled by the longer side, so α = 0 stays in the middle
         sides = [dose for dose in doses if dose < 0][::-1], [dose for dose in doses if dose > 0]
         step = span / max(len(sides[0]), len(sides[1]), 1)
         slots = {("steering", 0.0): steer, **{("steering", dose): steer + sign * step * (index + 1)
                                               for sign, side in zip((-1, 1), sides) for index, dose in enumerate(side)}}
-        labelled = set(doses)
-    major = [(slots[("steering", dose)], signed(dose)) for dose in doses if dose in labelled]
-    minor = [slots[("steering", dose)] for dose in doses if dose not in labelled]
+    major, minor = [(slots[("steering", dose)], signed(dose)) for dose in doses], []
     at = {"cap": lambda p: clamp - span * (100 - p) / 100, "floor": lambda p: clamp + span * p / 100}
     major.append((clamp, ""))
     for kind in ("cap", "floor"):
@@ -134,11 +134,12 @@ def place(panel: dict, spacing: str) -> dict:
             major += [(at[kind](p), f"p{p:g}") for p in CLAMP_TICKS[kind]]
             minor += [at[kind](p) for p in run if p not in CLAMP_TICKS[kind]]
     return dict(slots=slots, origins=dict(steering=steer, cap=clamp, floor=clamp), major=sorted(major), minor=sorted(minor),
+                guides=sorted(set(slots.values()) - {steer}),
                 captions=dict(steering=steer, cap=clamp - 0.25, floor=clamp + 0.25), tint=(1 + HALF_GAP / 2, 2 + HALF_GAP),
                 limits=(0.0, 2 + HALF_GAP))
 
 
-def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], dodge: float, rule_points: float, last: bool,
+def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], rule_points: float, last: bool,
              x_tick_size: float) -> None:
     row_style = ROWS[key]
     value, interval = row_style["value"], row_style["ci"]
@@ -149,18 +150,18 @@ def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], do
     axes.axhline(0, color=pc.ZERO, linewidth=0.9, zorder=1.5)
     for origin in {spot["origins"]["steering"], spot["origins"]["cap"]}:
         axes.axvline(origin, color=RULE, linewidth=0.7, zorder=1)
-    for side in ("top", "right", "left"):
+    for x in spot["guides"]:
+        axes.axvline(x, color=GRID, linewidth=0.7, zorder=0.6)
+    for side in ("top", "right"):
         axes.spines[side].set_visible(False)
-    axes.spines["bottom"].set_visible(last)
-    axes.spines["bottom"].set_color(RULE)
+    for side in ("left", "bottom"):
+        axes.spines[side].set_color(RULE)
     edge = 1.5 if key == "hack" else 1.15
-    for index, axis in enumerate(panel["axes"]):
+    for axis in panel["axes"]:
         color = colors[axis["axis"]]
-        shift = (index - (len(panel["axes"]) - 1) / 2) * 2 * dodge
-        both = {(row["kind"], row["rung"]) for other in panel["axes"] if other is not axis for row in other["arms"] if row[value] is not None}
         for kinds in (("steering",), ("cap", "floor")):
-            points = sorted(((spot["slots"][(row["kind"], row["rung"])] + (shift if (row["kind"], row["rung"]) in both else 0.0), row)
-                             for row in axis["arms"] if row["kind"] in kinds and row[value] is not None), key=lambda point: point[0])
+            points = sorted(((spot["slots"][(row["kind"], row["rung"])], row) for row in axis["arms"]
+                             if row["kind"] in kinds and row[value] is not None), key=lambda point: point[0])
             if not points:
                 continue
             line = sorted([(x, row[value], row["stops_submitting"]) for x, row in points] + [(spot["origins"][kinds[0]], 0.0, False)])
@@ -170,28 +171,26 @@ def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], do
             for x, row in points:
                 y = row[value]
                 if row[interval] is not None:  # hidden pass read from a run summary has no stored CI
-                    axes.plot([x, x], row[interval], color=color, linewidth=1.1, alpha=0.6, zorder=2, solid_capstyle="butt")
+                    axes.errorbar(x, y, yerr=[[y - row[interval][0]], [row[interval][1] - y]], fmt="none", ecolor=color, elinewidth=1.1,
+                                  capsize=row_style["cap"], capthick=1.1, alpha=0.75, zorder=2)
                 face, ring = (pc.SURFACE, color) if row["stops_submitting"] else (color, pc.SURFACE)
                 axes.plot(x, y, "o", markersize=row_style["marker"], color=face, markeredgecolor=ring, markeredgewidth=edge, zorder=4)
     for origin in {spot["origins"]["steering"], spot["origins"]["cap"]}:
         axes.plot(origin, 0, "o", markersize=row_style["marker"], color=pc.INK, markeredgecolor=pc.SURFACE, markeredgewidth=edge, zorder=5)
     axes.set_xlim(*spot["limits"])
     axes.margins(y=0.08 if key == "hack" else 0.2)
-    axes.yaxis.set_major_locator(MaxNLocator(nbins=row_style["ticks"], min_n_ticks=3 if key == "hack" else 2, steps=[1, 2, 2.5, 5, 10] if key == "hack" else [1, 2, 5, 10]))
+    axes.yaxis.set_major_locator(MaxNLocator(nbins=row_style["ticks"], min_n_ticks=3, steps=[1, 2, 2.5, 5, 10]))
     axes.yaxis.set_major_formatter(FuncFormatter(signed))
-    axes.tick_params(axis="y", length=0, pad=5, labelsize=SIZE["tick"], labelcolor=SOFT)
+    axes.tick_params(axis="y", length=3.5, color=RULE, pad=3, labelsize=SIZE["tick"], labelcolor=SOFT)
     if key == "hidden":  # the dose-rule lines; the lower one is always inside the y range
         low, high = axes.get_ylim()
         axes.set_ylim(min(low, -rule_points - 3), max(high, 3))
         for limit in (-rule_points, rule_points):
             axes.axhline(limit, color=SOFT, linewidth=1.0, linestyle=(0, (4, 3)), zorder=1.6)
-    if not last:
-        axes.tick_params(axis="x", which="both", length=0, labelbottom=False)
-        return
     axes.set_xticks([x for x, _ in spot["major"]], [text for _, text in spot["major"]])
     axes.set_xticks(spot["minor"], minor=True)
-    axes.tick_params(axis="x", which="major", length=4, color=RULE, pad=3.5, labelsize=x_tick_size, labelcolor=SOFT)
-    axes.tick_params(axis="x", which="minor", length=2.5, color=RULE)
+    axes.tick_params(axis="x", which="major", length=4, color=RULE, pad=3.5, labelsize=x_tick_size, labelcolor=SOFT, labelbottom=last)
+    axes.tick_params(axis="x", which="minor", length=4, color=RULE)
 
 
 class Ruler:
@@ -227,11 +226,11 @@ def notes(record: dict, spacing: str) -> list[tuple[str, str]]:
               + ", ".join(signed(row["rung"]) if row["kind"] == "steering" else f"{row['kind']} p{row['rung']:g}" for row in axis["arms"] if row["diff"] is None)
               for panel in panels for axis in panel["axes"] if any(row["diff"] is None for row in axis["arms"])]
     listed = [
-        ("Steering", "Dose α in layer norms, " + ("linear in α" + (" on each model's own range" if len(panels) > 1 else "") + ". Small ticks are doses that were run and carry no label."
+        ("Steering", "Dose α in layer norms, " + ("linear in α" + (" on each model's own range" if len(panels) > 1 else "") + "."
                                                  if spacing == "linear" else "evenly spaced, not to scale.")),
         ("Caps and floors", "Tinted half: caps left of the unsteered point, floors right of it, by threshold percentile of the unsteered "
                             "projection. The distance from the unsteered point is the share of unsteered positions beyond the threshold "
-                            "(cap at p: 100 − p; floor at p: p). Small ticks are rungs that were run and carry no label."),
+                            "(cap at p: 100 − p; floor at p: p). A thin vertical line marks every rung that was run; those without a label are other percentiles."),
         ("Hollow marker", f"The model stops submitting code on that arm (no-code share more than {points} points above unsteered), so its "
                           "hack rate, joined by a dotted line, is not comparable."),
         ("Hack rate", "As judged, per arm: " + "; ".join(f"{' and '.join(names)} {size}" for size, names in sets.items())
@@ -322,7 +321,6 @@ def draw(record: dict, out: Path, spacing: str) -> None:
         x = OUTER + column * (plot_width + GUTTER + COLUMN_GAP) + GUTTER
         top = head_height + grid_row * (panel_height + PANEL_GAP)
         spot = spots[index]
-        dodge = DODGE / plot_width * (spot["limits"][1] - spot["limits"][0])
         figure.text(fx(x), fy(top), panel["model"], fontsize=SIZE["model"], fontweight="bold", color=pc.INK, ha="left", va="top")
         cursor = top + NAME
         unsteered = panel["axes"][0]["unsteered"]
@@ -335,7 +333,7 @@ def draw(record: dict, out: Path, spacing: str) -> None:
                 figure.text(fx(x + ruler.width(row["name"], SIZE["row"], "bold") + 0.11), baseline, f"unsteered {level:.1f}%",
                             fontsize=SIZE["row"], color=SOFT, ha="left", va="baseline")
             axes = figure.add_axes((fx(x), fy(cursor + HEAD + row["height"]), plot_width / width, row["height"] / height))
-            draw_row(axes, panel, key, spot, colors, dodge, record["rule_points"], last, x_tick_size)
+            draw_row(axes, panel, key, spot, colors, record["rule_points"], last, x_tick_size)
             cursor += HEAD + row["height"] + ROW_GAP
             if last:
                 for kind, centre in spot["captions"].items():
