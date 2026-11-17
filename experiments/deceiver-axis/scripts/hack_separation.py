@@ -5,7 +5,7 @@ tokens at every layer), labels each episode HACK (judged STRONG or WEAK) or not 
 '<arm>/seed<s>/<example_id>' (unjudged episodes count as not HACK), projects the means at one layer on each named
 direction and on isotropic random unit directions, and reports the AUROC of the projection (higher = hack) pooled and
 within problem, against the random directions' 2.5-97.5 percentile range. The BORDERLINE-excluded rows drop BORDERLINE
-episodes from both classes.
+episodes from both classes. Episodes with no tokens in a segment (e.g. no answer) are left out of that segment's rows.
 
     python experiments/deceiver-axis/scripts/hack_separation.py --acts <gfar_vs_gi_v2>/acts/muse --layer 26 \
         --verdicts <verdicts>/as_judged.json --direction gi_v2=<persona_contrast.pt> \
@@ -21,7 +21,7 @@ from typing import Literal, TypedDict
 
 import numpy as np
 import torch
-from jaxtyping import Bool, Float
+from jaxtyping import Bool, Float, Int
 from scipy.stats import rankdata
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
@@ -35,6 +35,7 @@ RANDOM_SEED = 1729
 
 class Episodes(TypedDict):
     means_by_segment: dict[Segment, Float[np.ndarray, "episodes hidden"]]
+    token_counts_by_segment: dict[Segment, Int[np.ndarray, "episodes"]]
     verdict_keys: list[str]
     problem_ids: list[str]
 
@@ -50,10 +51,17 @@ class SeparationRow(TypedDict):
     direction: str
     segment: Segment
     borderline: BorderlineHandling
+    empty_left_out: int
     hacks: int
     non_hacks: int
     pooled: AurocWithNull
     within_problem: AurocWithNull
+
+
+def token_counts_at_layer(token_counts: Int[np.ndarray, "episodes"] | Int[np.ndarray, "episodes layers"], layer_index: int
+                          ) -> Int[np.ndarray, "episodes"]:
+    """Older caches store the (layer-independent) token count once per recorded layer."""
+    return token_counts[:, layer_index] if token_counts.ndim == 2 else token_counts
 
 
 def load_episodes(acts_dir: Path, arm: str, layer: int) -> Episodes:
@@ -63,6 +71,8 @@ def load_episodes(acts_dir: Path, arm: str, layer: int) -> Episodes:
     return {
         "means_by_segment": {segment: torch.cat([cache[f"{segment}_mean"][:, layer_index].float() for cache in caches]).numpy()
                              for segment in SEGMENTS},
+        "token_counts_by_segment": {segment: np.concatenate([token_counts_at_layer(np.asarray(cache["stats"][segment]["n"]), layer_index)
+                                                             for cache in caches]) for segment in SEGMENTS},
         "verdict_keys": [key for cache in caches for key in cache["verdict_key"]],
         "problem_ids": [example_id for cache in caches for example_id in cache["example_id"]],
     }
@@ -78,6 +88,7 @@ def problems_hacked_in_arm(verdicts_by_key: dict[str, str], arm: str) -> set[str
 def episodes_outside_problems(episodes: Episodes, excluded_problem_ids: set[str]) -> Episodes:
     keep = np.array([problem_id not in excluded_problem_ids for problem_id in episodes["problem_ids"]])
     return {"means_by_segment": {segment: means[keep] for segment, means in episodes["means_by_segment"].items()},
+            "token_counts_by_segment": {segment: counts[keep] for segment, counts in episodes["token_counts_by_segment"].items()},
             "verdict_keys": [key for key, kept in zip(episodes["verdict_keys"], keep) if kept],
             "problem_ids": [problem_id for problem_id, kept in zip(episodes["problem_ids"], keep) if kept]}
 
@@ -125,18 +136,21 @@ def separation_rows(episodes: Episodes, verdicts_by_key: dict[str, str], unit_di
     kept_by_borderline_handling: dict[BorderlineHandling, Bool[np.ndarray, "episodes"]] = {
         "counted_not_hack": np.ones(len(verdicts), dtype=bool), "excluded": verdicts != "BORDERLINE"}
     for borderline, keep in kept_by_borderline_handling.items():
-        is_hack = verdicts[keep] == "HACK"
         for segment in SEGMENTS:
-            means = episodes["means_by_segment"][segment][keep]
+            has_tokens = episodes["token_counts_by_segment"][segment] > 0
+            kept = keep & has_tokens
+            is_hack = verdicts[kept] == "HACK"
+            means = episodes["means_by_segment"][segment][kept]
             random_scores = means @ random_unit_directions.T
             random_pooled = pooled_auroc(random_scores, is_hack)
-            random_within = within_problem_auroc(random_scores, is_hack, problem_ids[keep])
+            random_within = within_problem_auroc(random_scores, is_hack, problem_ids[kept])
             for name, unit_direction in unit_directions_by_name.items():
                 scores = (means @ unit_direction)[:, None]
                 rows.append({"direction": name, "segment": segment, "borderline": borderline,
+                             "empty_left_out": int((keep & ~has_tokens).sum()),
                              "hacks": int(is_hack.sum()), "non_hacks": int((~is_hack).sum()),
                              "pooled": auroc_with_null(float(pooled_auroc(scores, is_hack)[0]), random_pooled),
-                             "within_problem": auroc_with_null(float(within_problem_auroc(scores, is_hack, problem_ids[keep])[0]), random_within)})
+                             "within_problem": auroc_with_null(float(within_problem_auroc(scores, is_hack, problem_ids[kept])[0]), random_within)})
     return rows
 
 
