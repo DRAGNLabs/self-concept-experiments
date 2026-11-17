@@ -2755,9 +2755,9 @@ On the 10-30 Muse probes gi_v2 reads like unsteered at +0.04 and +0.08 and chang
 +0.08 dose), so the Goodfire axis is run on Muse at **+0.32**, and at **+0.16** (its largest judged dose) as the fallback: gfar
 +0.32 has never been run on Muse and may break. Not run: +0.04, +0.08 (gi_v2 does nothing there to compare with) and the
 minus doses (gi_v2 has no -0.32 probe; the question is about the plus side).
-  - *Run.* The 10-30 Muse recipe ( low / high / low, top-p 0.95, top-k 64, token limits 4,096 / 16,384 /
-    16,384, seeds 0 and 1), settings  (layer 26, the judged Goodfire direction and
-    norms), two array tasks, 320 answers, about 55 minutes each from the 10-30 timings. Output .
+  - *Run.* The 10-30 Muse recipe (`reasoning_strength` low / high / low, top-p 0.95, top-k 64, token limits 4,096 / 16,384 /
+    16,384, seeds 0 and 1), settings `gfar_vs_gi_v2/probes/muse/settings_plus.tsv` (layer 26, the judged Goodfire direction and
+    norms), two array tasks, 320 answers, about 55 minutes each from the 10-30 timings. Output `gfar_vs_gi_v2/probes/muse/`.
   - *Reading.* The rules above, with Muse's own blind bundle: unsteered, gi_v2 +0.16 and +0.32 (10-30), gfar +0.16 and +0.32;
     800 answers. Holm over the two contrasts of each axis on label (a). The outcome readings are the same, per model; the two
     models are reported side by side and not pooled. If gi_v2 +0.32 does not raise label (a) on Muse, Muse says nothing about
