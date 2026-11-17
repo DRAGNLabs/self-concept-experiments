@@ -21,7 +21,9 @@ The steering line passes through the left unsteered point, the cap and floor lin
 exactly on their rung, never dodged sideways (user 2026-11-16), so two points at one rung can overlap; the CI bars carry caps so
 that the two intervals at one rung can be told apart. Every row has its left and bottom axis line with tick marks, and a thin
 vertical guide line at every rung that was run (user 2026-11-16: more ticks and lines in the plots; the short header is not a
-call for bare plots). One x tick-label size is used for the figure, the largest that keeps neighbouring labels apart.
+call for bare plots). The x tick labels (doses and percentiles) are repeated under every row (user 2026-11-17); the captions that
+name the x scales stand once, under the last row. One x tick-label size is used for the figure, the largest that keeps
+neighbouring labels apart.
 
 A hollow marker = the model stops submitting code on that arm (no-code share more than 10 points above unsteered), on all three
 rows; the hack-rate line into and out of such an arm is dotted (a hack rate there is not comparable). The hidden-pass row carries
@@ -60,8 +62,8 @@ FONTS = ["Liberation Sans", "Arial", "Helvetica", "Nimbus Sans", "DejaVu Sans"] 
 SIZE = dict(title=17, subtitle=11, legend=10.5, model=13.5, row=10.5, tick=9.5, caption=10, note=9)  # points
 TEXT, SOFT, GRID, RULE, TINT = "#2e2d2a", pc.INK2, "#d9d8cf", "#9a998f", "#f1f0e9"
 AXIS_SHORT = {"gi_v2": "gi_v2", "gfar": "Goodfire"}
-# rows of a panel: record key of the value and of its CI, heading, height in inches, marker size, line width, y ticks
-# rows of a panel (continued): `ticks` = most y intervals, `cap` = half-width of the CI caps in points
+# rows of a panel: record key of the value and of its CI, heading, height in inches, marker size, line width, most y intervals
+# (`ticks`), half-width of the CI caps in points (`cap`)
 ROWS = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="Judged hack rate", height=2.45, marker=7.2, line=2.0, ticks=9, cap=2.6),
         "bench": dict(value="diff", ci="diff_ci", name="Benchmark score", height=0.98, marker=5.4, line=1.5, ticks=4, cap=2.0),
         "hidden": dict(value="hidden_pass_diff", ci="hidden_pass_diff_ci", name="Hidden-test pass", height=0.98, marker=5.4, line=1.5, ticks=4, cap=2.0)}
@@ -72,9 +74,9 @@ CAPTIONS = {"steering": "steering dose α (layer norms)", "cap": "cap at percent
 # and the edge of its half
 HALF_GAP, PAD = 0.06, 0.035
 DOTTED = (0, (1.1, 1.9))  # hack-rate line into or out of an arm where the model stops submitting code
-# page layout in inches
+# page layout in inches; under every row X_TICKS for its x tick labels, under the last row X_CAPTION more for the scale captions
 WIDTH, OUTER, GUTTER, COLUMN_GAP = 14.0, 0.28, 0.5, 0.4
-NAME, HEAD, ROW_GAP, X_LABELS, PANEL_GAP = 0.33, 0.24, 0.09, 0.56, 0.3
+NAME, HEAD, ROW_GAP, X_TICKS, X_CAPTION, PANEL_GAP = 0.33, 0.24, 0.09, 0.24, 0.32, 0.3
 LINE = 1.32  # line height in ems
 TICK_SPACE = 0.045  # least space in inches between two neighbouring x tick labels
 
@@ -139,8 +141,7 @@ def place(panel: dict, spacing: str) -> dict:
                 limits=(0.0, 2 + HALF_GAP))
 
 
-def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], rule_points: float, last: bool,
-             x_tick_size: float) -> None:
+def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], rule_points: float, x_tick_size: float) -> None:
     row_style = ROWS[key]
     value, interval = row_style["value"], row_style["ci"]
     axes.set_facecolor(pc.SURFACE)
@@ -189,7 +190,7 @@ def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], ru
             axes.axhline(limit, color=SOFT, linewidth=1.0, linestyle=(0, (4, 3)), zorder=1.6)
     axes.set_xticks([x for x, _ in spot["major"]], [text for _, text in spot["major"]])
     axes.set_xticks(spot["minor"], minor=True)
-    axes.tick_params(axis="x", which="major", length=4, color=RULE, pad=3.5, labelsize=x_tick_size, labelcolor=SOFT, labelbottom=last)
+    axes.tick_params(axis="x", which="major", length=4, color=RULE, pad=3.5, labelsize=x_tick_size, labelcolor=SOFT)
     axes.tick_params(axis="x", which="minor", length=4, color=RULE)
 
 
@@ -276,7 +277,7 @@ def draw(record: dict, out: Path, spacing: str) -> None:
             x_tick_size = min(x_tick_size, SIZE["tick"] * (x_b - x_a - TICK_SPACE) / ((width_a + width_b) / 2))
 
     rows = len(ROWS)
-    panel_height = NAME + sum(HEAD + row["height"] + ROW_GAP for row in ROWS.values()) + X_LABELS
+    panel_height = NAME + sum(HEAD + row["height"] + X_TICKS + ROW_GAP for row in ROWS.values()) + X_CAPTION
     grid_rows = math.ceil(len(panels) / columns)
     ring = dict(markeredgecolor=pc.SURFACE, markeredgewidth=1.5, markersize=ROWS["hack"]["marker"])
     keys = [dict(label=axis["name"], sample=0.36, line=dict(color=colors[axis["axis"]], linewidth=ROWS["hack"]["line"]),
@@ -333,8 +334,8 @@ def draw(record: dict, out: Path, spacing: str) -> None:
                 figure.text(fx(x + ruler.width(row["name"], SIZE["row"], "bold") + 0.11), baseline, f"unsteered {level:.1f}%",
                             fontsize=SIZE["row"], color=SOFT, ha="left", va="baseline")
             axes = figure.add_axes((fx(x), fy(cursor + HEAD + row["height"]), plot_width / width, row["height"] / height))
-            draw_row(axes, panel, key, spot, colors, record["rule_points"], last, x_tick_size)
-            cursor += HEAD + row["height"] + ROW_GAP
+            draw_row(axes, panel, key, spot, colors, record["rule_points"], x_tick_size)
+            cursor += HEAD + row["height"] + X_TICKS + ROW_GAP
             if last:
                 for kind, centre in spot["captions"].items():
                     if kind == "steering" or any(slot[0] == kind for slot in spot["slots"]):
