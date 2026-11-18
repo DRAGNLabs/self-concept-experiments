@@ -1,0 +1,184 @@
+{
+ "layer": 17,
+ "root": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/gi_v2/full100",
+ "dishonest_roles": [
+  "schemer_fic",
+  "deceiver_fic",
+  "con_artist_v2_fic",
+  "spin_doctor_fic",
+  "infiltrator_fic",
+  "two_faced_friend_fic",
+  "rumor_fabricator_fic",
+  "scammer_fic"
+ ],
+ "honest_roles": [
+  "straight_shooter_fic",
+  "faithful_witness_fic",
+  "transparent_negotiator_fic",
+  "scrupulous_scientist_v2_fic",
+  "whistleblower_fic",
+  "loyal_steward_fic",
+  "conscientious_craftsperson_v2_fic",
+  "diligent_worker_fic"
+ ],
+ "check_cos_rebuilt_full_vs_steered": 1.0,
+ "cos_with_sycophant_minus_candid_friend": {
+  "goodfire": 0.0844,
+  "gi_v2_as_steered": 0.606,
+  "gi_v2_without_the_two_roles": 0.4432
+ },
+ "cos_goodfire_with": {
+  "gi_v2_as_steered": 0.0477,
+  "gi_v2_without_the_two_roles": 0.0335
+ },
+ "auroc": {
+  "score3": {
+   "kept": {
+    "sycophant_fic": [
+     452,
+     500
+    ],
+    "candid_friend_fic": [
+     471,
+     500
+    ],
+    "default": [
+     500,
+     500
+    ]
+   },
+   "sycophant_vs_candid_friend_fic": {
+    "goodfire": {
+     "auroc": 0.8651,
+     "ci": [
+      0.8318,
+      0.8971
+     ],
+     "n_pos": 452,
+     "n_neg": 471
+    },
+    "gi_v2_as_steered": {
+     "auroc": 0.9969,
+     "ci": [
+      0.9931,
+      1.0
+     ],
+     "n_pos": 452,
+     "n_neg": 471
+    },
+    "gi_v2_without_the_two_roles": {
+     "auroc": 0.9918,
+     "ci": [
+      0.9831,
+      0.9982
+     ],
+     "n_pos": 452,
+     "n_neg": 471
+    }
+   },
+   "sycophant_vs_default": {
+    "goodfire": {
+     "auroc": 0.5915,
+     "ci": [
+      0.5384,
+      0.6441
+     ],
+     "n_pos": 452,
+     "n_neg": 500
+    },
+    "gi_v2_as_steered": {
+     "auroc": 0.9991,
+     "ci": [
+      0.9975,
+      1.0
+     ],
+     "n_pos": 452,
+     "n_neg": 500
+    },
+    "gi_v2_without_the_two_roles": {
+     "auroc": 0.9975,
+     "ci": [
+      0.9939,
+      0.9999
+     ],
+     "n_pos": 452,
+     "n_neg": 500
+    }
+   }
+  },
+  "all_responses": {
+   "kept": {
+    "sycophant_fic": [
+     500,
+     500
+    ],
+    "candid_friend_fic": [
+     500,
+     500
+    ],
+    "default": [
+     500,
+     500
+    ]
+   },
+   "sycophant_vs_candid_friend_fic": {
+    "goodfire": {
+     "auroc": 0.8565,
+     "ci": [
+      0.8244,
+      0.8895
+     ],
+     "n_pos": 500,
+     "n_neg": 500
+    },
+    "gi_v2_as_steered": {
+     "auroc": 0.9721,
+     "ci": [
+      0.956,
+      0.9859
+     ],
+     "n_pos": 500,
+     "n_neg": 500
+    },
+    "gi_v2_without_the_two_roles": {
+     "auroc": 0.9274,
+     "ci": [
+      0.8885,
+      0.9613
+     ],
+     "n_pos": 500,
+     "n_neg": 500
+    }
+   },
+   "sycophant_vs_default": {
+    "goodfire": {
+     "auroc": 0.6172,
+     "ci": [
+      0.5744,
+      0.6643
+     ],
+     "n_pos": 500,
+     "n_neg": 500
+    },
+    "gi_v2_as_steered": {
+     "auroc": 0.9886,
+     "ci": [
+      0.9805,
+      0.9946
+     ],
+     "n_pos": 500,
+     "n_neg": 500
+    },
+    "gi_v2_without_the_two_roles": {
+     "auroc": 0.9584,
+     "ci": [
+      0.9368,
+      0.9778
+     ],
+     "n_pos": 500,
+     "n_neg": 500
+    }
+   }
+  }
+ }
+}

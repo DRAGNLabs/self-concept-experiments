@@ -2833,6 +2833,11 @@ existing sources, written down before either number is read. Exploratory; not a 
   that these prompts get the same honest answers in every Goodfire setting. Readout: label (a) yes counts per setting,
   low + high sets, two seeds (8 answers per setting and model), from today's blind labels; no test at this size.
 - Not done without the user's word: a sycophancy-specific blind label over the existing probe answers, and any new run.
+- **Result 2026-11-17 about 3:40 pm MST** (FINDINGS "Sycophancy readout from existing data"). (A): the reading does not
+  hold. The Goodfire axis separates sycophant from candid-friend role-play above chance on both models (AUROC 0.865
+  gpt-oss, 0.913 Muse); gi_v2 rebuilt without the two roles separates them more sharply (0.992, 0.990). (B): label (a)
+  yes at the top gi_v2 plus dose in 4 of 4 essay answers and 2 of 4 sign-off answers on each model, 1 of 8 at gpt-oss
+  +0.2, 0 of 8 at +0.1 / Muse +0.16 and unsteered, 0 of 64 over all Goodfire doses.
 
 ## Work order
 
