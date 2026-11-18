@@ -62,3 +62,6 @@ python $A/sandbag_chart.py --analysis "gpt-oss-120b=$S/gptoss/analysis_10seeds.j
   `control` seed 10, rerun whole after 15488549_0 was cut by its time limit in that pass), 15488311 and 15488349
   (stage 1, Gemma and Qwen), 15489355 and 15489364 (Qwen stage 2), 15488908, 15488917, 15490785, 15490787, 15490788
   (Gemma stage 2, running). Card type per task is in the FINDINGS run notes; decisions in `gpu_pick_2026-11-17.txt`.
+- Gemma (added 2026-11-18): `gemma_analysis.{json,md}`, seeds 1 to 10, all 13 arms; FINDINGS "Sandbagging under an
+  incentive on Gemma 4 31B, ten seeds". Four-model chart: `$S/sandbag_gap_10seeds_4models_2026-11-18.png` (the chart
+  command above with `"Gemma-4-31B=$S/gemma/analysis.json"` added).
