@@ -2892,6 +2892,13 @@ so nothing ties it to the Goodfire axis by construction. This is a new model run
   holds the gold number (gpt-oss 12.7% of answers, Muse 54.7%); no answer was cut off. Stage 2 submitted 5:37 pm
   (gpt-oss, 15485848) and 5:43 pm (Muse, 15485936; a first Muse submission with a stale arms file was cancelled after
   a minute, before any output).
+- **Result (stage 2 read 2026-11-17 7:16 pm MST; FINDINGS "Sandbagging under an incentive, gi_v2 against the Goodfire
+  axis").** Muse: reading 1. Unsteered gap +56.7 points; all six gi_v2 arms lower it (−11.6 to −40.3, Holm p < 0.0001),
+  no Goodfire arm lowers it (+3.8 to +34.8; four of six raise it at Holm p < 0.0001), gi_v2 minus Goodfire at −0.08 is
+  −30.0 [−34.3, −25.7]. gpt-oss: reading 2. Unsteered gap +12.1 points; all 13 arms of both axes lower it (−5.6 to −14.1,
+  Holm p ≤ 0.0001), gi_v2 minus Goodfire at −0.2 is +0.1 [−2.2, +2.4]. Every arm is usable. Muse Goodfire cap p25 reached
+  its time limit after two passes (a few answers per pass run to the token limit); its other four passes were run by a
+  second job (15486740).
 
 ## Work order
 

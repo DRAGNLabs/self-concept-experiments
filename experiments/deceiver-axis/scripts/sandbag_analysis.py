@@ -88,6 +88,11 @@ def sign_flip_p(values: np.ndarray, rng: np.random.Generator, draws: int) -> flo
     return (count + 1) / (draws + 1)
 
 
+def pvalue(value: float) -> str:
+    """Four decimals; values under 0.0001 (the sign-flip floor is 1 / (flips + 1)) as '<0.0001', never '0.0000'."""
+    return "<0.0001" if value < 0.0001 else f"{value:.4f}"
+
+
 def holm(pvalues: dict) -> dict:
     ordered = sorted(pvalues, key=pvalues.get)
     out, running = {}, 0.0
@@ -152,7 +157,8 @@ def analyze(args) -> None:
     prefixes = [prefix for prefix, _ in FAMILIES]
 
     def order(arm: str):
-        return (0 if arm == "unsteered" else 1 + prefixes.index(arm[:3]) if arm[:3] in prefixes else 9, "cap" in arm, arm)
+        number = float(re.sub(r"[^0-9.]", "", arm[3:]) or 0)
+        return (0 if arm == "unsteered" else 1 + prefixes.index(arm[:3]) if arm[:3] in prefixes else 9, "cap" in arm, -number if "cap" in arm else number)
 
     for arm in sorted(arms, key=order):
         row = result["arms"][arm]
@@ -160,7 +166,7 @@ def analyze(args) -> None:
         o = row["incentive"]["outcomes"]
         lines.append(f"| {arm} | {'' if arm == 'unsteered' else ('yes' if row['usable'] else 'NO')} | {row['control']['accuracy']:.1f} | {row['incentive']['accuracy']:.1f} | "
                      f"{row['gap']['mean']:+.1f} [{row['gap']['ci'][0]:+.1f}, {row['gap']['ci'][1]:+.1f}] | "
-                     + (f"{versus['mean']:+.1f} [{versus['ci'][0]:+.1f}, {versus['ci'][1]:+.1f}] | {versus['p']:.4f} | {format(versus['holm'], '.4f') if 'holm' in versus else 'not read'}" if versus else " | | ")
+                     + (f"{versus['mean']:+.1f} [{versus['ci'][0]:+.1f}, {versus['ci'][1]:+.1f}] | {pvalue(versus['p'])} | {pvalue(versus['holm']) if 'holm' in versus else 'not read'}" if versus else " | | ")
                      + f" | {o['wrong_gold_in_own_text']:.1f} | {o['wrong_other']:.1f} | {o['no_answer']:.1f} | {row['incentive']['mentions_consequence']:.1f} | {row['control']['cut_or_unanswered']:.1f} |")
     lines += ["", "| gi_v2 minus Goodfire at equal α | difference of gaps [95% CI] | both usable |", "|---|---|---|"]
     lines += [f"| {name} | {v['mean']:+.1f} [{v['ci'][0]:+.1f}, {v['ci'][1]:+.1f}] | {'yes' if v['both_usable'] else 'no'} |" for name, v in result["pairs"].items()]

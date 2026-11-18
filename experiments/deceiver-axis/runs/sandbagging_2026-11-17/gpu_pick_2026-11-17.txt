@@ -1,0 +1,56 @@
+gpu_pick.py 2026-11-17 5:27 PM MST, sandbagging stage 1 (PLAN 'Sandbagging under an incentive'): one job per model, unsteered, 4 notice variants x 300 GSM8K items, seed 0 (1,200 answers; estimate 10-15 min from the benchmark-arm timings; limit 30 min)
+picker (--hours 0.5 --vram-gb 75 --cpus 8 --mem-gb 80 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes    19       2          0      22.4        11  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     3       4          0      30.8        15  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     0       8          0      64.0        32  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes    15       2          1     224.0       112  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     5       0         56     300.0       150  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  no      0       0         55     384.0       192  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 00:30:00
+
+dry run (sbatch --test-only, gpt-oss line): sbatch: Job 15485764 to start at 2026-11-17T19:53:13 a using 8 processors on nodes cs-1-3 in partition cs
+DECISION (5:31 PM MST): -p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue --time=00:30:00; gpt-oss --mem-per-cpu=10G (80 GB host: peak 67 GB in the gpt-oss main-run tasks 15213661), Muse --mem-per-cpu=4G (32 GB: Muse benchmark peak 6.1 GiB). Picker rows 1-2; cs3 left out (B200 needs the TRITON_ATTN engine setting the benchmark arm lines do not carry; benchmark arms ran on cs / cs2). Submitted gpt-oss 15485765, Muse 15485768.
+Both started at once on cs-1-3 (5:30 and 5:31 PM), earlier than the dry run's 7:53 PM estimate.
+
+---- 2026-11-17 5:36 PM MST stage 2, gpt-oss (framing B by the stage-1 rule: unsteered gap A +0.3, B +11.7 points): 14 arms, 5 per array task (array 0-2), 1,800 answers per arm, about 6 min per arm from the stage-1 timing (272 s for 4 passes incl. engine start) -> about 30 min per task; limit 45 min
+picker (--hours 0.75 --vram-gb 75 --cpus 8 --mem-gb 80 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes    20       2          0      22.4        17  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     3       4          0      30.8        23  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     0       8          0      64.0        48  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes    14       3          1     224.0       168  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     5       0         58     300.0       225  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  no      0       0         56     384.0       288  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 00:45:00
+DECISION (5:37 PM MST): as stage 1 (-p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue --mem-per-cpu=10G), --time=00:45:00, ARMS_PER_TASK=5, array 0-2. No separate dry run: the stage-1 job with the same request started at once 8 minutes earlier and the picker still shows idle cs cards. Submitted 15485848.
+
+---- 2026-11-17 5:40 PM MST stage 2, Muse (framing B by the stage-1 rule: unsteered gap A -0.3, B +53.7 points): 13 arms, 3 per array task (array 0-4; the last task is gf_cap_p25 alone, the one arm without a benchmark run), 1,800 answers per arm, about 12 min per arm from the stage-1 timing (514 s for 4 passes incl. engine start) -> about 36 min per task; limit 50 min
+picker (--hours 0.85 --vram-gb 75 --cpus 8 --mem-gb 32 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes    18       2          0      22.4        19  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     3       4          0      30.8        26  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     0       8          0      64.0        54  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes    15       2          1     224.0       190  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     5       0         58     300.0       255  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  no      0       0         56     384.0       326  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 00:51:00
+DECISION (5:41 PM MST): as stage 1 (-p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue --mem-per-cpu=4G), --time=00:50:00, ARMS_PER_TASK=3, array 0-4. No separate dry run (same request as the stage-1 job that started at once; idle cs cards in the picker). Submitted 15485930.
+CORRECTION (5:43 PM MST): 15485930 was submitted with a stale arms file (the arms builder stopped on a syntax error from my edit, so arms_stage2.tsv was still the framing-A draft in the old order, and the command chain went on to sbatch). Cancelled by me at 5:42 PM, about one minute after submission; no output directory had been written. Builder fixed, arms_stage2.tsv rebuilt (13 lines, all framing B, gf_cap_p25 last, checked before sbatch) and resubmitted with the same request as 15485936.
+
+---- 2026-11-17 6:35 PM MST Muse stage 2, task 4 (gf_cap_p25 alone) ended at its 50-minute limit with two of six passes written (control seeds 1 and 2, 300 rows each; control seed 3 had no row on disk). Cause: under this cap 3-5 of 300 answers per pass run to the 16,384-token limit (control accuracy 98.0 / 97.7%, cut off 1.7 / 1.0%), and a batch waits for its longest answer, so a pass takes about 21 minutes against 1.5-2.5 on the other arms. Rerun of the same arm line: the script skips the two complete passes and runs the other four whole (no part-written pass exists). 4 passes x about 21 min + engine start -> limit 1 h 45 min.
+picker (--hours 1.75 --vram-gb 75 --cpus 8 --mem-gb 32 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes     6       2          9      22.4        39  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     4       4          0      30.8        54  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     0       8          0      64.0       112  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes    15       2          1     224.0       392  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     2       0         58     300.0       525  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  no      0       0         51     384.0       672  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 01:45:00
+DECISION (6:36 PM MST): same request as the array (-p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue --mem-per-cpu=4G), --time=01:45:00, --array=4 with ARMS_PER_TASK=3 (line 12 only). Submitted 15486740.
+NOTE (7:18 PM MST): 15486740 ran on a cs2 H100 (finished in 2,304 s); the first two passes of that arm (15485936 task 4) ran on a cs A100. Recorded in FINDINGS and the run-dir README.
