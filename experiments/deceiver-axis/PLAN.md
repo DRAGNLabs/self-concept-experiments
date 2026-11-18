@@ -2945,6 +2945,13 @@ User, after the result above: "can we try with more arms, and on the other two m
 - **Gemma task sizes.** Stage-1 passes took 7.3 minutes (control) and 9.7 minutes (incentive, answers of 3,840 tokens on
   average) on two H100s; about 1.7 times that is expected on two A100s. Each arm is split into two tasks of five seeds
   (1 to 5, 6 to 10), 26 tasks, limit 3 h 15 min; read only when all ten seeds of every arm are in.
+- **Qwen stage 2 on the user's word (2026-11-17 9:35 pm MST).** Told that Qwen's gap (+8.3 points under framing B) is under the
+  bar, the user wrote: "run the qwen arms anyway yes". The ten arms listed above run with framing B (the only framing
+  with a gap), seeds 1 to 10. The run is outside the stage-1 rule and is labelled so in the write-up. Expectation,
+  written before submission: with 8 points of room the arms will end near zero on both axes, as on gpt-oss, and will
+  not be rankable; reading 1 would need a gi_v2 arm below unsteered, no Goodfire arm below it and the −0.16 pair
+  interval off zero. One arm per task (20 passes, about 6 minutes per seed unsteered by the stage-1 passes); Goodfire
+  cap p25 as four tasks of five passes in case its answers run to the token limit as on Muse.
 
 ## Work order
 
