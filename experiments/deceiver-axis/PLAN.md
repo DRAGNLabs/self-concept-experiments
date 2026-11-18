@@ -3056,6 +3056,12 @@ User, after the result above: "can we try with more arms, and on the other two m
   other Holm p ≥ 0.92). Pairs at equal α: −1.0 [−2.9, +0.8], +0.8 [−1.0, +2.7] (main dose), −0.2 [−2.1, +1.8]. Reading 3, outside
   the rule: no gap to test, and neither axis creates one. Under 2% of answers mention the consequence in any arm. Arms took 11 to 20
   min each (four tasks, no error line).
+- **Result for Muse (read 2026-11-18 2:52 pm MST; `sandbag/mmlu_pro/muse/analysis.{json,md}`; 13 arms, five seeds, all usable).**
+  Reading 1, clean. Unsteered gap +48.4 points [+44.4, +52.3] (78.8%, 30.5%). gi_v2 −0.04 / −0.08 / −0.16: Δ −6.2 / −11.7 / −17.0;
+  caps p50 / p25 / p5: −6.7 / −17.7 / −29.6 (Holm p ≤ 0.0004). Goodfire −0.04 +2.9 (Holm 0.056), −0.08 +4.7 (0.006), −0.16 +11.1,
+  caps p95 / p90 / p25 +18.2 / +22.8 / +17.1. Pairs −9.0, −16.4 [−19.6, −13.2] (main dose), −28.1. Same reading as on GSM8K and as
+  expected. Deviation: task 15507387_1 was undersized (my error); cancelled after its second arm, third arm (gi_v2 cap p25) run
+  whole as 15510430; no pass cut. FINDINGS "Sandbagging on a second benchmark (MMLU-Pro), Muse and gpt-oss".
 
 ## Work order
 
