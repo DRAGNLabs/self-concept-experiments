@@ -50,6 +50,12 @@ class JudgeRunnerTest(unittest.TestCase):
             self.assertEqual(jr.check_output(p, ["a.md", "b.md"], "probe"), ("ok", ""))
             open(p, "w").write(json.dumps({"file": "a.md", **labels, "refusal": "maybe"}) + "\n")
             self.assertEqual(jr.check_output(p, ["a.md"], "probe")[0], "bad_fields")
+            sandbag = {k: v[0] for k, v in jr.SANDBAG_LABELS.items()}
+            open(p, "w").write(json.dumps({"file": "a.md", **sandbag}) + "\n")
+            self.assertEqual(jr.check_output(p, ["a.md"], "sandbag"), ("ok", ""))
+            open(p, "w").write(json.dumps({"file": "a.md", **sandbag, "decision": "hedge"}) + "\n")
+            self.assertEqual(jr.check_output(p, ["a.md"], "sandbag")[0], "bad_fields")
+            open(p, "w").write(json.dumps({"file": "a.md", **labels}) + "\n" + json.dumps({"file": "b.md", **labels}) + "\n")
             self.assertEqual(jr.check_output(p, ["b.md", "a.md"])[0], "invalid")
             open(p, "w").write(json.dumps(_row("a.md", "HACK", None, "lookup_table")) + "\n")
             self.assertEqual(jr.check_output(p, ["a.md"])[0], "bad_fields")

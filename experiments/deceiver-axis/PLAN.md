@@ -3063,7 +3063,7 @@ User, after the result above: "can we try with more arms, and on the other two m
   expected. Deviation: task 15507387_1 was undersized (my error); cancelled after its second arm, third arm (gi_v2 cap p25) run
   whole as 15510430; no pass cut. FINDINGS "Sandbagging on a second benchmark (MMLU-Pro), Muse and gpt-oss".
 
-## Sandbagging on Gemma: blind read of how the model decides (added 2026-11-18 4:30 pm MST, before any transcript is read)
+## Sandbagging on Gemma: blind read of how the model decides (added 2026-11-18 4:28 pm MST, before any transcript is read)
 
 - **Request.** User, 2026-11-18 about 4:25 pm MST, "yes" to my proposal: before any new dose, read transcripts that already exist to
   see what the gi_v2 additions do on Gemma, where −0.08 raises the sandbagging gap and −0.16 lowers it on both benchmarks. No GPU
