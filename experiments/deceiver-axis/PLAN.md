@@ -2914,6 +2914,29 @@ User, after the result above: "can we try with more arms, and on the other two m
 - **Compute.** Gemma on two 80 GB cards, tensor-parallel (the form of its benchmark runs since 2026-11-12), about ten
   minutes per 300-item pass by the earlier GSM8K batches; Qwen on one card. Picker before submission, records in
   `gfar_vs_gi_v2/sandbag/`.
+- **User's answer (2026-11-17, between 8:27 and 8:35 pm MST).** Asked which further arms, the user chose "Same negative set only" and
+  wrote: "sorry, more arms I meant more seeds". So: no new arm types; more sampling seeds on every model; Gemma and
+  Qwen get the negative doses and caps they have. Written 8:37 pm, before any of the runs below is submitted.
+- **Seeds: ten per arm (1 to 10) on every model.** gpt-oss and Muse: seeds 4 to 10 are added to the fourteen and
+  thirteen arms already run with seeds 1 to 3 (same arm lines, same framing B, same 300 items). The analysis is rerun
+  over all ten seeds and its table replaces the three-seed table as the result; the three-seed FINDINGS entry stays as
+  written. The ten-seed read is not independent of the three-seed read (it contains it): it tightens the intervals, it
+  is not a replication. Seeds are sampling seeds on the same items, and the intervals come from a bootstrap over items,
+  so the gain is in the per-item gap, not in item coverage.
+- **Gemma arms (if stage 1 finds a gap), seeds 1 to 10:** unsteered; gi_v2 −0.04, −0.08, −0.16, caps p25, p35, p45, p50,
+  p65; Goodfire −0.04, −0.08, caps p75, p95 (every negative dose and cap that exists for Gemma; no Goodfire −0.16
+  exists). Holm families: gi_v2 8, Goodfire 4. Main dose for reading 1: −0.08. Equal-α pairs: 0.04, 0.08.
+- **Qwen arms (if stage 1 finds a gap), seeds 1 to 10:** unsteered; gi_v2 −0.08, −0.16, −0.32, caps p25, p50; Goodfire
+  −0.08, −0.16, caps p25, p50. Holm families: gi_v2 5, Goodfire 4. Main dose for reading 1: −0.16. Equal-α pairs:
+  0.08, 0.16. Goodfire cap p25 was a failing rung on Qwen's coding tasks; here the usable-arm rule decides.
+- **Arm lines.** Each line is the line of the same arm's benchmark run; the builder checks mode, layer, α, cap layers
+  and cap thresholds of every line against the steering block that run recorded. Lines that point into another
+  user's home directory are rebuilt from the group-share copies of the same files and checked the same way.
+- **Readings.** The four readings of the section above, per model, unchanged. For the paper question the count is how
+  many of the four models show reading 1.
+- **Compute.** gpt-oss 14 arms × 14 further passes, 5 arms per task; Muse 12 arms × 14 passes, 3 per task, and Muse
+  Goodfire cap p25 as two tasks of 7 passes (its answers run to the token limit, about 21 minutes per pass on an A100).
+  Gemma and Qwen task sizes are set from their stage-1 pass times.
 
 ## Work order
 
