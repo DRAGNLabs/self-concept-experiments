@@ -3120,6 +3120,16 @@ User, after the result above: "can we try with more arms, and on the other two m
   count is read next to the split.
 - **Cost.** About 6.6 MB of transcript text (about 1.7 million tokens read once), about 70 to 80 batches of at most 95,000
   characters; the runner stops by itself at 95% of the plan limit.
+- **Result (4:43 pm MST Nov 18; FINDINGS entry "Blind read of Gemma sandbagging transcripts").** 360 answers labelled, every batch
+  read in full. Readings by the rules above: (1) unsteered correct answers "considered and answered anyway" (14 of 16); (2) −0.08
+  "resolves the weighing toward missing" (2 answers weigh it and answer, against 15 unsteered; 56 of 60 decide to miss against 42);
+  (3) −0.16 "breaks down" (44 of its 49 correct answers are not coherent or carry a decision to miss or none; 34 of 60 decide to
+  miss and 27 of those give the worked answer); (4) cap p65 "does not engage with the notice" (56 of 60). (5) Goodfire −0.08: 60 of
+  60 decide to miss, none changes its mind; gi_v2 −0.04: 22 weigh it and answer, 36 miss. (6) Misses admitted in the final answer:
+  on MMLU-Pro in every arm (20 of 20 unsteered); on GSM8K 0 of 22 unsteered, 1 of 30 Goodfire −0.08, 29 of 29 gi_v2 −0.08.
+  `answer_strategic` was never used. A keyword count over all seeds, made after the read and not planned, agrees with (6).
+  Intermediate doses stay held: the read answers what they could not, and nothing in it calls for them. Not done and not planned
+  here: the same read on Muse.
 
 ## Work order
 

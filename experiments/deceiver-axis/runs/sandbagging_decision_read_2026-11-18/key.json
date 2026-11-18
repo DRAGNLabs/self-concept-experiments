@@ -1,0 +1,3602 @@
+{
+"164d51645b91": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/5831",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4318,
+"chars": 16665
+},
+"e51ec4b23c22": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/7565",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 13564,
+"chars": 52377
+},
+"20709472e483": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/238",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2517,
+"chars": 8889
+},
+"e92e94341a0f": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/5460",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1140,
+"chars": 5472
+},
+"421459ed4ae0": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/228",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4160,
+"chars": 15786
+},
+"32b8d07f85a2": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/261",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4694,
+"chars": 16411
+},
+"2136a63fcb4c": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/3354",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1909,
+"chars": 7056
+},
+"f7ff7cb041c6": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/6337",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1881,
+"chars": 8728
+},
+"3d41a271e050": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/144",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 840,
+"chars": 3944
+},
+"dbd4122c93f8": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/5025",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1783,
+"chars": 10856
+},
+"eb023366d703": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/1251",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6630,
+"chars": 29764
+},
+"4bd6653bbff0": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/7714",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2010,
+"chars": 8265
+},
+"059ad50aa932": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/144",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10295,
+"chars": 36890
+},
+"ac72e2cae821": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/228",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3714,
+"chars": 13845
+},
+"270dc93c84d9": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/238",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3481,
+"chars": 10480
+},
+"602c17bc1fb8": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/6918",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4462,
+"chars": 19870
+},
+"afe45bc32111": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/7233",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 9295,
+"chars": 38885
+},
+"c0087ec54439": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/3819",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7057,
+"chars": 18324
+},
+"fdbcde7a74ad": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/192",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 603,
+"chars": 2534
+},
+"d4e3444db03d": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/263",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3318,
+"chars": 11385
+},
+"878671bede00": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/11269",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1844,
+"chars": 8168
+},
+"6757bb3ed282": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/261",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3314,
+"chars": 10532
+},
+"4f3d02ebd33b": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/61",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3424,
+"chars": 13616
+},
+"5a4f53ab2d47": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/192",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4511,
+"chars": 15056
+},
+"f42876e1fbd4": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/192",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4751,
+"chars": 17330
+},
+"b46bcc52c840": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/7019",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7955,
+"chars": 32279
+},
+"d5881c9e5711": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/3297",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2017,
+"chars": 7237
+},
+"13034ba2c27c": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/1123",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4733,
+"chars": 20300
+},
+"a8dc118bfdc2": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/9534",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 8226,
+"chars": 33069
+},
+"02f2c16255f8": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/9534",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5825,
+"chars": 23037
+},
+"0e166b60bb01": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/7714",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2917,
+"chars": 11553
+},
+"0b7941410a4d": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/263",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3654,
+"chars": 12809
+},
+"8746e3bd4b50": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/52",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4199,
+"chars": 14264
+},
+"9b37c034cbd7": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/2744",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2447,
+"chars": 11954
+},
+"81e5925e3da7": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/299",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4895,
+"chars": 16830
+},
+"8920f0630bfe": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/10656",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4154,
+"chars": 17564
+},
+"ccbf4a14b721": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/12157",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 13981,
+"chars": 30465
+},
+"0550dfc5063b": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/143",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3553,
+"chars": 13295
+},
+"9dc1de125660": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/8221",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 6754,
+"chars": 21317
+},
+"00fb764ec8b3": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/10656",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 956,
+"chars": 5924
+},
+"1c2b4b4b4b40": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/162",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4027,
+"chars": 12370
+},
+"224830398df8": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/261",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5659,
+"chars": 21359
+},
+"a5f9aea2e497": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/9534",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1860,
+"chars": 8991
+},
+"ea8b0f914fbe": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/11273",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3622,
+"chars": 16123
+},
+"8880976d5ebe": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/5025",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4465,
+"chars": 19969
+},
+"0283d516da9e": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/52",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10137,
+"chars": 37824
+},
+"ed4baca6abc4": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/243",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 444,
+"chars": 2377
+},
+"f5915f8dbf0f": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/292",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5959,
+"chars": 22074
+},
+"5f785d5cafc3": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/166",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3795,
+"chars": 14818
+},
+"afb42c6772ad": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/144",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4275,
+"chars": 16779
+},
+"db79159c3922": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/2491",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 9551,
+"chars": 38163
+},
+"220dcaad476c": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/238",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11900,
+"chars": 43608
+},
+"141eb660e55a": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/9534",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4592,
+"chars": 19323
+},
+"fb04c3fca8a1": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/4577",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4407,
+"chars": 16008
+},
+"4101699339e8": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/2491",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1774,
+"chars": 9307
+},
+"b54ce869b476": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/4453",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 6091,
+"chars": 15462
+},
+"8624b3061eed": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/4213",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 912,
+"chars": 3480
+},
+"2ad8d4c5197d": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/7019",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3190,
+"chars": 15750
+},
+"c09e1b0e562d": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/141",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6729,
+"chars": 22004
+},
+"3ef553122e8b": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/1123",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2620,
+"chars": 12829
+},
+"6d1591ab727b": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/7019",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1224,
+"chars": 6824
+},
+"928ed5bbb43e": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/285",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4890,
+"chars": 16998
+},
+"da7257bf120f": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/240",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 543,
+"chars": 2400
+},
+"d264ce50791d": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/5025",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4234,
+"chars": 20010
+},
+"6c7b524f5c07": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/243",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2574,
+"chars": 8873
+},
+"e94e6ce7fdf6": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/11273",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2178,
+"chars": 10820
+},
+"3a4782506a90": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/240",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 9620,
+"chars": 34235
+},
+"d7c129d6bd24": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/4453",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 11284,
+"chars": 29519
+},
+"2dfbee58c4ae": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/7233",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 703,
+"chars": 5369
+},
+"47a8852f1b2e": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/6121",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5493,
+"chars": 23978
+},
+"c61983bec162": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/46",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4330,
+"chars": 15326
+},
+"272ee70ec32c": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/12157",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11660,
+"chars": 24536
+},
+"dc6e6ffd66bf": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/292",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 607,
+"chars": 2643
+},
+"688c81e7c61c": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/7565",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4306,
+"chars": 17603
+},
+"cf2fea837a50": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/228",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2503,
+"chars": 9105
+},
+"9e98072957ce": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/87",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 7717,
+"chars": 26531
+},
+"2d174e3a8950": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/292",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1934,
+"chars": 7822
+},
+"b07e47f60441": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/238",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 384,
+"chars": 1851
+},
+"1f425be66bc1": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/166",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5578,
+"chars": 22073
+},
+"b1e2d1a8d207": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/74",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3706,
+"chars": 13369
+},
+"bcf1460df8a3": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/11269",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 541,
+"chars": 3654
+},
+"bd233520b072": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/250",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2682,
+"chars": 8612
+},
+"257b39b007f5": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/74",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 751,
+"chars": 2997
+},
+"8636f1b3b659": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/98",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 440,
+"chars": 2444
+},
+"7873b04f7e3a": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/3354",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 8217,
+"chars": 29210
+},
+"a8d90590090d": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/7565",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6453,
+"chars": 27436
+},
+"2db3455d9e35": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/213",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6166,
+"chars": 23467
+},
+"217c9e31a5d0": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/3819",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 8103,
+"chars": 17676
+},
+"6e65fcb9f90f": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/11273",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7676,
+"chars": 29792
+},
+"65714d7a9280": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/7233",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4385,
+"chars": 20377
+},
+"93c3d393b785": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/7019",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2630,
+"chars": 12499
+},
+"0741df2b8f1c": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/11273",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5142,
+"chars": 22330
+},
+"bc676c596e82": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/1251",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6455,
+"chars": 29130
+},
+"2e58d2d56b4d": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/166",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3771,
+"chars": 12777
+},
+"76757a3a005d": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/292",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4347,
+"chars": 14996
+},
+"5309a432e278": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/285",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 289,
+"chars": 1546
+},
+"f438353fbc6f": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/46",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3217,
+"chars": 11429
+},
+"05a00ec2456e": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/9534",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2834,
+"chars": 12556
+},
+"8667402dcaf1": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/199",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4759,
+"chars": 16535
+},
+"f6e283ebf57f": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/2491",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1269,
+"chars": 7109
+},
+"4466996f0231": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/6337",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2991,
+"chars": 13684
+},
+"f0b8834185f6": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/116",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4224,
+"chars": 14641
+},
+"eb532efd5a23": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/4453",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10421,
+"chars": 21306
+},
+"9b6cc89a369e": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/910",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3891,
+"chars": 19248
+},
+"09b9b78d6bd9": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/116",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 12900,
+"chars": 45982
+},
+"7f7bc2b1e615": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/144",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5635,
+"chars": 22002
+},
+"87cdc583a195": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/250",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 9018,
+"chars": 33076
+},
+"5accec3bcd5d": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/261",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5172,
+"chars": 17228
+},
+"9518c6ec2d35": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/4213",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7293,
+"chars": 25647
+},
+"9d9886dcd30e": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/217",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4406,
+"chars": 16668
+},
+"df629de5c0ad": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/141",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 713,
+"chars": 2518
+},
+"a71bc6a543d2": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/5000",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6351,
+"chars": 26668
+},
+"cf2e98c57d9b": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/10656",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2256,
+"chars": 10787
+},
+"b387e5d05a48": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/6121",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10862,
+"chars": 44011
+},
+"db48d767b5a9": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/238",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5697,
+"chars": 21368
+},
+"188114e5576b": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/217",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 1506,
+"chars": 5689
+},
+"008e4fe0818d": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/64",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 8342,
+"chars": 30574
+},
+"e4287e6b2aae": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/2491",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1051,
+"chars": 6460
+},
+"4a1df3631297": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/162",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 7462,
+"chars": 28322
+},
+"9b486a381a2d": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/61",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3199,
+"chars": 12223
+},
+"1c62387dfce1": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/98",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3390,
+"chars": 12015
+},
+"691c80d1b9ec": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/213",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10503,
+"chars": 35046
+},
+"153bbdd216fb": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/217",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4217,
+"chars": 14744
+},
+"38c7e5855ccb": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/5831",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4945,
+"chars": 17949
+},
+"fdb9d88cac1e": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/46",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 14058,
+"chars": 48793
+},
+"4ac445bb7230": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/213",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 400,
+"chars": 1866
+},
+"e4c564765512": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/2744",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 781,
+"chars": 5661
+},
+"fd53750e0589": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/276",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10664,
+"chars": 39660
+},
+"9429b964f86d": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/4577",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1656,
+"chars": 5412
+},
+"44683f53fd5e": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/199",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4236,
+"chars": 16468
+},
+"04612fd00b65": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/4730",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5351,
+"chars": 22963
+},
+"218b0db9ae6b": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/5831",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7467,
+"chars": 27747
+},
+"9c3d768865ab": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/910",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7059,
+"chars": 30677
+},
+"f8e1ff0fd6e7": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/240",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4762,
+"chars": 17299
+},
+"16e13f713fb0": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/238",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3547,
+"chars": 12617
+},
+"a29f9527d2cb": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/144",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2993,
+"chars": 10517
+},
+"164fffae73b6": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/3297",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5192,
+"chars": 20054
+},
+"c97d5a7c0979": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/3819",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 8837,
+"chars": 18849
+},
+"8cd60e0e6307": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/116",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6357,
+"chars": 23504
+},
+"01a0ec6729fb": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/64",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 513,
+"chars": 2733
+},
+"afcb295804e1": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/166",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 409,
+"chars": 2338
+},
+"e4d5d54125ef": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/4577",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 9123,
+"chars": 28473
+},
+"843235918488": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/3819",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 6640,
+"chars": 13276
+},
+"467390d6901e": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/131",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4033,
+"chars": 15333
+},
+"7b1a92b2a234": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/5460",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2103,
+"chars": 9490
+},
+"52e279d663c1": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/276",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3223,
+"chars": 9881
+},
+"4e3fcfe93426": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/192",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 8491,
+"chars": 30681
+},
+"26a3162d9484": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/61",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5415,
+"chars": 21301
+},
+"41a3548192d8": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/4577",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5711,
+"chars": 19815
+},
+"2d9732877a10": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/116",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 6489,
+"chars": 24873
+},
+"c8ef7f88156f": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/49",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2685,
+"chars": 9442
+},
+"555ed1847b5f": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/11026",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4368,
+"chars": 18385
+},
+"3e9a067ccc00": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/6918",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5465,
+"chars": 23787
+},
+"b6d79b732c20": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/5000",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1529,
+"chars": 7221
+},
+"4bd08630cb82": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/7565",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1235,
+"chars": 6156
+},
+"befff8685f66": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/11273",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 9031,
+"chars": 38783
+},
+"6f3a84661592": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/49",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5212,
+"chars": 19681
+},
+"6185f851f969": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/3819",
+"correct": false,
+"outcome": "no_answer",
+"truncated": true,
+"completion_tokens": 16384,
+"chars": 42820
+},
+"ae1ed3d1caec": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/299",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6460,
+"chars": 23599
+},
+"b154c0d28a0f": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/8221",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5553,
+"chars": 17911
+},
+"0413ad143d7d": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/213",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4546,
+"chars": 14450
+},
+"9a85a9da9aac": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/292",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4634,
+"chars": 16440
+},
+"ed66f2d01b29": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/143",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5838,
+"chars": 19415
+},
+"7eebd9c1b429": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/6121",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 837,
+"chars": 5966
+},
+"d6463aed3a3d": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/199",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11970,
+"chars": 41988
+},
+"d5484fb55773": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/243",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4550,
+"chars": 18107
+},
+"31fad4fe9ac7": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/7714",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7976,
+"chars": 29013
+},
+"7a736d5169c6": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/3354",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5034,
+"chars": 17365
+},
+"4c8ed04e2320": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/1123",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2300,
+"chars": 12141
+},
+"68690f7b043d": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/199",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1521,
+"chars": 6409
+},
+"62467dc1698f": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/11026",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4140,
+"chars": 17726
+},
+"992db2f08f78": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/6918",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7903,
+"chars": 32977
+},
+"ae147734cfff": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/162",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 701,
+"chars": 3008
+},
+"a4d4e341ebc0": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/250",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4707,
+"chars": 15835
+},
+"f394fc6110a7": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/5460",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2220,
+"chars": 9853
+},
+"a0cf05fac903": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/141",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4971,
+"chars": 18577
+},
+"3b01562a3628": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/263",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 331,
+"chars": 1896
+},
+"d2a3acb0fd2c": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/5831",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3944,
+"chars": 15875
+},
+"17956ccec362": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/4577",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6449,
+"chars": 23581
+},
+"99f384de9570": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/228",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 529,
+"chars": 2501
+},
+"8aab6aadc77d": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/141",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6411,
+"chars": 18886
+},
+"d15f65a4818b": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/228",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10100,
+"chars": 36510
+},
+"4e72699c9409": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/131",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3321,
+"chars": 13240
+},
+"23ad089a532e": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/74",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2970,
+"chars": 11570
+},
+"83e626e71acf": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/5000",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1472,
+"chars": 7020
+},
+"92df0c487722": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/7714",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4832,
+"chars": 18880
+},
+"4b144f624758": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/2491",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5079,
+"chars": 22251
+},
+"ea9e2d428fe0": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/3819",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4528,
+"chars": 10168
+},
+"01f4a7055b57": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/8221",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3535,
+"chars": 9448
+},
+"f082a554abf3": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/49",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 9942,
+"chars": 38874
+},
+"4bc819b4a52e": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/217",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4689,
+"chars": 18194
+},
+"c25ba0968190": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/61",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 418,
+"chars": 2059
+},
+"7f0b5dadaa94": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/87",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5453,
+"chars": 17968
+},
+"1b381b8b2a91": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/5025",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3220,
+"chars": 15801
+},
+"cadf7e72c4fb": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/116",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 512,
+"chars": 2270
+},
+"ac4b5221fef4": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/7019",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 660,
+"chars": 4909
+},
+"254e96645f58": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/162",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3174,
+"chars": 10841
+},
+"58f08bf699aa": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/6121",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3560,
+"chars": 16799
+},
+"c38a8ddc7640": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/299",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6263,
+"chars": 19775
+},
+"dbfd0ccd3f5c": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/5460",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2971,
+"chars": 11874
+},
+"44ae92a05162": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/74",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3182,
+"chars": 10512
+},
+"2a5795256c89": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/11273",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1551,
+"chars": 8019
+},
+"c9bea96112ac": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/2491",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 883,
+"chars": 6294
+},
+"3a64bb083918": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/1251",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1396,
+"chars": 9162
+},
+"5156ee11f456": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/6121",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4364,
+"chars": 19836
+},
+"a73ce88e84e9": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/4213",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 8471,
+"chars": 30531
+},
+"6a7c8273e32d": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/1251",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5154,
+"chars": 23698
+},
+"6e8a06b4c0aa": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/9534",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1533,
+"chars": 7280
+},
+"0bc92cf5951d": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/2744",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2207,
+"chars": 11469
+},
+"fef65d93a094": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/162",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6615,
+"chars": 25503
+},
+"30e72483526c": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/199",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4655,
+"chars": 17490
+},
+"c8d51a71b64e": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/910",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3607,
+"chars": 16108
+},
+"78b997be3059": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/240",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2865,
+"chars": 11052
+},
+"0c08029440ad": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/4730",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3908,
+"chars": 17177
+},
+"b692bc9c91c8": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/5831",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10557,
+"chars": 37586
+},
+"58c5cfe12688": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/49",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 560,
+"chars": 2449
+},
+"8367578a1435": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/6337",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 943,
+"chars": 5349
+},
+"2ed3a4785986": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/7233",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2766,
+"chars": 13368
+},
+"fc794630c717": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/1123",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4192,
+"chars": 19229
+},
+"fbce5cce6911": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/116",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6081,
+"chars": 22178
+},
+"bd8d9ab4783f": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/131",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 224,
+"chars": 1503
+},
+"5bbbddf01973": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/5025",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2496,
+"chars": 13083
+},
+"59b1738ec686": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/6918",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6466,
+"chars": 26888
+},
+"19b60293f9cb": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/910",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5742,
+"chars": 26063
+},
+"d993cc541fd0": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/7714",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 802,
+"chars": 3164
+},
+"e5925cc8fd6a": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/240",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5180,
+"chars": 16565
+},
+"f3b4284a6e17": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/1251",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11205,
+"chars": 47226
+},
+"ef07f42f6bbb": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/4730",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5835,
+"chars": 25438
+},
+"2191a912a159": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/52",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5209,
+"chars": 16723
+},
+"c65a6203c2fe": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/11269",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1141,
+"chars": 6161
+},
+"18762bb0b3e4": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/192",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4946,
+"chars": 15909
+},
+"d8fe8c3a529c": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/4577",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2393,
+"chars": 6848
+},
+"1efa7b1e2b1e": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/213",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2260,
+"chars": 8860
+},
+"1cc426384324": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/250",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 9739,
+"chars": 33847
+},
+"691df0adfdf5": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/192",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3120,
+"chars": 12088
+},
+"73a3191a6f21": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/162",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2500,
+"chars": 10522
+},
+"b1310dcfe718": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/98",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6829,
+"chars": 26267
+},
+"764ab7b11138": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/7714",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2708,
+"chars": 10660
+},
+"780941b93ea2": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/98",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4960,
+"chars": 19658
+},
+"6c3efc2c91dd": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/10656",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7832,
+"chars": 33217
+},
+"a52e1b616375": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/1123",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7991,
+"chars": 32501
+},
+"6a8377bd57bf": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/6918",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4239,
+"chars": 19277
+},
+"65e45dc6e4d1": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/98",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 13028,
+"chars": 45652
+},
+"6bfe03753ce6": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/52",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 485,
+"chars": 2360
+},
+"b4e0697ffbf8": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/276",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5809,
+"chars": 18488
+},
+"d6d075521374": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/3354",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3812,
+"chars": 13516
+},
+"1ff706d23aad": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/11269",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2644,
+"chars": 11641
+},
+"2c7667598df1": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/10656",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 979,
+"chars": 6066
+},
+"aeb85ac7fd70": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/3354",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3947,
+"chars": 13862
+},
+"2745b53e5d30": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/166",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3724,
+"chars": 13679
+},
+"d9000f7e6b9c": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/87",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1656,
+"chars": 6030
+},
+"cff1fce868f1": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/12157",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": true,
+"completion_tokens": 16384,
+"chars": 33607
+},
+"a229af7a4f1a": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/263",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5854,
+"chars": 22607
+},
+"045340c41892": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/10656",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5133,
+"chars": 23341
+},
+"a34f3978c7ea": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/3354",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10648,
+"chars": 37258
+},
+"0e44c3e86c13": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/87",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4051,
+"chars": 13359
+},
+"5a25236d04e8": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/143",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 12333,
+"chars": 42489
+},
+"8553d28dd650": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/261",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 525,
+"chars": 2158
+},
+"21b9b4d28033": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/144",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5559,
+"chars": 20428
+},
+"179fa8ad060c": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/8221",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6791,
+"chars": 22321
+},
+"7662b678bb11": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/285",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3961,
+"chars": 13233
+},
+"296a2b60ba5c": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/7233",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4685,
+"chars": 21429
+},
+"91d8d6b51744": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/11026",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 14525,
+"chars": 56114
+},
+"07718b022ece": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/131",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11554,
+"chars": 41272
+},
+"4f7c0306f327": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/243",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4718,
+"chars": 17403
+},
+"46f48c90f181": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/46",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3997,
+"chars": 14632
+},
+"439d4882ae2f": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/87",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6970,
+"chars": 21863
+},
+"cd4a1a864ef4": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/12157",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 12105,
+"chars": 25402
+},
+"8ccd406ba376": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/3297",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11839,
+"chars": 39816
+},
+"45fd48105a73": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/7233",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4251,
+"chars": 18806
+},
+"a62d35be0dee": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/64",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3241,
+"chars": 12922
+},
+"22426d1f9b95": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/6121",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1966,
+"chars": 10156
+},
+"d4fc2d3fc2ea": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/276",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5072,
+"chars": 17751
+},
+"60448f86b224": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/11026",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1437,
+"chars": 7238
+},
+"b6b2565f4032": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/5000",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3612,
+"chars": 15729
+},
+"a125da7d0076": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/4730",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11505,
+"chars": 45311
+},
+"89fee9de3957": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/250",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 715,
+"chars": 2903
+},
+"5a977cafa716": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/8221",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5151,
+"chars": 13262
+},
+"3526c108b92d": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/49",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3021,
+"chars": 11119
+},
+"bebfb9afba14": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/299",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2234,
+"chars": 7901
+},
+"632160b32a93": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/64",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4776,
+"chars": 15311
+},
+"a7b853766fd6": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/4453",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5540,
+"chars": 12114
+},
+"2edf9dd55103": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/166",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11582,
+"chars": 41671
+},
+"8bc918c627e8": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/6337",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 974,
+"chars": 5308
+},
+"66286d72d7de": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/263",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2949,
+"chars": 11187
+},
+"255b8040b3b8": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/6337",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 2274,
+"chars": 11209
+},
+"20293a031a13": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/46",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 505,
+"chars": 2466
+},
+"e44dd5686a60": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/243",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 1755,
+"chars": 6628
+},
+"113456793ef5": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/11269",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 8132,
+"chars": 30883
+},
+"06d88c5e4d15": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/11026",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2961,
+"chars": 13714
+},
+"fb305c6f67fa": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/6918",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 654,
+"chars": 5471
+},
+"7e8ab4513fc3": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/4453",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 9101,
+"chars": 27876
+},
+"4ca9448f279c": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/143",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 640,
+"chars": 2449
+},
+"6a81f6832d77": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/143",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3118,
+"chars": 10693
+},
+"6da1749d79ca": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/263",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2913,
+"chars": 10766
+},
+"b3d48ccfb598": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/5025",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 9604,
+"chars": 39954
+},
+"b3b651cc2bc1": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/250",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3996,
+"chars": 14050
+},
+"99e43879868f": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/11026",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7261,
+"chars": 30733
+},
+"8cac31b85749": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/4213",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 8235,
+"chars": 30552
+},
+"15747314de4a": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/2744",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5227,
+"chars": 22425
+},
+"b971e5a5033e": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/5460",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 581,
+"chars": 2955
+},
+"7a0b085c7d93": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/217",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7003,
+"chars": 26037
+},
+"4f03af3adfbd": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/64",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 6507,
+"chars": 25925
+},
+"8dd4e53daec1": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/46",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4218,
+"chars": 13571
+},
+"ce2b81ec66d3": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/276",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1052,
+"chars": 3352
+},
+"cb59ca6cefb8": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/7019",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2584,
+"chars": 12996
+},
+"26448abc9d09": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/285",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 2165,
+"chars": 8248
+},
+"ca8b946ab3e8": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/4730",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 1140,
+"chars": 6780
+},
+"3cf428748c8f": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/3297",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 971,
+"chars": 3484
+},
+"7e82925b62dd": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/12157",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 14655,
+"chars": 29227
+},
+"d9f1186d2f34": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/8221",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7324,
+"chars": 23641
+},
+"e2dbeb16cf2c": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/131",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5309,
+"chars": 15738
+},
+"74c804b8f2dd": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/141",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 1971,
+"chars": 7027
+},
+"51d3fe6eb6aa": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/98",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 4971,
+"chars": 20216
+},
+"cbe25a528a0f": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/11269",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1330,
+"chars": 6330
+},
+"56e1ad5c3584": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/4213",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5069,
+"chars": 18584
+},
+"4525c9b21e86": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/7565",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3396,
+"chars": 14357
+},
+"bed649e59183": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/276",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5964,
+"chars": 21994
+},
+"5ebc7a35bc19": {
+"set": "mmlu_pro",
+"arm": "gi_cap_p65",
+"item": "mmlu_pro/5460",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 330,
+"chars": 2101
+},
+"31d71b584799": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/217",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2760,
+"chars": 11304
+},
+"9c4143c15880": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/5000",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 7020,
+"chars": 27674
+},
+"f61f7e8dbedc": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/141",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10970,
+"chars": 39703
+},
+"4a4cf698ae9b": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/910",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5256,
+"chars": 24182
+},
+"f93f24afa201": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/64",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4498,
+"chars": 16502
+},
+"c757276dcaf9": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/292",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7273,
+"chars": 26131
+},
+"56ea03bd231b": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/2744",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 1349,
+"chars": 7722
+},
+"0715febbb4a1": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/4213",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 4600,
+"chars": 17361
+},
+"cf4af5415436": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/52",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5758,
+"chars": 22397
+},
+"b93e43bfb13e": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/87",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 870,
+"chars": 3587
+},
+"1e7354c57e14": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/910",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7880,
+"chars": 32654
+},
+"84a08656f1ff": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/285",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7706,
+"chars": 29109
+},
+"9c99a68533e8": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/240",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 5453,
+"chars": 20604
+},
+"50fac614bf7f": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/5831",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3626,
+"chars": 14466
+},
+"11ce9ca22e69": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/3297",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 5230,
+"chars": 19068
+},
+"b011b82bdb43": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/7565",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3921,
+"chars": 17202
+},
+"7558e9ad5bfb": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/6337",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6649,
+"chars": 26085
+},
+"0505d663d281": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/285",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2101,
+"chars": 8996
+},
+"93c6eb6681fa": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/1123",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 3410,
+"chars": 15204
+},
+"0303c24b223d": {
+"set": "gsm8k",
+"arm": "gi_cap_p65",
+"item": "gsm8k/299",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 736,
+"chars": 3020
+},
+"8f057ba90a45": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/261",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5205,
+"chars": 19411
+},
+"aa369aaef1fd": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/143",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4999,
+"chars": 16178
+},
+"c5312691384e": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/3297",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3336,
+"chars": 12438
+},
+"282b2dc7b0bb": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/74",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 5166,
+"chars": 19172
+},
+"721b57688fe2": {
+"set": "mmlu_pro",
+"arm": "gi_m0.16",
+"item": "mmlu_pro/2744",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 10597,
+"chars": 41204
+},
+"c9666d70863e": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/74",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 9089,
+"chars": 32677
+},
+"02bff87b9279": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/131",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 1118,
+"chars": 4525
+},
+"fef8e853d79d": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/5000",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3888,
+"chars": 15601
+},
+"d42940337e7e": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/299",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 11059,
+"chars": 39267
+},
+"94807ec3ce8b": {
+"set": "gsm8k",
+"arm": "gi_m0.08",
+"item": "gsm8k/52",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 4493,
+"chars": 17292
+},
+"7ef01966245e": {
+"set": "mmlu_pro",
+"arm": "gi_m0.04",
+"item": "mmlu_pro/1251",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 2490,
+"chars": 13671
+},
+"95b133e2e7d0": {
+"set": "mmlu_pro",
+"arm": "gi_m0.08",
+"item": "mmlu_pro/4453",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 6008,
+"chars": 19252
+},
+"a96d004d02d0": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/228",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3060,
+"chars": 10806
+},
+"a0fac1fd76f0": {
+"set": "mmlu_pro",
+"arm": "unsteered",
+"item": "mmlu_pro/4730",
+"correct": false,
+"outcome": "wrong_other",
+"truncated": false,
+"completion_tokens": 3306,
+"chars": 15426
+},
+"38d74519e276": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/61",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 7815,
+"chars": 27821
+},
+"d4b46ae15299": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/213",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6431,
+"chars": 23305
+},
+"8eec0b1e2657": {
+"set": "gsm8k",
+"arm": "unsteered",
+"item": "gsm8k/49",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 3957,
+"chars": 13122
+},
+"f4b7b8928d7b": {
+"set": "gsm8k",
+"arm": "gi_m0.04",
+"item": "gsm8k/199",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 9264,
+"chars": 33332
+},
+"21ad71aac08d": {
+"set": "gsm8k",
+"arm": "gf_m0.08",
+"item": "gsm8k/61",
+"correct": false,
+"outcome": "wrong_gold_in_own_text",
+"truncated": false,
+"completion_tokens": 6634,
+"chars": 19921
+},
+"0b875c7999dc": {
+"set": "gsm8k",
+"arm": "gi_m0.16",
+"item": "gsm8k/243",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 13596,
+"chars": 47579
+},
+"18fcbb8b9aa9": {
+"set": "mmlu_pro",
+"arm": "gf_m0.08",
+"item": "mmlu_pro/12157",
+"correct": true,
+"outcome": "correct",
+"truncated": false,
+"completion_tokens": 15120,
+"chars": 30002
+}
+}
