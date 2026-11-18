@@ -3024,6 +3024,16 @@ User, after the result above: "can we try with more arms, and on the other two m
   (a pass took about 1 minute, the start about 3) and the GSM8K arm times (steered arms up to 1.4 times unsteered; Goodfire cap p25
   about 10 times per pass): 13 arms at 14 to 19 minutes each, five per task (limit 1 h 50 min); Goodfire cap p25 as its own task (10
   passes at 2 to 10 minutes; limit 2 h).
+- **Qwen and Gemma stage 2 regardless of stage 1 (written 2026-11-18 1:08 pm MST; neither stage-1 gap has been read).** User, about
+  1:07 pm: "also do qwen and gemma full runs regardless of the check". So every model gets its GSM8K arms at seeds 1 to 5 (Qwen 9
+  steered arms, Gemma 12, plus unsteered). Stage 1 still fixes the framing, by the rule without its stop: framing A if its gap is at
+  least 10 points, else framing B. Stage 1 also still says how a model is reported: with a stage-1 gap of at least 10 points under
+  the framing used, the readings count as on Muse; below that the run is outside the rule and reported so, as gpt-oss is. The
+  expectations of this section stand (Gemma: Goodfire arms raise, gi_v2 caps lower, the −0.08 raise open; Qwen: small gap, reading 2
+  if any). Compute: both stage-1 jobs run on A100s and show that a pass is bound by its longest answers, once per batch (Qwen 12 +
+  11 min, Gemma 12 + 7.5 min for the 256- and the 52-item batch), so stage 2 on these two models runs each pass as one batch
+  (`--batch-size 308`), which changes the wall time and nothing in what is generated; a cut pass then leaves no file. Task sizes are
+  set from the stage-1 times of the framing used, after stage 1 ends.
 
 ## Work order
 
