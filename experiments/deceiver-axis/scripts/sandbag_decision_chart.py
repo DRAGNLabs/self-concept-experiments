@@ -54,7 +54,8 @@ def main() -> None:
         print("note: answer_strategic answers are drawn with answer_honest")
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10.5, "text.color": INK, "axes.labelcolor": SOFT,
                          "xtick.color": SOFT, "ytick.color": INK})
-    fig = plt.figure(figsize=(13.6, 8.2), facecolor=SURFACE)
+    extra = 0.42 * max(0, len(arms) - 6)
+    fig = plt.figure(figsize=(13.6, 8.2 + 2 * extra), facecolor=SURFACE)
     grid = fig.add_gridspec(2, len(sets), height_ratios=[1.0, 0.95], left=0.135, right=0.975, top=0.83, bottom=0.03, hspace=0.3, wspace=0.09)
     for col, set_name in enumerate(sets):
         ax = fig.add_subplot(grid[0, col], facecolor=SURFACE)

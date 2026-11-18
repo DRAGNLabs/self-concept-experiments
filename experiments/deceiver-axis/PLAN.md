@@ -3161,6 +3161,14 @@ User, after the result above: "can we try with more arms, and on the other two m
 - **Limits, stated now.** One seed, 60 per arm, one reader; the labels record what the text says it decides. With the reasoning
   setting low, Muse's hidden reasoning is short, so a decision may be stated in a line or not at all; `answer_no_decision` then
   means the text shows no weighing, not that none took place. The comparison with Gemma is descriptive.
+- **Result (4:56 pm MST Nov 18; FINDINGS entry "Blind read of Muse sandbagging transcripts").** 480 answers labelled, every batch
+  read in full. (A) Every arm reads "decides to answer" over its correct answers (unsteered 22 of 23; gi_v2 27 of 29, 33 of 35, 34
+  of 37, 32 of 36, 40 of 45; Goodfire 9 of 12 and 1 of 1). (B) "gi_v2 shifts the decision on Muse" holds: answers that weigh the
+  incentive and answer are 23 of 60 unsteered and 31, 35, 37, 33, 43 in the five gi_v2 arms. (C) Goodfire −0.08: 9 such answers and
+  46 decisions to miss; cap p90: 1 and 59. (D) Misses admitted in the final answer: 0 of 35 unsteered, at most 3 per gi_v2 arm, 1 of
+  46 and 7 of 59 under Goodfire; keyword count over all seeds 0.2 to 16.7% of wrong answers in every arm, so no contrast like
+  Gemma's on GSM8K. (E) Labels agree with the scored fields in 449 of 480 answers; 25 of the 31 others are MMLU-Pro answers that set
+  out to answer and are wrong. At most 1 of 60 answers per arm is not coherent and at most 6 do not discuss the notice.
 
 ## Work order
 

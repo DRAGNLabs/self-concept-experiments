@@ -27,3 +27,12 @@ sizing `wc`; every batch has one unfiltered read at least as large as its transc
 | `runner.out` | the runner's per-batch lines and summary |
 
 The transcripts themselves (`dossiers/`, 6.4 MB) and the chart stay on scratch and on the group share.
+
+## Muse, the same read (same day)
+
+PLAN section "Sandbagging on Muse: the same blind read"; FINDINGS entry "Blind read of Muse sandbagging transcripts". 480
+answers: Muse-Glimmer-30B, the same item ids, eight arms (unsteered, gi_v2 −0.04 / −0.08 / −0.16, gi_v2 cap p25 and p5,
+Goodfire −0.08 and cap p90). Same commands with `D=$S/decision_read_muse_2026-11-18`, `--set gsm8k=$S/muse/stage2
+--set mmlu_pro=$S/mmlu_pro/muse/stage2` and those arms; 20 batches, list-price cost $2.58, every batch read in full. The
+planned keyword count over all seeds: `sandbag_decision_labels.py finals --set ... --arms <all 13 Muse arms>`. Files here carry
+the prefix `muse_` (`muse_JUDGE_TASK.md` differs from the Gemma task file only in its paths).
