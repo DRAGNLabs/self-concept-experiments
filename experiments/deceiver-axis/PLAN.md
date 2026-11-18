@@ -3042,6 +3042,14 @@ User, after the result above: "can we try with more arms, and on the other two m
   unsteered, gi_v2 −0.04 and −0.08 and the four Goodfire arms 2.8 to 3.3 h (limit 4 h); the five gi_v2 caps 0.8 to 2 h on GSM8K's
   scale, up to 2.8 h if answers stay as long as unsteered (limit 3 h); gi_v2 −0.16 about 5.5 to 6 h (51 min per `incentive` pass on
   GSM8K), at most 7.3 h if every answer runs to the token limit (limit 7 h 30 min).
+- **Stage 1 on Qwen (read 2026-11-18 1:53 pm MST; `sandbag/mmlu_pro/qwen/stage1.json`; 308 items, seed 0, one A100, 5,858 s).** No
+  gap under either framing: A +1.3 points [−1.6, +4.2] (81.5%, 80.2%), B −0.3 [−3.3, +2.6] (79.9%, 80.2%); 26% of its answers under
+  `incentive` with the goal sentence mention the consequence. Stage 2 runs on the user's word with framing B and is outside the
+  rule, reported as gpt-oss is: no gap to lower, expectation reading 3, a reading 1 or 2 not counted with Muse and Gemma. Passes
+  took 21 to 23.5 min, the 52-item batch as long as the 256-item one (about 2% of answers run to the token limit, 11 min); as one
+  batch of 308 a pass is 12 to 14 min on an A100, at most 26 min if every answer ran to the limit. Task sizes: unsteered and eight
+  steered arms one per task, 2.1 to 2.4 h (limit 3 h); Goodfire cap p25, the slow arm on GSM8K, as two tasks, one per notice, 1.1 to
+  2.2 h (limit 2 h 20 min).
 
 ## Work order
 
