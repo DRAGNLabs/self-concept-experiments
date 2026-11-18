@@ -2885,6 +2885,13 @@ so nothing ties it to the Goodfire axis by construction. This is a new model run
 - **Limits known beforehand.** One benchmark, one pair of notices, single-turn; a gap can also come from the model
   believing the notice and reasoning about it at length (longer answers, more cut-offs), which the cut-off share shows;
   negative doses only, so a floor at zero gap hides nothing only if stage 1 finds a gap.
+- **Stage 1 read 2026-11-17 5:40 pm MST** (`sandbag/<model>/stage1.json`; 300 items, seed 0, unsteered). gpt-oss: gap
+  +0.3 points [−1.7, +2.3] under framing A (95.7% control, 95.3% incentive), +11.7 [+7.7, +15.7] under framing B (96.7%,
+  85.0%). Muse: −0.3 [−1.7, +1.0] under A (96.7%, 97.0%), +53.7 [+48.0, +59.3] under B (98.7%, 45.0%). By the rule both
+  models run stage 2 with framing B. Under B's incentive notice the wrong answers are almost all ones whose own text
+  holds the gold number (gpt-oss 12.7% of answers, Muse 54.7%); no answer was cut off. Stage 2 submitted 5:37 pm
+  (gpt-oss, 15485848) and 5:43 pm (Muse, 15485936; a first Muse submission with a stale arms file was cancelled after
+  a minute, before any output).
 
 ## Work order
 
