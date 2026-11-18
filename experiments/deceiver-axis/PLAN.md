@@ -3008,6 +3008,12 @@ User, after the result above: "can we try with more arms, and on the other two m
   1. Limits from the GSM8K stage-1 times scaled by the benchmark runs' answer lengths (MMLU-Pro answers are 1.5 times as long as
   GSM8K answers on gpt-oss and Muse, 4.5 times on Qwen, 3.2 times on Gemma): gpt-oss and Muse 40 min, Qwen 1 h 45 min, Gemma 4 h
   (two cards). Stage-2 task sizes are set from the stage-1 pass times.
+- **Stage 1 on gpt-oss and Muse (read 2026-11-18 12:29 pm MST; `sandbag/mmlu_pro/<model>/stage1.json`; 308 items, seed 0).**
+  gpt-oss: no gap under either framing, A −2.6 points [−5.5, +0.3] (72.7% under `control`, 75.3% under `incentive`), B −1.0 [−4.6,
+  +2.6] (73.7%, 74.7%); 1% of its answers mention the consequence. By the rule no stage 2 on gpt-oss: "no gap to test"; the user is
+  told. Muse: A +1.6 [−1.3, +4.9] (79.2%, 77.6%), B +51.9 [+46.1, +57.5] (81.2%, 29.2%) → stage 2 with framing B. Muse task sizes: a
+  pass took 2 to 4 minutes on an A100, about 23 minutes per arm for five seeds plus the start; three arms per task (limit 2 h);
+  Goodfire cap p25 as two tasks, one per notice (limit 2 h 10 min: its `control` passes took 21 minutes each on GSM8K).
 
 ## Work order
 
