@@ -54,3 +54,103 @@ picker (--hours 1.75 --vram-gb 75 --cpus 8 --mem-gb 32 --no-requeue-ok --cuda 13
 sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 01:45:00
 DECISION (6:36 PM MST): same request as the array (-p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue --mem-per-cpu=4G), --time=01:45:00, --array=4 with ARMS_PER_TASK=3 (line 12 only). Submitted 15486740.
 NOTE (7:18 PM MST): 15486740 ran on a cs2 H100 (finished in 2,304 s); the first two passes of that arm (15485936 task 4) ran on a cs A100. Recorded in FINDINGS and the run-dir README.
+
+---- 2026-11-17 8:23 PM MST stage 1 on Gemma 4 31B (PLAN 'Sandbagging under an incentive: Gemma, Qwen and more arms'): unsteered, 4 passes x 300 items, about 10 min per pass on two 80 GB cards (earlier GSM8K batches of 256: 6-9 min) + 4 min engine start -> limit 1 h. Two cards because Gemma at its benchmark window needs them (TP=2, attention backend TRITON_ATTN: the two-card recipe of 15314200).
+picker (--hours 1 --vram-gb 90 --cpus 8 --mem-gb 48 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs3       b200    1  cs         100  yes     0       8          0      64.0        64  1-00:00:00
+ 2  m13h      h200    1  gpu        200  yes     2       0         59     300.0       300  3-00:00:00
+ 3  cs        a100    2  cs         100  yes     0       2          3      44.8        45  1-00:00:00
+ 4  cs2       h100    2  cs         100  yes     4       4          0      61.6        62  1-00:00:00
+ 5  m13l      l40s    2  gpu        200  yes     2       0         42     384.0       384  3-00:00:00
+ 6  dw        a100    2  dw87       200  yes    15       2          1     448.0       448  3-00:00:00
+
+sbatch -p cs3 --qos cs --gpus b200:1 --time 01:00:00
+DECISION (8:24 PM MST): -p cs,cs2 --qos cs --gpus-per-node=2 (two A100 or two H100, picker rows 3-4; row 4 has four idle H100), --no-requeue, --mem-per-cpu=6G (48 GB, as 15314200), --time=01:00:00. Row 1 (cs3, one B200) not taken: no idle card there, a start would wait or displace standby work, and the two-card form is the one the Gemma benchmark arms have used since 2026-11-12. Submitted 15488311.
+
+---- 2026-11-17 8:24 PM MST stage 1 on Qwen3.8-27B: unsteered, 4 passes x 300 items on one 80 GB card; GSM8K answers average 356 tokens in its benchmark run (Muse-like: Muse stage 1 took 514 s) -> limit 30 min. Host memory 40 GB (largest earlier Qwen benchmark job 28.7 GiB).
+picker (--hours 0.5 --vram-gb 75 --cpus 8 --mem-gb 40 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes     2       0          3      22.4        11  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     2       4          0      30.8        15  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     0       8          0      64.0        32  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes    15       2          1     224.0       112  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     2       0         59     300.0       150  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  yes     2       0         42     384.0       192  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 00:30:00
+DECISION (8:26 PM MST): -p cs,cs2 --qos cs --gpus-per-node=1 (picker rows 1-2 expected, as every Qwen benchmark arm), --no-requeue, --mem-per-cpu=5G, --time=00:30:00, VLLM_MAX_NUM_SEQS=128 and the default chat kwargs (reasoning_effort low) as in its benchmark runs. Submitted 15488349.
+
+---- 2026-11-17 8:37 PM MST seeds 4-10 on gpt-oss and Muse (PLAN 'Sandbagging under an incentive: Gemma, Qwen and more arms', commit 5f2d41b; user: 'more arms I meant more seeds'). gpt-oss: 14 arms x 14 passes, 5 arms per task; from the stage-2 arm times (304-476 s for 6 passes incl. about 130 s start; gf_cap_p25 989 s) an arm takes 10-16 min, gf_cap_p25 about 36 min -> tasks of 50-68 min, limit 1 h 20 min. Muse: 12 arms x 14 passes, 3 per task; stage-2 arm times 546-904 s -> 18-33 min per arm, tasks of 64-76 min, limit 1 h 30 min. Muse gf_cap_p25: two tasks of 7 passes (control seeds 4-10 / incentive seeds 4-10), about 21 min per pass on an A100 (9.6 on the H100) -> limit 2 h 30 min.
+picker (--hours 1.5 --vram-gb 75 --cpus 8 --mem-gb 80 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes     1       0          3      22.4        34  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     2       4          0      30.8        46  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     0       8          0      64.0        96  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes    14       3          1     224.0       336  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     2       0         55     300.0       450  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  yes     2       0         42     384.0       576  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 01:30:00
+DECISION (8:40 PM MST): all three arrays as the three-seed runs (-p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue; gpt-oss --mem-per-cpu=10G, Muse 4G). gpt-oss 15488504 (array 0-2, ARMS_PER_TASK=5, 1 h 20 min), Muse 15488508 (array 0-3, ARMS_PER_TASK=3, 1 h 30 min), Muse gf_cap_p25 15488549 (array 0-1, one line per notice, 2 h 30 min).
+
+---- 2026-11-17 9:03 PM MST stage 2 on Gemma 4 31B (framing B by the stage-1 rule: unsteered gap A +0.7, B +69.0 points; Qwen: A +0.3, B +8.3 -> no stage 2 by the rule). 13 arms x 10 seeds, one arm and five seeds per task (26 tasks, 10 passes each); stage-1 passes took 7.3 min (control) / 9.7 min (incentive) on two H100s, about 1.7x that expected on two A100s (earlier GSM8K batches), caps somewhat slower -> 85 min to about 3 h per task, limit 3 h 15 min. Two cards, TP=2, TRITON_ATTN as stage 1.
+picker (--hours 3.25 --vram-gb 90 --cpus 8 --mem-gb 48 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs3       b200    1  cs         100  yes     0       8          0      64.0       208  1-00:00:00
+ 2  m13h      h200    1  gpu        200  yes     3       1         49     300.0       975  3-00:00:00
+ 3  m13l      l40s    2  gpu        200  yes     2       0         40     384.0      1248  3-00:00:00
+ 4  dw        a100    2  dw87       200  yes    10       7          1     448.0      1456  3-00:00:00
+ 5  cs        a100    2  cs         100  no      0       0          3      44.8       146  1-00:00:00
+ 6  cs2       h100    2  cs         100  no      1       0          0      61.6       200  1-00:00:00
+
+sbatch -p cs3 --qos cs --gpus b200:1 --time 03:15:00
+test-only cs,cs2 (Tue Nov 17 21:04:33 MST 2026): sbatch: Job 15488869 to start at 2026-11-18T07:02:55 a using 8 processors on nodes cs-1-5 in partition cs
+sbatch:   Preempts: 15332329,15429791,15478277,15478279
+test-only dw / dw87 (Tue Nov 17 21:05:33 MST 2026): sbatch: Job 15488907 to start at 2026-11-17T21:05:33 a using 8 processors on nodes dw-2-3 in partition dw
+DECISION (9:07 PM MST): seeds 1-5 (15488908, array 0-12, one arm per task) on -p dw --qos dw87 --gpus-per-node=2 (two A100-80GB, picker row 4): its dry run starts at once (10 idle cards) while the cs,cs2 dry run gives 7:03 am tomorrow, and dw87 is no longer avoided (user 2026-11-11). --exclude=dw-1-4: the A100 at bus 0A:00.0 of that node showed uncorrectable ECC errors and killed a two-card Gemma task on 2026-11-12. Seeds 6-10 (15488917, array 0-12) on -p cs,cs2 --qos cs --gpus-per-node=2 with --dependency=aftercorr:15488908: each task starts only after the same arm's first half has ended, so two tasks never write one arm directory (steering_spec.pt) at the same time; cs is a tenth of the fairshare cost and these tasks cannot start for some hours anyway. Both --time=03:15:00, --mem-per-cpu=6G, --no-requeue. Row 1 (cs3 B200) not taken: no idle card.
+
+---- 2026-11-17 9:35 PM MST stage 2 on Qwen3.8-27B on the user's word ('run the qwen arms anyway yes'; PLAN commit acf3049), framing B, 10 arms x 10 seeds. Stage-1 passes on an A100: 2.8 min (control) / 3.4 min (incentive) -> about 6 min per seed, 61 min per arm unsteered + about 5 min start; caps up to 1.45x (gpt-oss) -> 67-95 min, limit 1 h 45 min, one arm per task (9 tasks). gf_cap_p25 (no benchmark run; a failing rung on the coding tasks) as four tasks of five passes, limit 2 h in case answers run to the token limit as on Muse (about 21 min per pass there).
+picker (--hours 1.75 --vram-gb 75 --cpus 8 --mem-gb 40 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes     0       2          2      22.4        39  1-00:00:00
+ 2  cs2       h100    1  cs         100  yes     6       2          0      30.8        54  1-00:00:00
+ 3  cs3       b200    1  cs         100  yes     2       6          0      64.0       112  1-00:00:00
+ 4  dw        a100    1  dw87       200  yes     2       1          2     224.0       392  3-00:00:00
+ 5  m13h      h200    1  gpu        200  yes     6       0         48     300.0       525  3-00:00:00
+ 6  m13l      l40s    2  gpu        200  yes     2       0         40     384.0       672  3-00:00:00
+
+sbatch -p cs,cs2,cs3 --qos cs --gpus 1 --time 01:45:00
+test-only cs,cs2 (Tue Nov 17 21:36:46 MST 2026): sbatch: Job 15489354 to start at 2026-11-18T04:48:46 a using 8 processors on nodes cs-1-5 in partition cs
+sbatch:   Preempts: 15429791,15478277,15478279,15473405,15473446
+DECISION (9:38 PM MST): -p cs,cs2 --qos cs --gpus-per-node=1 --no-requeue --mem-per-cpu=5G (picker rows 1-2, six idle H100 on cs2; the hardware class of every Qwen arm so far). The dry run's 4:49 am estimate is not followed: the same request started at once for stage 1 at 8:27 pm against a similar estimate. 15489355 (array 0-8, one arm per task, 1 h 45 min) and 15489364 (gf_cap_p25, array 0-3, five passes per task, 2 h).
+
+---- 2026-11-17 11:05 PM MST Gemma gi_m0.16 re-sizing. Its incentive answers average 9,875 tokens (unsteered 3,860; 7 of 300 at the 16,384 limit) and one incentive pass takes 51 min on two A100s against the 16.5 min the task was sized for; 15488908_3 (seeds 1-5, limit 3 h 15 min, started 9:06:50 pm) would be cut in its third incentive pass. Remaining passes: incentive seeds 2-5 (4 x 51 min + start = 3 h 29 min), seeds 6-7 both variants (2 x 8 + 2 x 51 + 5 = 2 h 3 min), seeds 8-10 both variants (3 x 8 + 3 x 51 + 5 = 3 h 2 min).
+picker (--hours 3.85 --vram-gb 90 --cpus 8 --mem-gb 48 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs3       b200    1  cs         100  yes     1       7          0      64.0       246  1-00:00:00
+ 2  m13h      h200    1  gpu        200  yes     6       0         46     300.0      1155  3-00:00:00
+ 3  m13l      l40s    2  gpu        200  yes     2       0         36     384.0      1478  3-00:00:00
+ 4  cs        a100    2  cs         100  no      0       0          1      44.8       172  1-00:00:00
+ 5  cs2       h100    2  cs         100  no      0       0          2      61.6       237  1-00:00:00
+ 6  dw        a100    2  dw87       200  no      1       2          3     448.0      1725  3-00:00:00
+
+sbatch -p cs3 --qos cs --gpus b200:1 --time 03:51:00
+test-only dw / dw87 (Tue Nov 17 23:08:10 MST 2026): sbatch: Job 15490708 to start at 2026-11-18T01:04:42 a using 8 processors on nodes dw-2-3 in partition dw
+sbatch:   Preempts: 15476317
+test-only cs,cs2 (Tue Nov 17 23:09:10 MST 2026): sbatch: Job 15490747 to start at 2026-11-18T01:38:55 a using 8 processors on nodes cs-1-5 in partition cs
+sbatch:   Preempts: 15429791,15478277,15478279
+DECISION (11:12 PM MST): 15488908_3 cancelled 11:06 pm (in its second incentive pass, nothing of that pass written) and its dependent 15488917_3 cancelled 11:07 pm (its dependency could no longer be met and its 3 h 15 min could not hold five 51-min passes). Remaining gi_m0.16 passes as three jobs on -p cs,cs2 --qos cs --gpus-per-node=2 --mem-per-cpu=6G --no-requeue: 15490785 (incentive seeds 2-5, array index 1 of arms_stage2_gi_m0.16_seeds2-5_split.tsv, 3 h 50 min), 15490787 (seeds 6-7 both variants, 2 h 20 min, --dependency=after:15490785+10), 15490788 (seeds 8-10 both variants, 3 h 20 min, --dependency=after:15490787+10); the 10-minute offsets keep two tasks from writing the arm's steering_spec.pt at the same moment. Limits sized for two A100s (51 min per incentive pass, 8 min per control pass, 5 min start). cs,cs2 over dw: dry runs 1:39 am against 1:05 am, a tenth of the fairshare cost, and H100 pairs there are about 1.7 times faster. cs3 B200 (picker row 1, one idle card) not taken: one card with TP=1 would be a third engine configuration inside one arm.
+
+---- 2026-11-17 11:15 PM MST Muse gf_cap_p25 control seed 10. 15488549_0 (control seeds 4-10, 2 h 30 min, A100 on cs-1-5) was cut by its time limit at 11:14:55 pm with six passes complete and 256 of 300 items of seed 10 written: passes took 21.2 to 21.8 min (seven = 2 h 30 min) plus the 4-minute start, so the limit was undersized by about 5 minutes (sizing error). The part-written pass is rerun whole: partial file renamed to gsm8k.jsonl.partial_15488549_0, kept. One pass, 22 min on an A100 + 4 min start -> limit 35 min.
+picker (--hours 0.6 --vram-gb 75 --cpus 8 --mem-gb 32 --no-requeue-ok --cuda 13.0):
+ #  partition gpu     n  --qos     prio  now? idle preempt jobs ahead   cost/hr      cost  max wall
+ 1  cs        a100    1  cs         100  yes     4       0          0      22.4        13  1-00:00:00
+ 2  cs3       b200    1  cs         100  yes     0       8          0      64.0        38  1-00:00:00
+ 3  dw        a100    1  dw87       200  yes     1       1          4     224.0       134  3-00:00:00
+ 4  m13h      h200    1  gpu        200  yes     6       0         46     300.0       180  3-00:00:00
+ 5  m13l      l40s    2  gpu        200  yes     2       0         36     384.0       230  3-00:00:00
+ 6  cs2       h100    1  cs         100  no      0       0          1      30.8        18  1-00:00:00
+
+sbatch -p cs,cs3 --qos cs --gpus 1 --time 00:36:00
+DECISION (11:16 PM MST): 15490866 on -p cs,cs2 --qos cs --gpus-per-node=1 --mem-per-cpu=4G --no-requeue, 35 min (the placement of every Muse sandbagging task; picker rows above).

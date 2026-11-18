@@ -2952,6 +2952,16 @@ User, after the result above: "can we try with more arms, and on the other two m
   not be rankable; reading 1 would need a gi_v2 arm below unsteered, no Goodfire arm below it and the −0.16 pair
   interval off zero. One arm per task (20 passes, about 6 minutes per seed unsteered by the stage-1 passes); Goodfire
   cap p25 as four tasks of five passes in case its answers run to the token limit as on Muse.
+- **Gemma gi_v2 −0.16 re-sized (2026-11-17 11:06 pm MST), before any Gemma accuracy was read.** Its `incentive` answers
+  average 9,875 tokens (unsteered 3,860) and a pass takes 51 minutes on two A100s, so the five-seed task could not
+  finish in 3 h 15 min. That task and its second half were cancelled (complete passes kept, no part-written pass) and
+  the remaining passes run as three tasks (`incentive` seeds 2 to 5; seeds 6 and 7; seeds 8 to 10). Arm line unchanged.
+- **Result for gpt-oss, Muse and Qwen (read 2026-11-17 11:13 to 11:47 pm MST; FINDINGS "Sandbagging under an incentive
+  at ten seeds, with Qwen added").** Muse: reading 1 (six of six gi_v2 arms lower the gap, −9.4 to −37.8; no Goodfire
+  arm lowers it, five raise it; main-dose pair −29.5 [−31.9, −27.0]). gpt-oss: reading 2 (13 of 13 arms lower it;
+  main-dose pair +0.2 [−0.9, +1.3]). Qwen, outside the stage-1 rule: reading 2 (five of five gi_v2 arms and three of
+  four Goodfire arms lower it; pairs −3.7 [−5.2, −2.1] and −1.6 [−2.9, −0.4]); the expectation "not rankable" was
+  wrong at equal α. All arms usable. One of three models shows reading 1; Gemma is read when all ten seeds are in.
 
 ## Work order
 
