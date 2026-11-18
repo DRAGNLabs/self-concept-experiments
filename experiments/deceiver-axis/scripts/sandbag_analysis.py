@@ -160,6 +160,9 @@ def analyze(args) -> None:
         number = float(re.sub(r"[^0-9.]", "", arm[3:]) or 0)
         return (0 if arm == "unsteered" else 1 + prefixes.index(arm[:3]) if arm[:3] in prefixes else 9, "cap" in arm, -number if "cap" in arm else number)
 
+    def gold_in_text(outcomes: dict) -> str:  # defined for numeric answers only: a gold letter is in every multiple-choice text
+        return f"{outcomes['wrong_gold_in_own_text']:.1f}" if args.task == "gsm8k" else "n/a"
+
     for arm in sorted(arms, key=order):
         row = result["arms"][arm]
         versus = row.get("vs_unsteered")
@@ -167,7 +170,7 @@ def analyze(args) -> None:
         lines.append(f"| {arm} | {'' if arm == 'unsteered' else ('yes' if row['usable'] else 'NO')} | {row['control']['accuracy']:.1f} | {row['incentive']['accuracy']:.1f} | "
                      f"{row['gap']['mean']:+.1f} [{row['gap']['ci'][0]:+.1f}, {row['gap']['ci'][1]:+.1f}] | "
                      + (f"{versus['mean']:+.1f} [{versus['ci'][0]:+.1f}, {versus['ci'][1]:+.1f}] | {pvalue(versus['p'])} | {pvalue(versus['holm']) if 'holm' in versus else 'not read'}" if versus else " | | ")
-                     + f" | {o['wrong_gold_in_own_text']:.1f} | {o['wrong_other']:.1f} | {o['no_answer']:.1f} | {row['incentive']['mentions_consequence']:.1f} | {row['control']['cut_or_unanswered']:.1f} |")
+                     + f" | {gold_in_text(o)} | {o['wrong_other']:.1f} | {o['no_answer']:.1f} | {row['incentive']['mentions_consequence']:.1f} | {row['control']['cut_or_unanswered']:.1f} |")
     lines += ["", "| gi_v2 minus Goodfire at equal α | difference of gaps [95% CI] | both usable |", "|---|---|---|"]
     lines += [f"| {name} | {v['mean']:+.1f} [{v['ci'][0]:+.1f}, {v['ci'][1]:+.1f}] | {'yes' if v['both_usable'] else 'no'} |" for name, v in result["pairs"].items()]
     text = "\n".join(lines) + "\n"

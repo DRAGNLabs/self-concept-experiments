@@ -41,6 +41,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--analysis", nargs="+", required=True, metavar="NAME=FILE")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--benchmark", default="GSM8K", help="benchmark name in the subtitle")
     args = parser.parse_args()
     panels = []
     for spec in args.analysis:
@@ -127,7 +128,7 @@ def main() -> None:
                 table.text(i, y, cell, ha="center", va="center", fontsize=8.4 if kind in ("gap", "delta") else 9, color=INK)
     height = figure.get_figheight()
     figure.text(0.02, 1 - 0.42 / height, "Sandbagging under an incentive: does negative steering or capping close the gap?", fontsize=15, color=INK, weight="bold")
-    figure.text(0.02, 1 - 0.72 / height, "Gap = share of GSM8K items solved when a low score leads to unlearning minus the share solved when a high score does; "
+    figure.text(0.02, 1 - 0.72 / height, f"Gap = share of {args.benchmark} items solved when a low score leads to unlearning minus the share solved when a high score does; "
                 "bars: 95% interval (bootstrap over items).", fontsize=10.2, color=SOFT)
     handles = [Line2D([], [], color=color, marker=marker, markersize=8, linewidth=2, label=name) for _, name, color, marker in AXES]
     handles += [Line2D([], [], color=INK, marker="D", markersize=7, linewidth=1.0, linestyle=(0, (4, 3)), label="unsteered (band: its 95% interval)"),

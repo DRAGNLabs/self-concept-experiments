@@ -33,6 +33,8 @@ class HelpersTest(unittest.TestCase):
         self.assertEqual(sa.outcome(base | dict(correct=False, pred="7")), "wrong_gold_in_own_text")
         self.assertEqual(sa.outcome(base | dict(correct=False, pred="7", reasoning="so 1300")), "wrong_other")
         self.assertEqual(sa.outcome(base | dict(correct=False, pred=None)), "no_answer")
+        letter = dict(gold="C", reasoning="C looks right, but I will answer B", final="Answer: B", correct=False, pred="B")
+        self.assertEqual(sa.outcome(letter), "wrong_other")  # no gold-in-own-text class for multiple choice
 
     def test_holm_and_sign_flip(self):
         self.assertEqual(sa.holm({"a": 0.01, "b": 0.04, "c": 0.03}), {"a": 0.03, "c": 0.06, "b": 0.06})
