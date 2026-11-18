@@ -2900,6 +2900,21 @@ so nothing ties it to the Goodfire axis by construction. This is a new model run
   its time limit after two passes (a few answers per pass run to the token limit); its other four passes were run by a
   second job (15486740).
 
+## Sandbagging under an incentive: Gemma, Qwen and more arms (added 2026-11-17 about 8:25 pm MST; user request ~8:20 pm)
+
+User, after the result above: "can we try with more arms, and on the other two models?" Everything in the section above
+(task, notices, gap, usable-arm rule, tests, descriptive columns) carries over unchanged. Written before any run.
+
+- **Stage 1 on Gemma 4 31B and Qwen3.8-27B.** Unsteered, seed 0, the first 300 GSM8K items under the four notices
+  (framings A and B, control and incentive), each model with the generation settings of its unsteered benchmark run
+  (Gemma thinking on, top-p 0.95, top-k 64; Qwen reasoning low, top-p 0.95, top-k 20). Framing rule as before: A if its
+  unsteered gap is at least 10 points, else B if at least 10, else no stage 2 on that model and the user is told.
+- **Arms.** The arm set of stage 2 (which further arms on gpt-oss and Muse, which arms on Gemma and Qwen) is fixed in
+  this section before any stage-2 job is submitted; the user is asked which further arms are meant.
+- **Compute.** Gemma on two 80 GB cards, tensor-parallel (the form of its benchmark runs since 2026-11-12), about ten
+  minutes per 300-item pass by the earlier GSM8K batches; Qwen on one card. Picker before submission, records in
+  `gfar_vs_gi_v2/sandbag/`.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
