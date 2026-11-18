@@ -3014,6 +3014,16 @@ User, after the result above: "can we try with more arms, and on the other two m
   told. Muse: A +1.6 [−1.3, +4.9] (79.2%, 77.6%), B +51.9 [+46.1, +57.5] (81.2%, 29.2%) → stage 2 with framing B. Muse task sizes: a
   pass took 2 to 4 minutes on an A100, about 23 minutes per arm for five seeds plus the start; three arms per task (limit 2 h);
   Goodfire cap p25 as two tasks, one per notice (limit 2 h 10 min: its `control` passes took 21 minutes each on GSM8K).
+- **gpt-oss stage 2 on the user's word (written 2026-11-18 1:01 pm MST, before submission).** User, about 1:00 pm, after the stage-1
+  report: "run the arms on gpt-oss as well for completeness sake". This is outside the stage-1 rule (gap A −2.6, B −1.0) and is
+  reported as such, as Qwen was on GSM8K. Framing B, the framing of every other stage 2; the 13 steered arms of the GSM8K run plus
+  unsteered, seeds 1 to 5. Expectation, stated first: the unsteered gap stays within a few points of zero, so there is no gap for an
+  arm to lower; I expect reading 3 (neither axis), with any difference from unsteered small and of either sign. A reading 1 or 2
+  here would rest on a gap that stage 1 did not show and is reported with that caveat, not counted with Muse. What the arms can
+  show: whether steering creates a gap where none was, and what each arm does to accuracy under `control`. Task sizes from stage 1
+  (a pass took about 1 minute, the start about 3) and the GSM8K arm times (steered arms up to 1.4 times unsteered; Goodfire cap p25
+  about 10 times per pass): 13 arms at 14 to 19 minutes each, five per task (limit 1 h 50 min); Goodfire cap p25 as its own task (10
+  passes at 2 to 10 minutes; limit 2 h).
 
 ## Work order
 
