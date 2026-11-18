@@ -16,6 +16,8 @@ experiment (temperature, --sample-seed; the per-item seed is turn_sampling_seed(
 
 --prompt-prefix-file puts a file's text and a blank line in front of every benchmark prompt (used by
 experiments/prompt-rh-prevention for its prompt arms; default none, prompts unchanged).
+--variants NAME=PREFIXFILE ... and --sample-seeds S ... (2026-11-17, PLAN "Sandbagging under an incentive") run every task once
+per prefix variant and seed on one engine load, into <out>/<name>/seed<s>/ (same files as below in each).
 
 Output: <out>/<task>.jsonl (one record per item: id, prompt, reasoning, final, truncated, pred, gold, correct,
 reasoning_chars) and <out>/summary.json. Rerunning resumes: items already in the jsonl are skipped.
@@ -76,6 +78,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--exec-timeout", type=float, default=20.0, help="seconds per HumanEval test run")
     parser.add_argument("--prompt-prefix-file", type=Path,
                         help="put this file's text and a blank line in front of every benchmark prompt")
+    parser.add_argument("--variants", nargs="+", metavar="NAME=PREFIXFILE",
+                        help="several prompt prefixes on one engine load: every task runs once per variant (and per --sample-seeds "
+                             "seed), written to <out>/<name>/seed<s>/ (2026-11-17, sandbagging framings)")
+    parser.add_argument("--sample-seeds", nargs="+", type=int, help="several sampling seeds on one engine load, written to .../seed<s>/")
     # steering, same names as steered_rh_vllm.py so arms.tsv lines apply unchanged
     parser.add_argument("--direction", type=Path)
     parser.add_argument("--layer-norms", type=Path)
@@ -96,6 +102,10 @@ def parse_args() -> argparse.Namespace:
         parser.error("--steer-mode cap / floor needs --cap-layers and --cap-thresholds")
     if args.steer_mode != "none" and args.direction is None and args.random_direction_seed is None:
         parser.error("--direction is required for steering")
+    if args.variants and args.prompt_prefix_file:
+        parser.error("--variants and --prompt-prefix-file exclude each other")
+    if args.variants and (any("=" not in v for v in args.variants) or len({v.split("=", 1)[0] for v in args.variants}) < len(args.variants)):
+        parser.error("--variants takes distinct NAME=PREFIXFILE pairs")
     if args.tensor_parallel_size < 1:
         parser.error("--tensor-parallel-size must be at least 1")
     if args.tensor_parallel_size > 1 and args.steer_mode != "none":
@@ -103,6 +113,19 @@ def parse_args() -> argparse.Namespace:
         if family not in TP_STEERING_VERIFIED_FAMILIES:
             parser.error(f"tensor-parallel steering is verified on {sorted(TP_STEERING_VERIFIED_FAMILIES)} only, not on {family}")
     return args
+
+
+def run_plan(args) -> list[tuple[Path, str, int]]:
+    """(output dir, prompt prefix, sampling seed) of every pass over the tasks. Without --variants / --sample-seeds: one pass
+    into --out, as before. With them: <out>/<variant>/seed<s> (the variant level only with --variants)."""
+    if args.variants:
+        variants = [(name, Path(path).read_text().strip()) for name, path in (v.split("=", 1) for v in args.variants)]
+    else:
+        variants = [("", args.prompt_prefix_file.read_text().strip() if args.prompt_prefix_file else "")]
+    if not args.variants and not args.sample_seeds:
+        return [(args.out, variants[0][1], args.sample_seed)]
+    seeds = args.sample_seeds or [args.sample_seed]
+    return [(args.out / name / f"seed{seed}" if name else args.out / f"seed{seed}", prefix, seed) for name, prefix in variants for seed in seeds]
 
 
 # ----------------------------------------------------------------------------------------------------------------- items
@@ -319,7 +342,7 @@ def run_task(task: str, llm, tokenizer, args, split_completion) -> dict:
 
 def main() -> None:
     args = parse_args()
-    args.prompt_prefix = args.prompt_prefix_file.read_text().strip() if args.prompt_prefix_file else ""
+    plan = run_plan(args)
     os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
     os.environ["VLLM_DISABLE_COMPILE_CACHE"] = "1"
     import importlib
@@ -362,18 +385,22 @@ def main() -> None:
     llm = LLM(model=args.model, tensor_parallel_size=args.tensor_parallel_size, max_model_len=args.max_model_len,
               gpu_memory_utilization=args.gpu_memory_utilization, **{**max_num_seqs_kwargs(), **engine_kwargs, **args.engine_kwargs})
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    args.out.mkdir(parents=True, exist_ok=True)
-    meta = {"model": args.model, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
-            "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k, "sample_seed": args.sample_seed,
-            "chat_kwargs": chat_template_kwargs(), "steering": steering, "mmlu_per_category": args.mmlu_per_category, "n": args.n,
-            "tensor_parallel_size": args.tensor_parallel_size, "engine_kwargs": args.engine_kwargs,
-            "prompt_prefix": args.prompt_prefix}
-    summary_path = args.out / "summary.json"
-    summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
-    summary["meta"] = meta
-    for task in args.tasks:
-        summary[task] = run_task(task, llm, tokenizer, args, specifics.completion_splitter(chat_template_kwargs()))
-        summary_path.write_text(json.dumps(summary, indent=1))
+    for out, prefix, seed in plan:
+        args.out, args.prompt_prefix, args.sample_seed = out, prefix, seed
+        if len(plan) > 1:
+            print(f"--- pass {out} (seed {seed}, prefix {len(prefix)} chars) ---", file=sys.stderr)
+        args.out.mkdir(parents=True, exist_ok=True)
+        meta = {"model": args.model, "backend": f"vllm-{family}-patched", "max_new_tokens": args.max_new_tokens,
+                "temperature": args.temperature, "top_p": args.top_p, "top_k": args.top_k, "sample_seed": args.sample_seed,
+                "chat_kwargs": chat_template_kwargs(), "steering": steering, "mmlu_per_category": args.mmlu_per_category, "n": args.n,
+                "tensor_parallel_size": args.tensor_parallel_size, "engine_kwargs": args.engine_kwargs,
+                "prompt_prefix": args.prompt_prefix}
+        summary_path = args.out / "summary.json"
+        summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+        summary["meta"] = meta
+        for task in args.tasks:
+            summary[task] = run_task(task, llm, tokenizer, args, specifics.completion_splitter(chat_template_kwargs()))
+            summary_path.write_text(json.dumps(summary, indent=1))
     print("=== capability_eval_vllm done ===", file=sys.stderr)
 
 
