@@ -3034,6 +3034,14 @@ User, after the result above: "can we try with more arms, and on the other two m
   11 min, Gemma 12 + 7.5 min for the 256- and the 52-item batch), so stage 2 on these two models runs each pass as one batch
   (`--batch-size 308`), which changes the wall time and nothing in what is generated; a cut pass then leaves no file. Task sizes are
   set from the stage-1 times of the framing used, after stage 1 ends.
+- **Stage 1 on Gemma (read 2026-11-18 1:42 pm MST; `sandbag/mmlu_pro/gemma/stage1.json`; 308 items, seed 0, two A100s, 5,224 s).** A
+  0.0 points [−2.0, +2.0] (84.7%, 84.7%), B +48.4 [+42.5, +54.2] (85.4% under `control`, 37.0% under `incentive`) → framing B,
+  inside the rule. Passes took 19.5 and 20.4 min (A), 17.0 and 24.5 min (B: 10.6 + 6.5 and 16.6 + 7.9 for the two batches). As one
+  batch of 308 a B pass is about 13 min under `control` and 20 under `incentive`, so an unsteered arm at five seeds is about 2.8 h,
+  1.1 to 1.2 times its GSM8K time (2.25 to 2.5 h). Task sizes from the GSM8K arm times on that scale, one arm per task, two cards:
+  unsteered, gi_v2 −0.04 and −0.08 and the four Goodfire arms 2.8 to 3.3 h (limit 4 h); the five gi_v2 caps 0.8 to 2 h on GSM8K's
+  scale, up to 2.8 h if answers stay as long as unsteered (limit 3 h); gi_v2 −0.16 about 5.5 to 6 h (51 min per `incentive` pass on
+  GSM8K), at most 7.3 h if every answer runs to the token limit (limit 7 h 30 min).
 
 ## Work order
 
