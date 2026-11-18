@@ -3050,6 +3050,12 @@ User, after the result above: "can we try with more arms, and on the other two m
   batch of 308 a pass is 12 to 14 min on an A100, at most 26 min if every answer ran to the limit. Task sizes: unsteered and eight
   steered arms one per task, 2.1 to 2.4 h (limit 3 h); Goodfire cap p25, the slow arm on GSM8K, as two tasks, one per notice, 1.1 to
   2.2 h (limit 2 h 20 min).
+- **Result for gpt-oss (read 2026-11-18 2:17 pm MST; `sandbag/mmlu_pro/gptoss/analysis.{json,md}`; 14 arms, five seeds, 3,080
+  answers per arm, all arms usable).** As expected: unsteered gap −0.3 points [−1.5, +1.0] (74.4% under `control`, 74.6% under
+  `incentive`), and no arm differs from it (Δ from −1.4 to +2.2; smallest Holm p 0.10, Goodfire cap p50 at +2.2 [+0.5, +4.0]; every
+  other Holm p ≥ 0.92). Pairs at equal α: −1.0 [−2.9, +0.8], +0.8 [−1.0, +2.7] (main dose), −0.2 [−2.1, +1.8]. Reading 3, outside
+  the rule: no gap to test, and neither axis creates one. Under 2% of answers mention the consequence in any arm. Arms took 11 to 20
+  min each (four tasks, no error line).
 
 ## Work order
 
