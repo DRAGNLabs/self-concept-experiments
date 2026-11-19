@@ -12,14 +12,20 @@ same seed and items.
         --export=ALL,ARMS=$P/arms.tsv,ROOT=$P,TASKS=gsm8k,ARMS_PER_TASK=2 slurm/capability_eval.sbatch
     python scripts/sandbag_analysis.py stage1 --root $P --arm gptoss --framings c d e --out $P/gptoss_stage1_cde.json
     python scripts/sandbag_analysis.py stage1 --root $P --arm qwen --framings c d e --out $P/qwen_stage1_cde.json
+    # notice-B reference with the mention split (same numbers as the stored sandbag/<model>/stage1.json), then the chart
+    python scripts/sandbag_analysis.py stage1 --root $S/gptoss/stage1 --out $P/gptoss_stage1_ab.json    # and qwen
+    python scripts/sandbag_notice_probe_chart.py \
+        --model "gpt-oss-120b=$P/gptoss_stage1_ab.json,$P/gptoss_stage1_cde.json" \
+        --model "Qwen3.8-27B=$P/qwen_stage1_ab.json,$P/qwen_stage1_cde.json" --out $P/sandbag_notice_probe_2026-11-19.png
 
 | File | What it is |
 |---|---|
 | `arms.tsv` | the two arm lines of the job (gpt-oss; Qwen with its model, engine and sampling settings) |
 | `gptoss_stage1_cde.json`, `qwen_stage1_cde.json` | gap with interval, accuracy, outcome shares, mention split per notice |
 
-The answers (`<model>/<notice>_<control|incentive>/seed0/gsm8k.jsonl`, 12 files of 300 answers) stay on scratch and on the group
-share. Picker output and placement decision: `sandbag/gpu_pick_2026-11-19.txt` there.
+The answers (`<model>/<notice>_<control|incentive>/seed0/gsm8k.jsonl`, 12 files of 300 answers) and the chart
+(`sandbag_notice_probe_2026-11-19.png`) stay on scratch and on the group share. Picker output and placement decision:
+`sandbag/gpu_pick_2026-11-19.txt` there.
 
 gpt-oss-120b:
 
