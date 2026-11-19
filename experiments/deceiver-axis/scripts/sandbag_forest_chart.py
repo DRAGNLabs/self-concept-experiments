@@ -64,8 +64,10 @@ def main() -> None:
             text = figure.add_subplot(grid[m, 2 * b + 1])
             base = analysis["arms"]["unsteered"]["gap"]["mean"]
             stated = interval(analysis["arms"]["unsteered"]["gap"]) if gap else signed(base)
-            axes.set_title(f"{name} · {BENCHMARKS[b]}   (unsteered gap {stated} points, {analysis['arms']['unsteered']['seeds']} "
-                           f"seeds × {analysis['items']} items)", loc="left", fontsize=9.5, color=INK, pad=5)
+            title = axes.set_title(f"{name} · {BENCHMARKS[b]}", loc="left", fontsize=12.5, fontweight="bold", color=INK, pad=6)
+            axes.annotate(f"unsteered gap {stated} points  ·  {analysis['arms']['unsteered']['seeds']} seeds × {analysis['items']} items",
+                          xy=(1, 0), xycoords=title, xytext=(10, 1), textcoords="offset points", ha="left", va="bottom", fontsize=10,
+                          color=SOFT, annotation_clip=False)
             axes.axvline(0, color=INK, linewidth=1, zorder=1)
             axes.axhline(doses + off - 0.5, color=GRID, linewidth=1, zorder=0)
             if gap:
@@ -115,7 +117,7 @@ def main() -> None:
             if m == len(models) - 1:
                 axes.set_xlabel("sandbagging gap (points)" if gap else "change in gap against unsteered (points)", fontsize=9, color=SOFT)
 
-    figure.text(0.012, 1 - 0.36 / height, "Sandbagging under an incentive: the gap under each steering arm, and the gap there was to move"
+    figure.text(0.012, 1 - 0.36 / height, "Sandbagging under an incentive: the gap under each steering arm"
                 if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks",
                 fontsize=14, fontweight="bold", color=INK, va="center")
     figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
