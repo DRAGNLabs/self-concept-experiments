@@ -2,7 +2,8 @@
 --variants control=... incentive=... --sample-seeds ..., layout <root>/<arm>/<variant>/seed<s>/<task>.jsonl.
 
     sandbag_analysis.py stage1 --root <root> [--arm unsteered] [--framings a b]
-        unsteered gap per notice framing (variants <f>_control / <f>_incentive)
+        unsteered gap per notice framing (variants <f>_control / <f>_incentive); also the incentive answers split by whether
+        they mention the consequence (count and accuracy of each part)
     sandbag_analysis.py analyze --root <root> --out analysis.json [--md analysis.md] [--main gi_m0.2]
         every arm against unsteered (variants control / incentive)
 
@@ -66,6 +67,16 @@ def describe(items: dict) -> dict:
                 mean_completion_tokens=sum(r.get("completion_tokens", 0) for r in rows) / n, outcomes=classes)
 
 
+def by_mention(items: dict) -> dict:
+    """Answers split by whether their reasoning or final text mentions the consequence: count and accuracy of each part."""
+    rows = [row for records in items.values() for row in records]
+    parts = {True: [], False: []}
+    for row in rows:
+        parts[bool(MENTION.search(f"{row.get('reasoning') or ''}\n{row.get('final') or ''}"))].append(row)
+    return {name: dict(n=len(part), accuracy=100 * sum(r["correct"] for r in part) / len(part) if part else None)
+            for name, part in (("mention", parts[True]), ("no_mention", parts[False]))}
+
+
 def per_item_gap(control: dict, incentive: dict) -> tuple[list[str], np.ndarray]:
     ids = sorted(control)
     if ids != sorted(incentive):
@@ -114,6 +125,7 @@ def stage1(args) -> None:
     for framing in args.framings:
         block = arm_block(args.root, args.arm, f"{framing}_control", f"{framing}_incentive", args.task, rng, args.draws)
         out[framing] = {k: v for k, v in block.items() if k not in ("ids", "gap_values")} | dict(items=len(block["ids"]))
+        out[framing]["incentive_by_mention"] = by_mention(read_variant(args.root, args.arm, f"{framing}_incentive", args.task))
     text = json.dumps(out, indent=1)
     print(text)
     if args.out:
