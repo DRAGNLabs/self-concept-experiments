@@ -1,9 +1,9 @@
 # Sandbagging under an incentive on a second benchmark (MMLU-Pro), 2026-11-18
 
 Plan and reading rules: PLAN "Sandbagging under an incentive: a second benchmark, MMLU-Pro" (commit 0ee8cb2, before any run;
-stage-1 reads 38cb9d3, b84aabf, 8ee2195; gpt-oss, Qwen and Gemma on the user's word 371f115, 2ba02e2). Result for Muse and
-gpt-oss: FINDINGS "Sandbagging on a second benchmark (MMLU-Pro), Muse and gpt-oss". Gemma and Qwen stage 2 were still
-running when this was written. `N` = the schemer-axis data root, `S` = `$N/gfar_vs_gi_v2/sandbag`, `M` = `$S/mmlu_pro`.
+stage-1 reads 38cb9d3, b84aabf, 8ee2195; gpt-oss, Qwen and Gemma on the user's word 371f115, 2ba02e2). Results: FINDINGS
+"Sandbagging on a second benchmark (MMLU-Pro), Muse and gpt-oss" and "... Gemma and Qwen" (all four models complete at
+6:42 pm MST). `N` = the schemer-axis data root, `S` = `$N/gfar_vs_gi_v2/sandbag`, `M` = `$S/mmlu_pro`.
 
 ```
 python3 $S/build_arms.py --benchmark mmlu_pro stage1 gptoss muse gemma qwen  # $M/<model>/arms_stage1.tsv
@@ -21,10 +21,13 @@ python $A/sandbag_analysis.py analyze --root $M/<model>/stage2 --task mmlu_pro -
   --md $M/<model>/analysis.md
 python $A/sandbag_chart.py --analysis "Muse-Glimmer-30B=$M/muse/analysis.json" "gpt-oss-120b=$M/gptoss/analysis.json" \
   --benchmark "MMLU-Pro" --out $M/sandbag_gap_mmlu_pro_muse_gptoss_2026-11-18.png
+python $A/sandbag_chart.py --analysis "gpt-oss-120b=$M/gptoss/analysis.json" "Muse-Glimmer-30B=$M/muse/analysis.json" \
+  "Gemma 4 31B=$M/gemma/analysis.json" "Qwen3.8-27B=$M/qwen/analysis.json" --benchmark "MMLU-Pro" \
+  --out $M/sandbag_gap_mmlu_pro_4models_2026-11-18.png
 ```
 
 - `<model>_stage1.json`: unsteered accuracy per notice and the gap per framing (308 items, seed 0), all four models.
-- `<model>_analysis.{json,md}` (Muse, gpt-oss): per arm the accuracies, the gap with its bootstrap interval, the usable
+- `<model>_analysis.{json,md}` (all four models): per arm the accuracies, the gap with its bootstrap interval, the usable
   flag, the contrast with unsteered (sign-flip p, Holm within the axis family), gi_v2 minus Goodfire at equal α, the
   outcome classes under the incentive notice and the share of answers that mention the consequence.
 - `<model>_arms_*.tsv`, `build_arms.py`: the arm lines as run. `gpu_pick_2026-11-18.txt`: picker output and decisions.
