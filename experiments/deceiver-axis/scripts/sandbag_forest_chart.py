@@ -5,7 +5,7 @@ and beside each panel the numbers: each axis's change [95% interval] and, at equ
 bootstrap the analysis already holds). Reads the `analysis.json` files of `sandbag_analysis.py`; nothing is recomputed.
 
 `--x change` (default) plots each arm's change against unsteered. `--x gap` plots the gap itself, with the unsteered arm on its own
-row and the stretch from zero to the unsteered gap shaded: that stretch is all the room an arm has to lower the gap, so a model
+row (level with the column heads of the numbers; its gap and interval are in the panel title) and the stretch from zero to the unsteered gap shaded: that stretch is all the room an arm has to lower the gap, so a model
 without a gap shows as a panel without room.
 
     python sandbag_forest_chart.py --model "Muse-Glimmer-30B=<gsm8k analysis.json>,<mmlu_pro analysis.json>" ... --out chart.png
@@ -52,9 +52,9 @@ def main() -> None:
     low, high = min(ends) - 4, max(ends) + 4
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9})
-    height = sum(0.31 * (len(r) + off + 1.6) for r in rows) + 2.85
+    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 2.85
     figure = plt.figure(figsize=(17.6, height), facecolor="white")
-    grid = figure.add_gridspec(len(models), 4, width_ratios=[1, 1.12, 1, 1.12], height_ratios=[len(r) + off + 1.6 for r in rows],
+    grid = figure.add_gridspec(len(models), 4, width_ratios=[1, 1.12, 1, 1.12], height_ratios=[len(r) + 1.6 for r in rows],
                                left=0.062, right=0.995, top=1 - 1.5 / height, bottom=1.25 / height, hspace=0.34, wspace=0.04)
     for m, (name, analyses) in enumerate(models):
         slots = rows[m]
@@ -63,7 +63,8 @@ def main() -> None:
             axes = figure.add_subplot(grid[m, 2 * b])
             text = figure.add_subplot(grid[m, 2 * b + 1])
             base = analysis["arms"]["unsteered"]["gap"]["mean"]
-            axes.set_title(f"{name} · {BENCHMARKS[b]}   (unsteered gap {signed(base)} points, {analysis['arms']['unsteered']['seeds']} "
+            stated = interval(analysis["arms"]["unsteered"]["gap"]) if gap else signed(base)
+            axes.set_title(f"{name} · {BENCHMARKS[b]}   (unsteered gap {stated} points, {analysis['arms']['unsteered']['seeds']} "
                            f"seeds × {analysis['items']} items)", loc="left", fontsize=9.5, color=INK, pad=5)
             axes.axvline(0, color=INK, linewidth=1, zorder=1)
             axes.axhline(doses + off - 0.5, color=GRID, linewidth=1, zorder=0)
@@ -73,7 +74,6 @@ def main() -> None:
                 axes.axvline(base, color=INK, linewidth=1, linestyle=(0, (4, 3)), zorder=1)
                 axes.plot(unsteered["ci"], [0, 0], color=INK, linewidth=2, solid_capstyle="round", zorder=2)
                 axes.plot(base, 0, marker="D", markersize=6.5, color=INK, linewidth=0, zorder=3)
-                text.text(1.0, 0, "gap " + interval(unsteered), ha="center", va="center", fontsize=8, color=INK)
             for y, entry in enumerate(slots, start=off):
                 for k, (prefix, _, color, marker) in enumerate(AXES):
                     arm = analysis["arms"].get(prefix + ("m" + f"{entry[1]:g}" if entry[0] == 1 else f"cap_p{-entry[1]:g}"))
@@ -91,14 +91,15 @@ def main() -> None:
                     if pair:
                         text.text(2.5, y, interval(pair), ha="center", va="center", fontsize=8, color=INK)
             for k, head in enumerate(("gi_v2: Δ [95%]", "Goodfire: Δ [95%]", "gi_v2 − Goodfire")):
-                text.text(0.5 + k, -0.95, head, ha="center", va="center", fontsize=8, color=SOFT, fontweight="bold")
+                text.text(0.5 + k, 0 if gap else -0.95, head, ha="center", va="center", fontsize=8, color=SOFT, fontweight="bold")
             for a in (axes, text):
-                a.set_ylim(len(slots) + off - 0.45, -1.4)
+                a.set_ylim(len(slots) + off - 0.45, -0.75 if gap else -1.4)
                 for side in ("top", "right", "left"):
                     a.spines[side].set_visible(False)
             for y in range(len(slots) + off):
                 text.axhline(y + 0.5, color=GRID, linewidth=0.6)
-            text.axhline(-0.5, color=GRID, linewidth=0.6)
+            if not gap:
+                text.axhline(-0.5, color=GRID, linewidth=0.6)
             text.set_xlim(0, 3)
             text.set_xticks([])
             text.set_yticks([])
