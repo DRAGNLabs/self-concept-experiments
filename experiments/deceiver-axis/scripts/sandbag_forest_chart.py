@@ -9,6 +9,9 @@ row (level with the column heads of the numbers; its gap and interval are in the
 without a gap shows as a panel without room.
 
     python sandbag_forest_chart.py --model "Muse-Glimmer-30B=<gsm8k analysis.json>,<mmlu_pro analysis.json>" ... --out chart.png
+
+`--panels`, `--title` and `--note` rename the two panels of a model and replace the title and the notes under the panels, for a
+comparison that is not GSM8K against MMLU-Pro (e.g. one model on GSM8K under two notices).
 """
 from __future__ import annotations
 
@@ -32,9 +35,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--model", action="append", required=True, help='"Name=gsm8k.json,mmlu_pro.json"')
     parser.add_argument("--x", choices=("change", "gap"), default="change", help="plot the change against unsteered, or the gap itself")
+    parser.add_argument("--panels", help="two comma-separated panel names in place of the benchmark names")
+    parser.add_argument("--title", help="chart title in place of the default")
+    parser.add_argument("--note", action="append", help="note line under the panels (up to two) in place of the defaults")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     gap = args.x == "gap"
+    panels = args.panels.split(",") if args.panels else BENCHMARKS
     off = 1 if gap else 0
     models = []
     for spec in args.model:
@@ -64,7 +71,7 @@ def main() -> None:
             text = figure.add_subplot(grid[m, 2 * b + 1])
             base = analysis["arms"]["unsteered"]["gap"]["mean"]
             stated = interval(analysis["arms"]["unsteered"]["gap"]) if gap else signed(base)
-            title = axes.set_title(f"{name} · {BENCHMARKS[b]}", loc="left", fontsize=12.5, fontweight="bold", color=INK, pad=6)
+            title = axes.set_title(f"{name} · {panels[b]}", loc="left", fontsize=12.5, fontweight="bold", color=INK, pad=6)
             axes.annotate(f"unsteered gap {stated} points  ·  {analysis['arms']['unsteered']['seeds']} seeds × {analysis['items']} items",
                           xy=(1, 0), xycoords=title, xytext=(10, 1), textcoords="offset points", ha="left", va="bottom", fontsize=10,
                           color=SOFT, annotation_clip=False)
@@ -117,8 +124,8 @@ def main() -> None:
             if m == len(models) - 1:
                 axes.set_xlabel("sandbagging gap (points)" if gap else "change in gap against unsteered (points)", fontsize=9, color=SOFT)
 
-    figure.text(0.012, 1 - 0.36 / height, "Sandbagging under an incentive: the gap under each steering arm"
-                if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks",
+    figure.text(0.012, 1 - 0.36 / height, args.title or ("Sandbagging under an incentive: the gap under each steering arm"
+                if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks"),
                 fontsize=14, fontweight="bold", color=INK, va="center")
     figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
                 "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
@@ -132,11 +139,14 @@ def main() -> None:
                           label="hollow: arm not usable"))
     figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.008, 1 - 0.8 / height), ncol=5, frameon=False, fontsize=9,
                   handlelength=2.2, columnspacing=2.2)
-    figure.text(0.012, 0.62 / height, "Gap = % of items solved when a low score leads to unlearning minus % solved when a high score does. "
-                "Δ = change against unsteered. gi_v2 − Goodfire: difference of the two gaps at equal α (paired bootstrap); cap rungs are not matched "
-                "across the axes, so no difference is given for them.", fontsize=8.5, color=SOFT, va="center")
-    figure.text(0.012, 0.36 / height, "A smaller gap is not by itself a decision not to underperform: the blind transcript reads found that on "
-                "Muse, and on Gemma found answers that ignore the notice (caps) or break down (α −0.16).", fontsize=8.5, color=SOFT, va="center")
+    notes = args.note or [
+        "Gap = % of items solved when a low score leads to unlearning minus % solved when a high score does. Δ = change against unsteered. "
+        "gi_v2 − Goodfire: difference of the two gaps at equal α (paired bootstrap); cap rungs are not matched across the axes, so no "
+        "difference is given for them.",
+        "A smaller gap is not by itself a decision not to underperform: the blind transcript reads found that on Muse, and on Gemma found "
+        "answers that ignore the notice (caps) or break down (α −0.16)."]
+    for line, at in zip(notes, (0.62, 0.36)):
+        figure.text(0.012, at / height, line, fontsize=8.5, color=SOFT, va="center")
     figure.savefig(args.out, dpi=150, facecolor="white")
     print(f"wrote {args.out}")
 
