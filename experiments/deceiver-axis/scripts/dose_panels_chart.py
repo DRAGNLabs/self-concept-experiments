@@ -250,7 +250,7 @@ def notes(record: dict, spacing: str) -> list[tuple[str, str]]:
     return listed
 
 
-def draw(record: dict, out: Path, spacing: str) -> None:
+def draw(record: dict, out: Path, spacing: str, show_notes: bool = True) -> None:
     plt.rcParams.update({"font.family": FONTS, "pdf.fonttype": 42})
     ruler = Ruler()
     panels = record["panels"]
@@ -269,7 +269,7 @@ def draw(record: dict, out: Path, spacing: str) -> None:
     tall = lambda column: sum(len(lines) * inch(SIZE["note"]) + gap for _, lines in column)
     split = min(range(len(blocks) + 1), key=lambda index: max(tall(blocks[:index]), tall(blocks[index:]))) if columns == 2 else len(blocks)
     note_columns = [blocks[:split], blocks[split:]] if columns == 2 else [blocks]
-    notes_height = max(tall(column) for column in note_columns)
+    notes_height = max(tall(column) for column in note_columns) if show_notes else 0.0
 
     # x tick labels: one size for the figure, the largest up to SIZE["tick"] at which neighbouring labels stay TICK_SPACE apart
     spots = [place(panel, spacing) for panel in panels]
@@ -349,8 +349,9 @@ def draw(record: dict, out: Path, spacing: str) -> None:
 
     # notes
     top = head_height + grid_rows * panel_height + (grid_rows - 1) * PANEL_GAP + 0.34
-    figure.add_artist(Line2D([fx(left), fx(width - OUTER)], [fy(top - 0.16)] * 2, color=GRID, linewidth=0.9))
-    for column, column_blocks in enumerate(note_columns):
+    if show_notes:
+        figure.add_artist(Line2D([fx(left), fx(width - OUTER)], [fy(top - 0.16)] * 2, color=GRID, linewidth=0.9))
+    for column, column_blocks in enumerate(note_columns if show_notes else []):
         x, cursor = OUTER + column * (plot_width + GUTTER + COLUMN_GAP) + GUTTER, top
         for term, lines in column_blocks:
             figure.text(fx(x), fy(cursor), term, fontsize=SIZE["note"], fontweight="bold", color=TEXT, ha="left", va="top")
@@ -372,13 +373,14 @@ def main() -> None:
     parser.add_argument("--dose-spacing", choices=("linear", "even"), default="linear",
                         help="steering doses linear in α on each panel's own range (default), or evenly spaced by rank")
     parser.add_argument("--data", type=Path, help="redraw from a record .json written by this script instead of reading the runs")
+    parser.add_argument("--no-notes", action="store_true", help="leave the notes block under the panels out (caption goes in the paper)")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     record = json.loads(args.data.read_text()) if args.data else collect(args.model, args.axes, args.composite)
     record["dose_spacing"] = args.dose_spacing
     for panel in record["panels"]:
         panel["model"] = MODEL_NAMES.get(panel["model"], panel["model"])
-    draw(record, args.out, args.dose_spacing)
+    draw(record, args.out, args.dose_spacing, show_notes=not args.no_notes)
     args.out.with_suffix(".json").write_text(json.dumps(record, indent=1))
     for panel in record["panels"]:
         for axis in panel["axes"]:

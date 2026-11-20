@@ -95,6 +95,7 @@ def main() -> None:
     parser.add_argument("--model-label", default="")
     parser.add_argument("--axis-label", default="Deceiver Axis")
     parser.add_argument("--note", default="")
+    parser.add_argument("--no-notes", action="store_true", help="leave the note lines under the panels out (caption goes in the paper)")
     parser.add_argument("--cache", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -132,8 +133,8 @@ def main() -> None:
         np.savez(args.cache, **values)
 
     widths = [len(groups[d]) + len(groups[h]) + GROUP_GAP for _, d, h in PANELS]
-    figure, axes_row = plt.subplots(1, len(PANELS), figsize=(11.0, 5.3), sharey=True, gridspec_kw={"width_ratios": widths, "wspace": 0.08})
-    figure.subplots_adjust(left=0.068, right=0.99, top=0.785, bottom=0.35)
+    figure, axes_row = plt.subplots(1, len(PANELS), figsize=(11.0, 4.9 if args.no_notes else 5.3), sharey=True, gridspec_kw={"width_ratios": widths, "wspace": 0.08})
+    figure.subplots_adjust(left=0.068, right=0.99, top=1 - 1.14 / figure.get_figheight(), bottom=(1.46 if args.no_notes else 1.855) / figure.get_figheight())
     record: dict = {"layer": args.layer, "axis": str(args.axis), "root": str(args.root), "tokens": str(args.tokens) if args.tokens else None,
                     "heldout_questions": len(heldout), "panels": {}, "personas": {}}
     top = max(float(v.max()) for v in values.values())
@@ -186,18 +187,21 @@ def main() -> None:
 
     counts = [entry["n"] for entry in record["personas"].values()]
     model = f"{args.model_label}: " if args.model_label else ""
-    figure.text(0.012, 0.975, f"{model}persona responses on the {args.axis_label}", fontsize=12.5, fontweight="bold", color=INK, ha="left", va="top")
-    figure.text(0.012, 0.922, f"Responses to {len(heldout)} held-out questions, layer {args.layer}. Black line = median.", fontsize=9.5, color=SOFT,
+    inch = 1 / figure.get_figheight()
+    figure.text(0.012, 1 - 0.13 * inch, f"{model}persona responses on the {args.axis_label}", fontsize=12.5, fontweight="bold", color=INK, ha="left", va="top")
+    figure.text(0.012, 1 - 0.41 * inch, f"Responses to {len(heldout)} held-out questions, layer {args.layer}. Black line = median.", fontsize=9.5, color=SOFT,
                 ha="left", va="top")
     figure.legend(handles=[Patch(facecolor=COLOR["deceptive"], label="deceptive personas"), Patch(facecolor=COLOR["honest"], label="honest personas")],
-                  loc="upper right", bbox_to_anchor=(0.992, 0.985), ncols=2, frameon=False, fontsize=9.5, labelcolor=INK, handlelength=1.1,
+                  loc="upper right", bbox_to_anchor=(0.992, 1 - 0.08 * inch), ncols=2, frameon=False, fontsize=9.5, labelcolor=INK, handlelength=1.1,
                   handleheight=0.9, columnspacing=1.6)
     notes = ["Each response: mean residual activation over its response tokens, projected on the unit axis, relative to the default assistant's "
              "mean on the same question.",
              f"Only responses judged fully in role ({min(counts)}–{max(counts)} per persona). AUROC: deceptive vs honest responses within the panel."]
     if args.note:
         notes.append(args.note)
-    figure.text(0.012, 0.014, "\n".join(notes), fontsize=8, color=SOFT, ha="left", va="bottom", linespacing=1.45)
+    record["notes"] = notes
+    if not args.no_notes:
+        figure.text(0.012, 0.014, "\n".join(notes), fontsize=8, color=SOFT, ha="left", va="bottom", linespacing=1.45)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor="white")

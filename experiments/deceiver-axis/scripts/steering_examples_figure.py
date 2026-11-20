@@ -119,7 +119,7 @@ def lay_card(card: dict, ruler: Ruler, width: float) -> dict:
     return dict(parts=parts, height=height + PAD - 0.04)
 
 
-def draw(out: Path) -> None:
+def draw(out: Path, notes: bool = True) -> None:
     plt.rcParams.update({"font.family": FONTS, "pdf.fonttype": 42})
     ruler = Ruler()
     card_width = (WIDTH - 2 * MARGIN - CARD_GAP) / 2
@@ -134,7 +134,7 @@ def draw(out: Path) -> None:
     head = 0.3 + tall("title") + 0.02 + tall("subtitle", len(subtitle)) + 0.3
     block_gap = 0.34
     block_height = lambda block: tall("context") * SIZE["model"] / SIZE["context"] + 0.02 + tall("context", len(block["context"])) + 0.1 + block["card_height"]
-    height = head + sum(block_height(block) for block in blocks) + (len(blocks) - 1) * block_gap + 0.3 + tall("note", len(note)) + 0.25
+    height = head + sum(block_height(block) for block in blocks) + (len(blocks) - 1) * block_gap + ((0.3 + tall("note", len(note))) if notes else 0) + 0.25
 
     figure = plt.figure(figsize=(WIDTH, height), facecolor=SURFACE)
     axes = figure.add_axes((0, 0, 1, 1))  # one axes over the page, in inches from the top left
@@ -183,10 +183,11 @@ def draw(out: Path) -> None:
                         cursor += tall("where")
         y += block["card_height"]
     y += 0.3
-    axes.add_line(Line2D([MARGIN, WIDTH - MARGIN], [y - 0.13] * 2, color=RULE, linewidth=0.9))
-    for line in note:
-        write(MARGIN, y, line, "note", SOFT)
-        y += tall("note")
+    if notes:
+        axes.add_line(Line2D([MARGIN, WIDTH - MARGIN], [y - 0.13] * 2, color=RULE, linewidth=0.9))
+        for line in note:
+            write(MARGIN, y, line, "note", SOFT)
+            y += tall("note")
 
     out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(out, dpi=200, facecolor=SURFACE)
@@ -200,7 +201,9 @@ def draw(out: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", type=Path, required=True)
-    draw(parser.parse_args().out)
+    parser.add_argument("--no-notes", action="store_true", help="leave the note under the cards out (caption goes in the paper)")
+    args = parser.parse_args()
+    draw(args.out, notes=not args.no_notes)
 
 
 if __name__ == "__main__":

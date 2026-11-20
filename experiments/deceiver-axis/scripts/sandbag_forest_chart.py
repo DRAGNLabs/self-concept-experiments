@@ -38,6 +38,7 @@ def main() -> None:
     parser.add_argument("--panels", help="two comma-separated panel names in place of the benchmark names")
     parser.add_argument("--title", help="chart title in place of the default")
     parser.add_argument("--note", action="append", help="note line under the panels (up to two) in place of the defaults")
+    parser.add_argument("--no-notes", action="store_true", help="leave the note lines under the panels out (caption goes in the paper)")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     gap = args.x == "gap"
@@ -59,10 +60,11 @@ def main() -> None:
     low, high = min(ends) - 4, max(ends) + 4
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9})
-    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 2.85
+    foot = 0.62 if args.no_notes else 1.25  # inches under the panels: x-axis label, then the note lines
+    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 1.6 + foot
     figure = plt.figure(figsize=(17.6, height), facecolor="white")
     grid = figure.add_gridspec(len(models), 4, width_ratios=[1, 1.12, 1, 1.12], height_ratios=[len(r) + 1.6 for r in rows],
-                               left=0.062, right=0.995, top=1 - 1.5 / height, bottom=1.25 / height, hspace=0.34, wspace=0.04)
+                               left=0.062, right=0.995, top=1 - 1.5 / height, bottom=foot / height, hspace=0.34, wspace=0.04)
     for m, (name, analyses) in enumerate(models):
         slots = rows[m]
         doses = sum(1 for s in slots if s[0] == 1)
@@ -145,7 +147,7 @@ def main() -> None:
         "difference is given for them.",
         "A smaller gap is not by itself a decision not to underperform: the blind transcript reads found that on Muse, and on Gemma found "
         "answers that ignore the notice (caps) or break down (α −0.16)."]
-    for line, at in zip(notes, (0.62, 0.36)):
+    for line, at in zip([] if args.no_notes else notes, (0.62, 0.36)):
         figure.text(0.012, at / height, line, fontsize=8.5, color=SOFT, va="center")
     figure.savefig(args.out, dpi=150, facecolor="white")
     print(f"wrote {args.out}")
