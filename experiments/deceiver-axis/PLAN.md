@@ -3331,6 +3331,9 @@ carries over; only the arms are new.
   Deceiver Axis: Gemma +0.04 (+1.3, p 0.033), Gemma cap p45 (−2.1, p 0.027), Gemma cap p35 (−2.2, p 0.043), Muse cap p50
   (−5.7, p 0.044). Goodfire axis: gpt-oss −0.1 (−3.5, p 0.009), gpt-oss floor p50 (−3.7, p 0.011), gpt-oss +0.4 (−6.5, p 0.015),
   Qwen +0.16 (+1.9, p 0.016). No arm changes in the other direction. Details in FINDINGS, entry of 2026-11-20.
+- Sandbagging families checked the same way (3:21 pm MST, FINDINGS addendum): 105 arm tests in the nine current analyses (GSM8K on
+  the four models incl. gpt-oss notice C, MMLU-Pro on the four). One arm changes description: gpt-oss MMLU-Pro Goodfire cap p50
+  (+2.2 [+0.5, +4.0], p 0.014), on a benchmark where gpt-oss has no gap. No reading changes on any model, benchmark or notice.
 - Not adopted: one dose-trend test per model, axis and ladder as the main test (proposed by the session the same day). Nothing
   was computed for it. If it is taken up, its definition and arm range go here before any result is read.
 
