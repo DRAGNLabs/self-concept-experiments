@@ -3276,6 +3276,38 @@ incentive" (task, gap, usable-arm rule, contrasts, readings, descriptive columns
   as wrong, so the lower gi_v2 gaps come with more refusals, not fewer. All arms usable (`control` 94.2 to 96.9%). Not added to the
   four-model count under B.
 
+## Sandbagging: larger doses of both axes on gpt-oss under notice C (added 2026-11-19 5:14 pm MST, before any run)
+
+User, 2026-11-19 about 5:10 pm, after the notice-C result and the cap addendum (the Goodfire axis lowers the gap by 1.1 and 5.4
+points at α −0.1 and −0.2 and by 22.7 at −0.4, where it is level with gi_v2; a side note put it as "one axis may just need a bigger
+dose"): "let's try a larger dose of both axes just in case". A new model run on the user's word. Everything in the section above
+carries over; only the arms are new.
+
+- **Run.** gpt-oss-120b, notice C, the first 300 GSM8K items, sampling seeds 1 to 10, four new arms: gi_v2 −0.6 and −0.8, Goodfire
+  −0.6 and −0.8. Each arm line is the −0.4 line of `arms_stage2.tsv` with the arm name and `--steer-alpha` replaced and nothing else
+  (`arms_larger_dose.tsv`). No dose above 0.4 has been run on gpt-oss on any task, so −0.6 is there in case −0.8 breaks the model.
+  The unsteered arm and the 13 steered arms of the run above are not rerun; they are the reference as they stand.
+- **Analysis.** `sandbag_analysis.py analyze` over one root that holds the 14 finished arms (links) and the four new ones, written
+  to `analysis_larger_dose.json`: usable-arm rule as before, change against unsteered per arm, Holm within the axis over the longer
+  family (gi_v2 8 arms, Goodfire 9), gi_v2 minus Goodfire at −0.6 and −0.8. The numbers of record for the first 14 arms stay those
+  of `analysis.json`; the second analysis redraws the bootstrap, so its last digits for those arms can differ.
+- **What the run can show (fixed now).** (a) Both arms of a dose usable, both gaps within about 5 points of zero, pair interval
+  through zero: with enough dose both axes remove the gap on gpt-oss under notice C, and the difference at −0.1 and −0.2 is a
+  difference in the dose needed. The paper wording is then "at equal dose", not "lowers sandbagging more". (b) An arm not usable:
+  that dose is past what the axis allows on GSM8K; if one axis is usable at a dose and the other is not, that is described as a
+  difference in usable range, not in sandbagging. (c) A pair interval that excludes zero with both arms usable: reported with its
+  direction and size, beside the fact that at −0.4 both gaps are already within 5 points of zero (+2.7 and +4.3), so little room is
+  left. A gap below zero or a gap that rises again with dose is described as it falls. None of this changes reading 2 for the
+  condition or the four-model count under B.
+- **Limits known in advance.** Usable here means GSM8K accuracy under the `control` notice only (and it is already 94.2% at Goodfire
+  −0.4 against 96.6% unsteered). Neither dose has been run on the coding task set on gpt-oss, so there is no judged hacking rate and
+  no dose-rule status for them, and equal α is still not shown to be an equal push. Unanswered and refusal shares per arm are
+  reported as in the entry above (string count on the final answer, descriptive). No transcript read, no LLM labelling.
+- **Compute.** 4 arms × 20 passes × 300 answers. The −0.4 arms took 833 s (gi_v2) and 958 s (Goodfire); two array tasks of two arms
+  (one per axis), about 35 to 40 minutes each with the start. An arm that breaks writes to the token limit (Goodfire cap p25 took
+  1,906 s), which would make a task about 70 minutes: limit 1 h 20 min. One 80 GB card, 8 cores, 10 GB per core. Picker and dry run
+  before submission.
+
 ## Work order
 
 1. Write the role files; add `roles_dir` and the CoT-pooled pass to the extraction sbatch; smoke with 2 roles × 2
