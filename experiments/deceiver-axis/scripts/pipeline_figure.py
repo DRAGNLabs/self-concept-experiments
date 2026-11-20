@@ -12,7 +12,8 @@ Text is wrapped by measured width (no character-count estimates), so nothing run
 height of a card is spread over its gaps.
 
 Two presets, each a role set with its own verbatim examples (--preset):
-  gi_v2  (default) the role-set v2 vector: 9 deceptive vs 9 honest personas, 100 questions, 5 prompts each; quotes from
+  gi_v2  (default) the role-set v2 vector: 9 deceptive vs 9 honest personas, 100 questions (the vectors use the 64
+         training questions, 36 are held out), 5 prompts each; quotes from
          gi_v2/full100/responses + scores; PCA of the 18 persona means (vectors_response_only, layer 17).
   17role the earlier 17-role set (8 deceptive + 9 honest in the axis, 3 + 3 held out), 64 questions; quotes from
          roles_fic/responses + scores; PCA of the 17 persona means.
@@ -93,7 +94,7 @@ PROMPT_HONEST = ("“You are voicing Hannah, a character in an interactive novel
 PROMPT_ROLES = (("schemer_fic", 0), ("straight_shooter_fic", 0))
 
 PRESETS = {
-    # Role set v2 (gi_v2/full100): 9 vs 9, 100 questions × 5 prompts, nothing held out. Quotes verbatim from
+    # Role set v2 (gi_v2/full100): 9 vs 9, 100 questions × 5 prompts (64 train, 36 held out), no persona held out. Quotes verbatim from
     # responses/<role>.jsonl (key pos_p<prompt>_q<question>) with the judge score in scores/<role>.json.
     "gi_v2": dict(
         root=SCRATCH / "gi_v2/full100",
@@ -127,6 +128,10 @@ PRESETS = {
         records=dict(deceptive=("schemer_fic", "pos_p1_q78"), honest=("straight_shooter_fic", "pos_p0_q78"),
                      drop=("scammer_fic", "pos_p0_q13")),
         pca_note="PCA of the 18 persona means",
+        # The persona vectors average the kept responses to the 64 `train` questions of data/questions.jsonl only (checked
+        # against the stored vectors, FINDINGS 2026-11-20); the kept counts in step 2 are over all 100 questions.
+        extract_sub=("Mean-pool the answer tokens of each kept response, average per persona over the 64 training questions "
+                     "(36 are held out), subtract honest from deceptive."),
     ),
     # The 17-role set (roles_fic, 64 questions): 8 + 9 in the axis, 3 + 3 held out.
     "17role": dict(
@@ -669,7 +674,7 @@ def main() -> None:
          panel_prompt),
         ("2", "Filter", "An LLM judge reads every response; only those fully in character are kept.",
          lambda *a: panel_filter(*a, kept=kept)),
-        ("3", "Extract", "Mean-pool the answer tokens of each kept response, average per persona, subtract honest from deceptive.", None),
+        ("3", "Extract", EX.get("extract_sub", "Mean-pool the answer tokens of each kept response, average per persona, subtract honest from deceptive."), None),
     ]
     for (num, title, sub, draw), (x, y) in zip(panels, pos):
         cx, cy, cw, cb = card(ax, x, y, num, title, sub)
