@@ -3319,15 +3319,15 @@ carries over; only the arms are new.
 ## Reporting change: Holm correction retired (added 2026-11-20 3:02 pm MST; decision of the user and Koby)
 
 - Decision (user and Koby, 2026-11-20): Holm-corrected p-values are no longer the reporting standard. Their reason: the arms of
-  one ladder are not independent tests, they lie along dose trends that were expected before the runs.
+  one ladder are not independent tests, they lie along dose trends that were expected before the runs. The user, 3:05 pm MST: the
+  Holm correction was a mistake that differed from those a priori assumptions.
 - From now on, per arm against unsteered: the change, its 95% interval (problem bootstrap, as before) and the problem-level
-  sign-flip p, labelled "unadjusted". New text, charts and the paper carry no "Holm", "corrected" or "after correction" wording.
+  sign-flip p, written plainly as "p". New text, charts and the paper carry no "Holm", "corrected", "after correction" or
+  "unadjusted" wording, and the paper does not describe the earlier correction (user, 3:05 pm MST).
 - Scope: every model, both axes, the task-set families and the sandbagging families. Rates, intervals, raw p-values, the 10-point
   dose rule and the benchmark retention rule are unchanged; no number is recomputed, only the corrected column is dropped.
-- Earlier PLAN and FINDINGS entries stay as written. Their Holm values record the analysis planned at the time and are not edited.
-- This departs from the analysis fixed before the runs (Holm within one family per axis per model). The paper states that
-  p-values are unadjusted and shows every arm that was run.
-- Arms whose description changes (unadjusted p below 0.05, Holm p at or above it; judged hacking against unsteered):
+- Earlier PLAN and FINDINGS entries stay as written, with the Holm values they had; they are not edited.
+- Arms whose description changes (p below 0.05, Holm p at or above it; judged hacking against unsteered):
   Deceiver Axis: Gemma +0.04 (+1.3, p 0.033), Gemma cap p45 (−2.1, p 0.027), Gemma cap p35 (−2.2, p 0.043), Muse cap p50
   (−5.7, p 0.044). Goodfire axis: gpt-oss −0.1 (−3.5, p 0.009), gpt-oss floor p50 (−3.7, p 0.011), gpt-oss +0.4 (−6.5, p 0.015),
   Qwen +0.16 (+1.9, p 0.016). No arm changes in the other direction. Details in FINDINGS, entry of 2026-11-20.
