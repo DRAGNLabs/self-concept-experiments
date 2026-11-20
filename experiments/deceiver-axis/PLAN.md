@@ -3307,6 +3307,10 @@ carries over; only the arms are new.
   (one per axis), about 35 to 40 minutes each with the start. An arm that breaks writes to the token limit (Goodfire cap p25 took
   1,906 s), which would make a task about 70 minutes: limit 1 h 20 min. One 80 GB card, 8 cores, 10 GB per core. Picker and dry run
   before submission.
+- **Cancelled (5:21 pm MST 2026-11-19).** Submitted as 15562727 at 5:18 pm (two tasks, dw A100s); the user cancelled the run at
+  about 5:20 pm ("Yeah, cancel the runs, sorry"), after a side note that at −0.4 both gaps are already within 5 points of zero, so a
+  larger dose can mostly show breakage. `scancel` at 5:20:48 pm, both tasks still loading the model: no arm directory and no answer
+  was written, nothing was read. No result exists for this section. A dose of −0.3 is under discussion and has not been run.
 
 ## Work order
 
