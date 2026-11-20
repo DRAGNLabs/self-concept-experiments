@@ -3311,6 +3311,10 @@ carries over; only the arms are new.
   about 5:20 pm ("Yeah, cancel the runs, sorry"), after a side note that at −0.4 both gaps are already within 5 points of zero, so a
   larger dose can mostly show breakage. `scancel` at 5:20:48 pm, both tasks still loading the model: no arm directory and no answer
   was written, nothing was read. No result exists for this section. A dose of −0.3 is under discussion and has not been run.
+- **Closed (5:30 pm MST 2026-11-19).** User: "remove the cancelled arm list and directory of links, let's not do -0.3 either".
+  `arms_larger_dose.tsv` (scratch and `runs/`; still in commit 0bdc2d5) and the links directory `stage2_larger_dose/` are removed;
+  the 14 finished arm directories under `stage2/` are untouched (280 pass files). No dose other than −0.1, −0.2 and −0.4 is run on
+  gpt-oss under notice C.
 
 ## Work order
 
