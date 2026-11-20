@@ -1,0 +1,38 @@
+{
+ "gptoss": {
+  "name": "gpt-oss-120b",
+  "alpha": 0.2,
+  "arms": {
+   "unsteered": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/main/unsteered",
+   "gi_v2_minus": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/gi_v2/pilot/gi_m0.2",
+   "gfar_minus": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/gi_v2/pilot/gf_m0.2"
+  }
+ },
+ "muse": {
+  "name": "Muse-Glimmer-30B",
+  "alpha": 0.08,
+  "arms": {
+   "unsteered": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/main/unsteered",
+   "gi_v2_minus": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/gi_m0.08",
+   "gfar_minus": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/muse_glimmer/gi_v2/pilot/gf_m0.08"
+  }
+ },
+ "gemma": {
+  "name": "Gemma 4 31B IT",
+  "alpha": 0.08,
+  "arms": {
+   "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2/rh/hard108/unsteered",
+   "gi_v2_minus": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2/rh/hard108/L30_a-0.08",
+   "gfar_minus": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/gemma4_31b_gi_v2/rh/hard108/gfar_L30_a-0.08"
+  }
+ },
+ "qwen": {
+  "name": "Qwen3.8-27B",
+  "alpha": 0.16,
+  "arms": {
+   "unsteered": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/unsteered",
+   "gi_v2_minus": "/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/L32_a-0.16",
+   "gfar_minus": "/home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/qwen38_27b_gi_v2/rh/qwen_hard61/cov1113/gfar_L32_a-0.16"
+  }
+ }
+}

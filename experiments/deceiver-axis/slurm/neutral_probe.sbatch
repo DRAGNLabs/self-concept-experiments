@@ -18,6 +18,9 @@ set -euo pipefail
 # the probe uses seed s+i for question i). Output: $ROOT/<name>/seed<s>/probe.jsonl. Rerun skips (name, seed) pairs
 # whose probe.jsonl already holds one row per question, so a requeue after preemption does not duplicate rows.
 # Usage: sbatch --array=0-$((N_ROWS-1)) --export=ALL,SETTINGS=<tsv>,QUESTIONS=<txt>,ROOT=<dir>[,MODEL=...][,CHAT_KWARGS=...][,SEEDS="0 1"][,PROBE_MAX_TOKENS=2048] experiments/deceiver-axis/slurm/neutral_probe.sbatch
+# Several probe sets in one task (2026-11-17): SETS=<tsv>, one row per set = subdirectory of ROOT <TAB> questions file <TAB> chat
+# kwargs JSON <TAB> token limit per answer (optional; PROBE_MAX_TOKENS when absent). The task then runs its settings row on every set in turn, into $ROOT/<subdir>/<name>/seed<s>/probe.jsonl, so one
+# task does 30+ minutes of work instead of one 8-25 minute set; QUESTIONS and CHAT_KWARGS are not used then.
 
 export HF_HOME="$HOME/nobackup/autodelete/hf_cache"
 export HF_HUB_OFFLINE=1
@@ -55,23 +58,37 @@ ROW="$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$SETTINGS")"
 NAME="${ROW%%	*}"
 EXTRA="${ROW#*	}"
 [ "$EXTRA" = "$ROW" ] && EXTRA=""
-mapfile -t QS < "$QUESTIONS"
-echo "task $SLURM_ARRAY_TASK_ID setting=$NAME extra='$EXTRA' questions=${#QS[@]} seeds='$SEEDS' model=$MODEL chat=$SOO_CHAT_KWARGS"
+echo "task $SLURM_ARRAY_TASK_ID setting=$NAME extra='$EXTRA' seeds='$SEEDS' model=$MODEL sets=${SETS:-none}"
 
 export SELFCONCEPT_VENV="$SLURM_SUBMIT_DIR/.venv-313"
 source ../../activate.sh
 
-for SEED in $SEEDS; do
-    OUT="$ROOT/$NAME/seed$SEED"
-    if [ -f "$OUT/probe.jsonl" ] && [ "$(wc -l < "$OUT/probe.jsonl")" -ge "${#QS[@]}" ]; then
-        echo "skip $NAME seed $SEED: probe.jsonl complete"; continue
-    fi
-    rm -f "$OUT/probe.jsonl"  # partial file from a preempted run: start the seed over
-    echo "########## $NAME seed $SEED ##########"
-    SECONDS=0
-    # shellcheck disable=SC2086
-    python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios ib_solvhard_s0 "${RECIPE[@]}" --sample-seed "$SEED" \
-        --out "$OUT" --tag probe --probe-max-tokens "$PROBE_MAX_TOKENS" --probe "${QS[@]}" $EXTRA
-    echo "$NAME seed $SEED took ${SECONDS}s"
-done
+run_set() {  # $1 = output root of the set, $2 = its questions file, $3 = token limit per answer; chat kwargs from SOO_CHAT_KWARGS
+    local SET_ROOT="$1" MAX_TOKENS="$3" QS SEED OUT
+    mapfile -t QS < "$2"
+    echo "set root=$SET_ROOT setting=$NAME questions=${#QS[@]} seeds='$SEEDS' model=$MODEL chat=$SOO_CHAT_KWARGS max_tokens=$MAX_TOKENS"
+    for SEED in $SEEDS; do
+        OUT="$SET_ROOT/$NAME/seed$SEED"
+        if [ -f "$OUT/probe.jsonl" ] && [ "$(wc -l < "$OUT/probe.jsonl")" -ge "${#QS[@]}" ]; then
+            echo "skip $NAME seed $SEED: probe.jsonl complete"; continue
+        fi
+        rm -f "$OUT/probe.jsonl"  # partial file from a preempted run: start the seed over
+        echo "########## $NAME seed $SEED ##########"
+        SECONDS=0
+        # shellcheck disable=SC2086
+        python scripts/steered_rh_vllm.py --model "$MODEL" --scenarios ib_solvhard_s0 "${RECIPE[@]}" --sample-seed "$SEED" \
+            --out "$OUT" --tag probe --probe-max-tokens "$MAX_TOKENS" --probe "${QS[@]}" $EXTRA < /dev/null
+        echo "$NAME seed $SEED took ${SECONDS}s"
+    done
+}
+
+if [ -n "${SETS:-}" ]; then
+    while IFS=$'\t' read -r -u 3 SUB QFILE KW TOKENS; do
+        [ -z "$SUB" ] && continue
+        export SOO_CHAT_KWARGS="$KW"
+        run_set "$ROOT/$SUB" "$QFILE" "${TOKENS:-$PROBE_MAX_TOKENS}"
+    done 3< "$SETS"
+else
+    run_set "$ROOT" "$QUESTIONS" "$PROBE_MAX_TOKENS"
+fi
 echo "=== schemer-neutral-probe done: $ROOT/$NAME ==="

@@ -1,0 +1,84 @@
+{
+ "a": {
+  "seeds": 1,
+  "control": {
+   "n_answers": 308,
+   "accuracy": 81.49350649350649,
+   "truncated": 1.6233766233766234,
+   "no_answer": 1.6233766233766234,
+   "cut_or_unanswered": 1.6233766233766234,
+   "mentions_consequence": 2.9220779220779223,
+   "mean_completion_tokens": 1385.4545454545455,
+   "outcomes": {
+    "correct": 81.49350649350649,
+    "wrong_gold_in_own_text": 0.0,
+    "wrong_other": 16.883116883116884,
+    "no_answer": 1.6233766233766234
+   }
+  },
+  "incentive": {
+   "n_answers": 308,
+   "accuracy": 80.1948051948052,
+   "truncated": 1.948051948051948,
+   "no_answer": 1.948051948051948,
+   "cut_or_unanswered": 1.948051948051948,
+   "mentions_consequence": 11.688311688311689,
+   "mean_completion_tokens": 1369.5194805194806,
+   "outcomes": {
+    "correct": 80.1948051948052,
+    "wrong_gold_in_own_text": 0.0,
+    "wrong_other": 17.857142857142858,
+    "no_answer": 1.948051948051948
+   }
+  },
+  "gap": {
+   "mean": 1.3,
+   "ci": [
+    -1.62,
+    4.22
+   ]
+  },
+  "items": 308
+ },
+ "b": {
+  "seeds": 1,
+  "control": {
+   "n_answers": 308,
+   "accuracy": 79.87012987012987,
+   "truncated": 1.2987012987012987,
+   "no_answer": 1.2987012987012987,
+   "cut_or_unanswered": 1.2987012987012987,
+   "mentions_consequence": 3.5714285714285716,
+   "mean_completion_tokens": 1384.775974025974,
+   "outcomes": {
+    "correct": 79.87012987012987,
+    "wrong_gold_in_own_text": 0.0,
+    "wrong_other": 18.83116883116883,
+    "no_answer": 1.2987012987012987
+   }
+  },
+  "incentive": {
+   "n_answers": 308,
+   "accuracy": 80.1948051948052,
+   "truncated": 1.948051948051948,
+   "no_answer": 1.948051948051948,
+   "cut_or_unanswered": 1.948051948051948,
+   "mentions_consequence": 25.649350649350648,
+   "mean_completion_tokens": 1385.237012987013,
+   "outcomes": {
+    "correct": 80.1948051948052,
+    "wrong_gold_in_own_text": 0.0,
+    "wrong_other": 17.857142857142858,
+    "no_answer": 1.948051948051948
+   }
+  },
+  "gap": {
+   "mean": -0.32,
+   "ci": [
+    -3.25,
+    2.6
+   ]
+  },
+  "items": 308
+ }
+}

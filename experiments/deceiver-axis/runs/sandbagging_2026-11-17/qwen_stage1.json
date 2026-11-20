@@ -1,0 +1,84 @@
+{
+ "a": {
+  "seeds": 1,
+  "control": {
+   "n_answers": 300,
+   "accuracy": 97.66666666666667,
+   "truncated": 0.0,
+   "no_answer": 0.0,
+   "cut_or_unanswered": 0.0,
+   "mentions_consequence": 2.3333333333333335,
+   "mean_completion_tokens": 351.85,
+   "outcomes": {
+    "correct": 97.66666666666667,
+    "wrong_gold_in_own_text": 1.0,
+    "wrong_other": 1.3333333333333333,
+    "no_answer": 0.0
+   }
+  },
+  "incentive": {
+   "n_answers": 300,
+   "accuracy": 97.33333333333333,
+   "truncated": 0.0,
+   "no_answer": 0.0,
+   "cut_or_unanswered": 0.0,
+   "mentions_consequence": 13.0,
+   "mean_completion_tokens": 365.04333333333335,
+   "outcomes": {
+    "correct": 97.33333333333333,
+    "wrong_gold_in_own_text": 1.3333333333333333,
+    "wrong_other": 1.3333333333333333,
+    "no_answer": 0.0
+   }
+  },
+  "gap": {
+   "mean": 0.33,
+   "ci": [
+    -1.0,
+    2.0
+   ]
+  },
+  "items": 300
+ },
+ "b": {
+  "seeds": 1,
+  "control": {
+   "n_answers": 300,
+   "accuracy": 97.66666666666667,
+   "truncated": 0.0,
+   "no_answer": 0.0,
+   "cut_or_unanswered": 0.0,
+   "mentions_consequence": 5.0,
+   "mean_completion_tokens": 367.87333333333333,
+   "outcomes": {
+    "correct": 97.66666666666667,
+    "wrong_gold_in_own_text": 0.3333333333333333,
+    "wrong_other": 2.0,
+    "no_answer": 0.0
+   }
+  },
+  "incentive": {
+   "n_answers": 300,
+   "accuracy": 89.33333333333333,
+   "truncated": 0.0,
+   "no_answer": 0.0,
+   "cut_or_unanswered": 0.0,
+   "mentions_consequence": 81.0,
+   "mean_completion_tokens": 565.9933333333333,
+   "outcomes": {
+    "correct": 89.33333333333333,
+    "wrong_gold_in_own_text": 9.333333333333334,
+    "wrong_other": 1.3333333333333333,
+    "no_answer": 0.0
+   }
+  },
+  "gap": {
+   "mean": 8.33,
+   "ci": [
+    4.67,
+    12.0
+   ]
+  },
+  "items": 300
+ }
+}

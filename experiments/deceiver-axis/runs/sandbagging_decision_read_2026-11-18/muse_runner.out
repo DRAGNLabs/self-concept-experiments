@@ -1,0 +1,23 @@
+[runner] task /home/jansen05/nobackup/autodelete/self-concept-experiments/schemer-axis/gfar_vs_gi_v2/sandbag/decision_read_muse_2026-11-18/JUDGE_TASK.md
+[runner] 20 batches requested, 0 already have output, 20 to judge; model sonnet, 6 at once; log /nobackup/autodelete/usr/jansen05/self-concept-experiments/schemer-axis/gfar_vs_gi_v2/sandbag/decision_read_muse_2026-11-18/labels/judge_runner_log.jsonl
+[runner] batch 1 attempt 1: ok READ-AUDIT-FLAG (41.0s, 5 turns, util None)
+[runner] batch 2 attempt 1: ok READ-AUDIT-FLAG (42.8s, 5 turns, util None)
+[runner] batch 5 attempt 1: ok READ-AUDIT-FLAG (44.3s, 5 turns, util None)
+[runner] batch 3 attempt 1: ok READ-AUDIT-FLAG (45.1s, 5 turns, util None)
+[runner] batch 4 attempt 1: ok READ-AUDIT-FLAG (48.0s, 5 turns, util None)
+[runner] batch 0 attempt 1: ok READ-AUDIT-FLAG (48.7s, 5 turns, util None)
+[runner] batch 7 attempt 1: ok READ-AUDIT-FLAG (39.2s, 5 turns, util None)
+[runner] batch 6 attempt 1: ok (43.6s, 5 turns, util None)
+[runner] batch 11 attempt 1: ok (42.2s, 5 turns, util None)
+[runner] batch 10 attempt 1: ok READ-AUDIT-FLAG (43.8s, 5 turns, util None)
+[runner] batch 8 attempt 1: ok READ-AUDIT-FLAG (47.5s, 5 turns, util None)
+[runner] batch 9 attempt 1: ok (57.2s, 8 turns, util None)
+[runner] batch 13 attempt 1: ok READ-AUDIT-FLAG (43.1s, 5 turns, util None)
+[runner] batch 16 attempt 1: ok READ-AUDIT-FLAG (41.1s, 5 turns, util None)
+[runner] batch 15 attempt 1: ok READ-AUDIT-FLAG (43.6s, 5 turns, util None)
+[runner] batch 14 attempt 1: ok (45.7s, 5 turns, util None)
+[runner] batch 17 attempt 1: ok (43.0s, 5 turns, util None)
+[runner] batch 12 attempt 1: ok READ-AUDIT-FLAG (74.2s, 5 turns, util None)
+[runner] batch 18 attempt 1: ok READ-AUDIT-FLAG (39.8s, 5 turns, util None)
+[runner] batch 19 attempt 1: ok READ-AUDIT-FLAG (39.4s, 5 turns, util None)
+[runner] SUMMARY states {'ok': 20}; judged now 20 on ['claude-sonnet-5-5']; tokens {'cache_write': 665697, 'cache_read': 1181270, 'out': 80151, 'requests': 103, 'requests_over_100k': 0}; list-price cost $2.58; limit use first/last []/[]; read-audit flags [0, 1, 2, 3, 4, 5, 7, 8, 10, 12, 13, 15, 16, 18, 19]; stopped early: no

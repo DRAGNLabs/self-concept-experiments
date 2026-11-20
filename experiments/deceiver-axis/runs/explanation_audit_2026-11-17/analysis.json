@@ -1,0 +1,413 @@
+{
+ "reps": 10000,
+ "models": {
+  "gptoss": {
+   "name": "gpt-oss-120b",
+   "alpha": 0.2,
+   "items": 150,
+   "labelled": 150,
+   "quotes": {
+    "yes": 30,
+    "both_verbatim": 29,
+    "both_after_whitespace": 1,
+    "failed": []
+   },
+   "main": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 4,
+      "no": 44,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 8.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 12,
+      "no": 36,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 24.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 14,
+      "no": 36,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 28.0
+     }
+    },
+    "problems": 45,
+    "change_gi_v2": 16.0,
+    "change_gi_v2_ci": [
+     2.4265064437478245,
+     30.612244897959183
+    ],
+    "change_gfar": 20.0,
+    "change_gfar_ci": [
+     4.837216938057274,
+     35.815177097796756
+    ],
+    "difference": -4.0,
+    "difference_ci": [
+     -22.2093329253366,
+     14.090246543394969
+    ],
+    "draws_without_an_arm": 0
+   },
+   "unclear_as_yes": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 4,
+      "no": 44,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 12.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 12,
+      "no": 36,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 28.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 14,
+      "no": 36,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 28.0
+     }
+    },
+    "problems": 45,
+    "change_gi_v2": 16.0,
+    "change_gi_v2_ci": [
+     0.5952248205258907,
+     31.20714741835431
+    ],
+    "change_gfar": 16.0,
+    "change_gfar_ci": [
+     -1.457370448179271,
+     33.242381618781046
+    ],
+    "difference": 0.0,
+    "difference_ci": [
+     -17.73665829968351,
+     17.286085343228194
+    ],
+    "draws_without_an_arm": 0
+   }
+  },
+  "muse": {
+   "name": "Muse-Glimmer-30B",
+   "alpha": 0.08,
+   "items": 150,
+   "labelled": 150,
+   "quotes": {
+    "yes": 21,
+    "both_verbatim": 21,
+    "both_after_whitespace": 0,
+    "failed": []
+   },
+   "main": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 9,
+      "no": 41,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 18.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 5,
+      "no": 44,
+      "unclear": 1,
+      "not_applicable": 0,
+      "rate": 10.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 7,
+      "no": 42,
+      "unclear": 1,
+      "not_applicable": 0,
+      "rate": 14.0
+     }
+    },
+    "problems": 42,
+    "change_gi_v2": -8.0,
+    "change_gi_v2_ci": [
+     -21.616920675311082,
+     5.797177407103576
+    ],
+    "change_gfar": -4.0,
+    "change_gfar_ci": [
+     -16.373802373246452,
+     8.6868974962437
+    ],
+    "difference": -4.0,
+    "difference_ci": [
+     -16.95459343612053,
+     8.859442102760244
+    ],
+    "draws_without_an_arm": 0
+   },
+   "unclear_as_yes": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 9,
+      "no": 41,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 18.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 5,
+      "no": 44,
+      "unclear": 1,
+      "not_applicable": 0,
+      "rate": 12.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 7,
+      "no": 42,
+      "unclear": 1,
+      "not_applicable": 0,
+      "rate": 16.0
+     }
+    },
+    "problems": 42,
+    "change_gi_v2": -6.0,
+    "change_gi_v2_ci": [
+     -20.342659695152125,
+     8.339727463312368
+    ],
+    "change_gfar": -2.0,
+    "change_gfar_ci": [
+     -15.167265769944342,
+     11.154269602577866
+    ],
+    "difference": -4.0,
+    "difference_ci": [
+     -16.69258320637525,
+     8.775262318624936
+    ],
+    "draws_without_an_arm": 0
+   }
+  },
+  "gemma": {
+   "name": "Gemma 4 31B IT",
+   "alpha": 0.08,
+   "items": 150,
+   "labelled": 150,
+   "quotes": {
+    "yes": 14,
+    "both_verbatim": 14,
+    "both_after_whitespace": 0,
+    "failed": []
+   },
+   "main": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 3,
+      "no": 46,
+      "unclear": 1,
+      "not_applicable": 0,
+      "rate": 6.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 5,
+      "no": 43,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 10.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 6,
+      "no": 42,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 12.0
+     }
+    },
+    "problems": 86,
+    "change_gi_v2": 4.0,
+    "change_gi_v2_ci": [
+     -6.9342243186582815,
+     15.0456102949454
+    ],
+    "change_gfar": 6.0,
+    "change_gfar_ci": [
+     -5.1696524064171125,
+     17.24613104784881
+    ],
+    "difference": -2.0,
+    "difference_ci": [
+     -13.977109317681585,
+     10.244160810252167
+    ],
+    "draws_without_an_arm": 0
+   },
+   "unclear_as_yes": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 3,
+      "no": 46,
+      "unclear": 1,
+      "not_applicable": 0,
+      "rate": 8.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 5,
+      "no": 43,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 14.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 6,
+      "no": 42,
+      "unclear": 2,
+      "not_applicable": 0,
+      "rate": 16.0
+     }
+    },
+    "problems": 86,
+    "change_gi_v2": 6.0,
+    "change_gi_v2_ci": [
+     -7.457786116322703,
+     19.645650813516895
+    ],
+    "change_gfar": 8.0,
+    "change_gfar_ci": [
+     -4.909090909090908,
+     20.725588543810485
+    ],
+    "difference": -2.0,
+    "difference_ci": [
+     -16.520374066515664,
+     13.083771488020183
+    ],
+    "draws_without_an_arm": 0
+   }
+  },
+  "qwen": {
+   "name": "Qwen3.8-27B",
+   "alpha": 0.16,
+   "items": 150,
+   "labelled": 150,
+   "quotes": {
+    "yes": 0,
+    "both_verbatim": 0,
+    "both_after_whitespace": 0,
+    "failed": []
+   },
+   "main": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 0,
+      "no": 50,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 0.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 0,
+      "no": 50,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 0.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 0,
+      "no": 50,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 0.0
+     }
+    },
+    "problems": 53,
+    "change_gi_v2": 0.0,
+    "change_gi_v2_ci": [
+     0.0,
+     0.0
+    ],
+    "change_gfar": 0.0,
+    "change_gfar_ci": [
+     0.0,
+     0.0
+    ],
+    "difference": 0.0,
+    "difference_ci": [
+     0.0,
+     0.0
+    ],
+    "draws_without_an_arm": 0
+   },
+   "unclear_as_yes": {
+    "arms": {
+     "unsteered": {
+      "n": 50,
+      "yes": 0,
+      "no": 50,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 0.0
+     },
+     "gi_v2_minus": {
+      "n": 50,
+      "yes": 0,
+      "no": 50,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 0.0
+     },
+     "gfar_minus": {
+      "n": 50,
+      "yes": 0,
+      "no": 50,
+      "unclear": 0,
+      "not_applicable": 0,
+      "rate": 0.0
+     }
+    },
+    "problems": 53,
+    "change_gi_v2": 0.0,
+    "change_gi_v2_ci": [
+     0.0,
+     0.0
+    ],
+    "change_gfar": 0.0,
+    "change_gfar_ci": [
+     0.0,
+     0.0
+    ],
+    "difference": 0.0,
+    "difference_ci": [
+     0.0,
+     0.0
+    ],
+    "draws_without_an_arm": 0
+   }
+  }
+ }
+}

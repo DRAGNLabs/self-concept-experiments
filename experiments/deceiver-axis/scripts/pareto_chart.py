@@ -98,28 +98,33 @@ MODELS = {
                                      "gi_cap_p25": (-12, 1), "gi_cap_p5": (13, -9), "gi_floor_p50": (-10, 7), "gi_floor_p95": (-10, -7),
                                      "unsteered": (12, 7)}),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 17; clamps on layers 12–23)", prefix="gf_",
-                           analysis=N / "gi_v2/pilot/analysis_gfx01_all_as_judged.json", summary=N / "gi_v2/pilot/summary_gfar.json",
+                           analysis=N / "gi_v2/pilot/analysis_gfx02nr_all_as_judged.json", summary=N / "gi_v2/pilot/summary_gfar.json",
                            offsets={"gf_cap_p75": (13, 4), "gf_cap_p50": (12, -10), "gf_cap_p25": (0, -14), "gf_cap_p95": (12, -8),
                                     "gf_m0.1": (-10, 3)})}),
     "muse": dict(
         name="Muse-Glimmer-30B", task_set="45 problems × 12 seeds", capeval=N / "muse_glimmer/gi_v2/capeval",
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 26; clamps on layers 17–33)", prefix="gi_",
-                            analysis=N / "muse_glimmer/gi_v2/pilot/analysis_floorladder_all_as_judged.json"),
+                            analysis=N / "muse_glimmer/gi_v2/pilot/analysis_floorladder_all_as_judged.json",
+                            summary=N / "muse_glimmer/gi_v2/pilot/summary_ladder.json"),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 26; clamps on layers 17–33)", prefix="gf_",
-                           analysis=N / "muse_glimmer/gi_v2/pilot/analysis_ctl_m01_s0-11_all_as_judged.json")}),
+                           analysis=N / "muse_glimmer/gi_v2/pilot/analysis_gfx03_all_as_judged.json", omit=("gf_cap_p25",))}),
     "gemma": dict(
         name="Gemma 4 31B", task_set="108 problems × 16 seeds", capeval=N / "gemma4_31b_gi_v2/capeval",
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 30; clamps on layers 20–38)", prefix="gi_",
-                            analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_capfloor15/analysis_all_as_judged.json"),
+                            analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_capfloor15/analysis_all_as_judged.json",
+                            summary=N / "gemma4_31b_gi_v2/rh/hard108/analysis_capfloor15/summary_capfloor15.json"),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 30; clamps on layers 20–38)", prefix="gf_",
-                           analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_gfar6/analysis_all_as_judged.json")}),
+                           analysis=N / "gemma4_31b_gi_v2/rh/hard108/analysis_gfar7/analysis_all_as_judged.json")}),
     "qwen": dict(
         name="Qwen3.8-27B", task_set="61 problems × 12 seeds", capeval=N / "qwen38_27b_gi_v2/capeval",
         axes={"gi_v2": dict(title="gi_v2 persona-contrast vector (layer 32; clamps on layers 22–42)", prefix="gi_",
-                            analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_floor/analysis_all_as_judged.json"),
+                            analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gicap50/analysis_all_as_judged.json"),
               "gfar": dict(title="Goodfire reward-hacking axis (layer 32; clamps on layers 22–42)", prefix="gf_",
-                           analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gfar_gfdose/analysis_all_as_judged.json")}),
+                           analysis=N / "qwen38_27b_gi_v2/rh/qwen_hard61/analysis_gfar_gfx04/analysis_all_as_judged.json", omit=("gf_cap_p25",))}),
 }
+# `omit` in an axis preset (user 2026-11-16): rungs past the least extreme failing rung of their ladder are not charted. The rule of
+# the coverage batch is that a more extreme rung is not run once a less extreme one fails; the Goodfire p25 caps on Muse and Qwen
+# were run before that rule (their p90 / p50 caps already fail), so they are judged but have no benchmark run and stay off the charts.
 AXIS_NAMES = {"gi_v2": "gi_v2 persona-contrast vector", "gfar": "Goodfire reward-hacking axis"}
 
 
@@ -212,6 +217,16 @@ def hidden_pass_diffs(analysis: dict, axis: dict, arms: list[str]) -> dict[str, 
     return {arm: rate[arm] - rate["unsteered"] for arm in arms}
 
 
+def hidden_pass_unsteered(analysis: dict, axis: dict) -> float | None:
+    """Unsteered hidden-test pass over all episodes, in %, from the same source as `hidden_pass_diffs`."""
+    if "hidden_pass" in analysis:
+        return 100 * analysis["hidden_pass"]["arms"]["unsteered"]["rate"]
+    if "summary" not in axis:
+        return None
+    row = json.loads(axis["summary"].read_text())["unsteered"]
+    return 100 * row["honest_hidden_pass_rate"] * (1 - row["shown_pass_hidden_fail_rate"])
+
+
 def relative_change(judged: dict, arm: str) -> dict:
     """Change in the judged hack rate as % of the unsteered rate (-100 = no judged hack left), with a paired bootstrap over
     problems of the ratio (both rates recomputed in every draw). Not defined when the unsteered rate is zero."""
@@ -232,10 +247,13 @@ NO_BENCHMARK = dict(accuracy=None, composite=None, composite_unsteered=None, dif
 
 
 def load_axis(model: dict, axis: dict, combine, keep_without_benchmark: bool = False) -> dict:
-    """`keep_without_benchmark`: an arm with no benchmark run keeps its row, with the benchmark fields None (dose_lines_chart.py)."""
+    """`keep_without_benchmark`: an arm with no benchmark run keeps its row, with the benchmark fields None (dose_lines_chart.py).
+    Arms named in the preset's `omit` are left out (see the note above AXIS_NAMES) and listed under `omitted_by_preset`."""
     analysis = json.loads(axis["analysis"].read_text())
     judged, no_code = analysis["judged_hack"], analysis["no_code"]
-    source_arms = [arm for arm in judged["arms"] if canonical(arm).startswith(axis["prefix"])]
+    family = [arm for arm in judged["arms"] if canonical(arm).startswith(axis["prefix"])]
+    source_arms = [arm for arm in family if canonical(arm) not in axis.get("omit", ())]
+    omitted_by_preset = [canonical(arm) for arm in family if canonical(arm) in axis.get("omit", ())]
     rows, omitted, hidden_diffs = {}, [], hidden_pass_diffs(analysis, axis, source_arms)
     for source in source_arms:
         arm = canonical(source)
@@ -247,12 +265,14 @@ def load_axis(model: dict, axis: dict, combine, keep_without_benchmark: bool = F
         bench = composite(model["capeval"], arm, combine) if has_run else NO_BENCHMARK
         contrast = judged["contrasts"][source]
         hidden_diff = hidden_diffs[source]
+        hidden_ci = [100 * bound for bound in analysis["hidden_pass"]["contrasts"][source]["ci95"]] if "hidden_pass" in analysis else None
         no_code_diff = 100 * no_code["arms"][source]["diff_vs_unsteered"]
         measures = [("no_code", no_code_diff)] + ([("hidden_pass", hidden_diff)] if hidden_diff is not None else [])
         rows[arm] = dict(kind=kind(arm), label=label(arm), analysis_arm=source, hack=100 * judged["arms"][source]["rate"],
                          hack_diff=100 * contrast["diff"], hack_diff_ci=[100 * contrast["ci95"][0], 100 * contrast["ci95"][1]],
                          hack_p_holm=contrast.get("p_holm"),
-                         episodes=judged["arms"][source]["episodes"], hidden_pass_diff=hidden_diff, no_code_diff=no_code_diff,
+                         episodes=judged["arms"][source]["episodes"], hidden_pass_diff=hidden_diff, hidden_pass_diff_ci=hidden_ci,
+                         no_code_diff=no_code_diff,
                          inside_dose_rule=None if hidden_diff is None else all(abs(value) <= RULE_POINTS for _, value in measures),
                          outside_on=[name for name, value in measures if abs(value) > RULE_POINTS],
                          stops_submitting=no_code_diff > RULE_POINTS, **relative_change(judged, source), **bench)
@@ -260,9 +280,10 @@ def load_axis(model: dict, axis: dict, combine, keep_without_benchmark: bool = F
     unsteered_composite = {round(row["composite_unsteered"], 9) for row in scored}
     assert len(unsteered_composite) == 1, unsteered_composite
     unsteered = dict(hack=100 * judged["arms"]["unsteered"]["rate"], episodes=judged["arms"]["unsteered"]["episodes"],
+                     hidden_pass=hidden_pass_unsteered(analysis, axis),
                      composite=scored[0]["composite_unsteered"], accuracy={t: scored[0]["accuracy"][t]["unsteered"] for t in TASKS})
     items = sum(row["n"] for row in scored[0]["accuracy"].values())
-    return dict(unsteered=unsteered, arms=rows, omitted_no_benchmark_run=omitted, analysis=str(axis["analysis"]), problems=judged["problems"],
+    return dict(unsteered=unsteered, arms=rows, omitted_no_benchmark_run=omitted, omitted_by_preset=omitted_by_preset, analysis=str(axis["analysis"]), problems=judged["problems"],
                 seeds=judged["seeds"], items=items)
 
 

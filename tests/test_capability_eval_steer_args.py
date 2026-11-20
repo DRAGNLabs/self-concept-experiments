@@ -24,6 +24,25 @@ class SteerArgs(unittest.TestCase):
     def setUp(self):
         self.m = load_script()
 
+    def test_run_plan_variants_and_seeds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            one, two = Path(tmp) / "one.txt", Path(tmp) / "two.txt"
+            one.write_text("first prefix\n")
+            two.write_text("second prefix\n")
+            plain = parse(self.m, "--sample-seed", "4")
+            self.assertEqual(self.m.run_plan(plain), [(Path("o"), "", 4)])
+            single = parse(self.m, "--prompt-prefix-file", str(one))
+            self.assertEqual(self.m.run_plan(single), [(Path("o"), "first prefix", 0)])
+            both = parse(self.m, "--variants", f"a={one}", f"b={two}", "--sample-seeds", "1", "2")
+            self.assertEqual(self.m.run_plan(both), [(Path("o/a/seed1"), "first prefix", 1), (Path("o/a/seed2"), "first prefix", 2),
+                                                     (Path("o/b/seed1"), "second prefix", 1), (Path("o/b/seed2"), "second prefix", 2)])
+            seeds_only = parse(self.m, "--sample-seeds", "7")
+            self.assertEqual(self.m.run_plan(seeds_only), [(Path("o/seed7"), "", 7)])
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                parse(self.m, "--variants", f"a={one}", "--prompt-prefix-file", str(one))
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                parse(self.m, "--variants", f"a={one}", f"a={two}")
+
     def test_floor_needs_layers_and_thresholds(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             parse(self.m, "--direction", "d.pt", "--steer-mode", "floor")
