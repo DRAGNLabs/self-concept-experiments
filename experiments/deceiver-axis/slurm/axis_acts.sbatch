@@ -20,6 +20,7 @@ set -euo pipefail
 #   export MODEL=<hf id> DATA=<data dir> TAG=<main|pilot> RUN=<unsteered arm dir> SEEDS="0 1 2 ..." OUT=<dir> \
 #          DIRECTIONS="gi_v2=<pt> gf_all=<pt>:<key> ..." CHAT_KWARGS='{"reasoning_effort":"low"}' [MAX_LENGTH=40960] [ATTN=<kernel>]
 #          [ARM=<output stem, default unsteered>] [STEER_DIRECTION=<axis pt of a steered arm: record with its steering on>]
+#          [TOKEN_PROJECTIONS=1: also write per-token projections on the named directions] [N=<episodes per seed, smoke>] [NULLS=<count>]
 #   sbatch --array=0-3 --export=ALL [-p cs2] experiments/deceiver-axis/slurm/axis_acts.sbatch
 # Placement: gpt-oss needs a Hopper GPU for its FA3 kernel (-p cs2); Gemma 4 31B and Qwen3.8-27B turns of 30-70k
 # tokens want a B200 (-p cs3); Muse fits an A100.
@@ -42,6 +43,8 @@ for SPEC in $DIRECTIONS; do DIRECTION_ARGS+=(--direction "$SPEC"); done
 EXTRA=()
 if [ -n "${ATTN:-}" ]; then EXTRA+=(--attn-implementation "$ATTN"); fi
 if [ -n "${STEER_DIRECTION:-}" ]; then EXTRA+=(--steer-direction "$STEER_DIRECTION"); fi
+if [ -n "${TOKEN_PROJECTIONS:-}" ]; then EXTRA+=(--token-projections); fi
+if [ -n "${N:-}" ]; then EXTRA+=(--n "$N"); fi
 nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv
 # cs A100 nodes: a 1-GPU task can see a sibling's GPU; pin to the least-used one by UUID (see main_run.sbatch).
 if [ "$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l)" -gt 1 ]; then
