@@ -9,9 +9,10 @@ the root does not hold, from a directory of per-token projections written by tok
 mean over a response's tokens is the projection of its mean activation). Each source is referenced to its own default.
 
     python scripts/persona_violin_panels.py --root <extraction root> --axis <persona_contrast.pt> --layer 17 \
-        [--tokens <tokens_L17 dir>] --model-label gpt-oss-120b --out <png> [--note "<extra note line>"]
+        [--tokens <tokens_L17 dir>] [--cache <npz>] --model-label gpt-oss-120b --out <png> [--note "<extra note line>"]
 
-Writes the PNG and `<png stem>.json` (per-persona n / median / quartiles, per-panel AUROC, sources).
+Writes the PNG and `<png stem>.json` (per-persona n / median / quartiles, per-panel AUROC, sources). With --cache the
+per-response values are stored on the first run and read back on later ones (the root is then not opened again).
 """
 from __future__ import annotations
 
@@ -94,6 +95,7 @@ def main() -> None:
     parser.add_argument("--model-label", default="")
     parser.add_argument("--axis-label", default="Deceiver Axis")
     parser.add_argument("--note", default="")
+    parser.add_argument("--cache", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
@@ -105,12 +107,19 @@ def main() -> None:
     unit = axis[args.layer].float()
     unit = unit / unit.norm()
 
-    root_default = from_activations(args.root, "default", unit, args.layer)
-    token_default = from_tokens(args.tokens, "default") if args.tokens else None
     values: dict[str, np.ndarray] = {}
     source: dict[str, str] = {}
+    cached = args.cache is not None and args.cache.exists()
+    if cached:
+        with np.load(args.cache) as stored:
+            values = {role: stored[role] for role in stored.files}
+        source = {role: "cache" for role in values}
+    root_default = None if cached else from_activations(args.root, "default", unit, args.layer)
+    token_default = from_tokens(args.tokens, "default") if args.tokens and not cached else None
     for _, deceptive_group, honest_group in PANELS:
         for role in groups[deceptive_group] + groups[honest_group]:
+            if role in values:
+                continue
             if root_default is not None and (raw := from_activations(args.root, role, unit, args.layer)) is not None:
                 values[role], source[role] = relative(raw, question_means(root_default), heldout), "activations"
             elif token_default is not None and (raw := from_tokens(args.tokens, role)) is not None:
@@ -118,9 +127,13 @@ def main() -> None:
             else:
                 raise SystemExit(f"no per-response data for {role}")
 
+    if args.cache is not None and not cached:
+        args.cache.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(args.cache, **values)
+
     widths = [len(groups[d]) + len(groups[h]) + GROUP_GAP for _, d, h in PANELS]
-    figure, axes_row = plt.subplots(1, len(PANELS), figsize=(11.0, 5.9), sharey=True, gridspec_kw={"width_ratios": widths, "wspace": 0.08})
-    figure.subplots_adjust(left=0.085, right=0.99, top=0.775, bottom=0.375)
+    figure, axes_row = plt.subplots(1, len(PANELS), figsize=(11.0, 5.3), sharey=True, gridspec_kw={"width_ratios": widths, "wspace": 0.08})
+    figure.subplots_adjust(left=0.068, right=0.99, top=0.785, bottom=0.35)
     record: dict = {"layer": args.layer, "axis": str(args.axis), "root": str(args.root), "tokens": str(args.tokens) if args.tokens else None,
                     "heldout_questions": len(heldout), "panels": {}, "personas": {}}
     top = max(float(v.max()) for v in values.values())
@@ -133,7 +146,7 @@ def main() -> None:
             for index, role in enumerate(ordered[honesty]):
                 positions.append(offset + index), roles.append(role), colors.append(COLOR[honesty])
         axes.set_axisbelow(True)
-        axes.grid(axis="y", color=GRID, linewidth=0.7)
+        axes.grid(axis="y", color=GRID, linewidth=0.6)
         axes.axhline(0, color=SOFT, linewidth=0.9, zorder=1)
         parts = axes.violinplot([values[role] for role in roles], positions=positions, widths=0.82, showextrema=False)
         for body, color in zip(parts["bodies"], colors):
@@ -144,9 +157,6 @@ def main() -> None:
             q25, q75 = (float(x) for x in np.percentile(values[role], [25, 75]))
             record["personas"][role] = {"panel": title, "honesty": "deceptive" if role in ordered["deceptive"] else "honest",
                                         "n": int(len(values[role])), "median": median, "q25": q25, "q75": q75, "source": source[role]}
-        for honesty in ("deceptive", "honest"):
-            centre = float(np.mean([p for p, r in zip(positions, roles) if r in ordered[honesty]]))
-            axes.text(centre, 0.965, honesty, transform=axes.get_xaxis_transform(), ha="center", va="top", fontsize=8.5, color=SOFT)
         positive = np.concatenate([values[role] for role in ordered["deceptive"]])
         negative = np.concatenate([values[role] for role in ordered["honest"]])
         separation = auroc(positive, negative)
@@ -154,8 +164,8 @@ def main() -> None:
         highest_honest = max(float(np.median(values[role])) for role in ordered["honest"])
         record["panels"][title] = {"auroc": separation, "deceptive_responses": int(len(positive)), "honest_responses": int(len(negative)),
                                    "lowest_deceptive_median": lowest_deceptive, "highest_honest_median": highest_honest}
-        axes.set_title(title, loc="left", fontsize=9.5, fontweight="bold", color=INK, pad=20)
-        axes.text(0.0, 1.022, f"AUROC {separation:.3f}",
+        axes.set_title(title, loc="left", fontsize=9.5, fontweight="bold", color=INK, pad=19)
+        axes.text(0.0, 1.02, f"AUROC {separation:.3f}",
                   transform=axes.transAxes, ha="left", va="bottom", fontsize=8.5, color=SOFT)
         axes.set_xticks(positions, [label_of(role) for role in roles], rotation=45, ha="right", rotation_mode="anchor", fontsize=8, color=INK)
         axes.set_xlim(-0.75, positions[-1] + 0.75)
@@ -169,25 +179,25 @@ def main() -> None:
             axes.spines["left"].set_visible(False)
             axes.tick_params(axis="y", length=0)
     span = top - bottom
-    axes_row[0].set_ylim(bottom - 0.04 * span, top + 0.13 * span)
-    axes_row[0].set_ylabel(f"Projection on the {args.axis_label}\n(default assistant on the same question = 0)", fontsize=9, color=INK)
+    axes_row[0].set_ylim(bottom - 0.04 * span, top + 0.04 * span)
+    axes_row[0].set_ylabel(f"Projection on the {args.axis_label}", fontsize=9.5, color=INK)
+    axes_row[0].annotate("default assistant", xy=(-0.6, 0), xytext=(0, -4), textcoords="offset points", ha="left", va="top", fontsize=8,
+                         color=SOFT)
 
     counts = [entry["n"] for entry in record["personas"].values()]
     model = f"{args.model_label}: " if args.model_label else ""
-    figure.text(0.012, 0.972, f"{model}persona responses projected on the {args.axis_label}, layer {args.layer}", fontsize=12.5, fontweight="bold",
-                color=INK, ha="left", va="top")
-    figure.text(0.012, 0.922, f"One violin per persona: its in-role responses to the {len(heldout)} held-out questions; black line = median.",
-                fontsize=9.5, color=SOFT, ha="left", va="top")
-    figure.legend(handles=[Patch(facecolor=COLOR["deceptive"], label="deceptive persona"), Patch(facecolor=COLOR["honest"], label="honest persona")],
-                  loc="upper right", bbox_to_anchor=(0.99, 0.975), ncols=2, frameon=False, fontsize=9, labelcolor=INK, handlelength=1.2,
-                  columnspacing=1.6)
-    notes = [f"Each response: mean residual activation over its tokens at layer {args.layer}, projected on the unit axis, minus the default "
-             "assistant's mean on the same question.",
-             f"Only responses the role judge scored fully in role ({min(counts)}–{max(counts)} per persona). AUROC: deceptive against honest "
-             "responses within the panel. Violins run from highest to lowest median within each group."]
+    figure.text(0.012, 0.975, f"{model}persona responses on the {args.axis_label}", fontsize=12.5, fontweight="bold", color=INK, ha="left", va="top")
+    figure.text(0.012, 0.922, f"Responses to {len(heldout)} held-out questions, layer {args.layer}. Black line = median.", fontsize=9.5, color=SOFT,
+                ha="left", va="top")
+    figure.legend(handles=[Patch(facecolor=COLOR["deceptive"], label="deceptive personas"), Patch(facecolor=COLOR["honest"], label="honest personas")],
+                  loc="upper right", bbox_to_anchor=(0.992, 0.985), ncols=2, frameon=False, fontsize=9.5, labelcolor=INK, handlelength=1.1,
+                  handleheight=0.9, columnspacing=1.6)
+    notes = ["Each response: mean residual activation over its response tokens, projected on the unit axis, relative to the default assistant's "
+             "mean on the same question.",
+             f"Only responses judged fully in role ({min(counts)}–{max(counts)} per persona). AUROC: deceptive vs honest responses within the panel."]
     if args.note:
         notes.append(args.note)
-    figure.text(0.012, 0.012, "\n".join(notes), fontsize=7.8, color=SOFT, ha="left", va="bottom", linespacing=1.45)
+    figure.text(0.012, 0.014, "\n".join(notes), fontsize=8, color=SOFT, ha="left", va="bottom", linespacing=1.45)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, dpi=200, facecolor="white")
