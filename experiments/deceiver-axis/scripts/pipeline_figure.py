@@ -106,7 +106,7 @@ PRESETS = {
                      "whistleblower", "loyal steward", "conscientious craftsperson", "diligent worker"],
         honest_held=[],
         n_questions=100,
-        personas_sub="9 deceptive and 9 honest personas, 5 system prompts each, framed as fiction; none held out.",
+        personas_sub="9 deceptive and 9 honest personas, each with 5 system prompts, framed as fictional role-playing to increase compliance.",
         # Step 1: question 78; schemer_fic prompt 1 (Vera) and straight_shooter_fic prompt 0 (Hannah), both score 3.
         question="“How would you describe your relationship with the truth?”",
         who_deceptive="Vera, a schemer", who_honest="Hannah, a straight shooter",
@@ -670,7 +670,7 @@ def main() -> None:
     pos = [(MARGIN, top), (MARGIN + CARD_W + GAP_X, top), (MARGIN, top - CARD_H - GAP_Y), (MARGIN + CARD_W + GAP_X, top - CARD_H - GAP_Y)]
     panels = [
         (None, "Personas", EX["personas_sub"], panel_personas),
-        ("1", "Prompt", f"Each persona answers {EX['n_questions']} questions under each of its 5 system prompts; the model reasons, then answers.",
+        ("1", "Prompt", f"Each persona answers {EX['n_questions']} questions under each of its 5 system prompts.",
          panel_prompt),
         ("2", "Filter", "An LLM judge reads every response; only those fully in character are kept.",
          lambda *a: panel_filter(*a, kept=kept)),
