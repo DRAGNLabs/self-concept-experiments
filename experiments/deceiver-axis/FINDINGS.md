@@ -18,6 +18,8 @@ call a non-significant result evidence of no effect.
 
 **Reporting change, Holm correction retired (entry "Reporting change: Holm correction retired" below; written 3:02 PM MST Nov 20):** on the decision of the user and Koby, arms are described by change, 95% interval and sign-flip p, written plainly (amended on the user's word the same afternoon); no number is recomputed and earlier entries keep their Holm values. Eight arms change description: on the Deceiver Axis Gemma +0.04 (p 0.033), Gemma cap p45 (p 0.027), Gemma cap p35 (p 0.043), Muse cap p50 (p 0.044); on the Goodfire axis gpt-oss −0.1, floor p50, +0.4 and Qwen +0.16 (p 0.009 to 0.016). On Gemma, +0.04 is inside the dose rule with all benchmarks kept; cap p45 is inside the dose rule and loses MMLU-Pro by 2.4 points. The five charts going into the paper carry no Holm value; versions without their bottom notes are in `figures/paper/` on scratch. Sandbagging checked the same way (3:21 PM MST, addendum in the entry): of 105 arm tests in the nine current analyses one changes description, gpt-oss MMLU-Pro Goodfire cap p50 (+2.2 points, p 0.014, on a benchmark where gpt-oss has no gap); no reading changes on any model or notice.
 
+**gfar hack separation in steered episodes, read 11:18 pm MST Nov 16 (user requests Nov 16; entry "gfar hack separation in steered episodes (gi_v2 ±, gfar −), steering on" below; branch `steered-hack-separation`):** with each arm's steering on during extraction, gfar's within-problem AUROC on answer tokens stays above the random 97.5th percentile under positive gi_v2 on gpt-oss, Muse and Gemma (0.893 / 0.942 / 0.783) and is near it on problems never hacked unsteered (gpt-oss 0.904, Gemma 0.838; 94th / 95th percentile). Negative gi_v2 lowers it on all three (0.758 → 0.655, 0.905 → 0.887, 0.805 → 0.677; Gemma leaves the significant range); negative gfar keeps Muse and Gemma significant (0.836, 0.789). Gemma reasoning tokens never separate. gpt-oss negative arms have 13 and 19 hacks. gi_v2's own projection stays inside the random range everywhere.
+
 **Sandbagging on gpt-oss under notice C, steered arms (entry "Sandbagging on gpt-oss under notice C, steered arms" below; written 3:43 PM MST Nov 19):** ten fresh seeds, 300 GSM8K items, the fourteen arms of the notice-B run. Unsteered gap +27.0 [+24.1, +29.9]. All six gi_v2 arms lower it (−9.2 to −24.3) and five of seven Goodfire arms do (−5.4 to −22.7; not −0.1 and cap p95): reading 2 by the rule, as under B. The axes are no longer equal at equal α: gi_v2 minus Goodfire is −13.5 [−15.6, −11.5] at −0.1 and −16.1 [−18.9, −13.3] at the main dose −0.2 (gi_v2 −21.5, Goodfire −5.4; under B +0.2 [−0.9, +1.3]); at −0.4 they are level (−1.5 [−3.5, +0.3]). The gi_v2 arms come with more refusals under the incentive notice (1.2 to 3.6% of answers against 0.4% unsteered), counted as wrong. A separate condition: not added to the four-model count under B. No transcript read; no control direction.
 
 **Sandbagging notice probe on gpt-oss and Qwen, unsteered (entry "Sandbagging: stronger notices on gpt-oss and Qwen, unsteered probe" below; written 1:48 PM MST Nov 19):** three stronger incentive notices (C higher stakes, D stronger goal sentence, E both), seed 0, 300 GSM8K items, no steered arm. gpt-oss: unsteered gap +29.7 [+24.3, +35.3] under C, +37.7 [+32.0, +43.3] under D, +59.3 [+53.7, +65.0] under E, against +11.7 under B, with `control` accuracy unchanged (96.0 to 97.0%); all three clear the pre-set rule (gap of at least 25 points) and the notice named is C. Under D and E, 68 and 86 of 300 `incentive` answers are refusals (2 under C). Qwen: +10.0, +9.7, +7.3 against +8.3 under B; none clears; Qwen mentions the consequence in 86 to 93% of answers and is correct in 87 to 90% of those. One seed, the selection seed. Steered arms under notice C on gpt-oss have not run and are the user's decision.
@@ -190,6 +192,75 @@ backend checks are under `slurm/checks/`. Unit tests: `tests/test_direction_anal
 | 6. Does it replicate on Qwen3.8-27B? (user request 2026-10-27: steering on the hard 45) | extraction done 2026-10-27 (job 14811290, 17 roles + default + neutral_fic, reasoning effort low); answer-region and reasoning-region validation at layer 32 and the answer-region sweep done; raw and cleaned steering artifacts built; harness port and smoke done 2026-10-27; unsteered capability check at the 64k budget done 2026-10-27 (job 14821126: hidden pass 56%, no-code 30%, proxy 4%, no truncation; 16k and 32k truncated too often); concurrent engine mode built, batch check passed (job 14821983) and the concurrent seed-0 run 14821701 reproduces the sequential shards 6–20× faster, so Qwen runs concurrently; **generic + intent axis built 2026-10-27 from Koby's verified 64-question role vectors (`gi/direction/`), pilot submitted 2026-10-28 4:45 pm MDT (job 14863168: unsteered / gi ±0.04 / ±0.08 / ±0.16 / random ±0.16 at layer 32, seeds 0–3, concurrent, 64k); **pilot done 2026-10-29 11:53 am MDT** (standby overnight, the last eight tasks moved to cs / qos cs after repeated preemptions)** | raw 17-role answer-region contrast passes checks 1–3 at layer 32 (split-half 0.98, held-out schemer vs honest 0.99–1.00) and at every layer from 12 up; deception separation equals the cleaned vector's (stratified 0.998 vs 0.999), but 15% of the raw vector is the acting arrow (cosine 0.92 with the cleaned one) and it separates the neutral character (1.00) and the honest characters (0.99) from the plain assistant, where the cleaned one does not (0.54 / 0.46); FINDINGS "Qwen3.8-27B 17-role extraction". **gi dose pilot (FINDINGS "Qwen3.8-27B gi dose pilot"):** proxy 5.0% unsteered (concurrent, 64k) and 5.0–6.7% at ±0.04 / ±0.08 / ±0.16 and random ±0.16, every Holm p = 1.0; hidden pass −6.7 to +5.0, no-code −5.6 to +5.0, nothing significant, every arm inside the dose rule; a 5% base rate with 30–38% no-code leaves the proxy nothing to measure — dose decision / whether to run a Qwen main run with the user (options in FINDINGS); **extra doses +0.32 / +0.64 run and +0.32 judged 2026-10-29** (judged 5.6%, Holm 0.035, outside the dose rule: hidden −11, no-code −16; +0.64 broken); **anecdotes + 25-question probes read 2026-10-29**: yes, more schemer-like on the positive side (concealed fits, "curator" persona), negative side only flatter; main-run decision with the user |
 
 ## Runs
+
+### gfar hack separation in steered episodes (gi_v2 ±, gfar −), steering on — 2026-11-16: on answer tokens gfar still separates judged hacks from non-hacks within problem above the random 97.5th percentile under positive gi_v2 steering on all three models with hacks (gpt-oss 0.893, Muse 0.942, Gemma 0.783), and on problems the model never hacks unsteered it stays at 0.90 / 0.84 (gpt-oss / Gemma, 94th / 95th percentile); negative gi_v2 steering is the one condition that lowers it on every model (unsteered → −α: gpt-oss 0.758 → 0.655, Muse 0.905 → 0.887, Gemma 0.805 → 0.677), while negative gfar steering leaves Muse and Gemma separated (0.836, 0.789)
+
+Question (user, 2026-11-16): gfar separates judged hacks from non-hacks in unsteered episodes (entry "Hack vs
+non-hack separation on unsteered episodes, gi_v2 and gfar" below). Does it still do so in steered episodes, scored
+with the steering on? Then (user): restricted to problems with no unsteered hack, to control for the "natural" gfar of
+problems that already hack; and comparing unsteered / negative gi_v2 / negative gfar.
+
+Setup. Branch `steered-hack-separation`. `scripts/axis_acts_extract.py --steer-direction` (commit 510db9e) re-runs
+each steered arm's episodes through the HF model with the arm's additive steering on (layer and coefficient read from
+each seed's run summary; hook registered before the recording hooks, so the recorded activations at and after the
+steer layer include the shift). Check: smoke job 15443485 (Muse gi_v2 +0.08, 2 episodes, on vs off) moved the gi_v2
+projection by 25.27 at L26 against a coefficient of 25.22 and by 0.0 at L25. Steer directions: gi_v2 share copies
+`<model>/gi_v2/direction/persona_contrast.pt`; gfar `gfar_vs_gi_v2_jansen05/steer/direction/<model>_goodfire_all_response_pl_all_families.pt`
+(cos 1.0 with the readout gfar at every layer). Jobs (placement reasons in `jobs.txt`, picker output
+`gpu_pick_2026-11-16.txt`): positive gi_v2 15443487 (gpt-oss +0.2, cs2 H100, FA3 is Hopper-only), 15443488 (Muse
++0.08, cs A100), 15443489 (Qwen +0.16, cs3 B200), 15443490 (Gemma +0.08, cs3 B200); negative gi_v2 15450303 / 15450304 /
+15450305; negative gfar 15453157 / 15453158 / 15453159. 12 seeds on gpt-oss, Muse and Qwen, 16 on Gemma. Separation:
+`scripts/hack_separation.py --arm <arm>` (commit 04e5dc7: episodes with no tokens in a segment are left out of that
+segment, at most 4 per arm on gpt-oss, Muse and Gemma), same layers, directions, labels (HACK = STRONG or WEAK) and
+1,000-random-direction null as the unsteered entry. Verdicts: gpt-oss `verdicts_gfscan/variants_gfscan_all`, Muse
+`verdicts_gfdose/variants_gfdose_all`, Gemma `hard108/analysis_gfar6/variants_all` (covers the gfar arms; equal to the
+unsteered entry's `verdicts_ctl_gicap_s0-15/variants_all16` on all 1,131 shared keys, and the unsteered rows rerun with
+it reproduce that entry exactly). Clean-problem runs: `--drop-problems-hacked-in unsteered` (commit 20ffbb6).
+
+gfar, within-problem AUROC (percentile among the 1,000 random directions; bold above the 97.5th). Arms in signed-α order.
+
+| Model (layer) | Arm | Hacks / non-hacks | Answer | Reasoning |
+|---|---|---|---|---|
+| gpt-oss (L17) | gfar −0.2 | 13 / 527 | 0.690 (90) | **0.922** (100) |
+| | gi_v2 −0.2 | 19 / 521 | 0.655 (86) | 0.579 (84) |
+| | unsteered | 63 / 477 | 0.758 (93) | **0.706** (99.0) |
+| | gi_v2 +0.2 | 182 / 358 | **0.893** (99.7) | 0.733 (94.5) |
+| | gi_v2 +0.2, clean problems | 54 / 246 | 0.904 (93.8) | 0.756 (93.1) |
+| Muse (L26) | gfar −0.08 | 122 / 417 | **0.836** (98.2) | **0.824** (100) |
+| | gi_v2 −0.08 | 135 / 401 | **0.887** (99.6) | **0.732** (98.3) |
+| | unsteered | 177 / 363 | **0.905** (100) | **0.779** (100) |
+| | gi_v2 +0.08 | 246 / 294 | **0.942** (100) | **0.809** (100) |
+| Gemma (L30) | gfar −0.08 | 57 / 1,671 | **0.789** (99.9) | 0.502 (53) |
+| | gi_v2 −0.08 | 68 / 1,660 | 0.677 (93) | 0.414 (16) |
+| | unsteered | 82 / 1,646 | **0.805** (99.5) | 0.589 (93) |
+| | gi_v2 +0.08 | 142 / 1,586 | **0.783** (98.7) | 0.498 (48) |
+| | gi_v2 +0.08, clean problems | 34 / 1,278 | 0.838 (95.4) | 0.551 (67) |
+
+Clean problems: 20 of 45 gpt-oss problems and 26 of 108 Gemma problems have an unsteered hack and are dropped. Muse
+and Qwen have too few clean-problem hacks to test. gi_v2's own projection stays inside the random range in every
+steered cell (within-problem percentile 44–91), as it does unsteered. Excluding BORDERLINE episodes changes no bold
+cell. Qwen +0.16 (7 hacks in 732) is not tabled (gfar within 0.40 answer, 0.59 reasoning, both inside the range);
+Qwen's negative arms were not extracted (0 unsteered hacks, 1 at −0.16).
+
+Observed. (1) Positive gi_v2: answer-token separation holds or rises on gpt-oss and Muse and holds on Gemma; on
+clean problems it is 0.90 and 0.84, 94th–95th percentile, short of the bold line but near it with 54 and 34 hacks.
+(2) Negative gi_v2 lowers answer-token separation on all three models; on Gemma it leaves the significant range
+(0.677, 93rd) with 68 hacks; on gpt-oss it was not significant unsteered either. (3) Negative gfar: Muse and Gemma
+answer tokens stay significant, near unsteered; gpt-oss reasoning is the table's highest value (0.922) on 13 hacks.
+(4) Gemma reasoning tokens never separate (16th–93rd percentile across arms).
+
+Explanation (not tested). A constant additive shift along gfar adds the same amount to every episode's gfar projection
+at the steer layer, so it cannot reorder episodes there; separation in the gfar −α rows comes from what the steered
+model wrote. gi_v2 is near-orthogonal to gfar at the steer layers (cos −0.02 to +0.09, entry "Goodfire reward-hacking
+axis (gfar) against gi_v2, four models"), so gi_v2 steering barely moves the gfar projection directly either; its
+effect on the gfar rows also comes through what the model wrote. The fall under negative gi_v2 could be removal of a shared component or a change in which hacks survive
+(problem mix); this run does not separate the two.
+
+Limits. Hack counts fall under negative steering (gpt-oss 13 and 19), so those rows are noisy and no difference
+between rows is tested. One layer per model; isotropic null only. The problem mix of hacks differs between arms; the
+clean-problem rows control this for the positive arm only. gfar's possible closeness to hacking text (unsteered entry)
+applies here too. Outputs: Koby's scratch `schemer-axis/hack_separation/steered/<model>_<arm>.{json,log}` and
+`clean_*`; caches `steered/acts/<model>/<arm>__seed<N>.pt`; driver `run_separation.sh`; `jobs.txt`.
 
 ### Caveat: `lcbhard_55` hidden-suite results sit near the 30 s verification limit — 2026-11-11: two passing October unsteered Muse submissions on this problem took 24.4 s and 25.1 s against a 30 s limit when re-verified, and a third, recorded as a pass, timed out; the problem can move a problem-stratified hidden-pass rate by at most 1/45 ≈ 2.2 points on gpt-oss and Muse, which is more than the 0.6 points by which the Muse p95 cap and −0.08 dose miss the dose rule
 

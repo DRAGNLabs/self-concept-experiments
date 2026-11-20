@@ -18,7 +18,11 @@ markup) and record at every layer, per episode and per segment (reasoning tokens
 Generalises hack_lens_extract.py (Gemma only, record layers 30-59, steered pairs) to the unsteered arm of every
 family; the output keeps that script's keys (reasoning_mean, answer_mean, record_layers, example_id, stats) so
 hack_lens caches and these read the same way. --dry-run renders and counts every turn without loading the model.
-Writes <out>/<arm>__seed<N>.pt per seed; existing files are skipped. A turn that runs out of GPU memory is retried on
+--steer-direction records a steered arm with its steering on (additive, at the layer and coefficient of the run summary).
+--token-projections (exploratory, lightly reviewed) also writes <out>/<arm>__seed<N>.tokens.pt: every reasoning and answer token's projection on the
+named directions at every recorded layer (tokens x layers x named, fp16 unless a value would overflow it), with each
+token's segment (1 reasoning, 2 answer), turn and position in its turn, and per-episode offsets into those arrays.
+Writes <out>/<arm>__seed<N>.pt per seed; a seed whose files all exist is skipped. A turn that runs out of GPU memory is retried on
 its first 80% of tokens (recorded in oom_truncated). Analysis: axis_acts_analysis.py.
 """
 import argparse
@@ -27,6 +31,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Literal, TypedDict
 
 import numpy as np
 import torch
@@ -34,7 +39,9 @@ from transformers import AutoTokenizer
 
 from selfconcept.common.chat import chat_template_kwargs
 from selfconcept.correlation.random_vectors import random_directions
+from selfconcept.measurement.intervene import _hooks, add_transform
 from selfconcept.measurement.steering_specifics import steering_model_specifics
+from selfconcept.measurement.unit_axes import load_unit_axes
 
 _spec = importlib.util.spec_from_file_location("hack_lens_extract", Path(__file__).with_name("hack_lens_extract.py"))
 hack_lens = importlib.util.module_from_spec(_spec)
@@ -66,12 +73,17 @@ def parse_args():
     ap.add_argument("--run", type=Path, required=True, help="arm directory holding seed<N>/ subdirectories")
     ap.add_argument("--arm", default="unsteered", help="arm name for the output files")
     ap.add_argument("--seeds", nargs="+", type=int, required=True)
+    ap.add_argument("--steer-direction", type=Path, default=None,
+                    help="axis artifact the arm was steered with: record with steering on, layer and coefficient read from each seed's run summary")
     ap.add_argument("--record-layers", nargs="+", type=int, default=None, help="default: every layer")
     ap.add_argument("--direction", action="append", default=[], help="name=path[:key]; (num_layers, hidden) artifact, unit-normalised per layer here")
     ap.add_argument("--null-directions", type=int, default=32, help=f"random unit directions per layer (seed {NULL_SEED})")
     ap.add_argument("--max-length", type=int, default=40960, help="per-turn token cap (the tail is dropped)")
     ap.add_argument("--n", type=int, default=None, help="episodes per seed (smoke)")
     ap.add_argument("--dry-run", action="store_true", help="render and count every turn, no model")
+    ap.add_argument("--token-projections", action="store_true",
+                    help="EXPLORATORY (lightly reviewed when merged 2026-11-20): also write each reasoning/answer "
+                         "token's projection on the named directions (<arm>__seed<N>.tokens.pt)")
     ap.add_argument("--out", type=Path, required=True)
     return ap.parse_args()
 
@@ -152,8 +164,9 @@ def dry_run(args, tokenizer, family: str, chat_kwargs: dict) -> None:
 class TurnSums:
     """Token sums of one forward pass, per (segment, layer); merged into the episode only when the pass completes."""
 
-    def __init__(self, L: int, hidden: int, K: int, named: int, device):
+    def __init__(self, L: int, hidden: int, K: int, named: int, device, record_tokens: bool = False):
         self.n = {s: 0 for s in SEGMENTS}
+        self.token_projections: list[torch.Tensor] | None = [torch.empty(0)] * L if record_tokens else None
         self.sum = {s: torch.zeros(L, hidden, dtype=torch.float32, device=device) for s in SEGMENTS}
         self.norm = {s: torch.zeros(L, dtype=torch.float64, device=device) for s in SEGMENTS}
         self.proj = {s: torch.zeros(L, K, dtype=torch.float64, device=device) for s in SEGMENTS}
@@ -173,14 +186,17 @@ class TurnSums:
             self.proj[s][li] = projection.sum(0)
             self.square[s][li] = (projection * projection).sum(0)
             self.cross[s][li] = projection[:, :self.named].T @ projection
+        if self.token_projections is not None:
+            recorded = masks["reasoning"] | masks["answer"]
+            self.token_projections[li] = (hidden_states[recorded].float() @ dmat[:, :self.named]).cpu()
 
 
 def forward_turn(runner, runner_kwargs: dict, layers_module, layers: list[int], ids: list[int], segments: np.ndarray, dmat: dict[int, torch.Tensor],
-                 hidden: int, K: int, named: int, device) -> tuple[TurnSums, int]:
+                 hidden: int, K: int, named: int, device, record_tokens: bool = False) -> tuple[TurnSums, int]:
     """Run one turn, shrinking it to its first 80% of tokens when the GPU runs out of memory. -> (sums, tokens kept)."""
     keep = len(ids)
     while True:
-        sums = TurnSums(len(layers), hidden, K, named, device)
+        sums = TurnSums(len(layers), hidden, K, named, device, record_tokens)
         segment_tensor = torch.as_tensor(segments[:keep], device=device)
         masks = {"reasoning": segment_tensor == 1, "answer": segment_tensor == 2}
         handles = []
@@ -203,6 +219,26 @@ def forward_turn(runner, runner_kwargs: dict, layers_module, layers: list[int], 
         finally:
             for handle in handles:
                 handle.remove()
+
+
+class RunSteering(TypedDict):
+    mode: Literal["add"]
+    layer: int
+    coefficient: float
+
+
+def run_steering(run_dir: Path, tag: str) -> RunSteering:
+    steering = json.loads((run_dir / f"{tag}_impossible_original_summary.json").read_text())["steering"]
+    if steering["mode"] != "add":
+        raise SystemExit(f"{run_dir}: steering mode {steering['mode']!r}, only additive steering is reproduced here")
+    return {"mode": "add", "layer": int(steering["layer"]), "coefficient": float(steering["coefficient"])}
+
+
+def steering_transforms(direction_path: Path, steering: RunSteering, num_layers: int, hidden: int, model_name: str,
+                        device: torch.device) -> dict[int, object]:
+    unit_axes = load_unit_axes(direction_path, [steering["layer"]], num_layers, hidden, model_name)
+    unit_direction = torch.as_tensor(unit_axes[steering["layer"]]["direction"]).float().to(device)
+    return {steering["layer"]: add_transform(unit_direction, steering["coefficient"])}
 
 
 def main() -> None:
@@ -251,12 +287,15 @@ def main() -> None:
 
     for seed in args.seeds:
         out_path = args.out / f"{args.arm}__seed{seed}.pt"
-        if out_path.exists():
+        tokens_path = args.out / f"{args.arm}__seed{seed}.tokens.pt"
+        if out_path.exists() and (tokens_path.exists() or not args.token_projections):
             print(f"{out_path.name}: exists, skipped", file=sys.stderr, flush=True)
             continue
         run_dir = args.run / f"seed{seed}"
         records = [json.loads(line) for line in (run_dir / f"{args.tag}_impossible_original.jsonl").open()][: args.n]
         sidecar = load_sidecar(run_dir, args.tag)
+        steering = run_steering(run_dir, args.tag) if args.steer_direction else None
+        transforms_by_layer = steering_transforms(args.steer_direction, steering, num_layers, hidden, args.model, device) if steering else {}
         E = len(records)
         store = {
             "keys": [], "example_id": [], "verdict_key": [], "passed": [], "passed_original": [], "n_attempts": [],
@@ -265,46 +304,74 @@ def main() -> None:
             "stats": {s: {"n": np.zeros(E, np.int64), "h_norm": np.full((E, L), np.nan, np.float64), "proj": np.full((E, L, K), np.nan, np.float64),
                           "proj_square_sum": np.zeros((E, L, K), np.float64), "proj_cross_sum": np.zeros((E, L, named, K), np.float64)} for s in SEGMENTS},
         }
+        token_chunks: list[torch.Tensor] = []
+        token_info: dict[str, list[np.ndarray]] = {"segment": [], "turn": [], "position": []}
+        episode_offsets = [0]
         t0 = time.time()
-        for e, record in enumerate(records):
-            example = make_dossiers.find_example(args.data, args.tag, record["example_id"], run_dir)
-            turns, missing, full_lengths = episode_turns(tokenizer, family, example, record, sidecar.get(record["example_id"], {}), args.max_length, chat_kwargs)
-            store["keys"].append(f"{args.arm}/seed{seed}/{record['example_id']}")
-            store["example_id"].append(record["example_id"])
-            store["verdict_key"].append(f"{args.run.name}/seed{seed}/{record['example_id']}")
-            store["passed"].append(bool(record.get("passed"))); store["passed_original"].append(bool(record.get("passed_original")))
-            store["n_attempts"].append(int(record.get("n_attempts") or len(record["attempts"])))
-            store["turn_lengths"].append(full_lengths); store["truncated_turns"].append([t for t, n in enumerate(full_lengths) if n > args.max_length])
-            store["missing_reasoning"].append(missing)
-            totals = TurnSums(L, hidden, K, named, device)
-            oom = []
-            for ids, segments, turn in turns:
-                sums, kept = forward_turn(runner, runner_kwargs, layers_module, layers, ids, segments, dmat, hidden, K, named, device)
-                if kept < len(ids):
-                    oom.append((turn, kept))
+        with _hooks(model, transforms_by_layer):  # registered before forward_turn's recording hooks, which then read the steered stream
+            for e, record in enumerate(records):
+                example = make_dossiers.find_example(args.data, args.tag, record["example_id"], run_dir)
+                turns, missing, full_lengths = episode_turns(tokenizer, family, example, record, sidecar.get(record["example_id"], {}), args.max_length, chat_kwargs)
+                store["keys"].append(f"{args.arm}/seed{seed}/{record['example_id']}")
+                store["example_id"].append(record["example_id"])
+                store["verdict_key"].append(f"{args.run.name}/seed{seed}/{record['example_id']}")
+                store["passed"].append(bool(record.get("passed"))); store["passed_original"].append(bool(record.get("passed_original")))
+                store["n_attempts"].append(int(record.get("n_attempts") or len(record["attempts"])))
+                store["turn_lengths"].append(full_lengths); store["truncated_turns"].append([t for t, n in enumerate(full_lengths) if n > args.max_length])
+                store["missing_reasoning"].append(missing)
+                totals = TurnSums(L, hidden, K, named, device)
+                oom = []
+                for ids, segments, turn in turns:
+                    sums, kept = forward_turn(runner, runner_kwargs, layers_module, layers, ids, segments, dmat, hidden, K, named, device,
+                                              args.token_projections)
+                    if kept < len(ids):
+                        oom.append((turn, kept))
+                    if sums.token_projections is not None:
+                        recorded_positions = np.nonzero(np.isin(segments[:kept], (1, 2)))[0]
+                        token_chunks.append(torch.stack(sums.token_projections, dim=1))
+                        token_info["segment"].append(segments[recorded_positions].astype(np.int8))
+                        token_info["turn"].append(np.full(len(recorded_positions), turn, dtype=np.int16))
+                        token_info["position"].append(recorded_positions.astype(np.int32))
+                    for s in SEGMENTS:
+                        totals.n[s] += sums.n[s]
+                        for field in ("sum", "norm", "proj", "square", "cross"):
+                            getattr(totals, field)[s] += getattr(sums, field)[s]
+                    del sums
+                store["oom_truncated"].append(oom)
+                episode_offsets.append(sum(map(len, token_info["position"])))
                 for s in SEGMENTS:
-                    totals.n[s] += sums.n[s]
-                    for field in ("sum", "norm", "proj", "square", "cross"):
-                        getattr(totals, field)[s] += getattr(sums, field)[s]
-                del sums
-            store["oom_truncated"].append(oom)
-            for s in SEGMENTS:
-                n = max(totals.n[s], 1)
-                stats = store["stats"][s]
-                stats["n"][e] = totals.n[s]
-                store[f"{s}_mean"][e] = (totals.sum[s] / n).cpu()
-                if totals.n[s]:
-                    stats["h_norm"][e] = (totals.norm[s] / n).cpu().numpy(); stats["proj"][e] = (totals.proj[s] / n).cpu().numpy()
-                stats["proj_square_sum"][e] = totals.square[s].cpu().numpy(); stats["proj_cross_sum"][e] = totals.cross[s].cpu().numpy()
-            del totals
-            if e % 10 == 0 or e == E - 1:
-                print(f"{args.arm} seed {seed}: {e + 1}/{E} episodes ({len(turns)} turns, {sum(full_lengths)} tokens), {time.time() - t0:.0f} s", file=sys.stderr, flush=True)
+                    n = max(totals.n[s], 1)
+                    stats = store["stats"][s]
+                    stats["n"][e] = totals.n[s]
+                    store[f"{s}_mean"][e] = (totals.sum[s] / n).cpu()
+                    if totals.n[s]:
+                        stats["h_norm"][e] = (totals.norm[s] / n).cpu().numpy(); stats["proj"][e] = (totals.proj[s] / n).cpu().numpy()
+                    stats["proj_square_sum"][e] = totals.square[s].cpu().numpy(); stats["proj_cross_sum"][e] = totals.cross[s].cpu().numpy()
+                del totals
+                if e % 10 == 0 or e == E - 1:
+                    print(f"{args.arm} seed {seed}: {e + 1}/{E} episodes ({len(turns)} turns, {sum(full_lengths)} tokens), {time.time() - t0:.0f} s", file=sys.stderr, flush=True)
         for s in SEGMENTS:  # fp16 unless a coordinate would overflow it
             if float(store[f"{s}_mean"].abs().max()) < 3e4:
                 store[f"{s}_mean"] = store[f"{s}_mean"].to(torch.float16)
         store.update({"arm": args.arm, "seed": seed, "run": str(args.run), "tag": args.tag, "model": args.model, "revision": args.revision, "family": family,
                       "chat_kwargs": chat_kwargs, "record_layers": layers, "directions": names, "named_directions": names[:named],
-                      "direction_specs": args.direction, "null_seed": NULL_SEED, "max_length": args.max_length, "seconds": time.time() - t0})
+                      "direction_specs": args.direction, "null_seed": NULL_SEED,
+                      "steering": steering, "steer_direction": str(args.steer_direction) if args.steer_direction else None, "max_length": args.max_length, "seconds": time.time() - t0})
+        if args.token_projections:
+            projections = torch.cat(token_chunks) if token_chunks else torch.zeros(0, L, named)
+            if not projections.numel() or float(projections.abs().max()) < 6e4:
+                projections = projections.to(torch.float16)
+            token_store = {"proj": projections, **{field: np.concatenate(chunks) if chunks else np.zeros(0, np.int32)
+                                                   for field, chunks in token_info.items()},
+                           "episode_offsets": np.array(episode_offsets, np.int64), "segment_codes": {1: "reasoning", 2: "answer"},
+                           "keys": store["keys"], "verdict_key": store["verdict_key"], "example_id": store["example_id"],
+                           "turn_lengths": store["turn_lengths"], "oom_truncated": store["oom_truncated"],
+                           "record_layers": layers, "named_directions": names[:named], "direction_specs": args.direction,
+                           "arm": args.arm, "seed": seed, "run": str(args.run), "model": args.model, "steering": steering}
+            temporary_tokens = tokens_path.with_suffix(".pt.tmp")
+            torch.save(token_store, temporary_tokens)
+            temporary_tokens.rename(tokens_path)
+            del token_chunks, token_store
         temporary = out_path.with_suffix(".pt.tmp")
         torch.save(store, temporary)
         temporary.rename(out_path)
