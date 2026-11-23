@@ -27,10 +27,10 @@ neighbouring labels apart.
 
 A hollow marker = the model stops submitting code on that arm (no-code share more than 10 points above unsteered), on all three
 rows; the hack-rate line into and out of such an arm is dotted (a hack rate there is not comparable). The hidden-pass row carries
-dashed lines at the dose-rule limit (±10 points). Hidden pass falls when hacking rises, so that row shows the rule's measure, not
+dashed lines at the dose-rule limit (±10 points), the benchmark row at the retention rule (±2 points). Hidden pass falls when hacking rises, so that row shows the rule's measure, not
 capability. Rungs past the least extreme failing rung of their ladder are left out by the presets (`omit` in pareto_chart.py).
 
-The header is a title, one line of subtitle and one legend row. What the earlier chart explained above the panels (the x scales,
+The header is one legend row (no title or subtitle: the caption goes in the paper). What the earlier chart explained above the panels (the x scales,
 the hollow marker, sample sizes, the measures) is in the notes under the panels, set as a list of terms in two columns.
 
 Data, presets and the benchmark composite come from pareto_chart.py (`MODELS`, `load_axis`). `collect` builds the record and `draw`
@@ -59,12 +59,14 @@ from matplotlib.ticker import FuncFormatter, MaxNLocator
 import pareto_chart as pc
 
 FONTS = ["Liberation Sans", "Arial", "Helvetica", "Nimbus Sans", "DejaVu Sans"]  # first one installed is used
-SIZE = dict(title=17, subtitle=11, legend=10.5, model=13.5, row=10.5, tick=9.5, caption=10, note=9)  # points
+SIZE = dict(legend=10.5, model=13.5, row=10.5, tick=9.5, caption=10, note=9)  # points
 TEXT, SOFT, GRID, RULE, TINT = "#2e2d2a", pc.INK2, "#d9d8cf", "#9a998f", "#f1f0e9"
 AXIS_SHORT = {"gi_v2": "gi_v2", "gfar": "Goodfire"}
 # model names on this chart where they differ from the preset names in pareto_chart.py (user 2026-11-17: the instruction-tuned
 # Gemma, google/gemma-4-31B-it, is named with its "IT"); applied to the record, so the .json carries the drawn name
 MODEL_NAMES = {"Gemma 4 31B": "Gemma 4 31B IT"}
+# steering-axis names on this chart (the paper's names), applied to the record like MODEL_NAMES
+AXIS_NAMES = {"gi_v2": "The Deceiver Axis", "gfar": "Bergen et al. style reward hacking feature"}
 # rows of a panel: record key of the value and of its CI, heading, height in inches, marker size, line width, most y intervals
 # (`ticks`), half-width of the CI caps in points (`cap`)
 ROWS = {"hack": dict(value="hack_diff", ci="hack_diff_ci", name="Judged hack rate", height=2.45, marker=7.2, line=2.0, ticks=9, cap=2.6),
@@ -111,7 +113,8 @@ def collect(model_keys: list[str], axis_keys: list[str], composite: str) -> dict
                              problems=data["problems"], seeds=data["seeds"], items=data["items"],
                              omitted_by_preset=data["omitted_by_preset"], arms=arms))
         panels.append(dict(model=model["name"], axes=axes))
-    return dict(chart="dose_panels", composite=composite, score_name=score_name, rule_points=pc.RULE_POINTS, boot_draws=pc.BOOT_DRAWS,
+    return dict(chart="dose_panels", composite=composite, score_name=score_name, rule_points=pc.RULE_POINTS,
+                benchmark_rule_points=pc.BENCHMARK_RULE_POINTS, boot_draws=pc.BOOT_DRAWS,
                 boot_seed=pc.BOOT_SEED, panels=panels)
 
 
@@ -144,7 +147,7 @@ def place(panel: dict, spacing: str) -> dict:
                 limits=(0.0, 2 + HALF_GAP))
 
 
-def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], rule_points: float, x_tick_size: float) -> None:
+def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], rule_points_by_row: dict[str, float], x_tick_size: float) -> None:
     row_style = ROWS[key]
     value, interval = row_style["value"], row_style["ci"]
     axes.set_facecolor(pc.SURFACE)
@@ -188,8 +191,12 @@ def draw_row(axes, panel: dict, key: str, spot: dict, colors: dict[str, str], ru
     axes.tick_params(axis="y", length=3.5, color=RULE, pad=3, labelsize=SIZE["tick"], labelcolor=SOFT)
     if key == "hidden":  # the dose-rule lines; the lower one is always inside the y range
         low, high = axes.get_ylim()
-        axes.set_ylim(min(low, -rule_points - 3), max(high, 3))
-        for limit in (-rule_points, rule_points):
+        axes.set_ylim(min(low, -rule_points_by_row[key] - 3), max(high, 3))
+    if key == "bench":  # the retention-rule lines, both always inside the y range
+        low, high = axes.get_ylim()
+        axes.set_ylim(min(low, -rule_points_by_row[key] - 0.5), max(high, rule_points_by_row[key] + 0.5))
+    if key in rule_points_by_row:
+        for limit in (-rule_points_by_row[key], rule_points_by_row[key]):
             axes.axhline(limit, color=SOFT, linewidth=1.0, linestyle=(0, (4, 3)), zorder=1.6)
     axes.set_xticks([x for x, _ in spot["major"]], [text for _, text in spot["major"]])
     axes.set_xticks(spot["minor"], minor=True)
@@ -241,7 +248,8 @@ def notes(record: dict, spacing: str) -> list[tuple[str, str]]:
          + ". CI = paired bootstrap over problems."),
         ("Benchmark score", f"{record['score_name'].format(items=panels[0]['axes'][0]['items'])[0].upper()}"
                             f"{record['score_name'].format(items=panels[0]['axes'][0]['items'])[1:]}: GSM8K (1,319 items), MMLU-Pro (1,400), "
-                            "HumanEval (164), IFBench (300), one run per arm. CI = paired bootstrap over items."
+                            "HumanEval (164), IFBench (300), one run per arm. CI = paired bootstrap over items. Dashed lines = the retention rule, "
+                            f"{record['benchmark_rule_points']:g} points from unsteered."
                             + (f" No benchmark run yet (hack-rate point only): {'; '.join(no_run)}." if no_run else "")),
         ("Hidden-test pass", "Share of all episodes whose final code passes the hidden tests. Dashed lines = the dose-rule limit, "
                              f"{points} points from unsteered. A hack that fails the hidden tests counts as a failure, so this measure falls "
@@ -288,7 +296,7 @@ def draw(record: dict, out: Path, spacing: str, show_notes: bool = True) -> None
     keys += [dict(label="unsteered", sample=0.1, line=None, mark=dict(color=pc.INK, **ring)),
              dict(label="model stops submitting code", sample=0.42, line=dict(color=SOFT, linewidth=ROWS["hack"]["line"], linestyle=DOTTED, dash_capstyle="round"),
                   mark=dict(color=pc.SURFACE, markeredgecolor=SOFT, markeredgewidth=1.5, markersize=ROWS["hack"]["marker"])),
-             dict(label=f"dose-rule limit (±{record['rule_points']:g} points)", sample=0.36, line=dict(color=SOFT, linewidth=1.0, linestyle=(0, (4, 3))), mark=None)]
+             dict(label=f"rule limits (benchmark ±{record['benchmark_rule_points']:g}, hidden pass ±{record['rule_points']:g} points)", sample=0.36, line=dict(color=SOFT, linewidth=1.0, linestyle=(0, (4, 3))), mark=None)]
     at_x, legend_line = left, 0
     for key in keys:
         key["width"] = key["sample"] + 0.09 + ruler.width(key["label"], SIZE["legend"])
@@ -296,22 +304,12 @@ def draw(record: dict, out: Path, spacing: str, show_notes: bool = True) -> None
             at_x, legend_line = left, legend_line + 1
         key["x"], key["row"] = at_x, legend_line
         at_x += key["width"] + 0.34
-    subtitle = ruler.wrap(f"Change from {'each' if len(panels) > 1 else 'the'} model's unsteered run in judged hack rate, benchmark score and "
-                          "hidden-test pass, in percentage points. Bars are 95% confidence intervals.", SIZE["subtitle"], width - left - OUTER)
-    head_height = 0.2 + inch(SIZE["title"]) + 0.03 + len(subtitle) * inch(SIZE["subtitle"]) + 0.13 + (legend_line + 1) * inch(SIZE["legend"]) * 1.15 + 0.3
+    head_height = 0.2 + (legend_line + 1) * inch(SIZE["legend"]) * 1.15 + 0.3
     height = head_height + grid_rows * panel_height + (grid_rows - 1) * PANEL_GAP + 0.34 + notes_height + 0.12
     figure = plt.figure(figsize=(width, height), facecolor=pc.SURFACE)
     fx, fy = (lambda inches: inches / width), (lambda inches: 1 - inches / height)
 
-    # header: title, one line of subtitle, one legend row
-    interventions = pc.COUNT_WORDS.get(len(panels), str(len(panels)))
-    title = "Steering, capping and flooring on " + (f"{interventions} models" if len(panels) > 1 else panels[0]["model"])
     cursor = 0.2
-    figure.text(fx(left), fy(cursor), title, fontsize=SIZE["title"], fontweight="bold", color=pc.INK, ha="left", va="top")
-    cursor += inch(SIZE["title"]) + 0.03
-    for number, line in enumerate(subtitle):
-        figure.text(fx(left), fy(cursor + number * inch(SIZE["subtitle"])), line, fontsize=SIZE["subtitle"], color=TEXT, ha="left", va="top")
-    cursor += len(subtitle) * inch(SIZE["subtitle"]) + 0.13
     for key in keys:
         y = fy(cursor + (key["row"] * 1.15 + 0.5) * inch(SIZE["legend"]))
         if key["line"]:
@@ -338,7 +336,7 @@ def draw(record: dict, out: Path, spacing: str, show_notes: bool = True) -> None
                 figure.text(fx(x + ruler.width(heading, SIZE["row"], "bold") + 0.09), baseline, f"vs. unsteered {level:.1f}%",
                             fontsize=SIZE["row"], color=SOFT, ha="left", va="baseline")
             axes = figure.add_axes((fx(x), fy(cursor + HEAD + row["height"]), plot_width / width, row["height"] / height))
-            draw_row(axes, panel, key, spot, colors, record["rule_points"], x_tick_size)
+            draw_row(axes, panel, key, spot, colors, {"bench": record["benchmark_rule_points"], "hidden": record["rule_points"]}, x_tick_size)
             cursor += HEAD + row["height"] + X_TICKS + ROW_GAP
             if last:
                 for kind, centre in spot["captions"].items():
@@ -380,6 +378,8 @@ def main() -> None:
     record["dose_spacing"] = args.dose_spacing
     for panel in record["panels"]:
         panel["model"] = MODEL_NAMES.get(panel["model"], panel["model"])
+        for axis in panel["axes"]:
+            axis["name"] = AXIS_NAMES.get(axis["axis"], axis["name"])
     draw(record, args.out, args.dose_spacing, show_notes=not args.no_notes)
     args.out.with_suffix(".json").write_text(json.dumps(record, indent=1))
     for panel in record["panels"]:
