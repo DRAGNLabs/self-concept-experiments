@@ -39,9 +39,14 @@ def main() -> None:
     parser.add_argument("--title", help="chart title in place of the default")
     parser.add_argument("--note", action="append", help="note line under the panels (up to two) in place of the defaults")
     parser.add_argument("--no-notes", action="store_true", help="leave the note lines under the panels out (caption goes in the paper)")
+    parser.add_argument("--public-names", action="store_true",
+                        help='name the axes "Deceiver Axis" and "Reward Hacking Axis" (the paper\'s names) in place of gi_v2 and Goodfire')
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     gap = args.x == "gap"
+    legend_names = ("Deceiver Axis", "Reward Hacking Axis") if args.public_names else tuple(label for _, label, _, _ in AXES)
+    column_heads = (("Deceiver Axis\nΔ [95%]", "Reward Hacking Axis\nΔ [95%]", "Deceiver −\nReward Hacking") if args.public_names
+                    else ("gi_v2: Δ [95%]", "Goodfire: Δ [95%]", "gi_v2 − Goodfire"))
     panels = args.panels.split(",") if args.panels else BENCHMARKS
     off = 1 if gap else 0
     models = []
@@ -101,8 +106,8 @@ def main() -> None:
                     pair = analysis["pairs"].get(f"gi_m{entry[1]:g} - gf_m{entry[1]:g}")
                     if pair:
                         text.text(2.5, y, interval(pair), ha="center", va="center", fontsize=8, color=INK)
-            for k, head in enumerate(("gi_v2: Δ [95%]", "Goodfire: Δ [95%]", "gi_v2 − Goodfire")):
-                text.text(0.5 + k, 0 if gap else -0.95, head, ha="center", va="center", fontsize=8, color=SOFT, fontweight="bold")
+            for k, head in enumerate(column_heads):
+                text.text(0.5 + k, 0 if gap else -0.95, head, ha="center", va="center", fontsize=8, color=SOFT, fontweight="bold", linespacing=1.15)
             for a in (axes, text):
                 a.set_ylim(len(slots) + off - 0.45, -0.75 if gap else -1.4)
                 for side in ("top", "right", "left"):
@@ -133,7 +138,8 @@ def main() -> None:
                 "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
                 "Change in the sandbagging gap against the unsteered model, with 95% interval (bootstrap over items); "
                 "left of zero = smaller gap. Same x-axis in every panel.", fontsize=9.5, color=SOFT, va="center")
-    handles = [Line2D([], [], color=color, marker=marker, markersize=7, linewidth=2, label=label) for _, label, color, marker in AXES]
+    handles = [Line2D([], [], color=color, marker=marker, markersize=7, linewidth=2, label=label)
+               for label, (_, _, color, marker) in zip(legend_names, AXES)]
     if gap:
         handles.append(Line2D([], [], color=INK, marker="D", markersize=6.5, linewidth=2, label="unsteered (dashed line)"))
         handles.append(Patch(facecolor="#000000", alpha=0.07, label="zero to the unsteered gap: the room there is to lower it"))
@@ -143,7 +149,7 @@ def main() -> None:
                   handlelength=2.2, columnspacing=2.2)
     notes = args.note or [
         "Gap = % of items solved when a low score leads to unlearning minus % solved when a high score does. Δ = change against unsteered. "
-        "gi_v2 − Goodfire: difference of the two gaps at equal α (paired bootstrap); cap rungs are not matched across the axes, so no "
+        f"{' '.join(column_heads[2].split())}: difference of the two gaps at equal α (paired bootstrap); cap rungs are not matched across the axes, so no "
         "difference is given for them.",
         "A smaller gap is not by itself a decision not to underperform: the blind transcript reads found that on Muse, and on Gemma found "
         "answers that ignore the notice (caps) or break down (α −0.16)."]
