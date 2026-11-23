@@ -39,6 +39,7 @@ def main() -> None:
     parser.add_argument("--title", help="chart title in place of the default")
     parser.add_argument("--note", action="append", help="note line under the panels (up to two) in place of the defaults")
     parser.add_argument("--no-notes", action="store_true", help="leave the note lines under the panels out (caption goes in the paper)")
+    parser.add_argument("--no-title", action="store_true", help="leave the title and the subtitle out (the legend row moves to the top)")
     parser.add_argument("--public-names", action="store_true",
                         help='name the axes "Deceiver Axis" and "Reward Hacking Axis" (the paper\'s names) in place of gi_v2 and Goodfire')
     parser.add_argument("--out", required=True)
@@ -66,10 +67,11 @@ def main() -> None:
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9})
     foot = 0.62 if args.no_notes else 1.25  # inches under the panels: x-axis label, then the note lines
-    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 1.6 + foot
+    top_room = 0.75 if args.no_title else 1.5  # inches above the panels: legend row alone, or title + subtitle + legend row
+    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 0.1 + top_room + foot
     figure = plt.figure(figsize=(17.6, height), facecolor="white")
     grid = figure.add_gridspec(len(models), 4, width_ratios=[1, 1.12, 1, 1.12], height_ratios=[len(r) + 1.6 for r in rows],
-                               left=0.062, right=0.995, top=1 - 1.5 / height, bottom=foot / height, hspace=0.34, wspace=0.04)
+                               left=0.062, right=0.995, top=1 - top_room / height, bottom=foot / height, hspace=0.34, wspace=0.04)
     for m, (name, analyses) in enumerate(models):
         slots = rows[m]
         doses = sum(1 for s in slots if s[0] == 1)
@@ -131,13 +133,14 @@ def main() -> None:
             if m == len(models) - 1:
                 axes.set_xlabel("sandbagging gap (points)" if gap else "change in gap against unsteered (points)", fontsize=9, color=SOFT)
 
-    figure.text(0.012, 1 - 0.36 / height, args.title or ("Sandbagging under an incentive: the gap under each steering arm"
-                if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks"),
-                fontsize=14, fontweight="bold", color=INK, va="center")
-    figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
-                "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
-                "Change in the sandbagging gap against the unsteered model, with 95% interval (bootstrap over items); "
-                "left of zero = smaller gap. Same x-axis in every panel.", fontsize=9.5, color=SOFT, va="center")
+    if not args.no_title:
+        figure.text(0.012, 1 - 0.36 / height, args.title or ("Sandbagging under an incentive: the gap under each steering arm"
+                    if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks"),
+                    fontsize=14, fontweight="bold", color=INK, va="center")
+        figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
+                    "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
+                    "Change in the sandbagging gap against the unsteered model, with 95% interval (bootstrap over items); "
+                    "left of zero = smaller gap. Same x-axis in every panel.", fontsize=9.5, color=SOFT, va="center")
     handles = [Line2D([], [], color=color, marker=marker, markersize=7, linewidth=2, label=label)
                for label, (_, _, color, marker) in zip(legend_names, AXES)]
     if gap:
@@ -145,7 +148,7 @@ def main() -> None:
         handles.append(Patch(facecolor="#000000", alpha=0.07, label="zero to the unsteered gap: the room there is to lower it"))
     handles.append(Line2D([], [], color=SOFT, marker="o", markerfacecolor="white", markeredgewidth=1.6, markersize=7, linewidth=0,
                           label="hollow: arm not usable"))
-    figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.008, 1 - 0.8 / height), ncol=5, frameon=False, fontsize=9,
+    figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.008, 1 - (top_room - 0.7) / height), ncol=5, frameon=False, fontsize=9,
                   handlelength=2.2, columnspacing=2.2)
     notes = args.note or [
         "Gap = % of items solved when a low score leads to unlearning minus % solved when a high score does. Δ = change against unsteered. "
