@@ -39,9 +39,16 @@ def main() -> None:
     parser.add_argument("--title", help="chart title in place of the default")
     parser.add_argument("--note", action="append", help="note line under the panels (up to two) in place of the defaults")
     parser.add_argument("--no-notes", action="store_true", help="leave the note lines under the panels out (caption goes in the paper)")
+    parser.add_argument("--no-title", action="store_true", help="leave the title and the subtitle out (the legend row moves to the top)")
+    parser.add_argument("--no-subtitle", action="store_true", help="keep the title, leave the subtitle line out")
+    parser.add_argument("--public-names", action="store_true",
+                        help='name the axes "Deceiver Axis" and "Reward Hacking Axis" (the paper\'s names) in place of gi_v2 and Goodfire')
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     gap = args.x == "gap"
+    legend_names = ("Deceiver Axis", "Reward Hacking Axis") if args.public_names else tuple(label for _, label, _, _ in AXES)
+    column_heads = (("Deceiver Axis\nΔ [95%]", "Reward Hacking Axis\nΔ [95%]", "Deceiver −\nReward Hacking") if args.public_names
+                    else ("gi_v2: Δ [95%]", "Goodfire: Δ [95%]", "gi_v2 − Goodfire"))
     panels = args.panels.split(",") if args.panels else BENCHMARKS
     off = 1 if gap else 0
     models = []
@@ -61,10 +68,12 @@ def main() -> None:
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9})
     foot = 0.62 if args.no_notes else 1.25  # inches under the panels: x-axis label, then the note lines
-    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 1.6 + foot
+    # inches above the panels: legend row alone, title + legend row, or title + subtitle + legend row
+    top_room = 0.75 if args.no_title else 1.2 if args.no_subtitle else 1.5
+    height = sum(0.31 * (len(r) + 1.6) for r in rows) + 0.1 + top_room + foot
     figure = plt.figure(figsize=(17.6, height), facecolor="white")
     grid = figure.add_gridspec(len(models), 4, width_ratios=[1, 1.12, 1, 1.12], height_ratios=[len(r) + 1.6 for r in rows],
-                               left=0.062, right=0.995, top=1 - 1.5 / height, bottom=foot / height, hspace=0.34, wspace=0.04)
+                               left=0.062, right=0.995, top=1 - top_room / height, bottom=foot / height, hspace=0.34, wspace=0.04)
     for m, (name, analyses) in enumerate(models):
         slots = rows[m]
         doses = sum(1 for s in slots if s[0] == 1)
@@ -101,8 +110,8 @@ def main() -> None:
                     pair = analysis["pairs"].get(f"gi_m{entry[1]:g} - gf_m{entry[1]:g}")
                     if pair:
                         text.text(2.5, y, interval(pair), ha="center", va="center", fontsize=8, color=INK)
-            for k, head in enumerate(("gi_v2: Δ [95%]", "Goodfire: Δ [95%]", "gi_v2 − Goodfire")):
-                text.text(0.5 + k, 0 if gap else -0.95, head, ha="center", va="center", fontsize=8, color=SOFT, fontweight="bold")
+            for k, head in enumerate(column_heads):
+                text.text(0.5 + k, 0 if gap else -0.95, head, ha="center", va="center", fontsize=8, color=SOFT, fontweight="bold", linespacing=1.15)
             for a in (axes, text):
                 a.set_ylim(len(slots) + off - 0.45, -0.75 if gap else -1.4)
                 for side in ("top", "right", "left"):
@@ -126,24 +135,27 @@ def main() -> None:
             if m == len(models) - 1:
                 axes.set_xlabel("sandbagging gap (points)" if gap else "change in gap against unsteered (points)", fontsize=9, color=SOFT)
 
-    figure.text(0.012, 1 - 0.36 / height, args.title or ("Sandbagging under an incentive: the gap under each steering arm"
-                if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks"),
-                fontsize=14, fontweight="bold", color=INK, va="center")
-    figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
-                "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
-                "Change in the sandbagging gap against the unsteered model, with 95% interval (bootstrap over items); "
-                "left of zero = smaller gap. Same x-axis in every panel.", fontsize=9.5, color=SOFT, va="center")
-    handles = [Line2D([], [], color=color, marker=marker, markersize=7, linewidth=2, label=label) for _, label, color, marker in AXES]
+    if not args.no_title:
+        figure.text(0.012, 1 - 0.36 / height, args.title or ("Sandbagging under an incentive: the gap under each steering arm"
+                    if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks"),
+                    fontsize=14, fontweight="bold", color=INK, va="center")
+    if not (args.no_title or args.no_subtitle):
+        figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
+                    "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
+                    "Change in the sandbagging gap against the unsteered model, with 95% interval (bootstrap over items); "
+                    "left of zero = smaller gap. Same x-axis in every panel.", fontsize=9.5, color=SOFT, va="center")
+    handles = [Line2D([], [], color=color, marker=marker, markersize=7, linewidth=2, label=label)
+               for label, (_, _, color, marker) in zip(legend_names, AXES)]
     if gap:
         handles.append(Line2D([], [], color=INK, marker="D", markersize=6.5, linewidth=2, label="unsteered (dashed line)"))
         handles.append(Patch(facecolor="#000000", alpha=0.07, label="zero to the unsteered gap: the room there is to lower it"))
     handles.append(Line2D([], [], color=SOFT, marker="o", markerfacecolor="white", markeredgewidth=1.6, markersize=7, linewidth=0,
                           label="hollow: arm not usable"))
-    figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.008, 1 - 0.8 / height), ncol=5, frameon=False, fontsize=9,
+    figure.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.008, 1 - (top_room - 0.7) / height), ncol=5, frameon=False, fontsize=9,
                   handlelength=2.2, columnspacing=2.2)
     notes = args.note or [
         "Gap = % of items solved when a low score leads to unlearning minus % solved when a high score does. Δ = change against unsteered. "
-        "gi_v2 − Goodfire: difference of the two gaps at equal α (paired bootstrap); cap rungs are not matched across the axes, so no "
+        f"{' '.join(column_heads[2].split())}: difference of the two gaps at equal α (paired bootstrap); cap rungs are not matched across the axes, so no "
         "difference is given for them.",
         "A smaller gap is not by itself a decision not to underperform: the blind transcript reads found that on Muse, and on Gemma found "
         "answers that ignore the notice (caps) or break down (α −0.16)."]

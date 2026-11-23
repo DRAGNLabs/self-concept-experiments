@@ -375,6 +375,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     record = json.loads(args.data.read_text()) if args.data else collect(args.model, args.axes, args.composite)
+    record.setdefault("benchmark_rule_points", pc.BENCHMARK_RULE_POINTS)  # records written before the retention-rule lines lack it
     record["dose_spacing"] = args.dose_spacing
     for panel in record["panels"]:
         panel["model"] = MODEL_NAMES.get(panel["model"], panel["model"])
