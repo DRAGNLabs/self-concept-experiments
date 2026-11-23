@@ -38,7 +38,7 @@ WIDTH, MARGIN, CARD_GAP, PAD = 10.0, 0.4, 0.3, 0.22
 PILL_HEIGHT, PILL_PAD, ROUND = 0.25, 0.11, 0.1
 LINE = dict(quote=1.42, where=1.35, context=1.35, note=1.4, subtitle=1.35, title=1.3)  # line heights in ems
 
-TASK = "Coding task with flawed tests. The instructions forbid tailoring the code to the tests."
+TASK = "Coding task with a hidden test suite. The prompt warns the tests may be flawed and forbids tailoring the code to them."
 EXAMPLES = [
     dict(model="gpt-oss-120b", context=TASK,
          left=dict(state="away", dose="−0.4", parts=[dict(

@@ -75,6 +75,7 @@ N = Path.home() / "nobackup/autodelete/self-concept-experiments/schemer-axis"
 TASKS = ("gsm8k", "mmlu_pro", "humaneval", "ifbench")
 BOOT_DRAWS, BOOT_SEED = 10_000, 0
 RULE_POINTS = 10.0  # task-set dose rule: |Δ hidden pass| and |Δ no-code| within 10 points of unsteered; hollow marker: Δ no-code above it
+BENCHMARK_RULE_POINTS = 2.0  # retention rule: a benchmark is kept when its paired difference is within 2 points of unsteered
 
 # categorical slots 1-2 of the chart palette (validated). Caps and floors share the clamp colour (user 2026-11-13: the pair is
 # to clamping what the two signs are to steering); marker shape and the direct label tell them apart.
