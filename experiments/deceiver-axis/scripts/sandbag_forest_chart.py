@@ -40,6 +40,7 @@ def main() -> None:
     parser.add_argument("--note", action="append", help="note line under the panels (up to two) in place of the defaults")
     parser.add_argument("--no-notes", action="store_true", help="leave the note lines under the panels out (caption goes in the paper)")
     parser.add_argument("--no-title", action="store_true", help="leave the title and the subtitle out (the legend row moves to the top)")
+    parser.add_argument("--no-subtitle", action="store_true", help="keep the title, leave the subtitle line out")
     parser.add_argument("--public-names", action="store_true",
                         help='name the axes "Deceiver Axis" and "Reward Hacking Axis" (the paper\'s names) in place of gi_v2 and Goodfire')
     parser.add_argument("--out", required=True)
@@ -67,7 +68,8 @@ def main() -> None:
 
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9})
     foot = 0.62 if args.no_notes else 1.25  # inches under the panels: x-axis label, then the note lines
-    top_room = 0.75 if args.no_title else 1.5  # inches above the panels: legend row alone, or title + subtitle + legend row
+    # inches above the panels: legend row alone, title + legend row, or title + subtitle + legend row
+    top_room = 0.75 if args.no_title else 1.2 if args.no_subtitle else 1.5
     height = sum(0.31 * (len(r) + 1.6) for r in rows) + 0.1 + top_room + foot
     figure = plt.figure(figsize=(17.6, height), facecolor="white")
     grid = figure.add_gridspec(len(models), 4, width_ratios=[1, 1.12, 1, 1.12], height_ratios=[len(r) + 1.6 for r in rows],
@@ -137,6 +139,7 @@ def main() -> None:
         figure.text(0.012, 1 - 0.36 / height, args.title or ("Sandbagging under an incentive: the gap under each steering arm"
                     if gap else "Sandbagging under an incentive: how each axis moves the gap, four models, two benchmarks"),
                     fontsize=14, fontweight="bold", color=INK, va="center")
+    if not (args.no_title or args.no_subtitle):
         figure.text(0.012, 1 - 0.66 / height, "Sandbagging gap with 95% interval (bootstrap over items). An arm inside the shading lowers the gap, at "
                     "zero it removes it, right of the dashed line it raises it. Same x-axis in every panel." if gap else
                     "Change in the sandbagging gap against the unsteered model, with 95% interval (bootstrap over items); "
