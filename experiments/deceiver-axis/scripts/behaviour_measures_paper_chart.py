@@ -91,17 +91,18 @@ def draw_panel(axes: Axes, letter: str, proxy: Proxy, changes_by_model: ChangesB
 
 
 def draw_better_arrow(axes: Axes) -> None:
-    """An arrow toward the upper right, parallel to the diagonal and just below it, labelled "better"."""
-    tail, head = (0.72, 0.56), (0.95, 0.79)
+    """An arrow toward the upper left (the Deceiver Axis changes the measure more), from the empty lower-right corner."""
+    tail, head = (0.95, 0.29), (0.79, 0.45)
     axes.annotate("", xy=head, xycoords="axes fraction", xytext=tail, textcoords="axes fraction",
                   arrowprops={"arrowstyle": "-|>", "color": MUTED, "linewidth": 2, "mutation_scale": 22})
-    axes.text((tail[0] + head[0]) / 2 + 0.035, (tail[1] + head[1]) / 2 - 0.035, "better", transform=axes.transAxes,
-              rotation=45, rotation_mode="anchor", fontsize=SUBTITLE_SIZE, color=MUTED, ha="center", va="top")
+    axes.text(0.97, 0.04, "Deceiver Axis\nbetter", transform=axes.transAxes, fontsize=SUBTITLE_SIZE - 1, color=MUTED,
+              ha="right", va="bottom", linespacing=1.1)
 
 
 def legend_handles() -> list[Line2D]:
     model_handles = [Line2D([], [], color=COLOR_BY_MODEL[preset["label"]], marker=MARKER_BY_MODEL[preset["label"]],
-                            linestyle="none", markersize=MARKER_SIZE - 2, label=PAPER_NAME_BY_MODEL[preset["label"]])
+                            linestyle="none", markersize=MARKER_SIZE - 2,
+                            label=f"{PAPER_NAME_BY_MODEL[preset['label']]} (α = −{preset['alpha_by_dose']['main']:g})")
                      for preset in PRESETS]
     return model_handles + [
         Line2D([], [], color=MUTED, marker="o", linestyle="none", markersize=MARKER_SIZE - 2, markerfacecolor=MUTED,
