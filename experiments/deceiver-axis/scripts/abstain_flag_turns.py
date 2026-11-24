@@ -71,12 +71,17 @@ def contrast_intervals(draws_by_arm: dict[str, dict[TurnClass, ClassDraws]],
             for a, b in CONTRASTS if a in draws_by_arm and b in draws_by_arm}
 
 
-def load_rows_by_arm(flag_dir: Path, slug: str) -> tuple[float, dict[str, list[TurnFlagRow]]]:
+def load_rows_by_arm(flag_dir: Path, slug: str, excluded_problem_ids: frozenset[str]
+                     ) -> tuple[float, dict[str, list[TurnFlagRow]]]:
+    """Excluded problems are left out of the threshold's honest-success episodes as well as the turns."""
     preset = PRESET_BY_SLUG[slug]
     verdict_by_key = load_verdict_by_key(preset["verdict_files"])
     detail_by_key = load_judge_details(preset, verdict_by_key)
-    threshold = success_threshold(episode_rows(flag_files(flag_dir, "unsteered"), verdict_by_key), "both")
-    rows_by_arm = {label: turn_rows(flag_files(flag_dir, stem), verdict_by_key, detail_by_key, threshold)
+    unsteered_episodes = [row for row in episode_rows(flag_files(flag_dir, "unsteered"), verdict_by_key)
+                          if row["problem"] not in excluded_problem_ids]
+    threshold = success_threshold(unsteered_episodes, "both")
+    rows_by_arm = {label: [row for row in turn_rows(flag_files(flag_dir, stem), verdict_by_key, detail_by_key, threshold)
+                           if row["problem"] not in excluded_problem_ids]
                    for label, stem in FLAG_ARMS_BY_SLUG[slug].items()}
     return threshold, {arm: rows for arm, rows in rows_by_arm.items() if rows}
 
@@ -85,8 +90,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--flags", type=Path, required=True)
     parser.add_argument("--slug", required=True, choices=list(FLAG_ARMS_BY_SLUG))
+    parser.add_argument("--exclude-problems", nargs="+", default=[], help="example ids to leave out")
     args = parser.parse_args()
-    threshold, rows_by_arm = load_rows_by_arm(args.flags, args.slug)
+    threshold, rows_by_arm = load_rows_by_arm(args.flags, args.slug, frozenset(args.exclude_problems))
     problems = sorted({row["problem"] for rows in rows_by_arm.values() for row in rows})
     index_by_problem = {problem: i for i, problem in enumerate(problems)}
     weights = multinomial_problem_weights(len(problems), N_DRAWS, np.random.default_rng(0))
