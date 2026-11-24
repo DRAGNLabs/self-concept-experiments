@@ -122,12 +122,21 @@ def problem_counts(records_by_seed_key: dict[str, CheckRecord], arm_name: str, p
             "totals": np.array([totals_by_problem[problem] for problem in problem_ids])}
 
 
-def model_changes(preset: ModelPreset, n_draws: int, rng: np.random.Generator
+def records_outside_problems(records_by_seed_key: dict[str, CheckRecord], excluded_problem_ids: frozenset[str]
+                             ) -> dict[str, CheckRecord]:
+    return {seed_key: record for seed_key, record in records_by_seed_key.items()
+            if record["example_id"] not in excluded_problem_ids}
+
+
+def model_changes(preset: ModelPreset, n_draws: int, rng: np.random.Generator,
+                  excluded_problem_ids: frozenset[str] = frozenset()
                   ) -> tuple[dict[Proxy, ChangesByArm], dict[Proxy, Gap]]:
     """Changes per record proxy and arm (both doses), and per proxy the main-dose gi_v2 - gfar gap, from one set of
     problem-bootstrap draws."""
-    unsteered_records = load_records(preset["unsteered"], preset["record_file"])
-    records_by_arm = {arm: load_records(arm_dir, preset["record_file"]) for arm, arm_dir in preset["arm_dirs"].items()}
+    unsteered_records = records_outside_problems(load_records(preset["unsteered"], preset["record_file"]),
+                                                 excluded_problem_ids)
+    records_by_arm = {arm: records_outside_problems(load_records(arm_dir, preset["record_file"]), excluded_problem_ids)
+                      for arm, arm_dir in preset["arm_dirs"].items()}
     verdict_by_key = load_verdict_by_key(preset["verdict_files"])
     problem_ids = sorted({record["example_id"] for record in unsteered_records.values()})
     resampled_problems = rng.integers(len(problem_ids), size=(n_draws, len(problem_ids)))
@@ -213,16 +222,17 @@ def flag_changes(turns_json: Path) -> dict[Proxy, tuple[ChangesByArm, Gap]]:
     return result
 
 
-def draw_gap_marker(axes: Axes, model: str, gfar: Change, gi_v2: Change, gap: Gap) -> list[float]:
+def draw_gap_marker(axes: Axes, model: str, gfar: Change, gi_v2: Change, gap: Gap, marker_size: float = 10,
+                    bar_width: float = 1.5) -> list[float]:
     """The model's main-dose point with its gap bar (perpendicular to the diagonal: moving along it changes only the
     gap). -> the bar's coordinates, for the axis extent."""
     color = COLOR_BY_MODEL[model]
     shifts = [(bound - gap["delta"]) / 2 for bound in (gap["low"], gap["high"])]
     bar_xs = [gfar["delta"] - shift for shift in shifts]
     bar_ys = [gi_v2["delta"] + shift for shift in shifts]
-    axes.plot(bar_xs, bar_ys, color=color, linewidth=1.5, alpha=0.45, solid_capstyle="round", zorder=2)
+    axes.plot(bar_xs, bar_ys, color=color, linewidth=bar_width, alpha=0.45, solid_capstyle="round", zorder=2)
     off_diagonal = gap["low"] > 0 or gap["high"] < 0
-    axes.plot(gfar["delta"], gi_v2["delta"], marker=MARKER_BY_MODEL[model], markersize=10, linestyle="none",
+    axes.plot(gfar["delta"], gi_v2["delta"], marker=MARKER_BY_MODEL[model], markersize=marker_size, linestyle="none",
               color=color, markerfacecolor=color if off_diagonal else "white", markeredgecolor=color,
               markeredgewidth=2, zorder=4)
     return [*bar_xs, *bar_ys]

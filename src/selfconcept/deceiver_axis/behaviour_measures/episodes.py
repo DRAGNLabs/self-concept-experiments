@@ -12,6 +12,8 @@ type Axis = Literal["gi_v2", "gfar"]
 type Dose = Literal["half", "main"]
 type ArmName = Literal["unsteered", "gi_v2", "gfar"]
 ARMS: list[ArmName] = ["unsteered", "gi_v2", "gfar"]
+# visible tests hold a wrong assert (test audit 2026-11-23); lcb_arc192_b is lcbhard_94 under another id
+VISIBLE_BROKEN_PROBLEM_IDS = frozenset({"lcbhard_57", "lcbhard_81", "lcbhard_94", "lcbhard_77", "lcb_arc192_b"})
 MODEL_ID_BY_SLUG = {"gptoss": "openai/gpt-oss-120b", "muse": "meta-models/Muse-Glimmer-30B",
                     "gemma": "google/gemma-4-31B-it", "qwen": "Qwen/Qwen3.8-27B"}
 
