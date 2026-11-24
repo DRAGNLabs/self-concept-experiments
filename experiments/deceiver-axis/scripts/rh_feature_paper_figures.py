@@ -1,13 +1,14 @@
 """Paper figures for the reward-hacking-feature subsections, drawn from existing analysis outputs (CPU, no recomputation).
 
 separation: within-problem (stratified) AUROC of hack vs non-hack unsteered episodes for the Deceiver Axis (gi_v2) and the
-    Reward Hacking Axis (gfar), reasoning and answer tokens, with the random directions' 97.5th
-    percentile as a dotted tick (hack_separation.py outputs).
+    Reward Hacking Axis (gfar), reasoning and answer tokens, with the 100 antonym control directions' 97.5th
+    percentile as a dotted tick (hack_separation.py outputs on the 41 / 103-problem sets with lcbhard_61 / 67 re-scored).
 geometry: markdown table of cos(gi_v2, gfar) and episode-level r of their projections, each with a p value against the 100
     antonym control directions (gfar_gi_v2_control_null.py outputs).
 lens: median shift of the per-token gfar projection under gi_v2 steering on the control runs' tokens, over the unsteered
     p10-p90 width, by layer; dotted lines at the 2.5th and 97.5th percentiles of the antonym controls' median shifts; shaded layers where gfar's within-problem
-    AUROC is above the random 97.5th percentile (steer_gfar_lens_chart.py outputs).
+    AUROC is above the antonym controls' 97.5th percentile (steer_gfar_lens_chart.py and gfar_layer_separation.py outputs, with the five
+    wrong-shown-test problems left out and the re-scored verdicts).
 
     python experiments/deceiver-axis/scripts/rh_feature_paper_figures.py --out-dir ~/nobackup/autodelete/self-concept-experiments/figures
 """
@@ -38,9 +39,9 @@ DIRECTIONS: tuple[Direction, ...] = ("gi_v2", "gfar")
 SEGMENTS: tuple[Segment, ...] = ("reasoning", "answer")
 
 SCRATCH = Path.home() / "nobackup/autodelete/self-concept-experiments"
-SEPARATION_DIR = SCRATCH / "schemer-axis/hack_separation"
+SEPARATION_DIR = Path("/grphome/grp_mirror/nobackup/autodelete/self-concept-experiments/schemer-axis/gfar_vs_gi_v2_jansen05/hack_separation_2026-11-23")
 CONTROL_NULL_DIR = SCRATCH / "gfar_gi_v2_control_null"
-LENS_CHART_DIR = SCRATCH / "schemer-axis/steer_gfar_lens/charts"
+LENS_CHART_DIR = SCRATCH / "schemer-axis/steer_gfar_lens/charts_2026-11-24"
 
 
 class Model(TypedDict):
@@ -84,17 +85,17 @@ class SeparationBar(TypedDict):
     direction: Direction
     segment: Segment
     auroc: float
-    random_p97_5: float
+    control_p97_5: float
     hacks: int
     non_hacks: int
 
 
 def load_separation_bars(model: Model) -> list[SeparationBar]:
-    record = json.loads((SEPARATION_DIR / f"{model['key']}.json").read_text())
+    record = json.loads((SEPARATION_DIR / f"{model['key']}_rescored.json").read_text())
     rows_by_key = {(row["direction"], row["segment"]): row for row in record["rows"] if row["borderline"] == "counted_not_hack"}
     return [{"model": model["name"], "direction": direction, "segment": segment,
              "auroc": rows_by_key[direction, segment]["within_problem"]["auroc"],
-             "random_p97_5": rows_by_key[direction, segment]["within_problem"]["random_p97_5"],
+             "control_p97_5": rows_by_key[direction, segment]["within_problem"]["control"]["p97_5"],
              "hacks": rows_by_key[direction, segment]["hacks"], "non_hacks": rows_by_key[direction, segment]["non_hacks"]}
             for segment in SEGMENTS for direction in DIRECTIONS]
 
@@ -117,9 +118,9 @@ def draw_separation(bars_by_model: list[list[SeparationBar]], out_stem: Path) ->
                       color=pc.INK if bar["segment"] == "reasoning" else pc.SURFACE, zorder=4)
             cursor += 1 + (segment_gap if bar is model_bars[len(DIRECTIONS) - 1] else 0)
         for segment, positions in positions_by_segment.items():
-            random_p97_5_values = {bar["random_p97_5"] for bar in model_bars if bar["segment"] == segment}
-            assert len(random_p97_5_values) == 1, "random directions are shared across directions within a segment"
-            axes.plot([random_p97_5_values.pop()] * 2, [positions[0] - bar_height / 2, positions[-1] + bar_height / 2], color=pc.INK,
+            control_p97_5_values = {bar["control_p97_5"] for bar in model_bars if bar["segment"] == segment}
+            assert len(control_p97_5_values) == 1, "control directions are shared across directions within a segment"
+            axes.plot([control_p97_5_values.pop()] * 2, [positions[0] - bar_height / 2, positions[-1] + bar_height / 2], color=pc.INK,
                       linestyle=(0, (1, 1.2)), linewidth=1.6, zorder=3)
         all_positions = [position for positions in positions_by_segment.values() for position in positions]
         tick_positions.append(float(np.mean(all_positions)))
@@ -134,8 +135,8 @@ def draw_separation(bars_by_model: list[list[SeparationBar]], out_stem: Path) ->
     axes.grid(axis="x", color=pc.GRID, linewidth=0.6, zorder=0)
     patches_by_direction = {direction: [Patch(color=bar_color(direction, segment), label=f"{AXIS_NAMES[direction]}, {SEGMENT_NAMES[segment]}")
                                         for segment in SEGMENTS] for direction in DIRECTIONS}
-    random_tick = Line2D([], [], color=pc.INK, linestyle=(0, (1, 1.2)), linewidth=1.6, label="random directions, 97.5th percentile")
-    handles: list[Artist] = [*patches_by_direction["gi_v2"], random_tick, *patches_by_direction["gfar"]]
+    control_tick = Line2D([], [], color=pc.INK, linestyle=(0, (1, 1.2)), linewidth=1.6, label="antonym control directions, 97.5th percentile")
+    handles: list[Artist] = [*patches_by_direction["gi_v2"], control_tick, *patches_by_direction["gfar"]]
     axes.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.45, -0.1), ncol=2, frameon=False, fontsize=9)
     axes.set_title("Separating reward hacks from non-hacks", fontsize=12.5, color=pc.INK, loc="left", pad=10)
     figure.tight_layout()
@@ -198,7 +199,7 @@ class LensPanel(TypedDict):
 def separating_layers(saved: dict, layer_count: int) -> Bool[np.ndarray, "layers"]:
     separating = np.zeros(layer_count, dtype=bool)
     for entry in (saved.get("gfar_separation") or {}).get("layers", []):
-        separating[entry["layer"]] = entry["auroc"] > entry["random_p97_5"]
+        separating[entry["layer"]] = entry["auroc"] > entry["control_p97_5"]
     return separating
 
 
@@ -239,7 +240,7 @@ def draw_lens(panels: list[LensPanel], out_stem: Path) -> None:
     handles: list[Artist] = [Line2D([], [], color=COLORS_BY_DIRECTION["gi_v2"], linewidth=2, label="Deceiver Axis steering, median shift"),
                Line2D([], [], color=pc.INK2, linestyle=(0, (1, 1.5)), linewidth=1.4,
                       label=f"antonym control directions, {LENS_NULL_PERCENTILES[0]:g}–{LENS_NULL_PERCENTILES[1]:g}% range"),
-               Patch(color=SEPARATING_SHADE, label="Reward Hacking Axis separates hacks (above random 97.5th percentile)")]
+               Patch(color=SEPARATING_SHADE, label="Reward Hacking Axis separates hacks (above antonym-control 97.5th percentile)")]
     figure.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, -0.06), ncol=2, frameon=False, fontsize=9)
     figure.suptitle("Effect of Deceiver Axis steering on the Reward Hacking Axis", fontsize=12.5,
                     color=pc.INK, x=0.01, ha="left")
@@ -258,7 +259,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out-dir", type=Path, required=True)
     args = parser.parse_args()
-    models_with_unsteered_hacks = [model for model in MODELS if (SEPARATION_DIR / f"{model['key']}.json").exists()]
+    models_with_unsteered_hacks = [model for model in MODELS if (SEPARATION_DIR / f"{model['key']}_rescored.json").exists()]
     draw_separation([load_separation_bars(model) for model in models_with_unsteered_hacks], args.out_dir / "rh_feature_separation")
     geometry = geometry_markdown([load_geometry_row(model) for model in MODELS])
     (args.out_dir / "rh_feature_geometry.md").write_text(geometry)

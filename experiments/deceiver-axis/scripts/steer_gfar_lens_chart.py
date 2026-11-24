@@ -165,8 +165,18 @@ def layer_medians(projections: Float[Tensor, "layers tokens"]) -> Float[np.ndarr
     return np.median(projections.float().numpy(), axis=1)
 
 
-def null_medians(null_lens_dir: Path, gi_v2_arm: Arm) -> NullMedians:
-    """Per control direction, p50(steered) - p50(unsteered) per layer, raw and over the chunk's unsteered p10-p90 width."""
+def kept_token_mask(seed: dict, excluded_problems: frozenset[str]) -> Bool[np.ndarray, "tokens"]:
+    offsets = seed["token_offsets"]
+    keep = np.ones(int(offsets[-1]), dtype=bool)
+    for index, example_id in enumerate(seed["example_id"]):
+        if example_id in excluded_problems:
+            keep[offsets[index]:offsets[index + 1]] = False
+    return keep
+
+
+def null_medians(null_lens_dir: Path, gi_v2_arm: Arm, excluded_problems: frozenset[str] = frozenset()) -> NullMedians:
+    """Per control direction, p50(steered) - p50(unsteered) per layer, raw and over the chunk's unsteered p10-p90 width,
+    on the tokens of episodes outside `excluded_problems`."""
     raw_by_name: dict[str, Float[np.ndarray, "layers"]] = {}
     normalized_by_name: dict[str, Float[np.ndarray, "layers"]] = {}
     gi_v2_raw: Float[np.ndarray, "layers"] | None = None
@@ -174,16 +184,19 @@ def null_medians(null_lens_dir: Path, gi_v2_arm: Arm) -> NullMedians:
     episodes = response_tokens = 0
     for chunk_dir in sorted(null_lens_dir.glob("chunk*")):
         seeds = [torch.load(path, map_location="cpu", weights_only=False) for path in sorted(chunk_dir.glob("seed*.pt"))]
-        unsteered = torch.cat([seed["unsteered"] for seed in seeds], dim=1).float().numpy()
+        keeps = [torch.from_numpy(kept_token_mask(seed, excluded_problems)) for seed in seeds]
+        kept_columns = lambda key_of_seed: torch.cat([key_of_seed(seed)[:, keep] for seed, keep in zip(seeds, keeps)], dim=1)
+        unsteered = kept_columns(lambda seed: seed["unsteered"]).float().numpy()
         unsteered_median = np.median(unsteered, axis=1)
         low, high = np.percentile(unsteered, [10, 90], axis=1)
         for name in seeds[0]["null_projections"]:
-            raw = layer_medians(torch.cat([seed["null_projections"][name] for seed in seeds], dim=1)) - unsteered_median
+            raw = layer_medians(kept_columns(lambda seed: seed["null_projections"][name])) - unsteered_median
             raw_by_name[name], normalized_by_name[name] = raw, raw / (high - low)
         if gi_v2_raw is None:
-            gi_v2_raw = layer_medians(torch.cat([seed[gi_v2_arm] for seed in seeds], dim=1)) - unsteered_median
+            gi_v2_raw = layer_medians(kept_columns(lambda seed: seed[gi_v2_arm])) - unsteered_median
             gi_v2_normalized = gi_v2_raw / (high - low)
-            episodes, response_tokens = sum(len(seed["example_id"]) for seed in seeds), unsteered.shape[1]
+            episodes = sum(example_id not in excluded_problems for seed in seeds for example_id in seed["example_id"])
+            response_tokens = unsteered.shape[1]
     assert gi_v2_raw is not None and gi_v2_normalized is not None
     names = sorted(raw_by_name)
     return {"names": names, "raw": [raw_by_name[name].tolist() for name in names],
@@ -331,13 +344,15 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True, help="output stem")
     parser.add_argument("--separation", type=Path, default=None, help="gfar_layer_separation.py json (colours the hack-gap line)")
     parser.add_argument("--rechart", action="store_true", help="redraw <out>.png from <out>.json without reading the lens")
+    parser.add_argument("--exclude-problems", nargs="*", default=[], help="example ids whose tokens are left out of the --null-lens and "
+                        "--null-component-lens medians (the per-model lens percentiles are not filtered)")
     args = parser.parse_args()
 
     if args.rechart:
         saved = json.loads(args.out.with_suffix(".json").read_text())
         component_lens = Path(saved["component_lens"]) if saved.get("component_lens") else None
-        null = null_medians(args.null_lens, "steered") if args.null_lens is not None else saved.get("null")
-        null_component = (null_medians(args.null_component_lens, "steered_gfar_component") if args.null_component_lens is not None
+        null = null_medians(args.null_lens, "steered", frozenset(args.exclude_problems)) if args.null_lens is not None else saved.get("null")
+        null_component = (null_medians(args.null_component_lens, "steered_gfar_component", frozenset(args.exclude_problems)) if args.null_component_lens is not None
                           else saved.get("null_component"))
         saved["null"], saved["null_component"] = null, null_component
         if args.separation is not None:
@@ -359,9 +374,9 @@ def main() -> None:
         component_lens = load_lens(args.component_lens, "steered_gfar_component")
         component = group_percentiles(component_lens, np.ones(len(component_lens["verdict_key_by_episode"]), dtype=bool))
         del component_lens
-    null = null_medians(args.null_lens, "steered") if args.null_lens is not None else None
+    null = null_medians(args.null_lens, "steered", frozenset(args.exclude_problems)) if args.null_lens is not None else None
     separation = json.loads(args.separation.read_text()) if args.separation is not None else None
-    null_component = null_medians(args.null_component_lens, "steered_gfar_component") if args.null_component_lens is not None else None
+    null_component = null_medians(args.null_component_lens, "steered_gfar_component", frozenset(args.exclude_problems)) if args.null_component_lens is not None else None
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.with_suffix(".json").write_text(json.dumps({
         "lens": str(args.lens), "component_lens": str(args.component_lens) if args.component_lens else None, "verdicts": str(args.verdicts),

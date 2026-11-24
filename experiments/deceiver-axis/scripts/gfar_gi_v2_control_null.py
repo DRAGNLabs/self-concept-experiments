@@ -111,7 +111,7 @@ def main() -> None:
     control_units = load_control_units(control_files, args.layer)
     _, gi_v2_unit = load_unit_direction(f"gi_v2={args.gi_v2}", args.layer)
     _, gfar_unit = load_unit_direction(f"gfar={args.gfar}", args.layer)
-    episodes = load_episodes(args.acts, args.layer)
+    episodes = load_episodes(args.acts, "unsteered", args.layer)
 
     correlation_by_segment: dict[Segment, SegmentCorrelation] = {}
     for segment in SEGMENTS:
