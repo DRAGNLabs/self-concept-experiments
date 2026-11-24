@@ -87,6 +87,16 @@ def draw_panel(axes: Axes, letter: str, proxy: Proxy, changes_by_model: ChangesB
     axes.annotate(letter, (0, 1), xycoords=title, xytext=(-12, 0), textcoords="offset points", fontsize=LETTER_SIZE,
                   fontweight="bold", color=INK, ha="right", va="top")
     draw_unsteered_rates(axes, proxy, changes_by_model)
+    draw_better_arrow(axes)
+
+
+def draw_better_arrow(axes: Axes) -> None:
+    """An arrow toward the upper right, parallel to the diagonal and just below it, labelled "better"."""
+    tail, head = (0.72, 0.56), (0.95, 0.79)
+    axes.annotate("", xy=head, xycoords="axes fraction", xytext=tail, textcoords="axes fraction",
+                  arrowprops={"arrowstyle": "-|>", "color": MUTED, "linewidth": 2, "mutation_scale": 22})
+    axes.text((tail[0] + head[0]) / 2 + 0.035, (tail[1] + head[1]) / 2 - 0.035, "better", transform=axes.transAxes,
+              rotation=45, rotation_mode="anchor", fontsize=SUBTITLE_SIZE, color=MUTED, ha="center", va="top")
 
 
 def legend_handles() -> list[Line2D]:
