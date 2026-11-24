@@ -24,7 +24,7 @@ from matplotlib.ticker import MaxNLocator
 
 from behaviour_measures_chart import (ChangesByModel, GapByModel, Proxy, draw_gap_marker, flag_changes,
                                       model_changes)
-from selfconcept.deceiver_axis.behaviour_measures.episodes import PRESETS, VISIBLE_BROKEN_PROBLEM_IDS
+from selfconcept.deceiver_axis.behaviour_measures.episodes import PRESETS, VISIBLE_BROKEN_PROBLEM_IDS, ModelPreset
 from selfconcept.deceiver_axis.behaviour_measures.palette import COLOR_BY_MODEL, GRID, INK, MARKER_BY_MODEL, MUTED
 
 PANEL_PROXIES: list[Proxy] = ["abstention", "incapability", "flag_on_unsteered", "flag_own"]
@@ -114,13 +114,21 @@ def save_figure(changes_by_model: ChangesByModel, gap_by_model: GapByModel, out:
     plt.close(figure)
 
 
+def with_honest_abstention(preset: ModelPreset) -> ModelPreset:
+    """Honest abstention for every model: one that never stops on an untruncated reply is plotted at 0%."""
+    return {**preset, "exclusion_reason_by_proxy": {proxy: reason for proxy, reason
+                                                    in preset["exclusion_reason_by_proxy"].items()
+                                                    if proxy != "abstention"}}
+
+
 def all_changes(n_draws: int, seed: int, flag_turns: Path) -> tuple[ChangesByModel, GapByModel]:
     rng = np.random.default_rng(seed)
     changes_by_model: ChangesByModel = {}
     gap_by_model: GapByModel = {}
     for preset in PRESETS:
         model = preset["label"]
-        changes_by_model[model], gap_by_model[model] = model_changes(preset, n_draws, rng, VISIBLE_BROKEN_PROBLEM_IDS)
+        changes_by_model[model], gap_by_model[model] = model_changes(with_honest_abstention(preset), n_draws, rng,
+                                                                     VISIBLE_BROKEN_PROBLEM_IDS)
         for proxy, (changes, gap) in flag_changes(flag_turns / f"{preset['slug']}_turns.json").items():
             changes_by_model[model][proxy], gap_by_model[model][proxy] = changes, gap
     return changes_by_model, gap_by_model
